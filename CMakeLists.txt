@@ -11,15 +11,26 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+#Use new BVH by default
+#priority: USE_OLD_BVH > USE_KDTREE
+option(USE_OLD_BVH "simulation will use old bvh structure by default" OFF)
+option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
+
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
+
+option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
+if(NO_INTERFACE)
+    message(STATUS "Will not build GUI related libraries and executables.")
+endif()
 
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified: Use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE MATCHES Debug)
     MESSAGE("Adding Debug flag...")
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
@@ -30,6 +41,17 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
+
+if(USE_OLD_BVH)
+    MESSAGE("Simulation with old BVH...")
+    ADD_DEFINITIONS(-DUSE_OLD_BVH)
+elseif(USE_KDTREE)
+    MESSAGE("Simulation with KDTREE...")
+    ADD_DEFINITIONS(-DUSE_KDTREE)
+else()
+    MESSAGE("Simulation with new BVH...")
+    #ADD_DEFINITIONS(-DUSE_KDTREE)
+endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
@@ -74,26 +96,30 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
-add_subdirectory(src_shared)
-add_subdirectory(CMake/molflow_sub)
-add_subdirectory(CMake/molflow_win)
+add_subdirectory(src_shared EXCLUDE_FROM_ALL)
+
 #IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_sim)
 #ENDIF()
 
-IF (WIN32)
-    add_subdirectory(CMake/png_zlib_win_library)
-ELSE()
-    #add_subdirectory(CMake/molflow_testsuit)
-ENDIF(WIN32)
+if(NOT NO_INTERFACE)
+    add_subdirectory(CMake/molflow_win)
+    add_dependencies(molflow ziplib)
+    IF (WIN32)
+        add_subdirectory(CMake/png_zlib_win_library)
+    ENDIF(WIN32)
+    add_dependencies(molflow shared_simulator shared_interface compress)
+endif()
 
-add_dependencies(molflow shared_simulator shared_interface compress)
+add_dependencies(molflowSim ziplib)
+
+
 #IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()
 
-option(USE_TESTS "Build the tests" ON)
+option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)
     enable_testing()
     include(GoogleTest)
@@ -101,3 +127,51 @@ if(USE_TESTS)
     add_dependencies(testsuite molflowSim)
     add_subdirectory(src/TimeDependent)
 endif()
+
+# Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)
+# molflow GUI not supported right now, as extra folders are needed
+
+#SET(MOLFLOW_INSTALL_DIR ${CMAKE_INSTALL_BINDIR})
+SET(MOLFLOW_INSTALL_DIR molflow)
+
+include(GNUInstallDirs)
+
+# if no path is provided, use user home path
+# e.g. /home/user/molflow
+# cmake --install . --prefix /usr/local/bin/
+# will install to /usr/local/bin/molflow
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=/Users/pascal/molflow_test/ .
+#
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "..." FORCE)
+endif()
+
+install(CODE "MESSAGE(\"Installing in home directory ${CMAKE_INSTALL_PREFIX}\")")
+install(DIRECTORY copy_to_build/images
+        copy_to_build/desorption_yields
+        copy_to_build/parameter_catalog
+        DESTINATION ${MOLFLOW_INSTALL_DIR}
+        #USE_SOURCE_PERMISSIONS
+        PATTERN "images/*"
+        PATTERN "desorption_yields/*"
+        PATTERN "parameter_catalog/*"
+        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ GROUP_WRITE
+        )
+
+if(NOT NO_INTERFACE)
+    install(TARGETS molflow
+            CONFIGURATIONS Release
+            RUNTIME
+            DESTINATION ${MOLFLOW_INSTALL_DIR}
+    )
+endif()
+install(TARGETS molflowCLI
+        CONFIGURATIONS Release
+        RUNTIME
+        DESTINATION ${MOLFLOW_INSTALL_DIR}
+        )
+#[[install(DIRECTORY molflowCLI
+        CONFIGURATIONS Release
+        RUNTIME
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )]]

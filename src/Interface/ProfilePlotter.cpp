@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -18,6 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "ProfilePlotter.h"
+#include "ProfileModes.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLButton.h"
@@ -40,8 +41,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SynRad.h"
 #endif
 
-extern GLApplication *theApp;
-
 #if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
@@ -49,16 +48,6 @@ extern MolFlow *mApp;
 #if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
-
-const char* profType[] = {
-	"None",
-	"Pressure \201 [mbar]",
-	"Pressure \202 [mbar]",
-	"Incident angle [deg]",
-	"Speed [m/s]",
-	"Ort. velocity [m/s]",
-	"Tan. velocity [m/s]"
-};
 
 /**
 * \brief Constructor with initialisation for Profile plotter window (Tools/Profile Plotter)
@@ -109,20 +98,18 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
     Add(selFacInput);
 
-	normLabel = new GLLabel("Normalize:");
+	normLabel = new GLLabel("Display as:");
 	Add(normLabel);
 
-	normCombo = new GLCombo(0);
-	normCombo->SetEditable(true);
-	normCombo->SetSize(6);
-	normCombo->SetValueAt(0, "None (raw data)");
-	normCombo->SetValueAt(1, "Pressure (mbar)");
-	normCombo->SetValueAt(2, "Density (1/m3)");
-	normCombo->SetValueAt(3, "Speed (m/s)");
-	normCombo->SetValueAt(4, "Angle (deg)");
-	normCombo->SetValueAt(5, "Normalize to 1");
-	normCombo->SetSelectedIndex(1);
-	Add(normCombo);
+	displayModeCombo = new GLCombo(0);
+	displayModeCombo->SetEditable(true);
+	size_t nbDisplayModes = (size_t)ProfileDisplayModes::NUMITEMS;
+	displayModeCombo->SetSize(nbDisplayModes);
+	for (size_t i = 0;i<nbDisplayModes;i++) {
+		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i].c_str());
+	}
+	displayModeCombo->SetSelectedIndex(1);
+	Add(displayModeCombo);
 
 	logYToggle = new GLToggle(0, "Log Y");
 	Add(logYToggle);
@@ -194,7 +181,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	correctForGas->SetBounds(240, h - 95, 80, 19);
 
 	normLabel->SetBounds(7, h - 93, 50, 19);
-	normCombo->SetBounds(61, h - 95, 125, 19);
+	displayModeCombo->SetBounds(61, h - 95, 125, 19);
 
     colorToggle->SetBounds(7, h - 70, 105, 19);
     fixedLineWidthText->SetBounds(112, h - 70, 93, 19);
@@ -238,9 +225,9 @@ void ProfilePlotter::Refresh() {
     for (size_t i = 0; i < nb; i++) {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
-			char tmp[128];
-			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, (int)i);
+			std::ostringstream tmp;
+			tmp << "F#" << (i + 1) << " " << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
+			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
 	}
@@ -312,7 +299,7 @@ void ProfilePlotter::plot() {
 		return;
 	}
 	if (nbVar > 1) {
-		GLMessageBox::Display("Too much variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		SAFE_DELETE(parser);
 		return;
 	}
@@ -377,7 +364,7 @@ void ProfilePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	int displayMode = normCombo->GetSelectedIndex();
+	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 	Geometry *geom = worker->GetGeometry();
 
@@ -393,33 +380,35 @@ void ProfilePlotter::refreshViews() {
 			v->Reset();
 			const std::vector<ProfileSlice>& profile = worker->globState.facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
 
-			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
-			//double fnbHit = (double)fCount->hit.nbMCHit;
-			//if (fnbHit == 0.0) fnbHit = 1.0;
 			if (worker->globalHitCache.globalHits.nbDesorbed > 0){
 
-				switch (displayMode) {
-				case 0: //Raw data
+				if (displayMode == ProfileDisplayModes::Raw) {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].countEquiv, false);
-
-					break;
-
-				case 1: //Pressure
-					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model.wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				}
+				else if (displayMode == ProfileDisplayModes::Pressure) {
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
-					break;
-				case 2: //Particle density
+				}
+				else if (displayMode == ProfileDisplayModes::ImpRate) {
+
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
+					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].countEquiv * scaleY, false);
+				}
+				else if (displayMode == ProfileDisplayModes::Density) {
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
-					break;
-				case 3: {//Velocity
+				}
+				else if (displayMode == ProfileDisplayModes::Speed) {
 					double sum = 0.0;
 					double val;
 					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
@@ -436,8 +425,8 @@ void ProfilePlotter::refreshViews() {
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
-					break; }
-				case 4: {//Angle
+				}
+				else if (displayMode == ProfileDisplayModes::Angle) {
 					double sum = 0.0;
 					double val;
 					double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -454,24 +443,21 @@ void ProfilePlotter::refreshViews() {
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
-					break;
 				}
-				case 5: {//To 1 (max value)
+				else if (displayMode == ProfileDisplayModes::NormalizeTo1) {
                     double max = 1.0;
 
                     for (int j = 0; j < PROFILE_SIZE; j++) {
-                        if (profile[j].countEquiv > max) max = profile[j].countEquiv;
+                        max = std::max(max,profile[j].countEquiv);
                     }
                     scaleY = 1.0 / (double) max;
 
                     for (int j = 0; j < PROFILE_SIZE; j++)
                         v->Add((double) j, profile[j].countEquiv * scaleY, false);
-                    break;
                 }
-                default:
+				else{
                     // Unknown display mode, reset to RAW data
-                    normCombo->SetSelectedIndex(0);
-                    break;
+                    displayModeCombo->SetSelectedIndex(0);
 				}
 
 			}
@@ -635,7 +621,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         if(facetIds.empty())
                             return;
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }
@@ -669,15 +655,18 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }
 
+                    bool warnedOnce = false;
                     for (const auto &facetId : facetIds) {
                         if(geom->GetFacet(facetId)->sh.isProfile) {
-                            if(addView(facetId))
+                            if(addView(facetId) && !warnedOnce) {
+                                warnedOnce = true;
                                 GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
+                            }
                         }
                     }
 			    }
@@ -699,7 +688,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }
@@ -743,9 +732,10 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		break;
 	case MSG_COMBO:
-		if (src == normCombo) {
-			int normMode = normCombo->GetSelectedIndex();
-			correctForGas->SetVisible(normMode == 3 || normMode == 4);
+		if (src == displayModeCombo) {
+			//int normMode = normCombo->GetSelectedIndex();
+			ProfileDisplayModes normMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex();
+			correctForGas->SetVisible(normMode == ProfileDisplayModes::Speed || normMode == ProfileDisplayModes::Angle);
 			refreshViews();
 		}
 		else if(src == profCombo){

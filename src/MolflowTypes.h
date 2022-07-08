@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -69,7 +69,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
-typedef std::pair<double,double> Moment;
+typedef std::pair<double,double> Moment; //mid-time,window_size
 typedef std::pair<double,double> ID_p;
 typedef std::pair<double,double> CDF_p;
 
@@ -88,9 +88,10 @@ struct OutgassingMap {
     OutgassingMap() = default;
     size_t   outgassingMapWidth; //rounded up outgassing file map width
     size_t   outgassingMapHeight; //rounded up outgassing file map height
-    double outgassingMapWidthD; //actual outgassing file map width
-    double outgassingMapHeightD; //actual outgassing file map height
-    double outgassingFileRatio; //desorption file's sample/unit ratio
+    double outgassingMapWidth_precise; //actual outgassing file map width
+    double outgassingMapHeight_precise; //actual outgassing file map height
+    double outgassingFileRatioU; //desorption file's sample/unit ratio in U direction
+    double outgassingFileRatioV; //desorption file's sample/unit ratio in V direction
     std::vector<double>   outgassingMap_cdf; // Cumulative outgassing map when desorption is based on imported file
     std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
 
@@ -155,8 +156,15 @@ typedef struct {
 
 class AnglemapParams {
 public:
+    AnglemapParams(){
+        record = false;
+        phiWidth = 0;
+        thetaLimit = 0.0;
+        thetaLimit = 0;
+        thetaHigherRes = 0;
+    }
 	bool   record; // Record incident angle 2-dim distribution
-	bool hasRecorded;
+	//bool hasRecorded;
 	size_t phiWidth; //resolution between -PI and +PI
 	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
@@ -167,7 +175,6 @@ public:
 	{
 		archive(
 			   record, // Record incident angle 2-dim distribution
-		 hasRecorded,
 		 phiWidth, //resolution between -PI and +PI
 		 thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 		 thetaLowerRes, //resolution between 0 and angleMapThetaLimit
@@ -179,8 +186,8 @@ public:
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
 	size_t GetRecordedMapSize() const{
-		if (!hasRecorded) return 0;
-		else return GetMapSize();
+		/*if (!hasRecorded) return 0;
+		else */return GetMapSize();
 	}
 	size_t GetDataSize() const {
 		return sizeof(size_t)*GetMapSize();

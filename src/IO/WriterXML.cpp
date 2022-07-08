@@ -1,13 +1,32 @@
-//
-// Created by Pascal Baehr on 30.07.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <iomanip>      // std::setprecision
 #include <sstream>
+#include <Helper/StringHelper.h>
+#include <Helper/ConsoleLogger.h>
 #include "PugiXML/pugixml.hpp"
 
 #include "WriterXML.h"
 #include "versionId.h"
+#include "Simulation/MolflowSimFacet.h"
 
 
 using namespace FlowIO;
@@ -18,24 +37,74 @@ void WriterXML::setWriteProgress(double newProgress) {
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    auto time_point = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(time_point);
-    char s[256];
-    struct tm *p = localtime(&now_c);
-    strftime(s, 256, "%F_%T", p);
-    printf("[%s] %s [%.2lf%%]\n", s, statusString.c_str(), writeProgress);
+    Log::console_msg(2, "[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat) {
+void WriterXML::reportNewWriteStatus(const std::string &statusString, double newProgress) {
+    setWriteProgress(newProgress);
+    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
+}
+
+void WriterXML::finishWriteStatus(const std::string &statusString) {
+    setWriteProgress(100.0);
+    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]\n", Util::getTimepointString(), statusString, 100.0);
+}
+
+xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
+    // Check whether we do a old to new format update
+    // If yes, move old scheme to new scheme by adding the root node
+    if(update){
+        bool oldFormatUsed = false;
+        auto rootNode = saveDoc.document_element();
+        if(!saveDoc.child("SimulationEnvironment")){
+            rootNode = saveDoc.root();
+            if(rootNode.child("Geometry")){
+                oldFormatUsed = true;
+            }
+        }
+
+        if(oldFormatUsed && !useOldXMLFormat){
+            xml_document newDoc;
+            auto newHead = newDoc.append_child("SimulationEnvironment");
+            newDoc.append_attribute("type") = "molflow";
+            newDoc.append_attribute("version") = appVersionId;
+            for(auto& node : rootNode.children()){
+                newHead.append_copy(node);
+            }
+
+            saveDoc.reset(newDoc);
+        }
+    }
+
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
     } else {
-        rootNode = saveDoc.append_child("SimulationEnvironment");
-        rootNode.append_attribute("type") = "molflow";
-        rootNode.append_attribute("version") = appVersionId;
+        if(update) {
+            rootNode = saveDoc.document_element();
+            rootNode = saveDoc.child("SimulationEnvironment");
+        }
+        if(!rootNode) {
+            if(!saveDoc.child("SimulationEnvironment")) {
+                rootNode = saveDoc.append_child("SimulationEnvironment");
+                rootNode.append_attribute("type") = "molflow";
+                rootNode.append_attribute("version") = appVersionId;
+            }
+            else
+                rootNode = saveDoc.document_element();
+        }
     }
-    xml_node geomNode = rootNode.append_child("Geometry");
+
+    return rootNode;
+}
+
+void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> &model,
+                             const std::vector<size_t> &selection) {
+    xml_node rootNode = GetRootNode(saveDoc);
+
+    if(update)
+        rootNode.remove_child("Geometry");
+    xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
     for (size_t i = 0; i < model->vertices3.size(); i++) {
@@ -48,14 +117,29 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
     }
 
     geomNode.append_child("Facets");
-    geomNode.child("Facets").append_attribute("nb") = model->facets.size();
-    for (size_t i = 0; i < model->facets.size(); i++) {
-        //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
-        //if (!saveSelected || model->facets[i]->selected) {
-        xml_node f = geomNode.child("Facets").append_child("Facet");
-        f.append_attribute("id") = i;
-        SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
-        //}
+    
+    if (selection.empty()) {
+        geomNode.child("Facets").append_attribute("nb") = model->facets.size();
+        for (size_t i = 0; i < model->facets.size(); i++) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i;
+            SaveFacet(f, (MolflowSimFacet*) model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
+    }
+    else
+    {
+        geomNode.child("Facets").append_attribute("nb") =selection.size();
+        for (size_t i = 0; i < selection.size();i++) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i; //Different from global facet id
+            SaveFacet(f, (MolflowSimFacet*) model->facets[selection[i]].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
     }
 
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
@@ -70,7 +154,9 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
     }
 
     // Simulation Settings
-    xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
+    if(update)
+        rootNode.remove_child("MolflowSimuSettings");
+    xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
 
     simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
     simuParamNode.child("Gas").append_attribute(
@@ -153,9 +239,19 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
 #endif
 }
 
+// Save XML document to file
+bool
+WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+    if (!saveDoc.save_file(outputFileName.c_str())) {
+        std::cerr << "Error writing XML file." << std::endl; //successful save
+        return false;
+    }
+    return true;
+}
+
 // Directly append to file (load + save)
 bool
-WriterXML::SaveSimulationState(const std::string &outputFileName, SimulationModel *model, GlobalSimuState &globState) {
+WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
@@ -169,22 +265,21 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, SimulationMode
 }
 
 // Append to open XML node
-bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *model, GlobalSimuState &globState) {
+bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
     //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
-    xml_node rootNode = saveDoc.child("SimulationEnvironment");
-    if (!rootNode)
-        rootNode = saveDoc.append_child("SimulationEnvironment");
+    xml_node rootNode = GetRootNode(saveDoc);
     rootNode.remove_child("MolflowResults"); // clear previous results to replace with new status
 
     xml_node resultNode = rootNode.append_child("MolflowResults");
-    reportWriteStatus("Writing simulation results...");
     xml_node momentsNode = resultNode.append_child("Moments");
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
     size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
+    reportWriteStatus("Writing simulation results...");
     for (size_t m = 0; m <= model->tdParams.moments.size(); m++) {
-        setWriteProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
+        //setWriteProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
+        reportNewWriteStatus("Writing simulation results...", 0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         xml_node newMoment = momentsNode.append_child("Moment");
         newMoment.append_attribute("id") = m;
         if (m == 0) {
@@ -298,8 +393,9 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
 
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (auto &sFac : model->facets) {
-            //SubprocessFacet& f = model->structures[0].facets[0].;
+        for (auto &fac : model->facets) {
+            auto &sFac = *fac;
+            //SimulationFacet& f = model->structures[0].facets[0].;
             xml_node newFacetResult = facetResultsNode.append_child("Facet");
             newFacetResult.append_attribute("id") = sFac.globalId;
 
@@ -473,6 +569,8 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
     minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
     minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
 
+    finishWriteStatus("Writing simulation results...");
+
     return true;
 }
 
@@ -480,7 +578,7 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
+void WriterXML::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
     xml_node e = facetNode.append_child("Sticking");
     e.append_attribute("constValue") = facet->sh.sticking;
     e.append_attribute("parameterId") = facet->sh.sticking_paramId;
@@ -562,8 +660,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     t.append_attribute("hasMesh") = (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl ||
                                      facet->sh.countTrans);
-    t.append_attribute("texDimX") = facet->sh.texWidthD;
-    t.append_attribute("texDimY") = facet->sh.texHeightD;
+    t.append_attribute("texDimX") = facet->sh.texWidth_precise;
+    t.append_attribute("texDimY") = facet->sh.texHeight_precise;
     t.append_attribute("countDes") = (int) facet->sh.countDes; //backward compatibility: 0 or 1
     t.append_attribute("countAbs") = (int) facet->sh.countAbs; //backward compatibility: 0 or 1
     t.append_attribute("countRefl") = (int) facet->sh.countRefl; //backward compatibility: 0 or 1
@@ -599,7 +697,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         xml_node textureNode = facetNode.append_child("DynamicOutgassing");
         textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
         textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
-        textureNode.append_attribute("ratio") = facet->ogMap.outgassingFileRatio;
+        textureNode.append_attribute("ratioU") = facet->ogMap.outgassingFileRatioU;
+        textureNode.append_attribute("ratioV") = facet->ogMap.outgassingFileRatioV;
         textureNode.append_attribute("totalDose") = facet->ogMap.totalDose;
         textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
         textureNode.append_attribute("totalFlux") = facet->ogMap.totalFlux;
@@ -617,7 +716,7 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     } //end texture
 
-    if (facet->sh.anglemapParams.hasRecorded) {
+    if (!facet->angleMap.pdf.empty()) {
         xml_node textureNode = facetNode.append_child("IncidentAngleMap");
         textureNode.append_attribute("angleMapPhiWidth") = facet->sh.anglemapParams.phiWidth;
         textureNode.append_attribute("angleMapThetaLimit") = facet->sh.anglemapParams.thetaLimit;
@@ -655,4 +754,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         timeNode.append_attribute("max") = facet->sh.facetHistogramParams.timeMax;
     }
 #endif
+}
+
+WriterXML::WriterXML(bool useOldXMLFormat, bool update) : useOldXMLFormat(useOldXMLFormat), update(update){
+
 }

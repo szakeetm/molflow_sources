@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "Geometry_shared.h"
 #include "PugiXML/pugixml.hpp"
-#include "GeometrySimu.h"
+#include "Simulation/MolflowSimGeom.h"
 #include <cereal/archives/xml.hpp>
 
 #define TEXTURE_MODE_PRESSURE 0
@@ -30,7 +30,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 
-#define SYNVERSION 10
+#define SYNVERSION 12
 
 class Worker;
 
@@ -68,9 +68,11 @@ public:
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr);
 	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress *progressDlg);
-
+    bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
+                              const std::string &fileName_out, double cmpThreshold) override;
 	// Geometry
-	void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPrisma(double L, double R, double angle, double s, int step);
 	void     LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version);
 
 	// Memory usage (in bytes)
@@ -96,10 +98,12 @@ public:
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
+    bool InitOldStruct(MolflowSimulationModel *model);
+    void InitInterfaceFacets(const std::vector<std::shared_ptr<SimulationFacet>> &sFacets, Worker* work) override;
+
 private:
 
 	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
 	void SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
-

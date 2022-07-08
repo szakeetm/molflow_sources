@@ -1,142 +1,311 @@
-//
-// Created by Pascal Baehr on 01.08.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include "Initializer.h"
-#include "CLI11/CLI11.hpp"
 #include "IO/LoaderXML.h"
 #include "ParameterParser.h"
+
+#include <CLI11/CLI11.hpp>
+#include <Helper/StringHelper.h>
+#include <Helper/ConsoleLogger.h>
+#include <SettingsIO.h>
 
 namespace Settings {
     size_t nbThreads = 0;
     uint64_t simDuration = 10;
+    uint64_t outputDuration = 60;
     uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
     bool loadAutosave = false;
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
-    std::string inputFile;
-    std::string outputFile;
     std::string paramFile;
+    std::vector<std::string> paramSweep;
 }
 
+void initDefaultSettings() {
+    Settings::nbThreads = 0;
+    Settings::simDuration = 0;
+    Settings::outputDuration = 60;
+    Settings::autoSaveDuration = 600;
+    Settings::loadAutosave = false;
+    Settings::desLimit.clear();
+    Settings::resetOnStart = false;
+    Settings::paramFile.clear();
+    Settings::paramSweep.clear();
+
+    SettingsIO::outputFacetDetails = false;
+    SettingsIO::outputFacetQuantities = false;
+    SettingsIO::overwrite = false;
+    SettingsIO::autogenerateTest = false;
+
+    SettingsIO::workFile.clear();
+    SettingsIO::inputFile.clear();
+    SettingsIO::outputFile.clear();
+    SettingsIO::workPath.clear();
+    SettingsIO::inputPath.clear();
+    SettingsIO::outputPath.clear();
+}
+
+/**
+* \brief Modifies the default --help command output
+ */
 class FlowFormatter : public CLI::Formatter {
 public:
     std::string make_usage(const CLI::App *app, std::string name) const override {
         return "Usage: ./"
-               +std::filesystem::path(name).filename().string()
-               +" [options]";
+               + std::filesystem::path(name).filename().string()
+               + " [options]";
     }
 };
 
-int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                      GlobalSimuState *globState) {
+/**
+* \brief Parse all CLI commands to use with the corresponding variables (@Settings / @SettingsIO)
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::parseCommands(int argc, char **argv) {
+    CLI::App app{"Molflow+/Synrad+ Simulation Management"};
+    app.formatter(std::make_shared<FlowFormatter>());
+
+    // Local variables for parsing and immediate processing
+    bool verbose = false;
+    std::vector<double> limits;
+
+    // Define options
+    app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
+    app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
+    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
+
+    auto group = app.add_option_group("subgroup");
+    group->add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
+            ->check(CLI::ExistingFile);
+    group->add_flag("--auto", SettingsIO::autogenerateTest, "Use auto generated test case");
+    group->require_option(1);
+
+    CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
+                                           R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
+    CLI::Option *optOpath = app.add_option("--outputPath", SettingsIO::outputPath,
+                                           "Output path, defaults to \'Results_{date}\'");
+    app.add_option("-s,--outputDuration", Settings::outputDuration, "Seconds between each stat output if not zero");
+    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
+                   "Will write a CSV file containing all facet details including physical quantities");
+    app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
+                   "Will write a CSV file containing all physical quantities for each facet");
+
+    app.add_option("--setParamsByFile", Settings::paramFile,
+                   "Parameter file for ad hoc change of the given geometry parameters")
+            ->check(CLI::ExistingFile);
+    app.add_option("--setParams", Settings::paramSweep,
+                   "Direct parameter input for ad hoc change of the given geometry parameters");
+    app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
+
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
+    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
+    app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
+    CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
+                                             "Overwrite input file with new results")->excludes(optOfile, optOpath);
+    optOfile->excludes(optOverwrite);
+    optOpath->excludes(optOverwrite);
+    app.set_config("--config");
+
+    CLI11_PARSE(app, argc, argv);
+
+    if (verbose)
+        Settings::verbosity = 42;
+
+    //std::cout<<app.config_to_str(true,true);
+    for (auto& lim : limits)
+        Settings::desLimit.emplace_back(static_cast<size_t>(lim));
+
+    if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
+        Log::console_error("No end criterion has been set!\n");
+        Log::console_error(" Either use: -t or -d\n");
+        return 0;
+    }
+
+    return -1;
+}
+
+/**
+* \brief Comfort function wrapping around default initialization from command line arguments, taking care of default initializations
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
+                              const std::shared_ptr<MolflowSimulationModel>& model) {
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
 #else
     std::setlocale(LC_ALL, "C");
 #endif
-    parseCommands(argc, argv);
+
+    initDefaultSettings();
+
+    int err = 1;
+    if (-1 < (err = parseCommands(argc, argv))) {
+        Log::console_error("Error: Initialising parsing arguments\n");
+        return err;
+    }
+
+    Log::console_header(1, "Commence: Initialising!\n");
 
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
-    if(simManager->InitSimUnits()) {
-        std::cout << "Error: Initialising simulation unit: " << simManager->nbThreads << std::endl;
+    if (simManager->InitSimUnits()) {
+        Log::console_error("Error: Initialising simulation units: {}\n", simManager->nbThreads);
         return 1;
     }
-    std::cout << "Active cores: " << simManager->nbThreads << std::endl;
-    model->otfParams.nbProcess = simManager->nbThreads;
-    //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
-    loadFromXML(simManager, model, globState, !Settings::resetOnStart);
-    if(!Settings::paramFile.empty()){
+    model->otfParams.nbProcess = simManager->nbThreads;
+    model->otfParams.timeLimit = (double) Settings::simDuration;
+    //model->otfParams.desorptionLimit = Settings::desLimit.front();
+    Log::console_msg_master(4, "Active cores: {}\n", simManager->nbThreads);
+    Log::console_msg_master(4, "Running simulation for: {} sec\n", Settings::simDuration);
+
+    return -1;
+}
+
+/**
+* \brief Initializes the simulation model from a valid input file and handles parameter sweeps
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel>& model,
+                              GlobalSimuState *globState) {
+    if (SettingsIO::prepareIO()) {
+        Log::console_error("Error preparing I/O folders\n");
+        return 1;
+    }
+
+    if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
+        if (loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState)) {
+            return 1;
+        }
+    }
+    else {
+        Log::console_error("Invalid file extension for input file detected: {}\n",
+                           std::filesystem::path(SettingsIO::workFile).extension().string());
+        return 1;
+    }
+    if (!Settings::paramFile.empty() || !Settings::paramSweep.empty()) {
         // 1. Load selection groups in case we need them for parsing
-        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
+        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
         // 2. Sweep parameters from file
-        ParameterParser::Parse(Settings::paramFile, selGroups);
+        if (!Settings::paramFile.empty())
+            ParameterParser::ParseFile(Settings::paramFile, selGroups);
+        if (!Settings::paramSweep.empty())
+            ParameterParser::ParseInput(Settings::paramSweep, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
-        ParameterParser::ChangeFacetParams(model->facets);
+        if(ParameterParser::ChangeFacetParams(model->facets)){
+            return 1;
+        }
     }
 
     // Set desorption limit if used
-    if(initDesLimit(*model,*globState)) {
-        exit(0);
-    }
-    model->otfParams.timeLimit = (double) Settings::simDuration;
-
-    /*else{
-        model->otfParams.desorptionLimit = 0;
-    }*/
-    initSimUnit(simManager, model, globState);
-
-    return 0;
-}
-
-int Initializer::parseCommands(int argc, char** argv) {
-    CLI::App app{"Molflow+/Synrad+ Simulation Management"};
-    app.formatter(std::make_shared<FlowFormatter>());
-
-    std::vector<double> limits;
-    // Define options
-    app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
-    app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
-    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
-            ->required()
-            ->check(CLI::ExistingFile);
-    app.add_option("-o,--output", Settings::outputFile, "Output file if different from input file");
-    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autosave if not zero");
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_option("--setParams", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
-            ->check(CLI::ExistingFile);
-
-    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
-    app.set_config("--config");
-    CLI11_PARSE(app, argc, argv);
-
-    //std::cout<<app.config_to_str(true,true);
-
-    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
-
-    // Save to inputfile
-    if(Settings::outputFile.empty())
-        Settings::outputFile = Settings::inputFile;
-
-    for(auto& lim : limits)
-        Settings::desLimit.emplace_back(lim);
-    return 0;
-}
-
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
-                             bool loadState) {
-
-    //1. Load Input File (regular XML)
-    FlowIO::LoaderXML loader;
-    // Easy if XML is split into multiple parts
-    // Geometry
-    // Settings
-    // Previous results
-    model->m.lock();
-    if(loader.LoadGeometry(Settings::inputFile, model)){
-        std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
-        model->m.unlock();
+    if (initDesLimit(model, *globState)) {
         return 1;
     }
 
-    //TODO: Load parameters from catalog explicitly?
-    // For GUI
-    // work->InsertParametersBeforeCatalog(loadedParams);
-    // Load viewsettings for each facet
+    simManager->simulationChanged = true;
+    Log::console_msg_master(2, "Forwarding model to simulation units!\n");
+    try {
+        if(simManager->InitSimulation(model, globState))
+            throw std::runtime_error("Could not init simulation");
+    }
+    catch (std::exception &ex) {
+        Log::console_error("Failed initialising simulation units:\n{}\n", ex.what());
+        return 1;
+    }
+    Log::console_footer(1, "Finalize: Initialising!\n");
 
-    std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
+    return 0;
+}
+
+/**
+* \brief Initialize simulation from automatically generated test case (prism)
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::initAutoGenerated(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel> &model,
+                                   GlobalSimuState *globState, double ratio, int steps, double angle) {
+    if (SettingsIO::prepareIO()) {
+        Log::console_error("Error preparing I/O folders\n");
+        return 1;
+    }
+
+    loadFromGeneration(model, globState, ratio, steps, angle);
+
+    // Set desorption limit if used
+    if (initDesLimit(model, *globState)) {
+        return 1;
+    }
+
+    simManager->simulationChanged = true;
+    Log::console_msg_master(2, "Forwarding model to simulation units!\n");
+    try {
+        if(simManager->InitSimulation(model, globState))
+            throw std::runtime_error("Could not init simulation");
+    }
+    catch (std::exception &ex) {
+        Log::console_error("Failed initialising simulation units:\n{}\n", ex.what());
+        return 1;
+    }
+    Log::console_footer(1, "Finalize: Initialising!\n");
+
+    return 0;
+}
+
+/**
+* \brief Generate a test case with an oblique prism given an angle
+ * \return 0> error code, 0 when ok
+ */
+int
+Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> &model, GlobalSimuState *globState, double ratio,
+                                int step, double angle) {
+
+    Log::console_header(1, "[ ] Loading geometry : PRISM\n");
+
+    //double ratio = 10.0;
+    double R = 1.0;
+    double L = ratio * R;
+    //int    step = 10;
+    //1. Load Input File (regular XML)
+    // Geometry
+    model->BuildPrisma(L, R, angle, 0.0, step);
+    // Settings
+    // Previous results
+
+    // InsertParamsBeforeCatalog
+    std::vector<Parameter> paramCatalog;
+    Parameter::LoadParameterCatalog(paramCatalog);
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
+
+    Log::console_msg_master(3, " Loaded geometry of {} bytes!\n", model->size());
 
     //InitializeGeometry();
     model->InitialiseFacets();
-    model->PrepareToRun();
 
-    std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
+    Log::console_msg_master(3, " Initializing geometry!\n");
     initSimModel(model);
+    if(model->PrepareToRun()){
+        return 1;
+    }
 
     // 2. Create simulation dataports
     try {
@@ -147,112 +316,189 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        std::cout << "[LoadGeom] Resizing state!" << std::endl;
-        globState->Resize(*model);
+        Log::console_msg_master(3, " Resizing state!\n");
+        globState->Resize(model);
+    }
+    catch (const std::exception &e) {
+        Log::console_error("[Warning] {}\n", e.what());
+    }
+
+    Log::console_footer(1, "[x] Loaded geometry\n");
+
+    return 0;
+}
+
+/**
+* \brief Wrapper for XML loading with LoaderXML
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<MolflowSimulationModel>& model,
+                             GlobalSimuState *globState) {
+
+    Log::console_header(1, "[ ] Loading geometry from file {}\n", fileName);
+
+    //1. Load Input File (regular XML)
+    FlowIO::LoaderXML loader;
+    // Easy if XML is split into multiple parts
+    // Geometry
+    // Settings
+    // Previous results
+    double progress = 0.0;
+    if (loader.LoadGeometry(fileName, model, &progress)) {
+        Log::console_error("Please check the input file!\n");
+        return 1;
+    }
+
+    // InsertParamsBeforeCatalog
+    std::vector<Parameter> paramCatalog;
+    Parameter::LoadParameterCatalog(paramCatalog);
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
+
+    //TODO: Load parameters from catalog explicitly?
+    // For GUI
+    // work->InsertParametersBeforeCatalog(loadedParams);
+    // Load viewsettings for each facet
+
+    Log::console_msg_master(3, " Loaded geometry of {} bytes!\n", model->size());
+
+    //InitializeGeometry();
+    model->InitialiseFacets();
+
+    Log::console_msg_master(3, " Initializing geometry!\n");
+    initSimModel(model);
+    if(model->PrepareToRun()){
+        return 1;
+    }
+
+    // 2. Create simulation dataports
+    try {
+
+        Log::console_msg_master(3, " Resizing state!\n");
+        globState->Resize(model);
 
         // 3. init counters with previous results
-        if(loadState) {
-            std::cout << "[LoadGeom] Initializing previous simulation state!" << std::endl;
+        if (loadState) {
+            Log::console_msg_master(3, " Initializing previous simulation state!\n");
 
-            if(Settings::loadAutosave){
-                std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
+            if (Settings::loadAutosave) {
+                std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
-                fileName = autoSavePrefix + fileName;
-                if(std::filesystem::exists(fileName)) {
-                    std::cout << "Found autosave file! Loading simulation state..." << std::endl;
-                    FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
+                autosaveFileName = autoSavePrefix + autosaveFileName;
+                if (std::filesystem::exists(autosaveFileName)) {
+                    Log::console_msg_master(2, " Found autosave file! Loading simulation state...\n");
+                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, nullptr);
                 }
+            } else {
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, nullptr);
             }
-            else {
-                FlowIO::LoaderXML::LoadSimulationState(Settings::inputFile, model, *globState);
+
+            // Update Angle map status
+            for(int i = 0; i < model->facets.size(); i++ ) {
+#if defined(MOLFLOW)
+                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
+                if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
+                    //Retrieve angle map from hits dp
+                    globState->facetStates[i].recordedAngleMapPdf = f->angleMap.pdf;
+                }
+#endif
             }
         }
     }
-    catch (std::exception& e) {
-        std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
+    catch (const std::exception &e) {
+        Log::console_error("[Warning] {}\n", e.what());
     }
 
-    model->m.unlock();
-    return 0;
-}
-
-int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
-
-    model->m.lock();
-
-    // Prepare simulation unit
-    std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
-    simManager->ResetSimulations();
-    simManager->ForwardSimModel(model);
-    simManager->ForwardGlobalCounter(globState, nullptr);
-
-    if(simManager->LoadSimulation()){
-        model->m.unlock();
-        std::string errString = "Failed to send geometry to sub process:\n";
-        errString.append(simManager->GetErrorDetails());
-        throw std::runtime_error(errString);
-    }
-
-    model->m.unlock();
+    Log::console_footer(1, "[x] Loaded geometry\n");
 
     return 0;
 }
 
-int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState){
-    model.otfParams.desorptionLimit = 0;
+/**
+* \brief Initialize a desorption limit by checking against the given input (vector)
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::initDesLimit(const std::shared_ptr<MolflowSimulationModel>& model, GlobalSimuState &globState) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
+    model->otfParams.desorptionLimit = 0;
 
     // Skip desorptions if limit was already reached
-    if(!Settings::desLimit.empty())
-    {
+    if (!Settings::desLimit.empty()) {
         size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
         size_t listSize = Settings::desLimit.size();
-        for(size_t l = 0; l < listSize; ++l) {
-            model.otfParams.desorptionLimit = Settings::desLimit.front();
+        for (size_t l = 0; l < listSize; ++l) {
+            model->otfParams.desorptionLimit = Settings::desLimit.front();
             Settings::desLimit.pop_front();
 
-            if (oldDesNb > model.otfParams.desorptionLimit){
-                printf("Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
-            }
-            else{
-                printf("Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
+            if (oldDesNb > model->otfParams.desorptionLimit) {
+                Log::console_msg_master(1, "Skipping desorption limit: {}\n", model->otfParams.desorptionLimit);
+            } else {
+                Log::console_msg_master(1, "Starting with desorption limit: {} from {}\n",
+                                        model->otfParams.desorptionLimit, oldDesNb);
+
+                model->m.unlock();
                 return 0;
             }
         }
-        if(Settings::desLimit.empty()){
-            printf("All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
+        if (Settings::desLimit.empty()) {
+            Log::console_msg_master(1,
+                                    "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption {}\n",
+                                    oldDesNb);
+            model->m.unlock();
             return 1;
         }
     }
+    model->m.unlock();
+    return 0;
+}
 
+/**
+* \brief Initializes time limit for the simulation
+ * \return 0> error code, 0 when ok
+ */
+int Initializer::initTimeLimit(const std::shared_ptr<MolflowSimulationModel>& model, double time) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
+    model->otfParams.timeLimit = time;
+    Settings::simDuration = time;
+
+    model->m.unlock();
     return 0;
 }
 
 // TODO: Combine with loadXML function
-std::string Initializer::getAutosaveFile(){
+/**
+* \brief Prepares autosave file that is created in user specified intervals
+ * \return output file name
+ */
+std::string Initializer::getAutosaveFile() {
     // Create copy of input file for autosave
     std::string autoSave;
-    if(Settings::autoSaveDuration > 0)
-    {
-        autoSave = std::filesystem::path(Settings::inputFile).filename().string();
+    if (Settings::autoSaveDuration > 0) {
+        autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
-        if(autoSave.size() > autoSavePrefix.size() && std::search(autoSave.begin(), autoSave.begin()+autoSavePrefix.size(), autoSavePrefix.begin(), autoSavePrefix.end()) == autoSave.begin())
-        {
-            autoSave = std::filesystem::path(Settings::inputFile).filename().string();
-            Settings::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            std::cout << "Using autosave file " << autoSave << " for " << Settings::inputFile << '\n';
-        }
-        else {
+        // Check if autosave_ is part of the input filename, if yes, generate a new input file without the prefix
+        if (autoSave.size() > autoSavePrefix.size() &&
+            std::search(autoSave.begin(), autoSave.begin() + autoSavePrefix.size(), autoSavePrefix.begin(),
+                        autoSavePrefix.end()) == autoSave.begin()) {
+            // TODO: Revisit wether input/output is acceptable here
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
+            SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
+            Log::console_msg_master(2, "Using autosave file {} for {}\n", autoSave, SettingsIO::inputFile);
+        } else {
             // create autosavefile from copy of original
-            std::stringstream autosaveFile;
-            autosaveFile << autoSavePrefix<< autoSave;
-            autoSave = autosaveFile.str();
-
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
-                std::filesystem::copy_file(Settings::inputFile, autoSave,
+                if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile))
+                    std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
-                std::cout << "Could not copy file: " << e.what() << '\n';
+                Log::console_error("Could not copy file to create autosave file: {}\n", e.what());
             }
         }
     }
@@ -264,12 +510,17 @@ std::string Initializer::getAutosaveFile(){
 * \brief Prepares data structures for use in simulation
 * \return error code: 0=no error, 1=error
 */
-int Initializer::initSimModel(SimulationModel* model) {
+int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
+
+    if (!model->m.try_lock()) {
+        return 1;
+    }
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(model->tdParams.moments.size());
-    for(auto& moment : model->tdParams.moments){
-        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
+    for (auto &moment : model->tdParams.moments) {
+        momentIntervals.emplace_back(
+                std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
 
     model->tdParams.moments = momentIntervals;
@@ -279,50 +530,54 @@ int Initializer::initSimModel(SimulationModel* model) {
 
     bool hasVolatile = false;
 
-    auto& loadFacets = model->facets;
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        SubprocessFacet& sFac = loadFacets[facIdx];
+        auto* sFac = (MolflowSimFacet*) model->facets[facIdx].get();
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
-        if (sFac.sh.isTextured) {
-            textIncVector.resize(sFac.sh.texHeight*sFac.sh.texWidth);
+        if (sFac->sh.isTextured) {
+            auto meshAreas = sFac->InitTextureMesh();
+            textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
 
-            double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
-            double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
+            double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
+            double rh = sFac->sh.V.Norme() / (double) (sFac->sh.texHeight_precise);
             double area = rw * rh;
-            area *= (sFac.sh.is2sided) ? 2.0 : 1.0;
+            area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
-            for (size_t j = 0; j < sFac.sh.texHeight; j++) {
-                for (size_t i = 0; i < sFac.sh.texWidth; i++) {
-                    if (area > 0.0) {
+
+            for (size_t j = 0; j < sFac->sh.texHeight; j++) {
+                for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+                    if (meshAreas[add] < 0.0) {
                         textIncVector[add] = 1.0 / area;
-                    }
-                    else {
-                        textIncVector[add] = 0.0;
+                    } else {
+                        textIncVector[add] = 1.0 / (meshAreas[add] * ((sFac->sh.is2sided) ? 2.0 : 1.0));
                     }
                     add++;
                 }
             }
         }
-        sFac.textureCellIncrements = textIncVector;
+        sFac->textureCellIncrements = textIncVector;
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
+        try {
+            if (!sFac->InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
+        }
+        catch (const std::exception& err){
+            Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
+            model->m.unlock();
+            return 1;
+        }
+        hasVolatile |= sFac->sh.isVolatile;
 
-        hasVolatile |= sFac.sh.isVolatile;
-
-        if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model->sh.nbSuper || sFac.sh.superDest < 0)) {
+        if ((sFac->sh.superDest || sFac->sh.isVolatile) &&
+            ((sFac->sh.superDest - 1) >= model->sh.nbSuper || sFac->sh.superDest < 0)) {
             // Geometry error
-            //ClearSimulation();
-            //ReleaseDataport(loader);
-            std::ostringstream err;
-            err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
-            //SetErrorSub(err.str().c_str());
-            std::cerr << err.str() << std::endl;
+            Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
+            model->m.unlock();
             return 1;
         }
     }
+    model->m.unlock();
 
     return 0;
 }

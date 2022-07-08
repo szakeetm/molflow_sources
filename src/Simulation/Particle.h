@@ -1,23 +1,46 @@
-//
-// Created by pascal on 2/5/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #ifndef MOLFLOW_PROJ_PARTICLE_H
 #define MOLFLOW_PROJ_PARTICLE_H
 
 
-#include "../GeometrySimu.h"
+#include "MolflowSimGeom.h"
 #include "SimulationUnit.h"
 #include <Random.h>
 
-struct SubProcessFacetTempVar;
+struct SimulationFacetTempVar;
 
+/**
+* \brief Namespace containing various simulation only classes and methods
+ */
 namespace MFSim {
+
+/**
+* \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
+ */
     class Particle {
     public:
         //double GenerateRandomVelocity(int CDFId, const double rndVal);
 
-        //double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal);
+        //double GenerateDesorptionTime(const SimulationFacet *src, const double rndVal);
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
@@ -27,44 +50,43 @@ namespace MFSim {
 
         bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
-        void RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+        void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
 
-        void ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+        void ProfileFacet(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                           double ortSpeedFactor);
 
         void RecordHit(const int &type);
 
         void RecordLeakPos();
 
-        void IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb, size_t absorb,
+        void IncreaseFacetCounter(const SimulationFacet *f, int m, size_t hit, size_t desorb, size_t absorb,
                                   double sum_1_per_v, double sum_v_ort);
 
-        void UpdateVelocity(const SubprocessFacet *collidedFacet);
+        void UpdateVelocity(const SimulationFacet *collidedFacet);
 
-        void LogHit(SubprocessFacet *f);
+        void LogHit(SimulationFacet *f);
 
-        void RecordDirectionVector(const SubprocessFacet *f, int m);
+        void RecordDirectionVector(const SimulationFacet *f, int m);
 
-        void RecordAngleMap(const SubprocessFacet *collidedFacet);
+        void RecordAngleMap(const SimulationFacet *collidedFacet);
 
-        void PerformTeleport(SubprocessFacet *iFacet);
+        void PerformTeleport(SimulationFacet *iFacet);
 
-        void RegisterTransparentPass(SubprocessFacet *facet);
+        void RegisterTransparentPass(SimulationFacet *facet);
 
-        void RecordAbsorb(SubprocessFacet *iFacet);
+        void RecordAbsorb(SimulationFacet *iFacet);
 
-        void PerformBounce(SubprocessFacet *iFacet);
+        void PerformBounce(SimulationFacet *iFacet);
 
-        void RecordHistograms(SubprocessFacet *iFacet, int m);
+        void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
         bool UpdateLog(ParticleLog *globalLog, size_t timeout);
 
         void Reset();
 
-        Vector3d position;    // Position
-        Vector3d direction;    // Direction
+        Ray particle; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
@@ -74,19 +96,23 @@ namespace MFSim {
         size_t particleId;
         double distanceTraveled;
         double generationTime; //Time it was created, constant
-        double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
+        //double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
         int teleportedFrom;   // We memorize where the particle came from: we can teleport back
 
         double velocity;
         double expectedDecayMoment; //for radioactive gases
-        size_t structureId;        // Current structure
+        //size_t structureId;        // Current structure
         GlobalSimuState tmpState;
         ParticleLog tmpParticleLog;
-        SubprocessFacet *lastHitFacet;     // Last hitted facet
+        SimulationFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
-        SimulationModel *model;
-        std::vector<SubprocessFacet *> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
+        MolflowSimulationModel *model;
+        std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
+
+        bool allQuit{false};
+
+        bool StartFromSource(Ray &ray);
     };
 }
 

@@ -1,6 +1,22 @@
-//
-// Created by pbahr on 12/10/2020.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <Helper/StringHelper.h>
 #include <Helper/MathTools.h>
@@ -22,6 +38,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     int nbFacet = geom->GetNbFacet();
     int idx;
 
+
     if ((idx = GetVariable(v->name, "A")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
@@ -41,7 +58,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if ((idx = GetVariable(v->name, "P")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetVariable(v->name, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
@@ -108,16 +125,16 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         v->value = sumArea;
     }
     else if (iequals(v->name, "QCONST")) {
-        v->value = worker->model.wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+        v->value = worker->model->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->name, "QCONST_N")) {
-        v->value = worker->model.wp.finalOutgassingRate;
+        v->value = worker->model->wp.finalOutgassingRate;
     }
     else if (iequals(v->name, "NTOT")) {
-        v->value = worker->model.wp.totalDesorbedMolecules;
+        v->value = worker->model->wp.totalDesorbedMolecules;
     }
     else if (iequals(v->name, "GASMASS")) {
-        v->value = worker->model.wp.gasMass;
+        v->value = worker->model->wp.gasMass;
     }
     else if (iequals(v->name, "KB")) {
         v->value = 1.3806504e-23;
@@ -128,18 +145,18 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if (iequals(v->name, "Na")) {
         v->value = 6.02214179e23;
     }
-    else if ((beginsWith(v->name, "SUM(") || beginsWith(v->name, "sum(") || beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")) && endsWith(v->name, ")")) {
-        bool avgMode = (beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")); //else SUM mode
+    else if ((beginsWith(uppercase(v->name), "SUM(") || beginsWith(uppercase(v->name), "AVG(")) && endsWith(v->name, ")")) {
+        bool avgMode = (beginsWith(uppercase(v->name), "AVG(")); //else SUM mode
         std::string inside = v->name; inside.erase(0, 4); inside.erase(inside.size() - 1, 1);
         std::vector<std::string> tokens = SplitString(inside,',');
         if (!Contains({ 2,3 }, tokens.size()))
             return false;
         if (avgMode) {
-            if (!Contains({ "P","DEN","Z","p","den","z" }, tokens[0]))
+            if (!iContains({ "P","DEN","Z" }, tokens[0]))
                 return false;
         }
         else {
-            if (!Contains({ "MCH","H","D","A","AR","mch","h","d","a","ar" }, tokens[0]))
+            if (!iContains({ "MCH","H","D","A","AR" }, tokens[0]))
                 return false;
         }
         std::vector<size_t> facetsToSum;
@@ -157,9 +174,9 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             std::iota(facetsToSum.begin(), facetsToSum.end(), startId-1);
         }
         else { //Selection group
-            if (!(beginsWith(tokens[1], "S") || beginsWith(tokens[1], "s"))) return false;
+            if (!(beginsWith(uppercase(tokens[1]), "S"))) return false;
             std::string selIdString = tokens[1]; selIdString.erase(0, 1);
-            if (Contains({ "EL","el" }, selIdString)) { //Current selections
+            if (iContains({ "EL" }, selIdString)) { //Current selections
                 facetsToSum = geom->GetSelectedFacets();
             }
             else {
@@ -177,36 +194,40 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         double sumD=0.0;
         double sumArea = 0.0; //We average by area
         for (auto& sel : facetsToSum) {
-            if (Contains({"MCH", "mch"},tokens[0])) {
+            if (iequals("MCH",tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
-            else if (Contains({ "H", "h" }, tokens[0])) {
+            else if (iequals( "H" , tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
-            else if (Contains({ "D", "d" }, tokens[0])) {
+            else if (iequals( "D", tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbDesorbed;
-            } else if (Contains({ "A", "a" }, tokens[0])) {
+            } else if (iequals( "A", tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
-            } else if (Contains({ "AR", "ar" }, tokens[0])) {
+            } else if (iequals( "AR", tokens[0])) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
-            else if (Contains({ "P", "p" }, tokens[0])) {
+            else if (iequals( "P", tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
-                       (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
+                       (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (Contains({ "DEN", "den" }, tokens[0])) {
+            } else if (iequals( "DEN", tokens[0])) {
                 InterfaceFacet *f = geom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (Contains({ "Z", "z" }, tokens[0])) {
+            } else if (iequals( "Z", tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else return false;
         }
-        if (avgMode) v->value=sumD * worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / sumArea;
-        else if (Contains({ "AR", "ar" }, tokens[0])) v->value = sumArea;
-        else if (Contains({ "H", "h", "A", "a" }, tokens[0])) v->value = sumD;
-        else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
+        if (avgMode) {
+            v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea; //area-weighed averaging
+        }
+        else { //sum mode
+            if (iequals("AR", tokens[0])) v->value = sumArea;
+            else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
+            else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
+        }
     }
     else ok = false;
     return ok;

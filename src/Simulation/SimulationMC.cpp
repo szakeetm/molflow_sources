@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -31,7 +31,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Parameter.h"
 #include <omp.h>
 
-double SimulationModel::GetStickingAt(SubprocessFacet *f, double time) const {
+double MolflowSimulationModel::GetStickingAt(SimulationFacet *f, double time) const {
     if (f->sh.sticking_paramId == -1) //constant sticking
         return f->sh.sticking;
     else {
@@ -41,7 +41,7 @@ double SimulationModel::GetStickingAt(SubprocessFacet *f, double time) const {
     //else return model->tdParams.parameters[f->sh.sticking_paramId].InterpolateY(time, false);
 }
 
-double SimulationModel::GetOpacityAt(SubprocessFacet *f, double time) const {
+double MolflowSimulationModel::GetOpacityAt(SimulationFacet *f, double time) const {
     if (f->sh.opacity_paramId == -1) //constant sticking
         return f->sh.opacity;
     else {

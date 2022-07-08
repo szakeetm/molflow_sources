@@ -69,12 +69,13 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/FlowCLI.cpp
+        ${CPP_DIR_1}/FlowCLI.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
+        #${CPP_DIR_2}/MolflowSimGeom.cpp
+        #${CPP_DIR_2}/MolflowSimFacet.cpp
 
-        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
 
@@ -85,6 +86,7 @@ set(SRC_FILES
         ${IO_DIR}/WriterXML.cpp
         ${CPP_DIR_1}/Initializer.cpp
         ${CPP_DIR_1}/ParameterParser.cpp
+        ${CPP_DIR_2}/File.cpp
 
         ${CPP_DIR_1}/TimeMoments.cpp
 
@@ -97,31 +99,37 @@ set(SRC_FILES
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
 
+        ${CPP_DIR_2}/FlowMPI.h #contains templates
+        ${CPP_DIR_2}/FlowMPI.cpp
+
+        ${IO_DIR}/CSVExporter.cpp
+        ${IO_DIR}/CSVExporter.h
 
         )
-
-# set the path to the library folder
-# set the path to the library folder
-link_directories(${LINK_DIR_1}
-        ${LINK_DIR_2}
-        )
-
-if (APPLE)
-    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-endif()
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
 find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+option(USE_MPI FALSE)
+if(USE_MPI)
+    find_package(MPI)
+endif()
+if(USE_MPI AND MPI_FOUND)
+    message(STATUS "Detected MPI version: ${MPI_CXX_VERSION}")
+    set(USE_MPI TRUE)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DUSE_MPI)
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${MPI_INCLUDE_PATH})
+    target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX)
+endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
+#target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
@@ -140,13 +148,13 @@ if(MSVC)
         target_include_directories(${PROJECT_NAME} PUBLIC
                 ${HEADER_DIR_6}
                 )
-    else()
-        find_package(GSL REQUIRED)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
+
+# set the path to the library folder
+target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
@@ -154,7 +162,15 @@ if(MSVC)
 
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+    # zip extraction
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            #bzip2.lib
+            #lzma.lib
+            #ZipLib.lib
+            #zlib.lib
+            )
 endif(MSVC)
 if(NOT MSVC)
 

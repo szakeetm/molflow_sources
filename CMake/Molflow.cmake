@@ -13,13 +13,14 @@ ELSE()
     set(OS_RELPATH "")
 ENDIF()
 
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+IF (CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     set(MY_BUILD_TYPE "debug")
 ELSE()
     set(MY_BUILD_TYPE "release")
 ENDIF()
 
 # Output Variables
+
 set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
 set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
 set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
@@ -29,7 +30,7 @@ set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/)
 # Defines outputs , depending Debug or Release. #
 #################################################
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
     set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
@@ -88,16 +89,27 @@ endif ()
         /W4>)]]
 if(NOT MSVC)
     add_compile_options(
-            -Wall -Wextra -pedantic
+            "$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-tautological-undefined-compare;-Wno-inconsistent-missing-override>"
+            #is valid for C++/ObjC++ but not for C
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
+            #-w
+            #-Wextra
+            -Wconversion
+            -Wno-write-strings
+            -Wno-unused
+            -pedantic
             #-Werror -Wno-error=uninitialized
-        $<$<CONFIG:RELEASE>:-O3>
-        $<$<CONFIG:DEBUG>:-O0>
-        $<$<CONFIG:DEBUG>:-ggdb3>
-)
+        "$<$<CONFIG:RELEASE>:-O3>"
+        "$<$<CONFIG:DEBUG>:-O0>"
+        "$<$<CONFIG:DEBUG>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-O2>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-g>"
+    )
 else()
     #/WX
     add_compile_options(
-        /W4
+        /W3
     )
     add_compile_options(
         "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
@@ -137,7 +149,13 @@ ENDIF()
 
 set(COPY_FILES ${COPY_DIR}/desorption_yields
         ${COPY_DIR}/images
-        ${COPY_DIR}/parameter_catalog)
+        ${COPY_DIR}/parameter_catalog
+        ${COPY_DIR}/Roboto-Medium.ttf
+        ${COPY_DIR}/DroidSans.ttf
+        ${COPY_DIR}/FreeMono.ttf
+        ${COPY_DIR}/fa-regular-400.ttf
+        ${COPY_DIR}/fa-solid-900.ttf
+        )
 
 IF (WIN32)
     set(COPY_FILES ${COPY_FILES}
