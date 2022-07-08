@@ -21,8 +21,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <IntersectAABB_shared.h>
 #include "Particle.h"
-#include <sstream>
-
 #include "AnglemapGeneration.h"
 #include "Physics.h"
 #include "RayTracing/RTHelper.h"
@@ -39,6 +37,33 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #ifdef TRACK_PARTICLE_TIME
 #include <sstream>
 #include <fstream>
+
+void AppendStreamParticle(size_t particleId, const Ray& particle){
+    if(particleId == 0)
+    {
+        std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
+        particleFile << particle.time << " ";
+        particleFile.close();
+    };
+}
+
+void StreamParticle(size_t particleId, const Ray& particle){
+    if(particleId == 0)
+    {
+        std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
+        particleFile << "\n" << particle.time << " ";
+        particleFile.close();
+    };
+}
+
+void ResetParticleStream(size_t particleId) {
+    if(particleId == 0)
+    {
+        std::ofstream particleFile("ParticleTimes.txt");
+        particleFile.close();
+    };
+}
+
 #endif
 
 using namespace MFSim;
@@ -401,12 +426,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                         d / 100.0 / velocity; //conversion from cm to m
 
 #ifdef TRACK_PARTICLE_TIME
-                if(particleId == 0)
-                {
-                    std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
-                    particleFile << particle.time << " ";
-                    particleFile.close();
-                };
+                AppendStreamParticle(particleId, particle);
 #endif
                 if ((!model->wp.calcConstantFlow && (particle.time > model->wp.latestMoment))
                     || (model->wp.enableDecay &&
@@ -585,12 +605,7 @@ bool Particle::StartFromSource(Ray& ray) {
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
 #ifdef TRACK_PARTICLE_TIME
-    if(particleId == 0)
-    {
-        std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
-        particleFile << "\n" << particle.time << " ";
-        particleFile.close();
-    };
+    StreamParticle(particleId, particle);
 #endif
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
     else
@@ -885,12 +900,7 @@ void Particle::PerformBounce(SimulationFacet *iFacet) {
         particle.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
         momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
 #ifdef TRACK_PARTICLE_TIME
-        if(particleId == 0)
-        {
-            std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
-            particleFile << particle.time << " ";
-            particleFile.close();
-        };
+        AppendStreamParticle(particleId, particle);
 #endif
     }
 
@@ -1330,11 +1340,7 @@ void Particle::Reset() {
     tmpFacetVars.clear();
 
 #ifdef TRACK_PARTICLE_TIME
-    if(particleId == 0)
-    {
-        std::ofstream particleFile("ParticleTimes.txt");
-        particleFile.close();
-    };
+    ResetParticleStream(particleId);
 #endif
 }
 
