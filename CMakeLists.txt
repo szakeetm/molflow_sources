@@ -82,6 +82,9 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 if(USE_PROFILING)
+    MESSAGE("Adding Profiling flag...")
+    ADD_DEFINITIONS(-DPROFILING)
+
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
