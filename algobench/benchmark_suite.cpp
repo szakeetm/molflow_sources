@@ -69,14 +69,14 @@ enum class BenchAlgo {
     ALGO_KD_HybridBin_ROPERESTART
 };
 
-void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model, const double hybrid_weight = 1.0);
+void SetAlgo(BenchAlgo current_algo, std::shared_ptr<MolflowSimulationModel> &model, double hybrid_weight = 1.0);
 
 int main(int argc, char **argv) {
 
     //CLI args
     double hybrid_weight{1.0};  // = 3.14;
     std::string test_case_dir = "./AlgoCases";
-    std::string test_case_file = "";
+    std::string test_case_file;
     {
         CLI::App app("Molflow ADS Algorithm benchmark");
         // add version output
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 
         bool benchmark_with_hits = false;
         for (auto current_algo: run_algos) {
-            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             SetAlgo(current_algo, model, hybrid_weight);
 
             if (model->wp.accel_type == 1) {
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
         auto hits_old = globState_old.hitBattery;
 
         if(benchmark_with_hits){
-            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 
             SimulationManager simManager;
             //std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
             model->otfParams.raySampling = true;
             globState_old.hitBattery.maxSamples = 1024 * 512;
             SetAlgo(BenchAlgo::ALGO_BVH_SAH, model);
-            model->BuildAccelStructure(&globState_old, 0, 0, 2);
+            model->BuildAccelStructure(&globState_old, BVH, 0, 2, hybrid_weight);
 
             simManager.StartSimulation();
             ProcessSleep(1000);
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
             oldHitNb = globState_old.globalHits.globalHits.nbHitEquiv;
         }
         for (auto current_algo: run_algos) {
-            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 
             SetAlgo(current_algo, model, hybrid_weight);
 
@@ -353,73 +353,73 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model, const double hybrid_weight) {
+void SetAlgo(BenchAlgo current_algo, std::shared_ptr<MolflowSimulationModel> &model, const double hybrid_weight) {
     switch (current_algo) {
         case (BenchAlgo::ALGO_BVH_SAH) : {
-            model->wp.accel_type = 0;
+            model->wp.accel_type = BVH;
             model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::SAH);
             break;
         }
         case (BenchAlgo::ALGO_KD_SAH) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
             model->wp.kd_with_ropes = false;
             break;
         }
         case (BenchAlgo::ALGO_KD_SAH_ROPE) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = false;
             break;
         }
         case (BenchAlgo::ALGO_KD_SAH_ROPERESTART) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = true;
             break;
         }
         case (BenchAlgo::ALGO_BVH_Prob) : {
-            model->wp.accel_type = 0;
+            model->wp.accel_type = BVH;
             model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::ProbSplit);
             break;
         }
         case (BenchAlgo::ALGO_KD_Prob) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
             model->wp.kd_with_ropes = false;
             break;
         }
         case (BenchAlgo::ALGO_KD_Prob_ROPE) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = false;
             break;
         }
         case (BenchAlgo::ALGO_KD_Prob_ROPERESTART) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = true;
             break;
         }
         case (BenchAlgo::ALGO_BVH_RDH) : {
-            model->wp.accel_type = 0;
+            model->wp.accel_type = BVH;
             model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::RDH);
             model->wp.hybridWeight = hybrid_weight;
             break;
         }
         case (BenchAlgo::ALGO_KD_Hybrid) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
             model->wp.kd_with_ropes = false;
             model->wp.hybridWeight = hybrid_weight;
             break;
         }
         case (BenchAlgo::ALGO_KD_Hybrid_ROPE) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = false;
@@ -427,7 +427,7 @@ void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model, co
             break;
         }
         case (BenchAlgo::ALGO_KD_Hybrid_ROPERESTART) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = true;
@@ -435,14 +435,14 @@ void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model, co
             break;
         }
         case (BenchAlgo::ALGO_KD_HybridBin) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridBin);
             model->wp.kd_with_ropes = false;
             model->wp.hybridWeight = hybrid_weight;
             break;
         }
         case (BenchAlgo::ALGO_KD_HybridBin_ROPE) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridBin);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = false;
@@ -450,7 +450,7 @@ void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model, co
             break;
         }
         case (BenchAlgo::ALGO_KD_HybridBin_ROPERESTART) : {
-            model->wp.accel_type = 1;
+            model->wp.accel_type = KD;
             model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridBin);
             model->wp.kd_with_ropes = true;
             model->wp.kd_restart_ropes = true;
