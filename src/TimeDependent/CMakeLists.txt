@@ -52,10 +52,14 @@ set(SRC_FILES
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-
+        ${CPP_DIR_2}
+        ${CPP_DIR_3}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC fmtlib_src) # header include
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation

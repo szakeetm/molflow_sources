@@ -11,13 +11,14 @@
 #include "../../include/CLI11/CLI11.hpp"
 #include "../../src_shared/Helper/Chronometer.h"
 #include "../TimeMoments.h"
+#include "fmt/core.h"
 
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 //typedef std::tuple<double,double,double,double> MomentInterval; // begin, interval, end, timewindow
 
 namespace DefaultVar {
-    constexpr size_t nTimes = 1.0e6;
+    constexpr size_t nTimes = 1.0e7;
     constexpr double fromTime = 0.0;
     constexpr double toTime = 100.0;
     constexpr double deltaMin = 0.001;
@@ -62,7 +63,7 @@ void generatePoT(size_t nTimes, double fromTime, double toTime, double deltaMin,
             num = fromTime;
     }
 
-    std::cout << "Generated " << numbers.size() << " numbers" << std::endl;
+    fmt::print("Generated {} numbers\n", numbers.size());
 }
 
 void generatePoTW(size_t nTimes, double fromTime, double toTime, double deltaMin, double deltaMax, std::vector<std::vector<double>>& numbers, size_t seed = 0){
@@ -91,7 +92,7 @@ void generatePoTW(size_t nTimes, double fromTime, double toTime, double deltaMin
     for(auto& numb : numbers){
         totalNumbers += numb.size();
     }
-    std::cout << "Generated " << totalNumbers << " numbers with " <<  numbers.size() << " desorptions " << std::endl;
+    fmt::print("Generated {} numbers with {} desorptions\n", totalNumbers, numbers.size());
 }
 
 void generatePoTW2(size_t nTimes, double fromTime, double toTime, double deltaMin, double deltaMax, std::vector<double>& numbers, std::vector<size_t>& resetPoints, size_t seed = 0){
@@ -115,15 +116,14 @@ void generatePoTW2(size_t nTimes, double fromTime, double toTime, double deltaMi
         }
     }
 
-    std::cout << "Generated " << numbers.size() << " numbers with " <<  resetPoints.size()+1 << " desorptions "<<std::endl;
-
+    fmt::print("Generated {} numbers with {} desorptions\n", numbers.size(), resetPoints.size()+1);
 }
 
 void parsePoT(const std::string& fileName, std::vector<double>& numbers){
     std::ifstream timeStream(fileName);
     std::istream_iterator<double> start(timeStream), end;
     numbers.assign(start, end);
-    std::cout << "Read " << numbers.size() << " numbers" << std::endl;
+    fmt::print("Read {} numbers\n", numbers.size());
 }
 
 void parsePoTWStop(const std::string& fileName, std::vector<std::vector<double>>& numbers){
@@ -144,7 +144,7 @@ void parsePoTWStop(const std::string& fileName, std::vector<std::vector<double>>
     for(auto& numb : numbers){
         totalNumbers += numb.size();
     }
-    std::cout << "Read " << totalNumbers << " numbers" << std::endl;
+    fmt::print("Read {} numbers\n", totalNumbers);
 }
 
 void parsePoTWStop2(const std::string& fileName, std::vector<double>& numbers, std::vector<size_t>& resetPoints){
@@ -161,7 +161,7 @@ void parsePoTWStop2(const std::string& fileName, std::vector<double>& numbers, s
         resetPoints.push_back(numbers.size());
     }
 
-    std::cout << "Read " << numbers.size() << " numbers with " <<  resetPoints.size() << " desorptions "<<std::endl;
+    fmt::print("Read {} numbers with {} desorptions\n", numbers.size(), resetPoints.size());
 }
 
 int parseCommands(int argc, char** argv) {
@@ -245,7 +245,7 @@ int quadraticSearch(double key, const std::vector<Moment>& moments){
                 }
             }*/
             if(p1 > mid || p2 < mid){
-                printf("Indices messed up %d < %d < %d\n", p1, mid, p2);
+                fmt::print("Indices messed up {} < {} < {}\n", p1, mid, p2);
             }
             if(key >= moments[mid].first && key <= moments[mid].second){ // found
                 return mid;
@@ -294,7 +294,7 @@ int interpolationSearch(double key, const std::vector<Moment>& moments){
         // uniform distribution in mind.
         int pos = lo + (((double)(hi - lo) /
                          (moments[hi].second - moments[lo].first)) * (key - moments[lo].first));
-        //printf("%d -> %d <- %d\n", lo, pos, hi);
+        //fmt::print("{} -> {} <- {}\n", lo, pos, hi);
         // Condition of target found
         if (moments[pos].first <= key && key <= moments[pos].second)
             return pos;
@@ -379,19 +379,19 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
     int controlIndex = LookupMomentIndex(key, moments);
 #endif
     for(auto& uMom : userMoments){
-        //printf("Parsed %e , %e , %e\n", uMom.start, uMom.interval, uMom.end);
+        //fmt::print("Parsed {:e} , {:e} , {:e}\n", uMom.start, uMom.interval, uMom.end);
         const double halfTimeWindow = uMom.timeWindow * 0.5;
         if(key <= uMom.end + halfTimeWindow){
-            //printf("Found %e <= %e (??? %e < ???)\n", key, uMom.end + uMom.interval * 0.5, uMom.start - uMom.timeWindow * 0.5);
+            //fmt::print("Found {:e} <= {:e} (??? {:e} < ???)\n", key, uMom.end + uMom.interval * 0.5, uMom.start - uMom.timeWindow * 0.5);
 
             if(key >= uMom.start - halfTimeWindow){
                 // found it
                 const double nbMoments = std::floor((uMom.end - uMom.start + 1e-3) / uMom.interval);
                 start = std::min(((key - uMom.start + halfTimeWindow) / uMom.interval), nbMoments); // can go above limits on edge values
-                //printf("[%e] Potential find at start %d (%d) [%e , %e] [[%e , %e]] [[[%e , %e]]]\n", key, start, nbMoments, moments[start].first, moments[start].second, uMom.start, uMom.end, uMom.start - uMom.timeWindow * 0.5 , uMom.end + uMom.timeWindow * 0.5);
+                //fmt::print("[{:e}] Potential find at start {} ({}) [{:e} , {:e}] [[{:e} , {:e}]] [[[{:e} , {:e}]]]\n", key, start, nbMoments, moments[start].first, moments[start].second, uMom.start, uMom.end, uMom.start - uMom.timeWindow * 0.5 , uMom.end + uMom.timeWindow * 0.5);
                 if(key <= uMom.start + start * uMom.interval - halfTimeWindow
                 && key >= uMom.start + start * uMom.interval + halfTimeWindow) {
-                    //printf("[%e] Calc not in window [%e , %e] , %d * %lf (%lf)\n", key, uMom.start + start * uMom.interval - uMom.timeWindow, uMom.start + start * uMom.interval + uMom.timeWindow, start, nbMoments, uMom.interval);
+                    //fmt::print("[{:e}] Calc not in window [{:e} , {:e}] , {} * {} ({})\n", key, uMom.start + start * uMom.interval - uMom.timeWindow, uMom.start + start * uMom.interval + uMom.timeWindow, start, nbMoments, uMom.interval);
                     //return -1;
                     start = -1;
                 }
@@ -400,48 +400,48 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                 }
 
                 if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
-                    //printf("[%e] Calc passed [%e , %e] , %lu * %lf (%lf)\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
-                    //printf("[%e] Moments not in window [%e , %e] [[%e , %e]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
+                    //fmt::print("[{:e}] Calc passed [{:e} , {:e}] , {} * {} ({})\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
+                    //fmt::print("[{:e}] Moments not in window [{:e} , {:e}] [[{:e} , {:e}]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
                     start = -1;
                 }
 #ifdef DEBUG
                 if(start != controlIndex) {
-                    printf("[%e] %d (%lf - %d) vs %d [%e , %e] [[%e , %e]]\n", key, start, std::floor((key - uMom.start + halfTimeWindow) / uMom.interval), (int)((key - uMom.start + halfTimeWindow) / uMom.interval), controlIndex, moments[start].first,
+                    fmt::print("[{:e}] {} ({} - {}) vs {} [{:e} , {:e}] [[{:e} , {:e}]]\n", key, start, std::floor((key - uMom.start + halfTimeWindow) / uMom.interval), (int)((key - uMom.start + halfTimeWindow) / uMom.interval), controlIndex, moments[start].first,
                            moments[start].second, moments[controlIndex].first, moments[controlIndex].second);
-                    printf("[%e] pre   [%e , %e]\n", key, moments[start-1].first, moments[start-1].second);
-                    printf("[%e] post  [%e , %e]\n", key, moments[start+1].first, moments[start+1].second);
-                    printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
-                    printf("[%e] last  [%e , %e]\n", key, moments.back().first, moments.back().second);
+                    fmt::print("[{:e}] pre   [{:e} , {:e}]\n", key, moments[start-1].first, moments[start-1].second);
+                    fmt::print("[{:e}] post  [{:e} , {:e}]\n", key, moments[start+1].first, moments[start+1].second);
+                    fmt::print("[{:e}] first [{:e} , {:e}]\n", key, moments.front().first, moments.front().second);
+                    fmt::print("[{:e}] last  [{:e} , {:e}]\n", key, moments.back().first, moments.back().second);
                 }
 #endif
                 return start;
             }
             else {
                 /*if(controlIndex != -1) {
-                    printf("[%e] start but not end %d [%e , %e] [[%e , %e]]\n", key, controlIndex,
+                    fmt::print("[{:e}] start but not end {} [{:e} , {:e}] [[{:e} , {:e}]]\n", key, controlIndex,
                            moments[controlIndex].first, moments[controlIndex].second);
-                    printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
-                    printf("[%e] last [%e , %e]\n", key, moments.back().first, moments.back().second);
+                    fmt::print("[{:e}] first [{:e} , {:e}]\n", key, moments.front().first, moments.front().second);
+                    fmt::print("[{:e}] last [{:e} , {:e}]\n", key, moments.back().first, moments.back().second);
                 }*/
                 return -1;
             }
         }
         //indexOffset += ((uMom.end - uMom.start) / uMom.interval + 1);
-        //printf("Indexoffset %zu\n", indexOffset);
+        //fmt::print("Indexoffset {}\n", indexOffset);
 
     }
     /*if(controlIndex != -1) {
-        printf("[%e] no start no end %d [%e , %e] [[%e , %e]]\n", key, controlIndex, moments[controlIndex].first,
+        fmt::print("[{:e}] no start no end {} [{:e} , {:e}] [[{:e} , {:e}]]\n", key, controlIndex, moments[controlIndex].first,
                moments[controlIndex].second);
-        printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
-        printf("[%e] last [%e , %e]\n", key, moments.back().first, moments.back().second);
+        fmt::print("[{:e}] first [{:e} , {:e}]\n", key, moments.front().first, moments.front().second);
+        fmt::print("[{:e}] last [{:e} , {:e}]\n", key, moments.back().first, moments.back().second);
     }*/
     return -1;
 }
 
 /**
 * \brief Parses a user input and returns a vector of time moments
-* \param userInput string of the form "%lf,%lf,%lf" for beginning, interval step, ending of the moment series
+* \param userInput string of the form "{},{},{}" for beginning, interval step, ending of the moment series
 * \return message Type of the source (button)
 */
 std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow) {
@@ -470,7 +470,7 @@ std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow)
 
 /**
 * \brief Parses a user input and returns a vector of time moments
-* \param userInput string of the form "%lf,%lf,%lf" for beginning, interval step, ending of the moment series
+* \param userInput string of the form "{},{},{}" for beginning, interval step, ending of the moment series
 * \return message Type of the source (button)
 */
 MomentInterval ParseUserMomentToTuple(const std::string& userInput, double timeWindow) {
@@ -499,8 +499,8 @@ MomentInterval ParseUserMomentToTuple(const std::string& userInput, double timeW
                 time += interval;
                 index2++;
             }
-            printf("Index calc from %lf to %lf [%lf]\n", begin, time, end);
-            printf("Index calc: %lf vs %zu vs %zu\n", std::ceil((end - begin) / interval), index, index2);
+            fmt::print("Index calc from {} to {} [{}]\n", begin, time, end);
+            fmt::print("Index calc: {} vs {} vs {}\n", std::ceil((end - begin) / interval), index, index2);
 */
             ret.startIndex = std::floor((end - begin) / interval + 1e-3) + 1; // add one time window on interval end
         }
@@ -511,7 +511,7 @@ MomentInterval ParseUserMomentToTuple(const std::string& userInput, double timeW
         ret.end = begin;
         ret.timeWindow = timeWindow;
         ret.startIndex = 1;
-        //printf("Index calc: %lf\n", 1.0);
+        //fmt::print("Index calc: {}\n", 1.0);
 
     }
 
@@ -543,16 +543,16 @@ void momentIntervalReader(const std::vector<UserMoment>& userMoments){
         auto& moment = parsedMoments[u];
         cummulativeIndex += moment.startIndex;
         moment.startIndex = index;
-        printf("[%zu] Parsed %e , %e , %e [-> %zu]\n", u, moment.start, moment.interval, moment.end, moment.startIndex);
+        fmt::print("[{}] Parsed {:e} , {:e} , {:e} [-> {}]\n", u, moment.start, moment.interval, moment.end, moment.startIndex);
     }
 
     /*auto overlapPair = TimeMoments::CheckIntervalOverlap(parsedMoments);
     if(overlapPair.first != 0 || overlapPair.second != 0){
         char tmp[128];
         if(overlapPair.second < 0)
-            sprintf(tmp, "Interval length and time window would create overlap! Check line %d.", overlapPair.first+1);
+            sprintf(tmp, "Interval length and time window would create overlap! Check line {}.", overlapPair.first+1);
         else
-            sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
+            sprintf(tmp, "Overlapping time window detected! Check lines {} and {}.", overlapPair.first+1,overlapPair.second+1);
         std::cerr << tmp << std::endl;
 
         return;
@@ -564,17 +564,17 @@ void momentIntervalReader(const std::vector<UserMoment>& userMoments){
 
 void momentsReader(const std::vector<UserMoment>& userMoments){
     std::vector<std::vector<Moment>> parsedMoments;
-    for (size_t u = 0; u != userMoments.size(); u++) {
-        parsedMoments.emplace_back(ParseMoment(userMoments[u].first, userMoments[u].second));
+    for (const auto & userMoment : userMoments) {
+        parsedMoments.emplace_back(ParseMoment(userMoment.first, userMoment.second));
     }
 
     auto overlapPair = TimeMoments::CheckIntervalOverlap(parsedMoments);
     if(overlapPair.first != 0 || overlapPair.second != 0){
-        char tmp[128];
+        std::string tmp;
         if(overlapPair.second < 0)
-            sprintf(tmp, "Interval length and time window would create overlap! Check line %d.", overlapPair.first+1);
+            tmp = fmt::format("Interval length and time window would create overlap! Check line {}.", overlapPair.first+1);
         else
-            sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
+            tmp = fmt::format("Overlapping time window detected! Check lines {} and {}.", overlapPair.first+1,overlapPair.second+1);
         std::cerr << tmp << std::endl;
 
         return;
@@ -582,11 +582,11 @@ void momentsReader(const std::vector<UserMoment>& userMoments){
 
     Settings::intervals.clear();
     for(auto& newMoment : parsedMoments) {
-        printf("new size: %lu\n", Settings::intervals.size());
+        fmt::print("new size: {}\n", Settings::intervals.size());
         size_t oldSize = Settings::intervals.size();
         AddMoment(newMoment);
-        printf("first: %lf , %lf\n", Settings::intervals[oldSize].first, Settings::intervals[oldSize].second);
-        printf("last: %lf , %lf\n", Settings::intervals.back().first, Settings::intervals.back().second);
+        fmt::print("first: {} , {}\n", Settings::intervals[oldSize].first, Settings::intervals[oldSize].second);
+        fmt::print("last: {} , {}\n", Settings::intervals.back().first, Settings::intervals.back().second);
     }
 }
 
@@ -725,25 +725,25 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = LookupMomentIndex(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
 
     }
@@ -751,50 +751,50 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Quad search [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Quad search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = quadraticSearch(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Quad search [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Quad search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
 
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Interp search [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Interp search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = interpolationSearch(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Interp search [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Interp search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
 
@@ -802,25 +802,25 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Jump search [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Jump search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = jumpSearchProg(intervalMoments, moment, intervalMoments.size());
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Jump search [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Jump search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
 
     }
@@ -829,13 +829,13 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Calc search [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Calc search [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         size_t u = 0;
         for (auto moment : Settings::time_points) {
             int ind = calcSearch(moment, intervalMoments, Settings::uIntervals);
             if(ind >= (int)timeBins.size()){
-                printf("Calc search error: %d >= %zu for %lf (should be %d)\n", ind, timeBins.size(), moment, LookupMomentIndex(moment, intervalMoments));
+                fmt::print("Calc search error: {} >= {} for {} (should be {})\n", ind, timeBins.size(), moment, LookupMomentIndex(moment, intervalMoments));
             }
             else if (ind >= 0) {
                 ++timeBins[ind];
@@ -846,17 +846,17 @@ int main(int argc, char** argv) {
         }
 
         time.Stop();
-        printf("[%.4lfms] Vector -- Calc search [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Calc search [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
 
@@ -875,7 +875,7 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search -- Index [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace : Settings::time_points_wbreak) {
             for (const auto moment : particleTrace) {
@@ -888,24 +888,24 @@ int main(int argc, char** argv) {
             lastIndex = 0;
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
 
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Jump search -- Index [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Jump search -- Index [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace : Settings::time_points_wbreak) {
             for (const auto moment : particleTrace) {
@@ -918,17 +918,17 @@ int main(int argc, char** argv) {
             lastIndex = 0;
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Jump search -- Index [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Jump search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
 
@@ -943,12 +943,12 @@ int main(int argc, char** argv) {
     }
 
     /*for(int i = 0; i<20; ++i)
-        printf("Break %d : %zu : %e\n",i,Settings::breakPoints[i], Settings::time_points[i]);
+        fmt::print("Break {} : {} : {:e}\n",i,Settings::breakPoints[i], Settings::time_points[i]);
     */
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search -- Index2 [START]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search -- Index2 [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         size_t desNb = 0;
         const size_t total_events = Settings::time_points.size();
@@ -969,17 +969,17 @@ int main(int argc, char** argv) {
         }
         lastIndex = 0;
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search -- Index2 [ END ]\n", time.ElapsedMs());
+        fmt::print("[{:.4f}ms] Vector -- Binary search -- Index2 [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             if(bin>0) {
-                printf("%zu<>%zu ", i, bin);
-                if ((i % 10) == 9) printf("\n");
+                fmt::print("{}<>{} ", i, bin);
+                if ((i % 10) == 9) fmt::print("\n");
                 i++;
             }
             if (i >= 20) break;
         }
-        printf("\n");
+        fmt::print("\n");
         size_t max = 0;
         size_t max_pos = 0;
 
@@ -990,18 +990,18 @@ int main(int argc, char** argv) {
         }
         double probSum = 0.0;
         size_t sum = 0;
-        for(int j = timeBins.size()*0.0; j < timeBins.size(); ++j){
+        for(size_t j = timeBins.size()*0.0; j < timeBins.size(); ++j){
             probSum += (double)timeBins[j] / DefaultVar::nTimes;
             sum += timeBins[j];
         }
-        printf("Results for nBins: %lu <- %lu\n", DefaultVar::nTimes, totalIntervals);
+        fmt::print("Results for nBins: {} <- {}\n", DefaultVar::nTimes, totalIntervals);
 
-        printf("Max_____: %lu / %lf\n", timeBins.back(), (double)timeBins.back() / DefaultVar::nTimes);
-        printf("Med_0.75: %lu / %lf\n", timeBins[timeBins.size()*0.75], (double)timeBins[timeBins.size()*0.75] / DefaultVar::nTimes);
-        printf("Med_0.50: %lu / %lf\n", timeBins[timeBins.size()*0.50], (double)timeBins[timeBins.size()*0.50] / DefaultVar::nTimes);
-        printf("Med_0.25: %lu / %lf\n", timeBins[timeBins.size()*0.25], (double)timeBins[timeBins.size()*0.25] / DefaultVar::nTimes);
-        printf("Top_Prob: %lf\n", probSumTopQuart);
-        printf("All_Prob: %lu / %lf\n", sum, probSum);
+        fmt::print("Max_____: {} / {}\n", timeBins.back(), (double)timeBins.back() / DefaultVar::nTimes);
+        fmt::print("Med_0.75: {} / {}\n", timeBins[static_cast<size_t>(timeBins.size() * 0.75)], (double)timeBins[static_cast<size_t>(timeBins.size() * 0.75)] / DefaultVar::nTimes);
+        fmt::print("Med_0.50: {} / {}\n", timeBins[static_cast<size_t>(timeBins.size() * 0.50)], (double)timeBins[static_cast<size_t>(timeBins.size() * 0.50)] / DefaultVar::nTimes);
+        fmt::print("Med_0.25: {} / {}\n", timeBins[static_cast<size_t>(timeBins.size() * 0.25)], (double)timeBins[static_cast<size_t>(timeBins.size() * 0.25)] / DefaultVar::nTimes);
+        fmt::print("Top_Prob: {}\n", probSumTopQuart);
+        fmt::print("All_Prob: {} / {}\n", sum, probSum);
 
     }
 
