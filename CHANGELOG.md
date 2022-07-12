@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.9.6
+### Bugfix
+- Collinearity condition fixed (no more false NULL facets)
+- Create facet with convex hull fixed, no more duplicate vertices
+
 ## v2.9.5 (2022.06.23)
 
 ### Feature
