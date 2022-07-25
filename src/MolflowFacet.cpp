@@ -522,10 +522,10 @@ void Facet::LoadTXT(FileReader *file) {
 	/*wp.area =*/ file->ReadDouble(); //Unused in modern Molflow
 
 	//Counters
-	facetHitCache.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
-	facetHitCache.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
+	facetHitCache.hit.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
 
 
 	//Desorption type
@@ -596,9 +596,9 @@ void Facet::SaveTXT(FileWriter *file) {
 	file->Write(sh.area, "\n"); //Unused in modern Molflow
 
 	//Counters
-	file->Write((double)facetHitCache.nbDesorbed, "\n"); //nbDes
-	file->Write(facetHitCache.nbHitEquiv, "\n"); //nbMCHit
-	file->Write(facetHitCache.nbAbsEquiv, "\n"); //nbAbsEquiv
+	file->Write((double)facetHitCache.hit.nbDesorbed, "\n"); //nbDes
+	file->Write(facetHitCache.hit.nbHitEquiv, "\n"); //nbMCHit
+	file->Write(facetHitCache.hit.nbAbsEquiv, "\n"); //nbAbsEquiv
 
 	//Desorption type
 	if (sh.desorbType == DES_COSINE)
