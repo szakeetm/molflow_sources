@@ -524,7 +524,7 @@ void Facet::LoadTXT(FileReader *file) {
 	//Counters
 	facetHitCache.hit.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
 	facetHitCache.hit.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
+	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
 	facetHitCache.hit.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
 
 
