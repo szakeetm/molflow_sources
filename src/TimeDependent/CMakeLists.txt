@@ -47,7 +47,7 @@ set(SRC_FILES
         ${CPP_DIR_3}/Helper/Chronometer.cpp
 
         #SkipList.cpp SkipList.h
-        )
+        TDAlgorithms.cpp TDAlgorithms.h TDMoments.cpp TDMoments.h)
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 

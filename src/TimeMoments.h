@@ -24,9 +24,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <vector>
 #include <string>
 
-typedef std::pair<std::string,double> UserMoment;
-typedef std::pair<double,double> Moment;
+#include "TimeDependent/TDTypes.h"
 
+using namespace MFTD;
 class TimeMoments {
 public:
     static int CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vector<Moment>& vecB);
