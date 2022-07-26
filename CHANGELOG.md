@@ -5,6 +5,7 @@
 - Collinearity condition fixed (no more false NULL facets)
 - Create facet with convex hull fixed, no more duplicate vertices
 - Load and save old TXT format including facet hits
+- Fix crash when file loading is unsuccesful
 
 ## v2.9.5 (2022.06.23)
 
