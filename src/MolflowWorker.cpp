@@ -887,7 +887,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (future.get()) {
                         progressDlg->SetVisible(false);
                         SAFE_DELETE(progressDlg);
-                        throw;
+                        throw std::exception("There was an error loading this file, check console for details.");
                     }
                 }
                 geom->InitOldStruct(mf_model.get());
