@@ -7,7 +7,7 @@
 #include "TimeMoments.h"
 #include "fmt/color.h"
 #include <cmath>
-#include <c++/8/algorithm>
+#include <algorithm>
 
 namespace MFTD {
 /**
