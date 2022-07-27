@@ -19,9 +19,9 @@ using namespace MFTD;
 // typedef std::tuple<double,double,double,double> MomentInterval; // begin,
 // interval, end, timewindow
 namespace DefaultVar {
-    constexpr size_t nTimes = 1.0e8;
-    constexpr double fromTime = -1.0;
-    constexpr double toTime = 101.0;
+    constexpr size_t nTimes = 1.0e7;
+    constexpr double fromTime = 0.0;
+    constexpr double toTime = 100.0;
     constexpr double deltaMin = 0.001;
     constexpr double deltaMax = 10.0;
     constexpr size_t seed = 0; // 0 for random
@@ -242,7 +242,7 @@ runVectorBinarySearch(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search [START]\n",
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Binary search \n",
                    time.ElapsedMs());
         for (auto moment: Settings::time_points) {
             int ind = LookupMomentIndex(moment, intervalMoments);
@@ -250,7 +250,7 @@ runVectorBinarySearch(const std::vector<Moment> &intervalMoments,
                 ++timeBins[ind];
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search [ END ]\n",
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Binary search\n",
                    time.ElapsedMs());
 
         printTimeBins(timeBins);
@@ -268,14 +268,14 @@ runVectorQuadSearch(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Quad search [START]\n", time.ElapsedMs());
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Quad search\n", time.ElapsedMs());
         for (auto moment: Settings::time_points) {
             int ind = quadraticSearch(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Quad search [ END ]\n", time.ElapsedMs());
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Quad search\n", time.ElapsedMs());
 
         printTimeBins(timeBins);
     }
@@ -292,7 +292,7 @@ runVectorInterpSearch(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Interp search [START]\n",
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Interp search\n",
                    time.ElapsedMs());
         for (auto moment: Settings::time_points) {
             int ind = interpolationSearch(moment, intervalMoments);
@@ -300,7 +300,39 @@ runVectorInterpSearch(const std::vector<Moment> &intervalMoments,
                 ++timeBins[ind];
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Interp search [ END ]\n",
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Interp search\n",
+                   time.ElapsedMs());
+
+        printTimeBins(timeBins);
+    }
+
+    return timeBins;
+}
+
+std::vector<size_t>
+runVectorInterpSearch_indexed(const std::vector<Moment> &intervalMoments,
+                      std::vector<size_t> &timeBins) {
+    Chronometer time;
+    const int totalRuns = 1;
+    for (int runNb = 0; runNb < totalRuns; ++runNb) {
+        time.ReInit();
+        time.Start();
+        initTimeBins(timeBins, intervalMoments.size());
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Interp search -- Index \n",
+                   time.ElapsedMs());
+        size_t lastIndex = 0;
+        for (const auto &particleTrace: Settings::time_points_wbreak) {
+            for (const auto moment: particleTrace) {
+                int ind = interpolationSearch(moment, intervalMoments, lastIndex);
+                if (ind >= 0) {
+                    ++timeBins[ind];
+                    lastIndex = ind;
+                }
+            }
+            lastIndex = 0;
+        }
+        time.Stop();
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Interp search -- Index \n",
                    time.ElapsedMs());
 
         printTimeBins(timeBins);
@@ -318,12 +350,12 @@ runVectorJumpSearch(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Jump search [START]\n", time.ElapsedMs());
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Jump search\n", time.ElapsedMs());
         int n_err = 0;
         for (auto moment: Settings::time_points) {
             //moment = 99.977320172147103;
             int ind = jumpSearchProg(intervalMoments, moment, intervalMoments.size());
-            int ind_ref = LookupMomentIndex(moment, intervalMoments);
+            /*int ind_ref = LookupMomentIndex(moment, intervalMoments);
             if (ind >= (int) timeBins.size()) {
                 fmt::print("XJump search error: {} >= {} for {} (should be {})\n", ind,
                            timeBins.size(), moment, ind_ref);
@@ -333,11 +365,11 @@ runVectorJumpSearch(const std::vector<Moment> &intervalMoments,
                            ind, ind_ref, timeBins.size(), moment, intervalMoments[ind_ref].first, intervalMoments[ind_ref].second);
 
             }
-            else if (ind >= 0)
+            else */if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Jump search [ END ]\n", time.ElapsedMs());
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Jump search \n", time.ElapsedMs());
 
         printTimeBins(timeBins);
     }
@@ -354,12 +386,10 @@ runVectorCalcSearch(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Calc search [START]\n", time.ElapsedMs());
-        size_t lastIndex = 0;
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Calc search \n", time.ElapsedMs());
         size_t u = 0;
         int n_err = 0;
         for (auto moment: Settings::time_points) {
-            moment = 8.000676e+01;
             int ind = calcSearch(moment, intervalMoments, Settings::uIntervals);
             //int ind_ref = LookupMomentIndex(moment, intervalMoments);
             /*if (ind >= (int) timeBins.size()) {
@@ -373,14 +403,13 @@ runVectorCalcSearch(const std::vector<Moment> &intervalMoments,
             }
             else*/ if (ind >= 0) {
                 ++timeBins[ind];
-                lastIndex = ind;
             }
             ++u;
             // if(u >= 10000) exit(0);
         }
 
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Calc search [ END ]\n", time.ElapsedMs());
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Calc search \n", time.ElapsedMs());
         printTimeBins(timeBins);
     }
 
@@ -397,7 +426,7 @@ runVectorBinarySearch_indexed(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search -- Index [START]\n",
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Binary search -- Index \n",
                    time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace: Settings::time_points_wbreak) {
@@ -411,7 +440,7 @@ runVectorBinarySearch_indexed(const std::vector<Moment> &intervalMoments,
             lastIndex = 0;
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search -- Index [ END ]\n",
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Binary search -- Index \n",
                    time.ElapsedMs());
         printTimeBins(timeBins);
     }
@@ -429,7 +458,7 @@ runVectorJumpSearch_indexed(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Jump search -- Index [START]\n",
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Jump search -- Index \n",
                    time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace: Settings::time_points_wbreak) {
@@ -443,7 +472,7 @@ runVectorJumpSearch_indexed(const std::vector<Moment> &intervalMoments,
             lastIndex = 0;
         }
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Jump search -- Index [ END ]\n",
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Jump search -- Index \n",
                    time.ElapsedMs());
         printTimeBins(timeBins);
     }
@@ -461,7 +490,7 @@ runVectorBinarySearch_indexed_v2(const std::vector<Moment> &intervalMoments,
         time.ReInit();
         time.Start();
         initTimeBins(timeBins, intervalMoments.size());
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search -- Index2 [START]\n",
+        fmt::print(fg(fmt::color::light_golden_rod_yellow), " [START][{:8.2f}ms] Vector -- Binary search -- Index2 \n",
                    time.ElapsedMs());
         size_t lastIndex = 0;
         size_t desNb = 0;
@@ -483,10 +512,11 @@ runVectorBinarySearch_indexed_v2(const std::vector<Moment> &intervalMoments,
         }
         lastIndex = 0;
         time.Stop();
-        fmt::print(fg(fmt::color::light_golden_rod_yellow), "[{:5.2f}ms] Vector -- Binary search -- Index2 [ END ]\n",
+        fmt::print(fg(fmt::color::light_salmon), " [ END ][{:8.2f}ms] Vector -- Binary search -- Index2 \n",
                    time.ElapsedMs());
         printTimeBins(timeBins);
 
+#if defined(DEBUG)
         size_t max = 0;
         size_t max_pos = 0;
 
@@ -520,6 +550,7 @@ runVectorBinarySearch_indexed_v2(const std::vector<Moment> &intervalMoments,
                    DefaultVar::nTimes);
         fmt::print("Top_Prob: {}\n", probSumTopQuart);
         fmt::print("All_Prob: {} / {}\n", sum, probSum);
+#endif
     }
 
     return timeBins;
@@ -535,6 +566,10 @@ int main(int argc, char **argv) {
         uMoments = std::vector<UserMoment>{{"0.001,0.1,100.0", 0.1}};
         testCases_um.emplace_back(uMoments);
         uMoments = std::vector<UserMoment>{{"0.001,0.001,100.0", 0.001}};
+        testCases_um.emplace_back(uMoments);
+        uMoments = std::vector<UserMoment>{{"0.001,0.1,100.0", 1e-7}};
+        testCases_um.emplace_back(uMoments);
+        uMoments = std::vector<UserMoment>{{"0.001,0.001,100.0", 1e-7}};
         testCases_um.emplace_back(uMoments);
         uMoments = std::vector<UserMoment>{
                 {"0.001,0.001,1.0",   0.001},
@@ -662,7 +697,7 @@ int main(int argc, char **argv) {
         // 1. Vector binary search
         std::vector<size_t> timeBins_test1 =
                 runVectorBinarySearch(intervalMoments, timeBins);
-        diffTimeBins(timeBins_test1, timeBins_test1);
+        //diffTimeBins(timeBins_test1, timeBins_test1);
         std::vector<size_t> timeBins_test2 =
                 runVectorQuadSearch(intervalMoments, timeBins);
         diffTimeBins(timeBins_test1, timeBins_test2);
@@ -693,6 +728,9 @@ int main(int argc, char **argv) {
         std::vector<size_t> timeBins_test7 =
                 runVectorJumpSearch_indexed(intervalMoments, timeBins);
         diffTimeBins(timeBins_test6, timeBins_test7);
+        std::vector<size_t> timeBins_test8 =
+                runVectorInterpSearch_indexed(intervalMoments, timeBins);
+        diffTimeBins(timeBins_test6, timeBins_test8);
 
         // Free some memory
         Settings::time_points_wbreak.clear();
@@ -708,10 +746,11 @@ int main(int argc, char **argv) {
         }
         //fmt::print("Parsed 2\n");
 
+#if defined(DEBUG)
         for(int i = 0; i<20; ++i)
             fmt::print("Break {} : {} : {:e}\n",i,Settings::breakPoints[i],
            Settings::time_points[i]);
-
+#endif
         runVectorBinarySearch_indexed_v2(intervalMoments, timeBins);
 
         Settings::time_points.clear();

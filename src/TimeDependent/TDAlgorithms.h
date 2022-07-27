@@ -15,6 +15,7 @@ namespace MFTD {
     int LookupMomentIndex(double key, const std::vector<Moment>& moments);
     int quadraticSearch(double key, const std::vector<Moment>& moments);
     int interpolationSearch(double key, const std::vector<Moment>& moments);
+    int interpolationSearch(double key, const std::vector<Moment>& moments, int startIndex);
     int jumpSearchProg(const std::vector<Moment>& arr, double noToSearch, int ArrayLim);
     int jumpSearchProg(const std::vector<Moment>& arr, double noToSearch, int ArrayLim, int startIndex);
     int calcSearch(double key, const std::vector<Moment>& moments, const std::vector<MomentInterval>& userMoments);

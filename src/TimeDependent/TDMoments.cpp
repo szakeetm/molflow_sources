@@ -62,8 +62,7 @@ namespace MFTD {
             if (interval >= timeWindow) {
                 double time = begin;
                 int n_bins = std::ceil((end - begin) / interval);
-                while (time <
-                       end + 0.499 * timeWindow) { // TODO: Otherwise it's up to float error
+                while (time < end + 0.5 * timeWindow) {
                     // if we stay below or go above limit
                     parsedResult.emplace_back(time/*std::min(time,end)*/, timeWindow);
                     time += interval;
@@ -110,7 +109,7 @@ namespace MFTD {
                 fmt::print("Index calc: {} vs {} vs {}\n", std::ceil((end - begin) /
                 interval), index, index2);
           */
-                ret.startIndex = std::floor((end - begin) / interval + 1e-3) + 1;
+                ret.startIndex = std::floor((end + 0.5 * timeWindow - begin) / interval) + 1;
                 // add one time window on interval end
             }
         } else if (nb == 1) {
@@ -151,7 +150,7 @@ namespace MFTD {
             auto &moment = parsedMoments[u];
             cummulativeIndex += moment.startIndex;
             moment.startIndex = index;
-            fmt::print("[{}] Parsed {:e} , {:e} , {:e} [{} -> {}]\n", u, moment.start,
+            fmt::print("[{}] Parsed {:e} , {:e} , {:e} [{} -> {}[\n", u, moment.start,
                        moment.interval, moment.end, moment.startIndex, cummulativeIndex);
         }
 
@@ -205,9 +204,12 @@ namespace MFTD {
             fmt::print(fg(fmt::color::teal), "Split intervals: [{} , {}] --",
                        intervals[oldSize].first,
                        intervals[oldSize].second);
-            fmt::print(fg(fmt::color::teal), " [{} , {}]\n",
+            fmt::print(fg(fmt::color::teal), " [{} , {}] --",
                        intervals.back().first,
                        intervals.back().second);
+            fmt::print(fg(fmt::color::teal), " {} + {}\n",
+                       intervals.size(),
+                       newMoment.size());
         }
     }
 

@@ -143,6 +143,41 @@ namespace MFTD {
         return -1;
     }
 
+
+    int interpolationSearch(double key, const std::vector<Moment> &moments, int startIndex) {
+
+        // Find indexes of two corners
+        int lo = startIndex, hi = (moments.size() - 1);
+
+        // Since array is sorted, an element present
+        // in array must be in range defined by corner
+        while (lo <= hi && key >= moments[lo].first && key <= moments[hi].second) {
+            if (lo == hi) {
+                if (moments[lo].first <= key && key <= moments[lo].second)
+                    return lo;
+                return -1;
+            }
+            // Probing the position with keeping
+            // uniform distribution in mind.
+            int pos =
+                    lo + (((double) (hi - lo) / (moments[hi].second - moments[lo].first)) *
+                          (key - moments[lo].first));
+            // fmt::print("{} -> {} <- {}\n", lo, pos, hi);
+            // Condition of target found
+            if (moments[pos].first <= key && key <= moments[pos].second)
+                return pos;
+
+            // If x is larger, x is in upper part
+            if (moments[pos].second < key)
+                lo = pos + 1;
+
+                // If x is smaller, x is in the lower part
+            else
+                hi = pos - 1;
+        }
+        return -1;
+    }
+
     int jumpSearchProg(const std::vector<Moment> &arr, double noToSearch,
                        int ArrayLim) {
         int previous = 0;
@@ -241,8 +276,6 @@ namespace MFTD {
         int controlIndex = LookupMomentIndex(key, moments);
 #endif
         for (auto &uMom: userMoments) {
-            // fmt::print("Parsed {:e} , {:e} , {:e}\n", uMom.start, uMom.interval,
-            // uMom.end);
             const double halfTimeWindow = uMom.timeWindow * 0.5;
             double calced_end = uMom.start + std::ceil((uMom.end - uMom.start) / uMom.interval) * uMom.interval + halfTimeWindow;
             if (key <= calced_end/*uMom.end + halfTimeWindow*/) {
@@ -252,7 +285,8 @@ namespace MFTD {
                 if (key >= uMom.start - halfTimeWindow) {
                     // found it
                     const double nbMoments =
-                            std::ceil((uMom.end - uMom.start + uMom.timeWindow) / uMom.interval)/* + 1.0*/;
+                            std::floor((uMom.end + 0.5 * uMom.timeWindow - uMom.start) / uMom.interval)/* + 1*/;
+                            //std::ceil((uMom.end - uMom.start + uMom.timeWindow) / uMom.interval)/* + 1.0*/;
                     start = (int) std::min(((key - uMom.start + halfTimeWindow) / uMom.interval),
                                            nbMoments); // can go above limits on edge values
                     // fmt::print("[{:e}] Potential find at start {} ({}) [{:e} , {:e}]
@@ -269,7 +303,7 @@ namespace MFTD {
                         start = -1;
                     } else {
                         if(uMom.startIndex) {
-                            start += 1;
+                            //start += 1;
                             start += uMom.startIndex;
                         }
                     }
