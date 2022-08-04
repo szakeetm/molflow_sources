@@ -132,7 +132,7 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
             //char tmp[256];
-            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
+            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId+1);
             auto tmp = fmt::format("[Fac #{}] Untextured facet with texture size\n", fac->globalId);
             errLog.append(tmp);
             if(errLog.size() > 1280) errLog.resize(1280);
@@ -146,7 +146,7 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
             fac->sh.countACD = false;
             fac->sh.countDirection = false;
             //char tmp[256];
-            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
+            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId+1);
             auto tmp = fmt::format("[Fac #{}] Untextured facet with texture size\n", fac->globalId);
             errLog.append(tmp);
             if(errLog.size() > 1920) errLog.resize(1920);

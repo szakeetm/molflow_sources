@@ -610,6 +610,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 SAFE_DELETE(f);
                 //RealReload();
                 fullFileName = fileName;
+                RealReload();
+                SendToHitBuffer(); //Global hit counters and hit/leak cache
+                SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
             } else { //insert
 
                 geom->InsertTXT(f, progressDlg, newStr);
@@ -884,7 +887,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (future.get()) {
                         progressDlg->SetVisible(false);
                         SAFE_DELETE(progressDlg);
-                        throw;
+                        throw std::runtime_error("There was an error loading this file, check console for details.");
                     }
                 }
                 geom->InitOldStruct(mf_model.get());
