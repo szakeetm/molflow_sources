@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     fmt::print("Hybrid weight for : {}\n", hybrid_weight);
 
     if(!test_case_file.empty()){
-        test_case_dir = std::filesystem::path(test_case_file).parent_path();
+        test_case_dir = std::filesystem::path(test_case_file).parent_path().string();
     }
     if(!test_case_file.empty() && !std::filesystem::exists(std::filesystem::path(test_case_file))){
         fmt::print(stderr, "Test case file not found : {}\n", test_case_file);
