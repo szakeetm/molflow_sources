@@ -858,7 +858,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
-    IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 1.0 / ortVelocity,
+    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
     nbBounces++;
@@ -976,7 +976,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
-    IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
     LogHit(iFacet);
