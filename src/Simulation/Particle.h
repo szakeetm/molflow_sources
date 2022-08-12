@@ -22,18 +22,25 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_PARTICLE_H
 
 
-#include "../GeometrySimu.h"
+#include "MolflowSimGeom.h"
 #include "SimulationUnit.h"
 #include <Random.h>
 
-struct SubProcessFacetTempVar;
+struct SimulationFacetTempVar;
 
+/**
+* \brief Namespace containing various simulation only classes and methods
+ */
 namespace MFSim {
+
+/**
+* \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
+ */
     class Particle {
     public:
         //double GenerateRandomVelocity(int CDFId, const double rndVal);
 
-        //double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal);
+        //double GenerateDesorptionTime(const SimulationFacet *src, const double rndVal);
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
@@ -43,10 +50,10 @@ namespace MFSim {
 
         bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
-        void RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+        void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
 
-        void ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+        void ProfileFacet(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                           double ortSpeedFactor);
 
         void RecordHit(const int &type);
@@ -59,32 +66,30 @@ namespace MFSim {
 			const Vector3d& impulse_square = Vector3d(0.0, 0.0, 0.0),
 			const Vector3d& impulse_momentum = Vector3d(0.0, 0.0, 0.0));
 
-        void UpdateVelocity(const SubprocessFacet *collidedFacet);
+        void UpdateVelocity(const SimulationFacet *collidedFacet);
 
-        void LogHit(SubprocessFacet *f);
+        void LogHit(SimulationFacet *f);
 
-        void RecordDirectionVector(const SubprocessFacet *f, int m);
+        void RecordDirectionVector(const SimulationFacet *f, int m);
 
-        void RecordAngleMap(const SubprocessFacet *collidedFacet);
+        void RecordAngleMap(const SimulationFacet *collidedFacet);
 
-        void PerformTeleport(SubprocessFacet *iFacet);
+        void PerformTeleport(SimulationFacet *iFacet);
 
-        void RegisterTransparentPass(SubprocessFacet *facet);
+        void RegisterTransparentPass(SimulationFacet *facet);
 
-        void RecordAbsorb(SubprocessFacet *iFacet);
+        void RecordAbsorb(SimulationFacet *iFacet);
 
-        void PerformBounce(SubprocessFacet *iFacet);
+        void PerformBounce(SimulationFacet *iFacet);
 
-        void RecordHistograms(SubprocessFacet *iFacet, int m);
+        void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
         bool UpdateLog(ParticleLog *globalLog, size_t timeout);
 
         void Reset();
 
-        Ray particle;
-        //Vector3d position;    // Position
-        //Vector3d direction;    // Direction
+        Ray particle; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
@@ -102,11 +107,11 @@ namespace MFSim {
         //size_t structureId;        // Current structure
         GlobalSimuState tmpState;
         ParticleLog tmpParticleLog;
-        SubprocessFacet *lastHitFacet;     // Last hitted facet
+        SimulationFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
-        SimulationModel *model;
-        std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
+        MolflowSimulationModel *model;
+        std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 
         bool allQuit{false};
 

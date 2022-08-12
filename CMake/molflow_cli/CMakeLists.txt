@@ -73,8 +73,9 @@ set(SRC_FILES
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
+        #${CPP_DIR_2}/MolflowSimGeom.cpp
+        #${CPP_DIR_2}/MolflowSimFacet.cpp
 
-        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
 

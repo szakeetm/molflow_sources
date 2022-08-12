@@ -200,8 +200,8 @@ int main(int argc, char* argv[])
 		if (logs) MessageBox(nullptr, logs, "Molflow [Fatal error]", MB_OK);
 #else
 		if (logs) {
-			printf("Molflow [Fatal error]\n");
-			printf("%s", logs);
+			Log::console_error("Molflow [Fatal error]\n");
+            Log::console_error("{}", logs);
 		}
 #endif
 		SAFE_FREE(logs);

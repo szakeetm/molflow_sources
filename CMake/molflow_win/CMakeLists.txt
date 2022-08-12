@@ -102,7 +102,6 @@ set(SRC_FILES
         ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_1}/MolFlow.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
-        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowFacet.cpp
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp

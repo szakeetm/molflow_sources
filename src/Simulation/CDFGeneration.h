@@ -22,7 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_CDFGENERATION_H
 
 #include <list>
-#include "GeometrySimu.h"
+#include "MolflowSimGeom.h"
 
 namespace CDFGeneration {
     // CDF

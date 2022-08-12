@@ -1,8 +1,28 @@
 # Changelog
 
-## v2.9.5 (TBA)
+## v2.9.6
+### Bugfix
+- Collinearity condition fixed (no more false NULL facets)
+- Create facet with convex hull fixed, no more duplicate vertices
+- Load and save old TXT format including facet hits
+- Fix crash when file loading is unsuccesful
+
+## v2.9.5 (2022.06.23)
+
+### Feature
+- Experimental windows based on IMGui
+- Formulas are case insensitive
+- Allow to import SYN version 12 (Upcoming Synrad version)
+- Null facet detection criteria matched to Synrad
+
 ### Bugfix
 - Rare crash when collapsing facets or vertices
+- Linux+Mac: Fixed install location with CMake
+- Correct saving of part of the geometry (File->Save selected facets)
+- Inserting STL files doesn't crash Molflow anymore
+- CLI: crash when no input file is given
+- CLI: no more creation if intermediate result files
+- CLI: error handling for file copy
 
 ## v2.9.4 (2022.04.14)
 ### Feature

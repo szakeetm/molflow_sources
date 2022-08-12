@@ -103,7 +103,7 @@ extern SynRad*mApp;
 */
 Worker::Worker() : simManager(0) {
 
-    model = std::make_shared<SimulationModel>();
+    model = std::make_shared<MolflowSimulationModel>();
     //Molflow specific
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
@@ -290,6 +290,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 } else if (isSTL) {
                     geom->SaveSTL(f, prg);
                 } else if (isXML || isXMLzip) {
+                    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                     xml_document saveDoc;
                     //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
                     FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
@@ -307,9 +308,9 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     writer.uInput = this->uInput;
 
                     if(saveSelected)
-                        writer.SaveGeometry(saveDoc, model, GetGeometry()->GetSelectedFacets());
+                        writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
                     else
-                        writer.SaveGeometry(saveDoc, model);
+                        writer.SaveGeometry(saveDoc, mf_model);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
@@ -318,7 +319,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     if (!crashSave && !saveSelected) {
                         try {
                             //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
-                            success = writer.SaveSimulationState(saveDoc, model, globState);
+                            success = writer.SaveSimulationState(saveDoc, mf_model, globState);
                         }
                         catch (const std::exception &e) {
                             SAFE_DELETE(f);
@@ -609,6 +610,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 SAFE_DELETE(f);
                 //RealReload();
                 fullFileName = fileName;
+                RealReload();
+                SendToHitBuffer(); //Global hit counters and hit/leak cache
+                SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
             } else { //insert
 
                 geom->InsertTXT(f, progressDlg, newStr);
@@ -871,9 +875,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
                 double load_progress = 0.0;
+                auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
                     auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
-                                             parseFileName, model, &load_progress);
+                                             parseFileName, mf_model, &load_progress);
                     do {
                         progressDlg->SetProgress(load_progress);
                         ProcessSleep(100);
@@ -882,10 +887,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (future.get()) {
                         progressDlg->SetVisible(false);
                         SAFE_DELETE(progressDlg);
-                        throw;
+                        throw std::runtime_error("There was an error loading this file, check console for details.");
                     }
                 }
-                geom->InitOldStruct(model.get());
+                geom->InitOldStruct(mf_model.get());
                 progressDlg->SetProgress(0.0);
 
                 //std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
@@ -969,7 +974,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
                     {
                         auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
-                                                 parseFileName, model, &globState, &load_progress);
+                                                 parseFileName, mf_model, &globState, &load_progress);
                         do {
                             progressDlg->SetProgress(load_progress);
                             ProcessSleep(100);
@@ -1115,7 +1120,7 @@ bool Worker::SimModelToInterfaceGeom() {
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         assert(model->sh.nbFacet == model->facets.size());
-        SubprocessFacet* sFac = model->facets[facIdx].get();
+        SimulationFacet* sFac = model->facets[facIdx].get();
         {
             InterfaceFacet *facet = geom->GetFacet(facIdx);
 
@@ -1265,10 +1270,11 @@ int Worker::SendAngleMaps() {
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
         return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
-        if(model->facets[i]->sh.anglemapParams.record)
+        auto* sFac = (MolflowSimFacet*) model->facets[i].get();
+        if(sFac->sh.anglemapParams.record)
             globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
-        //else if(model->facets[i]->sh.desorbType == DES_ANGLEMAP)
-        model->facets[i]->angleMap.pdf = angleMapCaches[i];
+        //else if(sFac->sh.desorbType == DES_ANGLEMAP)
+        sFac->angleMap.pdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
     return 0;
@@ -1277,34 +1283,35 @@ int Worker::SendAngleMaps() {
 bool Worker::InterfaceGeomToSimModel() {
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
-    model->structures.clear();
-    model->facets.clear();
-    model->vertices3.clear();
+    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    mf_model->structures.clear();
+    mf_model->facets.clear();
+    mf_model->vertices3.clear();
 
     for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
-        model->vertices3.emplace_back(*geom->GetVertex(nbV));
+        mf_model->vertices3.emplace_back(*geom->GetVertex(nbV));
     }
     // Parse usermoments to regular moment intervals
-    //model->tdParams.moments = this->moments;
+    //mf_model->tdParams.moments = this->moments;
 
 
-    model->tdParams.CDFs.clear();
-    model->tdParams.IDs.clear();
+    mf_model->tdParams.CDFs.clear();
+    mf_model->tdParams.IDs.clear();
 
     // we create it directly on the Sim side
-    //model->tdParams.CDFs = this->CDFs;
-    //        model->tdParams.IDs = this->IDs;
+    //mf_model->tdParams.CDFs = this->CDFs;
+    //        mf_model->tdParams.IDs = this->IDs;
     {
-        //model->tdParams.IDs.clear();
+        //mf_model->tdParams.IDs.clear();
         // we create it directly on the Sim side
         /*for (auto &id : this->IDs) {
-            model->tdParams.IDs.push_back(id.GetValues());
+            mf_model->tdParams.IDs.push_back(id.GetValues());
         }*/
     }
 
-    model->tdParams.parameters.clear();
+    mf_model->tdParams.parameters.clear();
     for (auto &param : this->parameters)
-        model->tdParams.parameters.emplace_back(param);
+        mf_model->tdParams.parameters.emplace_back(param);
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(this->moments.size());
@@ -1312,16 +1319,16 @@ bool Worker::InterfaceGeomToSimModel() {
         momentIntervals.emplace_back(
                 std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
-    model->tdParams.moments = momentIntervals;
+    mf_model->tdParams.moments = momentIntervals;
 
-    model->sh = *geom->GetGeomProperties();
+    mf_model->sh = *geom->GetGeomProperties();
 
-    model->structures.resize(model->sh.nbSuper); //Create structures
+    mf_model->structures.resize(mf_model->sh.nbSuper); //Create structures
 
     bool hasVolatile = false;
 
-    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        SubprocessFacet sFac;
+    for (size_t facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
+        MolflowSimFacet sFac;
         {
             InterfaceFacet *facet = geom->GetFacet(facIdx);
 
@@ -1394,7 +1401,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
         //Some initialization
         try {
-            if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
+            if (!sFac.InitializeOnLoad(facIdx, mf_model->tdParams.moments.size()))
                 return false;
         }
         catch (const std::exception& err){
@@ -1405,7 +1412,7 @@ bool Worker::InterfaceGeomToSimModel() {
         hasVolatile |= sFac.sh.isVolatile;
 
         if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
-            ((sFac.sh.superDest - 1) >= model->sh.nbSuper || sFac.sh.superDest < 0)) {
+            ((sFac.sh.superDest - 1) >= mf_model->sh.nbSuper || sFac.sh.superDest < 0)) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);
@@ -1416,11 +1423,11 @@ bool Worker::InterfaceGeomToSimModel() {
             return false;
         }
 
-        model->facets.push_back(std::make_shared<SubprocessFacet>(sFac));
+        mf_model->facets.push_back(std::make_shared<MolflowSimFacet>(sFac));
     }
 
-    if(!model->facets.empty() && !model->vertices3.empty())
-        model->initialized = true;
+    if(!mf_model->facets.empty() && !mf_model->vertices3.empty())
+        mf_model->initialized = true;
     return true;
 }
 
@@ -1472,7 +1479,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             err << "Error (Sim reload) " << e.what();
             throw std::runtime_error(err.str());*/
         }
-        model->CalcTotalOutgassing(); // needs IDs
+        auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+        mf_model->CalcTotalOutgassing(); // needs IDs
 
         if (!sendOnly) {
             try {
@@ -1877,7 +1885,8 @@ int Worker::GenerateNewCDF(double temperature) {
 */
 int Worker::GenerateNewID(size_t paramId) {
     //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
-    auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, this->model.get());
+    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, mf_model.get());
     Parameter &par = parameters[paramId]; //we'll reference it a lot
     IntegratedDesorption result;
     result.logXinterp = par.logXinterp;
@@ -1902,38 +1911,39 @@ int Worker::GetIDId(size_t paramId) const {
 */
 void Worker::CalcTotalOutgassing() {
     // Compute the outgassing of all source facet
-    model->wp.totalDesorbedMolecules = model->wp.finalOutgassingRate_Pa_m3_sec = model->wp.finalOutgassingRate = 0.0;
+    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
     Geometry *g = GetGeometry();
 
     for (size_t i = 0; i < g->GetNbFacet(); i++) {
         InterfaceFacet *f = g->GetFacet(i);
         if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (f->sh.useOutgassingFile) { //outgassing file
-                for (int l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
-                    model->wp.totalDesorbedMolecules +=
-                            model->wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model->wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model->wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
+                for (size_t l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
+                    mf_model->wp.totalDesorbedMolecules +=
+                            mf_model->wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    mf_model->wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    mf_model->wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (f->sh.outgassing_paramId == -1) { //constant outgassing
-                    model->wp.totalDesorbedMolecules +=
-                            model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
-                    model->wp.finalOutgassingRate +=
+                    mf_model->wp.totalDesorbedMolecules +=
+                            mf_model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
+                    mf_model->wp.finalOutgassingRate +=
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
-                    model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
+                    mf_model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    if(f->sh.IDid >= model->tdParams.IDs.size())
-                        throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}",f->sh.IDid, model->tdParams.IDs.size(), i));
+                    if(f->sh.IDid >= mf_model->tdParams.IDs.size())
+                        throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}",f->sh.IDid, mf_model->tdParams.IDs.size(), i));
 
-                    double lastValue = model->tdParams.IDs[f->sh.IDid].back().second;
-                    model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
+                    double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().second;
+                    mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
-                    model->wp.finalOutgassingRate +=
+                    mf_model->wp.finalOutgassingRate +=
                             finalRate_mbar_l_s * MBARLS_TO_PAM3S /
                             (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    model->wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
+                    mf_model->wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
                 }
             }
         }
