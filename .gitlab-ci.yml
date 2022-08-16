@@ -227,7 +227,7 @@ build-macos-master:
       allow_failure: true
     - if: '$CI_COMMIT_TAG'
       when: manual
-      allow_failure: false
+      allow_failure: true
 
 build-macos-arm-master:
   extends: .build-unix
@@ -243,7 +243,7 @@ build-macos-arm-master:
       allow_failure: true
     - if: '$CI_COMMIT_TAG'
       when: manual
-      allow_failure: false
+      allow_failure: true
 
 build-debian-test:
   extends: .build-test-unix
@@ -280,7 +280,7 @@ build-macos-test:
       allow_failure: true
     - if: '$CI_COMMIT_TAG'
       when: manual
-      allow_failure: false
+      allow_failure: true
 
 build-macos-arm-test:
   extends: .build-test-unix
@@ -297,7 +297,7 @@ build-macos-arm-test:
       allow_failure: true
     - if: '$CI_COMMIT_TAG'
       when: manual
-      allow_failure: false
+      allow_failure: true
 
 .test-unix:
   stage: test
