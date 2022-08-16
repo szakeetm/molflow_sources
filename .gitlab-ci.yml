@@ -580,8 +580,8 @@ build-artifact-macos:
   tags:
     - macos
   rules:
-    when: manual
-    allow_failure: true
+    - when: manual
+    - allow_failure: true
 
 build-artifact-macos-arm:
   extends:
@@ -595,8 +595,8 @@ build-artifact-macos-arm:
   tags:
     - macos-arm
   rules:
-    when: manual
-    allow_failure: true
+    - when: manual
+    - allow_failure: true
 
 build-artifact-windows-tags:
   extends:
