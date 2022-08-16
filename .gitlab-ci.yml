@@ -119,7 +119,7 @@ build-windows:
   tags:
     - windows
 
-build-windows-test:
+build-test-windows:
   stage: build-test
   needs:
     - job: build-windows
@@ -244,7 +244,7 @@ build-macos-arm:
       when: manual
       allow_failure: true
 
-build-debian-test:
+build-test-debian:
   extends: .build-test-unix
   needs:
     - job: build-debian
@@ -254,7 +254,7 @@ build-debian-test:
   tags:
     - debian
 
-build-fedora-test:
+build-test-fedora:
   extends: .build-test-unix
   needs:
     - job: build-fedora
@@ -264,7 +264,7 @@ build-fedora-test:
   tags:
     - fedora
 
-build-macos-test:
+build-test-macos:
   extends: .build-test-unix
   needs:
     - job: build-macos
@@ -281,7 +281,7 @@ build-macos-test:
       when: manual
       allow_failure: true
 
-build-macos-arm-test:
+build-test-macos-arm:
   extends: .build-test-unix
   needs:
     - job: build-macos-arm
@@ -322,7 +322,7 @@ test-debian:
   variables:
     OS_NAME: "debian"
   needs:
-    - job: build-debian-test
+    - job: build-test-debian
   tags:
     - debian
 
@@ -331,7 +331,7 @@ test-fedora:
   variables:
     OS_NAME: "fedora"
   needs:
-    - job: build-fedora-test
+    - job: build-test-fedora
   tags:
     - fedora
 
@@ -373,7 +373,7 @@ test-windows:
       junit: .\report.xml
     expire_in: 4 weeks
   needs:
-    - job: build-windows-test
+    - job: build-test-windows
   tags:
     - windows
 
