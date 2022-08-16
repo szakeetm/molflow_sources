@@ -643,9 +643,11 @@ build-artifact-macos-tags:
     - job: build-macos
     - job: prepare_job
       artifacts: true
-  stage: optional-artifact
+  stage: build-artifact
   tags:
     - macos
+  when: manual
+  allow_failure: true
 
 build-artifact-macos-arm-tags:
   variables:
@@ -657,6 +659,8 @@ build-artifact-macos-arm-tags:
     - job: build-macos-arm
     - job: prepare_job
       artifacts: true
-  stage: optional-artifact
+  stage: build-artifact
   tags:
     - macos-arm
+  when: manual
+  allow_failure: true
