@@ -540,15 +540,6 @@ benchmark-windows:
     - if: '($CI_COMMIT_TAG && ($OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
       allow_failure: true
 
-build-artifact-windows:
-  extends:
-    - .artifact-windows
-    - .artifact-prop
-  needs:
-    - job: build-windows
-  tags:
-    - windows
-
 build-artifact-debian:
   extends:
     - .artifact-unix
@@ -597,14 +588,12 @@ build-artifact-macos-arm:
     - macos-arm
   allow_failure: true
 
-build-artifact-windows-tags:
+build-artifact-windows:
   extends:
     - .artifact-windows
-    - .artifact-prop-tags
+    - .artifact-prop
   needs:
     - job: build-windows
-    - job: prepare_job
-      artifacts: true
   tags:
     - windows
 
@@ -663,3 +652,14 @@ build-artifact-macos-arm-tags:
   tags:
     - macos-arm
   allow_failure: true
+
+build-artifact-windows-tags:
+  extends:
+    - .artifact-windows
+    - .artifact-prop-tags
+  needs:
+    - job: build-windows
+    - job: prepare_job
+      artifacts: true
+  tags:
+    - windows
