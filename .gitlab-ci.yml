@@ -572,25 +572,29 @@ build-artifact-macos:
   extends:
     - .artifact-unix
     - .artifact-prop
-  stage: artifact
+  stage: build-artifact
   needs:
     - job: build-macos
   variables:
     OS_NAME: "mac"
   tags:
     - macos
+  when: manual
+  allow_failure: true
 
 build-artifact-macos-arm:
   extends:
     - .artifact-unix
     - .artifact-prop
-  stage: artifact
+  stage: build-artifact
   needs:
     - job: build-macos-arm
   variables:
     OS_NAME: "mac_arm"
   tags:
     - macos-arm
+  when: manual
+  allow_failure: true
 
 build-artifact-windows-tags:
   extends:
