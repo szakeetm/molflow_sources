@@ -526,7 +526,7 @@ benchmark-windows:
   artifacts:
     expire_in: 8 weeks
   rules:
-    - if: '($OS_NAME != "mac" && $OS_NAME != "mac_arm" )'
+    - if: '$CI_COMMIT_TAG && ($OS_NAME != "mac" && $OS_NAME != "mac_arm" )'
       when: always
     - if: '(($OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
       when: manual
