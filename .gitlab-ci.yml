@@ -343,7 +343,6 @@ test-macos:
     - job: build-test-macos
   tags:
     - macos
-  when: manual
   allow_failure: true
 
 test-macos-arm:
@@ -354,7 +353,6 @@ test-macos-arm:
     - job: build-test-macos-arm
   tags:
     - macos-arm
-  when: manual
   allow_failure: true
 
 test-windows:
