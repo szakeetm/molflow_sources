@@ -646,7 +646,6 @@ build-artifact-macos-tags:
   stage: build-artifact
   tags:
     - macos
-  when: manual
   allow_failure: true
 
 build-artifact-macos-arm-tags:
@@ -662,5 +661,4 @@ build-artifact-macos-arm-tags:
   stage: build-artifact
   tags:
     - macos-arm
-  when: manual
   allow_failure: true
