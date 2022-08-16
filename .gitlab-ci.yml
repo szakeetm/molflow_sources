@@ -339,6 +339,8 @@ test-macos:
   extends: .test-unix
   variables:
     OS_NAME: "mac"
+  needs:
+    - job: build-test-macos
   tags:
     - macos
   when: manual
@@ -348,6 +350,8 @@ test-macos-arm:
   extends: .test-unix
   variables:
     OS_NAME: "mac_arm"
+  needs:
+    - job: build-test-macos-arm
   tags:
     - macos-arm
   when: manual
