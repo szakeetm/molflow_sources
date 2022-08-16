@@ -579,9 +579,8 @@ build-artifact-macos:
     OS_NAME: "mac"
   tags:
     - macos
-  rules:
-    - when: manual
-    - allow_failure: true
+  when: manual
+  allow_failure: true
 
 build-artifact-macos-arm:
   extends:
@@ -594,9 +593,8 @@ build-artifact-macos-arm:
     OS_NAME: "mac_arm"
   tags:
     - macos-arm
-  rules:
-    - when: manual
-    - allow_failure: true
+  when: manual
+  allow_failure: true
 
 build-artifact-windows-tags:
   extends:
