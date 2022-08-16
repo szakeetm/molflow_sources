@@ -95,7 +95,7 @@ release_job:
         - name: 'CentOS (Fedora) binary'
           url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_fedora${TAG_SUFFIX}.zip'
 
-build-windows-master:
+build-windows-current-branch:
   stage: build
   before_script:
     - echo "Building Windows $CI_COMMIT_BRANCH"
@@ -123,7 +123,7 @@ build-windows-master:
 build-windows-test:
   stage: build-test
   needs:
-    - job: build-windows-master
+    - job: build-windows-current-branch
   before_script:
     - echo "Building Windows Test $CI_COMMIT_BRANCH"
   script:
@@ -197,7 +197,7 @@ build-windows-test:
   after_script:
     - echo "Finished"
 
-build-debian-master:
+build-debian-current-branch:
   extends: .build-unix
   variables:
     OS_NAME: "debian"
@@ -205,7 +205,7 @@ build-debian-master:
   tags:
     - debian
 
-build-fedora-master:
+build-fedora-current-branch:
   extends: .build-unix
   variables:
     OS_NAME: "fedora"
@@ -213,7 +213,7 @@ build-fedora-master:
   tags:
     - fedora
 
-build-macos-master:
+build-macos-current-branch:
   extends: .build-unix
   variables:
     OS_NAME: "mac"
@@ -229,7 +229,7 @@ build-macos-master:
       when: manual
       allow_failure: true
 
-build-macos-arm-master:
+build-macos-arm-current-branch:
   extends: .build-unix
   variables:
     OS_NAME: "mac_arm"
@@ -248,7 +248,7 @@ build-macos-arm-master:
 build-debian-test:
   extends: .build-test-unix
   needs:
-    - job: build-debian-master
+    - job: build-debian-current-branch
   variables:
     OS_NAME: "debian"
     OS_FULL_NAME: "linux_debian"
@@ -258,7 +258,7 @@ build-debian-test:
 build-fedora-test:
   extends: .build-test-unix
   needs:
-    - job: build-fedora-master
+    - job: build-fedora-current-branch
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_debian"
@@ -268,7 +268,7 @@ build-fedora-test:
 build-macos-test:
   extends: .build-test-unix
   needs:
-    - job: build-macos-master
+    - job: build-macos-current-branch
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -285,7 +285,7 @@ build-macos-test:
 build-macos-arm-test:
   extends: .build-test-unix
   needs:
-    - job: build-macos-arm-master
+    - job: build-macos-arm-current-branch
   variables:
     OS_NAME: "mac_arm"
     OS_FULL_NAME: "mac_arm"
@@ -553,7 +553,7 @@ build-artifact-windows-master:
     - .artifact-windows
     - .artifact-prop-master
   needs:
-    - job: build-windows-master
+    - job: build-windows-current-branch
   tags:
     - windows
 
@@ -564,7 +564,7 @@ build-artifact-debian-master:
   variables:
     OS_NAME: "debian"
   needs:
-    - job: build-debian-master
+    - job: build-debian-current-branch
   tags:
     - debian
 
@@ -575,7 +575,7 @@ build-artifact-fedora-master:
   variables:
     OS_NAME: "fedora"
   needs:
-    - job: build-fedora-master
+    - job: build-fedora-current-branch
   tags:
     - fedora
 
@@ -585,7 +585,7 @@ build-artifact-macos-master:
     - .artifact-prop-master
   stage: optional-artifact
   needs:
-    - job: build-macos-master
+    - job: build-macos-current-branch
   variables:
     OS_NAME: "mac"
   tags:
@@ -597,7 +597,7 @@ build-artifact-macos-arm-master:
     - .artifact-prop-master
   stage: optional-artifact
   needs:
-    - job: build-macos-arm-master
+    - job: build-macos-arm-current-branch
   variables:
     OS_NAME: "mac_arm"
   tags:
@@ -608,7 +608,7 @@ build-artifact-windows-branch:
     - .artifact-windows
     - .artifact-prop-branch
   needs:
-    - job: build-windows-master
+    - job: build-windows-current-branch
   tags:
     - windows
 
@@ -619,7 +619,7 @@ build-artifact-debian-branch:
   variables:
     OS_NAME: "debian"
   needs:
-    - job: build-debian-master
+    - job: build-debian-current-branch
   tags:
     - debian
 
@@ -630,7 +630,7 @@ build-artifact-fedora-branch:
   variables:
     OS_NAME: "fedora"
   needs:
-    - job: build-fedora-master
+    - job: build-fedora-current-branch
   tags:
     - fedora
 
@@ -641,7 +641,7 @@ build-artifact-macos-branch:
     - .artifact-unix
     - .artifact-prop-branch
   needs:
-    - job: build-macos-master
+    - job: build-macos-current-branch
   stage: optional-artifact
   tags:
     - macos
@@ -653,7 +653,7 @@ build-artifact-macos-arm-branch:
     - .artifact-unix
     - .artifact-prop-branch
   needs:
-    - job: build-macos-arm-master
+    - job: build-macos-arm-current-branch
   stage: optional-artifact
   tags:
     - macos-arm
@@ -663,7 +663,7 @@ build-artifact-windows-tags:
     - .artifact-windows
     - .artifact-prop-tags
   needs:
-    - job: build-windows-master
+    - job: build-windows-current-branch
     - job: prepare_job
       artifacts: true
   tags:
@@ -674,7 +674,7 @@ build-artifact-debian-tags:
     - .artifact-unix
     - .artifact-prop-tags
   needs:
-    - job: build-debian-master
+    - job: build-debian-current-branch
     - job: prepare_job
       artifacts: true
   variables:
@@ -687,7 +687,7 @@ build-artifact-fedora-tags:
     - .artifact-unix
     - .artifact-prop-tags
   needs:
-    - job: build-fedora-master
+    - job: build-fedora-current-branch
     - job: prepare_job
       artifacts: true
   variables:
@@ -702,7 +702,7 @@ build-artifact-macos-tags:
     - .artifact-unix
     - .artifact-prop-tags
   needs:
-    - job: build-macos-master
+    - job: build-macos-current-branch
     - job: prepare_job
       artifacts: true
   stage: optional-artifact
@@ -716,7 +716,7 @@ build-artifact-macos-arm-tags:
     - .artifact-unix
     - .artifact-prop-tags
   needs:
-    - job: build-macos-arm-master
+    - job: build-macos-arm-current-branch
     - job: prepare_job
       artifacts: true
   stage: optional-artifact
