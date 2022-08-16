@@ -523,13 +523,12 @@ benchmark-windows:
       - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
 
 .artifact-prop:
-  if: '($CI_COMMIT_TAG == "")'  
   artifacts:
     expire_in: 8 weeks
   rules:
-    - if: '($OS_NAME != "mac" && $OS_NAME != "mac_arm" )'
+    - if: '($CI_COMMIT_TAG == "" && $OS_NAME != "mac" && $OS_NAME != "mac_arm" )'
       when: always
-    - if: '($OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
+    - if: '($CI_COMMIT_TAG == "" && $OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
       when: manual
       allow_failure: true
 
