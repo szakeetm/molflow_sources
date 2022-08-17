@@ -301,6 +301,7 @@ build-test-macos-arm:
 
 .test-unix:
   stage: test
+  allow_failure: true
   before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
   script:
@@ -344,7 +345,7 @@ test-macos:
     - job: build-test-macos
   tags:
     - macos
-  allow_failure: true
+
 
 test-macos-arm:
   extends: .test-unix
@@ -354,10 +355,11 @@ test-macos-arm:
     - job: build-test-macos-arm
   tags:
     - macos-arm
-  allow_failure: true
+
 
 test-windows:
   stage: test
+  allow_failure: true
   before_script:
     - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
   script:
@@ -382,6 +384,7 @@ test-windows:
 
 .benchmark-unix:
   stage: benchmark
+  allow_failure: true
   before_script:
     - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
     - mkdir -p ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
@@ -440,6 +443,7 @@ benchmark-macos-arm:
 
 benchmark-windows:
   stage: benchmark
+  allow_failure: true
   before_script:
     - Write-Host "Benchmarking Windows $CI_COMMIT_BRANCH"
     - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
