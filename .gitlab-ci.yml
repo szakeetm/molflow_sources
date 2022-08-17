@@ -274,13 +274,7 @@ build-test-macos:
     OS_FULL_NAME: "mac"
   tags:
     - macos
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
-      when: manual
-      allow_failure: true
-    - if: '$CI_COMMIT_TAG'
-      when: manual
-      allow_failure: true
+  when: manual
 
 build-test-macos-arm:
   extends: .build-test-unix
@@ -291,13 +285,7 @@ build-test-macos-arm:
     OS_FULL_NAME: "mac_arm"
   tags:
     - macos-arm
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
-      when: manual
-      allow_failure: true
-    - if: '$CI_COMMIT_TAG'
-      when: manual
-      allow_failure: true
+  when: manual
 
 .test-unix:
   stage: test
