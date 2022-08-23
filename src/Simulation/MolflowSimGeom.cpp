@@ -88,9 +88,9 @@ int MolflowSimulationModel::CalculateKDStats(const std::vector<TestRay>& hits, i
                 }
             }
         }
-        Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
-        Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
-        Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
+        Log::console_msg_master(4, "KD Tree stats:\n{} | {} | {}\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
+        Log::console_msg_master(4, "KD Tree max:\n{} | {} | {}\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
+        Log::console_msg_master(4, "KD cost:\n{} | {}\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
         isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nTraversedInner) / (tree_stats.timeInt / (double)tree_stats.nIntersections));
     }
 
@@ -741,7 +741,7 @@ void GlobalSimuState::Resize(const std::shared_ptr<SimulationModel> &model) {
 
     //Global histogram
 
-    hitBattery.resize(model->facets.size());
+    hitBattery.resize_battery(model->facets.size());
     FacetHistogramBuffer globalHistTemplate{};
     globalHistTemplate.Resize(model->wp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
@@ -762,8 +762,10 @@ void GlobalSimuState::Reset() {
     }
     memset(&globalHits, 0, sizeof(globalHits)); //Plain old data
     hitBattery.clear();
-    if(!facetStates.empty())
-        hitBattery.resize(facetStates.size());
+    if(!facetStates.empty()) {
+        //hitBattery.clear();
+        hitBattery.reserve_battery(hitBattery.maxSamples, facetStates.size());
+    }
     for (auto& state : facetStates) {
         ZEROVECTOR(state.recordedAngleMapPdf);
         for (auto& m : state.momentResults) {
@@ -1455,10 +1457,15 @@ int GlobalSimuState::UpdateBatteryFrequencies() {
         frequencies.emplace_back((double) (facet_stat.momentResults[0].hits.nbMCHit + facet_stat.momentResults[0].hits.nbDesorbed - facet_stat.momentResults[0].hits.nbAbsEquiv) / (double) (globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed + globalHits.globalHits.nbAbsEquiv));
     }
 
-    int bat_n = 0;
-    for(auto& bat : hitBattery.rays){
-        bat.Resize(std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1);
-        bat_n++;
+    if(hitBattery.buffer_per_facet) {
+        int bat_n = 0;
+        for (auto &bat: hitBattery.rays) {
+            bat.Reserve(std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1);
+            bat_n++;
+        }
+    }
+    else {
+        hitBattery.grays.Reserve(hitBattery.maxSamples);
     }
 
     hitBattery.initialized = true;
@@ -1468,7 +1475,9 @@ int GlobalSimuState::UpdateBatteryFrequencies() {
 
 int GlobalSimuState::StopBatteryChange() {
 
-    int bat_n = 0;
+    hitBattery.grays.Resize(0);
+    hitBattery.grays.Erase();
+
     for(auto& bat : hitBattery.rays){
         bat.Resize(0);
         bat.Erase();
@@ -1480,8 +1489,20 @@ int GlobalSimuState::StopBatteryChange() {
 
 std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
 
+    if(!hitBattery.buffer_per_facet){
+        std::vector<TestRay> battery;
+
+            if(hitBattery.grays.Size() != 0)
+                std::sample(hitBattery.grays.data.begin(), hitBattery.grays.data.end(), std::back_inserter(battery),
+                        hitBattery.maxSamples, std::mt19937{std::random_device{}()});
+
+        return battery;
+    }
+
     std::vector<double> frequencies;
     for(auto& facet_stat : facetStates){
+        // per facet, calc a frequency as: (#hit + #des - #abs) / (#hit_g + #des_g + #abs_g)
+        // TODO: Check
         frequencies.emplace_back((double) (facet_stat.momentResults[0].hits.nbMCHit + facet_stat.momentResults[0].hits.nbDesorbed - facet_stat.momentResults[0].hits.nbAbsEquiv) / (double) (globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed + globalHits.globalHits.nbAbsEquiv));
     }
 
@@ -1492,14 +1513,17 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
     size_t count = 0;
     for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
-        if(bat.Size() == 0) continue;
+        if(bat.Size() == 0) {
+            bat_n++;
+            continue;
+        }
         count += (int)std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1;
         bat_n++;
     }
     bat_n = 0;
     double denum = 1.0;
     if(count > hitBattery.maxSamples)
-        denum = (double) hitBattery.maxSamples / (double) count;
+            denum = (double) hitBattery.maxSamples / (double) count;
     for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
         if(bat.Size() == 0) continue;
@@ -1511,6 +1535,8 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
             }
         }*/
     }
+
+    Log::console_msg_master(3, "Adjusted sample size: {} (for {})\n", battery.size(), hitBattery.maxSamples);
 
     return battery;
 }

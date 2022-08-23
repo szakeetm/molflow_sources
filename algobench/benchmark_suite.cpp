@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
             double oldHitNb = globState_old.globalHits.globalHits.nbHitEquiv;
 
             model->otfParams.raySampling = true;
-            globState_old.hitBattery.maxSamples = 1024 * 512;
+            globState_old.hitBattery.maxSamples = 1024 * 128;
             SetAlgo(BenchAlgo::ALGO_BVH_SAH, model);
             model->BuildAccelStructure(&globState_old, BVH, 0, 2, hybrid_weight);
 

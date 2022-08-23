@@ -242,7 +242,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         // Init tmp vars per thread
         particle.tmpFacetVars.assign(simModel->sh.nbFacet, SimulationFacetTempVar());
-        particle.tmpState.hitBattery.resize(simModel->sh.nbFacet);
+        particle.tmpState.hitBattery.resize_battery(simModel->sh.nbFacet);
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;

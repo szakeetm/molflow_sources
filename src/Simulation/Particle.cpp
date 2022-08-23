@@ -96,13 +96,18 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                 auto &hitBattery = globSimuState.hitBattery;
                 if (hitBattery.initialized && hitBattery.size() > 0) {
                     int hit_n = 0;
-                    if (tmpState.hitBattery.size() == hitBattery.size()) {
+                    if(hitBattery.buffer_per_facet && tmpState.hitBattery.size() == hitBattery.size()) {
                         for (auto &bat: hitBattery.rays) {
                             auto &tmp = tmpState.hitBattery.rays[hit_n];
-                            if(!tmp.data.empty())
+                            if (!tmp.data.empty())
                                 bat.Add_Batch(tmp.data);
                             ++hit_n;
                         }
+                    }
+                    else {
+                        auto &tmp = tmpState.hitBattery.grays;
+                        if (!tmp.data.empty())
+                            hitBattery.grays.Add_Batch(tmp.data);
                     }
                 } else {
                     globSimuState.UpdateBatteryFrequencies();
@@ -1550,7 +1555,10 @@ void Particle::RecordHit(const int &type) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
         ++tmpState.globalHits.hitCacheSize;
     }
-    tmpState.hitBattery.rays[particle.lastIntersected].Add_Linear(TestRay(particle.origin, particle.direction, particle.lastIntersected));
+    if(tmpState.hitBattery.buffer_per_facet)
+        tmpState.hitBattery.rays[particle.lastIntersected].Add_Linear(TestRay(particle.origin, particle.direction, particle.lastIntersected));
+    else
+        tmpState.hitBattery.grays.Add_Linear(TestRay(particle.origin, particle.direction, particle.lastIntersected));
 }
 
 void Particle::RecordLeakPos() {

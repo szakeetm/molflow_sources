@@ -2427,7 +2427,13 @@ void MolFlow::calcSticking() {
 void MolFlow::CrashHandler(const std::exception &e) {
 	char tmp[1024];
 	sprintf(tmp, "Well, that's embarrassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e.what());
-	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
+    if(imWnd) {
+        imWnd->renderSingle();
+        imWnd->destruct();
+        delete imWnd;
+        imWnd = nullptr;
+    }
+    GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	try {
 		if (AutoSave(true))
 			GLMessageBox::Display("Good news, autosave worked!", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
