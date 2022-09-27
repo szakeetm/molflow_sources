@@ -220,8 +220,9 @@ void Particle::PerformTeleport(SimulationFacet *iFacet) {
     destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
+/*
 void DeleteChain (HitChain** head_ref){
-    /* deref head_ref to get the real head */
+    // deref head_ref to get the real head
     HitChain* current = *head_ref;
     HitChain* next = nullptr;
 
@@ -233,11 +234,11 @@ void DeleteChain (HitChain** head_ref){
         current = next;
     }
 
-    /* deref head_ref to affect the real head back
-        in the caller. */
+    //deref head_ref to affect the real head back in the caller
 
     *head_ref = nullptr;
 }
+*/
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
 bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
