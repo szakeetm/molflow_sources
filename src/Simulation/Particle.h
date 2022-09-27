@@ -36,7 +36,7 @@ namespace MFSim {
 /**
 * \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
  */
-    class Particle {
+    class ParticleTracer {
     public:
         //double GenerateRandomVelocity(int CDFId, const double rndVal);
 
@@ -86,14 +86,14 @@ namespace MFSim {
 
         void Reset();
 
-        Ray particle; // an object purely for the ray tracing related intersection tests
+        Ray ray; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
         uint64_t totalDesorbed;
         size_t nbBounces; // Number of hit (current particle) since desorption
         size_t lastMomentIndex; // Speedup for binary search
-        size_t particleId;
+        size_t particleTracerId; //For parallel computing, each core gets a particle id. Lines and leak recording only for id=0
         double distanceTraveled;
         double generationTime; //Time it was created, constant
         //double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)

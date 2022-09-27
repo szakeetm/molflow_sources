@@ -54,7 +54,7 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    MFSim::Particle * GetParticle(size_t i) override;
+    MFSim::ParticleTracer * GetParticleTracer(size_t i) override;
     void SetNParticle(size_t n, bool fixedSeed) override;
 
 	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
@@ -69,7 +69,7 @@ public:
 
     // Particle coordinates (MC)//std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
     //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
-    std::vector<MFSim::Particle> particles;
+    std::vector<MFSim::ParticleTracer> particleTracers;
     mutable std::timed_mutex tMutex;
 
 };

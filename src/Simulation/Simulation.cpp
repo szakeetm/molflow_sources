@@ -27,9 +27,9 @@ Simulation::Simulation() : tMutex()
 
     lastLogUpdateOK = true;
 
-    for(auto& particle : particles) {
-        particle.lastHitFacet = nullptr;
-        particle.particle.lastIntersected = -1;
+    for(auto& particleTracer : particleTracers) {
+        particleTracer.lastHitFacet = nullptr;
+        particleTracer.ray.lastIntersected = -1;
     }
 
     hasVolatile = false;
@@ -47,11 +47,11 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
     model = o.model;
 
-    particles = o.particles;
-    for(auto& particle : particles) {
-        particle.lastHitFacet = nullptr;
-        particle.particle.lastIntersected = -1;
-        particle.model = (MolflowSimulationModel*) model.get();
+    particleTracers = o.particleTracers;
+    for(auto& particleTracer : particleTracers) {
+        particleTracer.lastHitFacet = nullptr;
+        particleTracer.ray.lastIntersected = -1;
+        particleTracer.model = (MolflowSimulationModel*) model.get();
     }
 
     hasVolatile =  o.hasVolatile;
@@ -68,36 +68,36 @@ int Simulation::ReinitializeParticleLog() {
         tmpParticleLog.reserve(model->otfParams.logLimit*//* / model->otfParams.nbProcess*//*);
     }*/
 
-    for(auto& particle : particles) {
-        if(!particle.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10)))
+    for(auto& particleTracer : particleTracers) {
+        if(!particleTracer.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10)))
            return -1;
-        particle.tmpParticleLog.clear();
-        particle.tmpParticleLog.pLog.shrink_to_fit();
+        particleTracer.tmpParticleLog.clear();
+        particleTracer.tmpParticleLog.pLog.shrink_to_fit();
         if (model->otfParams.enableLogging) {
-           particle.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
+           particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
         }
-        particle.tmpParticleLog.tMutex.unlock();
+        particleTracer.tmpParticleLog.tMutex.unlock();
     }
     return 0;
 }
 
-MFSim::Particle * Simulation::GetParticle(size_t i) {
-    if(i < particles.size())
-        return &particles.at(i);
+MFSim::ParticleTracer * Simulation::GetParticleTracer(size_t i) {
+    if(i < particleTracers.size())
+        return &particleTracers.at(i);
     else
         return nullptr;
 }
 
 void Simulation::SetNParticle(size_t n, bool fixedSeed) {
-    particles.clear();
-    particles.resize(n);
+    particleTracers.clear();
+    particleTracers.resize(n);
     size_t pid = 0;
-    for(auto& particle : particles){
+    for(auto& particleTracer : particleTracers){
         if(fixedSeed)
-         particle.randomGenerator.SetSeed(42424242 + pid);
+         particleTracer.randomGenerator.SetSeed(42424242 + pid);
         else
-         particle.randomGenerator.SetSeed(GenerateSeed(pid));
-        particle.particleId = pid++;
+         particleTracer.randomGenerator.SetSeed(GenerateSeed(pid));
+        particleTracer.particleTracerId = pid++;
     }
 }
 
@@ -176,13 +176,13 @@ void Simulation::ClearSimulation() {
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particle : particles) {
-        particle.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
-        particle.tmpState.Reset();
-        particle.model = (MolflowSimulationModel*) model.get();
-        particle.totalDesorbed = 0;
+    for(auto& particleTracer : particleTracers) {
+        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.tmpState.Reset();
+        particleTracer.model = (MolflowSimulationModel*) model.get();
+        particleTracer.totalDesorbed = 0;
 
-        particle.tmpParticleLog.clear();
+        particleTracer.tmpParticleLog.clear();
 
     }
     totalDesorbed = 0;
@@ -207,8 +207,8 @@ int Simulation::RebuildAccelStructure() {
     if(model->BuildAccelStructure(globState, BVH, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
-    for(auto& particle : particles)
-        particle.model = (MolflowSimulationModel*) model.get();
+    for(auto& particleTracer : particleTracers)
+        particleTracer.model = (MolflowSimulationModel*) model.get();
 
     timer.Stop();
 
@@ -227,13 +227,13 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     auto* simModel = (MolflowSimulationModel*) model.get();
 
     // New GlobalSimuState structure for threads
-    for(auto& particle : particles)
+    for(auto& particleTracer : particleTracers)
     {
-        auto& tmpResults = particle.tmpState;
+        auto& tmpResults = particleTracer.tmpState;
         tmpResults.Resize(model);
 
         // Init tmp vars per thread
-        particle.tmpFacetVars.assign(simModel->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.tmpFacetVars.assign(simModel->sh.nbFacet, SimulationFacetTempVar());
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
@@ -264,8 +264,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
     Log::console_msg_master(3, "  Total     : {} bytes\n", GetHitsSize());
-    for(auto& particle : particles)
-        Log::console_msg_master(5, "  Seed for {}: {}\n", particle.particleId, particle.randomGenerator.GetSeed());
+    for(auto& particleTracer : particleTracers)
+        Log::console_msg_master(5, "  Seed for {}: {}\n", particleTracer.particleTracerId, particleTracer.randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: {:.2f} ms\n", timer.ElapsedMs());
 
     return 0;
@@ -283,13 +283,13 @@ void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
 
-    for(auto& particle : particles) {
-        particle.Reset();
-        particle.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
-        particle.model = (MolflowSimulationModel*) model.get();
-        particle.totalDesorbed = 0;
+    for(auto& particleTracer : particleTracers) {
+        particleTracer.Reset();
+        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.model = (MolflowSimulationModel*) model.get();
+        particleTracer.totalDesorbed = 0;
 
-        particle.tmpParticleLog.clear();
+        particleTracer.tmpParticleLog.clear();
     }
 
     totalDesorbed = 0;
