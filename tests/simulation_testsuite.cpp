@@ -602,14 +602,14 @@ namespace {
 
         {
             SimulationManager simMan(0);
-            EXPECT_EQ(0, simMan.InitSimUnits());
+            EXPECT_EQ(0, simMan.InitSimulations());
         }
 
         {
             SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 0;
-            simMan.InitSimUnits();
+            simMan.InitSimulations();
             EXPECT_NE(0, simMan.nbThreads);
         }
 
@@ -617,7 +617,7 @@ namespace {
             SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 1; // more not possible,
-            simMan.InitSimUnits();
+            simMan.InitSimulations();
             EXPECT_EQ(1, simMan.nbThreads);
         }
     }
@@ -627,7 +627,7 @@ namespace {
             SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 1;
-            simMan.InitSimUnits();
+            simMan.InitSimulations();
             EXPECT_EQ(1, simMan.nbThreads);
             simMan.KillAllSimUnits();
             EXPECT_EQ(0, simMan.nbThreads);
