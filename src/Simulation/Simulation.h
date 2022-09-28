@@ -37,7 +37,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 class Parameter;
 
 // Local simulation structure
-class Simulation : public SimulationUnit {
+class Simulation : public Simulation_Abstract {
 public:
 
     Simulation();
