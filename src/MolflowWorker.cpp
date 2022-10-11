@@ -1289,7 +1289,7 @@ bool Worker::InterfaceGeomToSimModel() {
     mf_model->vertices3.clear();
 
     for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
-        mf_model->vertices3.emplace_back(*geom->GetVertex(nbV));
+        mf_model->vertices3.emplace_back(*geom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
     }
     // Parse usermoments to regular moment intervals
     //mf_model->tdParams.moments = this->moments;
@@ -1311,7 +1311,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
     mf_model->tdParams.parameters.clear();
     for (auto &param : this->parameters)
-        mf_model->tdParams.parameters.emplace_back(param);
+        mf_model->tdParams.parameters.emplace_back(param); //parameter->Distribution2D conversion
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(this->moments.size());
@@ -1340,6 +1340,7 @@ bool Worker::InterfaceGeomToSimModel() {
                 if (facet->sh.anglemapParams.record) {
                     facet->angleMapCache.clear();
                     facet->angleMapCache.resize(mapSize);
+                    needsAngleMapStatusRefresh = true; //Mark that facet adv. parameters needs to be updated
                 } else {
                     /*auto errString = fmt::format(
                             "[Facet #{}] Recorded Data Size is different from actual size: {} / {}\n",
