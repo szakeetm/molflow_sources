@@ -1,6 +1,14 @@
 # Changelog
 
-## v2.9.6
+## v2.9.7 (2022.10.13)
+### Bugfix
+- Simulation is properly reset on facet change even if scene auto-update is off
+- Fixed crash on texture change while simulation was running
+- Fedora builds: updater no longer downloads Debian updates
+- Proper reset allows to save geometry after isolated vertices are removed
+- Correct angle map status refresh when simulation starts
+
+## v2.9.6 (2022.08.17)
 ### Bugfix
 - Collinearity condition fixed (no more false NULL facets)
 - Create facet with convex hull fixed, no more duplicate vertices
