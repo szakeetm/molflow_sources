@@ -504,9 +504,10 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     srcRnd = ray.rng->rnd() * model->wp.totalDesorbedMolecules;
 
     i = 0;
-    for(auto& fac : model->facets) { //Go through facets in a structure
-        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
-        if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
+    for(const auto& fac : model->facets) { //Go through facets in a structure
+        
+        if (fac->sh.desorbType != DES_NONE) { //there is some kind of outgassing
+            const auto f = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
             if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                 if (f->sh.totalOutgassing > 0.0) {
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
@@ -551,7 +552,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             } //end constant or time-dependent outgassing block
         } //end 'there is some kind of outgassing'
         if (!found) i++;
-        if (f->sh.is2sided) reverse = ray.rng->rnd() > 0.5;
+        if (fac->sh.is2sided) reverse = ray.rng->rnd() > 0.5;
         else reverse = false;
 
         if(found) break;
