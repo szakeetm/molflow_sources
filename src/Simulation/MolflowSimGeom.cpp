@@ -378,10 +378,11 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
 
 
     for (size_t i = 0; i < facets.size(); i++) {
-        auto facet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+        const auto facet = facets[i];
         if (facet->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet->sh.useOutgassingFile) { //outgassing file
-                auto &ogMap = facet->ogMap;
+                const auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+                auto &ogMap = mfFacet->ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules +=
                             latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
