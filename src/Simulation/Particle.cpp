@@ -504,15 +504,16 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     srcRnd = ray.rng->rnd() * model->wp.totalDesorbedMolecules;
 
     i = 0;
-    for(const auto& fac : model->facets) { //Go through facets in a structure
+    for(const auto& f : model->facets) { //Go through facets in a structure
         
-        if (fac->sh.desorbType != DES_NONE) { //there is some kind of outgassing
-            const auto f = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
+        if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
+            
             if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                 if (f->sh.totalOutgassing > 0.0) {
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
                                                                   (1.38E-23 * f->sh.temperature)));
                     if (found) {
+                        const MolflowSimFacet* mfFac = (const MolflowSimFacet*)(f.get()); //Singificantly faster than std::dynamic_pointer_cast
                         //look for exact position in map
                         double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
                                                                                           f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
@@ -529,10 +530,10 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                         }*/
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = my_lower_bound(lookupValue,
-                                                            f->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                            mfFac->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
-                        mapPositionH = (size_t) ((double) outgLowerIndex / (double) f->ogMap.outgassingMapWidth);
-                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * f->ogMap.outgassingMapWidth;
+                        mapPositionH = (size_t) ((double) outgLowerIndex / (double)mfFac->ogMap.outgassingMapWidth);
+                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * mfFac->ogMap.outgassingMapWidth;
                         foundInMap = true;
                         /*if (!foundInMap) {
                             SetErrorSub("Starting point not found in imported desorption map");
@@ -552,7 +553,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             } //end constant or time-dependent outgassing block
         } //end 'there is some kind of outgassing'
         if (!found) i++;
-        if (fac->sh.is2sided) reverse = ray.rng->rnd() > 0.5;
+        if (f->sh.is2sided) reverse = ray.rng->rnd() > 0.5;
         else reverse = false;
 
         if(found) break;
