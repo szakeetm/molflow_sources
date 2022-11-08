@@ -513,7 +513,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
                                                                   (1.38E-23 * f->sh.temperature)));
                     if (found) {
-                        const MolflowSimFacet* mfFac = (const MolflowSimFacet*)(f.get()); //Singificantly faster than std::dynamic_pointer_cast
+                        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(f);
                         //look for exact position in map
                         double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
                                                                                           f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
