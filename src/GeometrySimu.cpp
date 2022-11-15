@@ -16,8 +16,6 @@ SuperStructure::SuperStructure()
 
 SuperStructure::~SuperStructure()
 {
-    SAFE_DELETE(aabbTree->left);
-    SAFE_DELETE(aabbTree->right);
     SAFE_DELETE(aabbTree);
 }
 
