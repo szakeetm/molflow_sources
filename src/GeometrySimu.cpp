@@ -5,6 +5,7 @@
 #include <sstream>
 #include <ProcessControl.h>
 #include "GeometrySimu.h"
+#include "IntersectAABB_shared.h" //AABBNODE
 
 void ClearSimulation();
 
@@ -15,6 +16,8 @@ SuperStructure::SuperStructure()
 
 SuperStructure::~SuperStructure()
 {
+    SAFE_DELETE(aabbTree->left);
+    SAFE_DELETE(aabbTree->right);
     SAFE_DELETE(aabbTree);
 }
 
