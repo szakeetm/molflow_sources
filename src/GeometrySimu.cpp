@@ -5,7 +5,7 @@
 #include <sstream>
 #include <ProcessControl.h>
 #include "GeometrySimu.h"
-#include "IntersectAABB_shared.h" //AABBNODE
+#include "IntersectAABB_shared.h" //AABBNODE definition, including destructor
 
 void ClearSimulation();
 
