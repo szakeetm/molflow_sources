@@ -84,7 +84,7 @@ struct SubprocessFacet{
 
 // Local simulation structure
 
-class AABBNODE;
+class AABBNODE; //Must include class definition ("IntersectAABB_shared.h") in GeometrySimu.cpp, otherwise treated as void and destructor not called!
 
 class SuperStructure {
 public:
