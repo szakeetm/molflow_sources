@@ -84,7 +84,7 @@ ELSE()
     #add_subdirectory(CMake/molflow_testsuit)
 ENDIF(WIN32)
 
-add_dependencies(molflow molflowSub compress)
+add_dependencies(molflow molflowSub compress ziplib)
 
 option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)
