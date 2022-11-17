@@ -105,7 +105,7 @@ add_subdirectory(CMake/molflow_sim)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_win)
-    add_dependencies(molflow ziplib)
+    add_dependencies(molflow)
     IF (WIN32)
         add_subdirectory(CMake/png_zlib_win_library)
     ENDIF(WIN32)
