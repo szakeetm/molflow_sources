@@ -100,7 +100,7 @@ void Simulation::ClearSimulation() {
 
     this->currentParticle = CurrentParticleStatus();
 
-    /*
+    
     this->structures.clear();
     this->CDFs.clear();
     this->IDs.clear();
@@ -108,8 +108,9 @@ void Simulation::ClearSimulation() {
     this->parameters.clear();
     //this->temperatures.clear();
     this->vertices3.clear();
-    */
+    
 
+    /*
     //Force free memory
     std::vector<SuperStructure>().swap(this->structures);
     std::vector<std::vector<Moment>>().swap(this->CDFs);
@@ -117,6 +118,7 @@ void Simulation::ClearSimulation() {
     std::vector<Moment>().swap(this->moments);
     std::vector<Parameter>().swap(this->parameters);
     std::vector<Vector3d>().swap(this->vertices3);
+    */
 
 }
 
