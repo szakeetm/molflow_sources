@@ -1275,7 +1275,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             size_t hitSize = geom->GetHitsSize(moments.size());
 
             progressDlg->SetMessage("Asking subprocesses to clear geometry...");
-            //simManager.ResetSimulations(); //Not needed: Load() will clear anyway
+            simManager.ResetSimulations(); //Closes dpHit dataport
             progressDlg->SetMessage("Creating Logger...");
             simManager.ReloadLogBuffer(logDpSize, true);
             progressDlg->SetMessage("Creating hit buffer...");
