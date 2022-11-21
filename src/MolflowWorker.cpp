@@ -67,9 +67,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SynRad.h"
 #endif
 
-#include "ziplib/ZipArchive.h"
-#include "ziplib/ZipArchiveEntry.h"
-#include "ziplib/ZipFile.h"
+#include <ziplib/ZipArchive.h>
+#include <ziplib/ZipArchiveEntry.h>
+#include <ziplib/ZipFile.h>
 #include "File.h" //File utils (Get extension, etc)
 #include "ProcessControl.h"
 #include "versionId.h"
