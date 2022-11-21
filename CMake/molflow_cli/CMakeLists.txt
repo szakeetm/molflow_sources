@@ -156,8 +156,9 @@ if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
         set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL") #Incompatible with Edit and continue
+        set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG") #no whole program optimization for debug
     endif()
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    
 
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

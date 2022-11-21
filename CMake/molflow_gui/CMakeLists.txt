@@ -34,11 +34,12 @@ ELSE()
     # set stuff for other systems
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
+    #[[ #no more linux libraries
     IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(LINK_DIR_1 ../../lib_external/linux_fedora)
     ELSE()
         set(LINK_DIR_1 ../../lib_external/linux_debian)
-    ENDIF()
+    ENDIF()]]
 ENDIF()
 
 ############## CMake Project ################
@@ -67,13 +68,12 @@ ENDIF()
 
 if(MSVC)
 
-endif(MSVC)
-if(NOT MSVC)
+else() #not MSVC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
-endif(NOT MSVC)
+endif()
 
 ################ Files ################
 #   --   Add files to project.   --   #
@@ -152,7 +152,8 @@ if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
         set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL") #Incompatible with Edit and continue
-    endif()#set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+        set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    endif()
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE YES
             LINK_FLAGS "/ENTRY:mainCRTStartup"
@@ -178,7 +179,7 @@ if(MSVC)
             ole32.lib)
     # 2. link against our own libs
     #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)]]
-elseif(NOT MSVC)
+else() #not MSVC
     if(APPLE)
         #link to self-build sdl shared lib
         target_link_libraries(${PROJECT_NAME} PRIVATE "-framework AppKit")

@@ -67,13 +67,10 @@ else() #not MSVC
 endif(NOT MSVC)
 
 if(USE_PROFILING)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+    string(APPEND CMAKE_C_FLAGS " -O0 -pg")
+    string(APPEND CMAKE_CXX_FLAGS " -O0 -pg")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -pg")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pg")
 endif(USE_PROFILING)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
@@ -82,11 +79,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
-
-#IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_sim)
-#ENDIF()
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
@@ -97,11 +91,7 @@ if(NOT NO_INTERFACE)
 endif()
 
 add_dependencies(molflowSim ziplib)
-
-
-#IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
-#ENDIF()
 
 option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)
