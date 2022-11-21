@@ -7,9 +7,10 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflow)
 
 # Folders files
-set(CPP_DIR_1 ../../src)
-set(HEADER_DIR_1 ../../src)
-set(HEADER_DIR_2 ../../src_shared)
+set(CPP_DIR_1 ./src)
+set(HEADER_DIR_1 ./src)
+set(HEADER_DIR_2 ./src_shared)
+set(HEADER_DIR_ZIP ./src_shared/external/zipLib/Source)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
 #set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
@@ -121,6 +122,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         ${HEADER_DIR_8}
+        ${HEADER_DIR_ZIP}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
