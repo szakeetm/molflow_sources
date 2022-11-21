@@ -56,13 +56,12 @@ add_definitions(
 
 if(MSVC)
 
-endif(MSVC)
-if(NOT MSVC)
+else() #not msvc
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
-endif(NOT MSVC)
+endif()
 
 ################ Files ################
 #   --   Add files to project.   --   #
@@ -73,8 +72,6 @@ set(SRC_FILES
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
-        #${CPP_DIR_2}/MolflowSimGeom.cpp
-        #${CPP_DIR_2}/MolflowSimFacet.cpp
 
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp

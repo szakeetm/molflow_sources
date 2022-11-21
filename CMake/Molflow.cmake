@@ -72,21 +72,6 @@ elseif(OS_NAME STREQUAL "linux_debian")
     )
 endif ()
 
-#[[add_compile_options(
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-# -Wextra -pedantic
-        #-Werror -Wno-error=uninitialized
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>
-        #/WX
-        )]]
-
-#[[add_compile_options(
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)]]
 if(NOT MSVC)
     add_compile_options(
             "$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-tautological-undefined-compare;-Wno-inconsistent-missing-override>"
@@ -106,8 +91,7 @@ if(NOT MSVC)
         "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
         "$<$<CONFIG:RELWITHDEBINFO>:-g>"
     )
-else()
-    #/WX
+else() #MSVC
     add_compile_options(
         /W3
     )
@@ -130,9 +114,6 @@ if(MSVC)
 endif(MSVC)
 
 set(COPY_DIR ./copy_to_build/)
-
-# Clear previous build to prevent remaining (old) files
-# file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
 # Windows DLL files
 IF (WIN32)

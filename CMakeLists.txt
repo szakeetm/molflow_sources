@@ -55,32 +55,11 @@ endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-
-    #set(CMAKE_GENERATOR_PLATFORM x64)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /mwindows")
-
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    # main vs WinMain
-    # https://stackoverflow.com/questions/2752792/whats-the-equivalent-of-gccs-mwindows-option-in-cmake
-    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows /ENTRY:mainCRTStartup")
-    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W3 /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /EHsc")
-    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /MDd /Od /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /GL /O2 /Ob2 /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W4 /GL /O2 /EHsc")
     if(CMAKE_BUILD_TYPE MATCHES Debug)
         string(APPEND CMAKE_CXX_FLAGS_DEBUG " /ZI") #Edit and continue
-        #string(APPEND CMAKE_SHARED_LINKER_FLAGS " /SAFESEH:NO") #Edit and continue
-        #string(APPEND CMAKE_EXE_LINKER_FLAGS " /SAFESEH:NO") #Edit and continue
     endif()
-
-endif(MSVC)
-if(NOT MSVC)
+else() #not MSVC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-	#Flag to set debug symbols
-	#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-	#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 	
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")

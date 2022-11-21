@@ -170,15 +170,9 @@ if(MSVC)
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            #bzip2.lib
-            #libcurl_a_x64.lib
             SDL2.lib
             SDL2main.lib
-            #libgsl.lib
-            #libgslcblas.lib
-            #lzma.lib
-            #zlib.lib
-            opengl32#.lib
+            opengl32
             user32.lib
             shell32.lib
             ole32.lib)
@@ -244,6 +238,4 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
-    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
-    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)]]
 endif()
