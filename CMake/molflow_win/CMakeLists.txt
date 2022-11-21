@@ -176,7 +176,6 @@ if(MSVC)
             #libgsl.lib
             #libgslcblas.lib
             #lzma.lib
-            #ZipLib.lib
             #zlib.lib
             opengl32#.lib
             user32.lib
@@ -236,21 +235,6 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
-    #[[# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
-    if (NOT TARGET libzip)
-        add_library( libzip STATIC IMPORTED GLOBAL)
-    endif()
-    # You can define two import-locations: one for debug and one for release.
-    get_filename_component(ABS_LINK_DIR_1 "${LINK_DIR_1}" REALPATH)
-
-    # other static libraries need to be built with similar settings for clang (here: libc++)
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_clang.a )
-    else()
-        set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
-    endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/]]
-
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
@@ -261,5 +245,4 @@ elseif(NOT MSVC)
 
     #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)]]
-    #target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()

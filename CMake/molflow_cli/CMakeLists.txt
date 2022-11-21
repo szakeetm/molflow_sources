@@ -168,7 +168,6 @@ if(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             #bzip2.lib
             #lzma.lib
-            #ZipLib.lib
             #zlib.lib
             )
 endif(MSVC)

@@ -92,7 +92,6 @@ if(MSVC)
     target_link_libraries(testsuite PRIVATE
             #bzip2.lib
             #lzma.lib
-            #ZipLib.lib
             #zlib.lib
             )
 endif(MSVC)
