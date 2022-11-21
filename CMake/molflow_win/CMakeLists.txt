@@ -229,7 +229,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
-    # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
+    #[[# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
     if (NOT TARGET libzip)
         add_library( libzip STATIC IMPORTED GLOBAL)
     endif()
@@ -242,7 +242,7 @@ elseif(NOT MSVC)
     else()
         set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
     endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
+    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/]]
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
