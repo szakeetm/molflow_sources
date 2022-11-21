@@ -56,7 +56,7 @@ endif()
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        string(APPEND CMAKE_CXX_FLAGS_DEBUG " /ZI") #Edit and continue
+        string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue instead of default /Zi
     endif()
 else() #not MSVC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
