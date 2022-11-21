@@ -69,6 +69,12 @@ if(MSVC)
     #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /MDd /Od /EHsc")
     #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /GL /O2 /Ob2 /EHsc")
     #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W4 /GL /O2 /EHsc")
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        string(APPEND CMAKE_CXX_FLAGS_DEBUG " /ZI") #Edit and continue
+        #string(APPEND CMAKE_SHARED_LINKER_FLAGS " /SAFESEH:NO") #Edit and continue
+        #string(APPEND CMAKE_EXE_LINKER_FLAGS " /SAFESEH:NO") #Edit and continue
+    endif()
+
 endif(MSVC)
 if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")

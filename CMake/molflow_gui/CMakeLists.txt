@@ -150,8 +150,9 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
-    #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
+        set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL") #Incompatible with Edit and continue
+    endif()#set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE YES
             LINK_FLAGS "/ENTRY:mainCRTStartup"
