@@ -169,7 +169,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
-    if (simManager->InitSimUnits()) {
+    if (simManager->InitSimulations()) {
         Log::console_error("Error: Initialising simulation units: {}\n", simManager->nbThreads);
         return 1;
     }

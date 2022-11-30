@@ -5,7 +5,7 @@ ELSEIF(APPLE)
     set(OS_NAME "mac")
     set(OS_RELPATH "")
 ELSE()
-    IF(os_version_suffix STREQUAL ".el7")
+    IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(OS_NAME "linux_fedora")
     ELSE()
         set(OS_NAME "linux_debian")
@@ -19,28 +19,15 @@ ELSE()
     set(MY_BUILD_TYPE "release")
 ENDIF()
 
-# Output Variables
-
-set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
-set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
-set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
-set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/)
-
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
 #################################################
 
-if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
-else()
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_REL}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_REL}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/lib/")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/lib/")
+set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OS_RELPATH}/bin/")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/bin/")
+
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}) #to build executable in main folder
 
 # Messages
@@ -72,21 +59,6 @@ elseif(OS_NAME STREQUAL "linux_debian")
     )
 endif ()
 
-#[[add_compile_options(
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-# -Wextra -pedantic
-        #-Werror -Wno-error=uninitialized
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>
-        #/WX
-        )]]
-
-#[[add_compile_options(
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)]]
 if(NOT MSVC)
     add_compile_options(
             "$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-tautological-undefined-compare;-Wno-inconsistent-missing-override>"
@@ -106,8 +78,7 @@ if(NOT MSVC)
         "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
         "$<$<CONFIG:RELWITHDEBINFO>:-g>"
     )
-else()
-    #/WX
+else() #MSVC
     add_compile_options(
         /W3
     )
@@ -130,9 +101,6 @@ if(MSVC)
 endif(MSVC)
 
 set(COPY_DIR ./copy_to_build/)
-
-# Clear previous build to prevent remaining (old) files
-# file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
 # Windows DLL files
 IF (WIN32)

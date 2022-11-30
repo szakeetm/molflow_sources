@@ -55,40 +55,22 @@ endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-
-    #set(CMAKE_GENERATOR_PLATFORM x64)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /mwindows")
-
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    # main vs WinMain
-    # https://stackoverflow.com/questions/2752792/whats-the-equivalent-of-gccs-mwindows-option-in-cmake
-    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows /ENTRY:mainCRTStartup")
-    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W3 /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /EHsc")
-    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /MDd /Od /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /GL /O2 /Ob2 /EHsc")
-    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W4 /GL /O2 /EHsc")
-endif(MSVC)
-if(NOT MSVC)
+    if(CMAKE_BUILD_TYPE MATCHES Debug)
+        string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue instead of default /Zi
+    endif()
+else() #not MSVC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-	#Flag to set debug symbols
-	#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-	#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 	
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
-endif(NOT MSVC)
+endif()
 
 if(USE_PROFILING)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-    SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+    string(APPEND CMAKE_C_FLAGS " -O0 -pg")
+    string(APPEND CMAKE_CXX_FLAGS " -O0 -pg")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -pg")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pg")
 endif(USE_PROFILING)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
@@ -97,15 +79,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
-
-#IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_sim)
-#ENDIF()
 
 if(NOT NO_INTERFACE)
-    add_subdirectory(CMake/molflow_win)
-    add_dependencies(molflow ziplib)
+    add_subdirectory(CMake/molflow_gui)
     IF (WIN32)
         add_subdirectory(CMake/png_zlib_win_library)
     ENDIF(WIN32)
@@ -113,11 +91,7 @@ if(NOT NO_INTERFACE)
 endif()
 
 add_dependencies(molflowSim ziplib)
-
-
-#IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
-#ENDIF()
 
 option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)

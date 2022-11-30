@@ -79,7 +79,7 @@ IF (WIN32)
 ELSEIF(APPLE)
     set(LINK_DIR_1 ../lib_external/mac)
 ELSE()
-    IF(os_version_suffix STREQUAL ".el7")
+    IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(LINK_DIR_1 ../lib_external/linux_fedora)
     ELSE()
         set(LINK_DIR_1 ../lib_external/linux_debian)
@@ -92,7 +92,6 @@ if(MSVC)
     target_link_libraries(testsuite PRIVATE
             #bzip2.lib
             #lzma.lib
-            #ZipLib.lib
             #zlib.lib
             )
 endif(MSVC)

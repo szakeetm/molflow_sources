@@ -29,7 +29,7 @@ ELSE()
     # set stuff for other systems
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    IF(os_version_suffix STREQUAL ".el7")
+    IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(LINK_DIR_1 ../../lib_external/linux_fedora)
     ELSE()
         set(LINK_DIR_1 ../../lib_external/linux_debian)
@@ -56,13 +56,12 @@ add_definitions(
 
 if(MSVC)
 
-endif(MSVC)
-if(NOT MSVC)
+else() #not msvc
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
-endif(NOT MSVC)
+endif()
 
 ################ Files ################
 #   --   Add files to project.   --   #
@@ -73,8 +72,6 @@ set(SRC_FILES
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
-        #${CPP_DIR_2}/MolflowSimGeom.cpp
-        #${CPP_DIR_2}/MolflowSimFacet.cpp
 
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
@@ -157,8 +154,11 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
+        set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL") #Incompatible with Edit and continue
+        set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG") #no whole program optimization for debug
+    endif()
+    
 
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -168,7 +168,6 @@ if(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE
             #bzip2.lib
             #lzma.lib
-            #ZipLib.lib
             #zlib.lib
             )
 endif(MSVC)

@@ -298,7 +298,7 @@ int MolflowSimulationModel::PrepareToRun() {
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        auto facet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+        const auto facet = facets[i];
         // TODO: Find a solution to integrate catalog parameters
         if(facet->sh.outgassing_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
@@ -338,12 +338,13 @@ int MolflowSimulationModel::PrepareToRun() {
         }
         //Angle map
         if (facet->sh.desorbType == DES_ANGLEMAP) {
-            if (facet->angleMap.pdf.empty()) {
+            auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+            if (mfFacet->angleMap.pdf.empty()) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
                 errLog.append(tmp);
             }
-            if (facet->sh.anglemapParams.record) {
+            if (mfFacet->sh.anglemapParams.record) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
                 errLog.append(tmp);
@@ -377,10 +378,11 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
 
 
     for (size_t i = 0; i < facets.size(); i++) {
-        auto facet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+        const auto facet = facets[i];
         if (facet->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet->sh.useOutgassingFile) { //outgassing file
-                auto &ogMap = facet->ogMap;
+                const auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+                auto &ogMap = mfFacet->ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules +=
                             latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
