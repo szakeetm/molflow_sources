@@ -860,9 +860,9 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
     Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        velocityVector = velocity * particle.direction;
+        velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
+        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
@@ -921,9 +921,9 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
 
     if (model->wp.measureForce) {
-        velocityVector = -1.0 * velocity * particle.direction; //sum impulse unchanged
+        velocityVector = -1.0 * velocity * ray.direction; //sum impulse unchanged
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
+        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
@@ -973,14 +973,14 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
 
     if (particleTracerId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
-            velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
+            velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
     Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
     Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        velocityVector = velocity * particle.direction;
+        velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
+        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
@@ -1254,7 +1254,7 @@ double ParticleTracer::GenerateDesorptionTime(const SimulationFacet *src, const 
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-Particle::IncreaseFacetCounter(const SimulationFacet *f, int m, const size_t& hit, const size_t& desorb,
+ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size_t& hit, const size_t& desorb,
                                const size_t& absorb, const double& sum_1_per_v, const double& sum_v_ort,
                                const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
