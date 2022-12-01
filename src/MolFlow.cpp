@@ -60,7 +60,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/ImportDesorption.h"
 #include "Interface/TimeSettings.h"
 #include "Interface/Movement.h"
-#include "Interface/MeasureForce.h"
 #include "Interface/FacetAdvParams.h"
 #include "Interface/FacetDetails.h"
 #include "Interface/Viewer3DSettings.h"
@@ -77,6 +76,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/HistogramSettings.h"
 #include "Interface/HistogramPlotter.h"
 #include "FormulaEvaluator_MF.h"
+#if defined (MEASURE_FORCES)
+#include "Interface/MeasureForce.h"
+#endif
 
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -168,7 +170,10 @@ MolFlow *mApp;
 #define MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD  179
 
 #define MENU_TOOLS_MOVINGPARTS 410
+
+#if defined (MEASURE_FORCES)
 #define MENU_TOOLS_MEASUREFORCE 420
+#endif
 
 #define MENU_SELECT_HASDESFILE 361
 #define MENU_FACET_OUTGASSINGMAP 362
@@ -237,7 +242,6 @@ MolFlow::MolFlow()
 
 	//Molflow only:
 	movement = nullptr;
-	measureForce = nullptr;
 	timewisePlotter = nullptr;
 	pressureEvolution = nullptr;
     outgassingMapWindow = nullptr;
@@ -245,6 +249,10 @@ MolFlow::MolFlow()
 	parameterEditor = nullptr;
 	importDesorption = nullptr;
 	timeSettings = nullptr;
+
+#if defined (MEASURE_FORCES)
+	measureForce = nullptr;
+#endif
 
 	useOldXMLFormat = false;
 	FormulaEvaluator* eval = new FormulaEvaluator_MF(&worker,(MolflowGeometry*)worker.GetGeometry(),&selections);
@@ -303,7 +311,9 @@ int MolFlow::OneTimeSceneInit()
 
 	menu->GetSubMenu("Tools")->Add(nullptr);
 	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_TOOLS_MOVINGPARTS);
+#if defined (MEASURE_FORCES)
 	menu->GetSubMenu("Tools")->Add("Measure forces...", MENU_TOOLS_MEASUREFORCE);
+#endif
 
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 
@@ -1045,12 +1055,13 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(importDesorption);
 	RVALIDATE_DLG(timeSettings);
 	RVALIDATE_DLG(movement);
-	RVALIDATE_DLG(measureForce);
 	RVALIDATE_DLG(outgassingMapWindow);
 	RVALIDATE_DLG(parameterEditor);
 	RVALIDATE_DLG(pressureEvolution);
 	RVALIDATE_DLG(timewisePlotter);
-
+#if defined (MEASURE_FORCES)
+	RVALIDATE_DLG(measureForce);
+#endif
 	return GL_OK;
 }
 
@@ -1075,12 +1086,13 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(importDesorption);
 	IVALIDATE_DLG(timeSettings);
 	IVALIDATE_DLG(movement);
-	IVALIDATE_DLG(measureForce);
 	IVALIDATE_DLG(outgassingMapWindow);
 	IVALIDATE_DLG(parameterEditor);
 	IVALIDATE_DLG(pressureEvolution);
 	IVALIDATE_DLG(timewisePlotter);
-
+#if defined (MEASURE_FORCES)
+	IVALIDATE_DLG(measureForce);
+#endif
 	return GL_OK;
 }
 
@@ -1361,10 +1373,12 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
-		if (measureForce) measureForce->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+#if defined (MEASURE_FORCES)
+		if (measureForce) measureForce->Update();
+#endif
 	}
 	catch(const std::exception &e) {
 
@@ -1603,11 +1617,13 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			movement->SetVisible(true);
 			break;
 
+#if defined (MEASURE_FORCES)
 		case MENU_TOOLS_MEASUREFORCE:
 			if (!measureForce) measureForce = new MeasureForce(geom, &worker);
 			measureForce->Update();
 			measureForce->SetVisible(true);
 			break;
+#endif
 
 		case MENU_EDIT_TSCALING:
 			if (!textureScaling || !textureScaling->IsVisible()) {
@@ -2009,9 +2025,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
-	if (measureForce) measureForce->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+#if defined (MEASURE_FORCES)
+	if (measureForce) measureForce->Update();
+#endif
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
@@ -2077,14 +2095,15 @@ void MolFlow::EmptyGeometry() {
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
-	if (measureForce) measureForce->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
-	
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
+#if defined (MEASURE_FORCES)
+	if (measureForce) measureForce->Update();
+#endif
 	
 	UpdateTitle();
 	changedSinceSave = false;

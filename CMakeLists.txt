@@ -22,7 +22,15 @@ option(USE_PROFILING "disable optimisation for profiling the application" OFF) #
 
 option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
 if(NO_INTERFACE)
-    message(STATUS "Will not build GUI related libraries and executables.")
+    message(STATUS "NO_INTERFACE: Will not build GUI related libraries and executables.")
+endif()
+
+option(MEASURE_FORCES "measure microscopic forces on facets, causing 20% slower performance" ON) # ON is the default in measure_forces2 git branch
+if (MEASURE_FORCES)
+    message(STATUS "MEASURE_FORCES: Enabled microscopic force measurement")
+    add_compile_options(-DMEASURE_FORCES) #Propagate Cmake option as preprocessor definition
+else()
+    message(STATUS "Microscopic force measurements OFF")
 endif()
 
 # Define Release by default.

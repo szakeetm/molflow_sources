@@ -121,8 +121,9 @@ The installation path can be changed by adding an installation prefix to the CMa
     - `cd molflow`
 - Build molflow with the installed cmake (or the pre-installed cmake)
     - we require headless (NO_INTERFACE) and MPI (USE_MPI) for the CMake build
+    - you can enable measurement of microscopic forces (appears in formula editor and facet details windows) by the MEASURE_FORCES flag, at approx. 20% performance cost
     - `mkdir build && cd build` 
-    - `~/cmake-3.20.1-linux-x86_64/bin/cmake -DCMAKE_C_COMPILER=/path_to_custom_gcc -DCMAKE_CXX_COMPILER=/path_to_custom_g++ -DNO_INTERFACE=ON -DUSE_MPI=ON ..`
+    - `~/cmake-3.20.1-linux-x86_64/bin/cmake -DCMAKE_C_COMPILER=/path_to_custom_gcc -DCMAKE_CXX_COMPILER=/path_to_custom_g++ -DNO_INTERFACE=ON -DUSE_MPI=ON -DMEASURE_FORCES=OFF..`
 - Use as explained by the MPI service of choice, e.g. with `mpirun`
     `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
 

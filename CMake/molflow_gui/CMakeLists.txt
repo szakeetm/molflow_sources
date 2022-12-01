@@ -88,7 +88,7 @@ set(SRC_FILES
         ${UI_DIR}/ImportDesorption.cpp
         ${UI_DIR}/MomentsEditor.cpp
         ${UI_DIR}/Movement.cpp
-		${UI_DIR}/MeasureForce.cpp
+		
         ${UI_DIR}/OutgassingMapWindow.cpp
         ${UI_DIR}/ParameterEditor.cpp
         ${UI_DIR}/PressureEvolution.cpp
@@ -117,6 +117,9 @@ set(SRC_FILES
         ${HEADER_DIR_2}/IntersectAABB_shared.cpp
 
         )
+if(MEASURE_FORCES)  
+list (APPEND SRC_FILES ${UI_DIR}/MeasureForce.cpp)
+endif()
 
 # Add executable to build.
 if(WIN32)

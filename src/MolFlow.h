@@ -25,7 +25,6 @@ class Worker;
 class ImportDesorption;
 class TimeSettings;
 class Movement;
-class MeasureForce;
 class FacetAdvParams;
 class FacetDetails;
 class Viewer3DSettings;
@@ -38,6 +37,9 @@ class TexturePlotter;
 class OutgassingMapWindow;
 class MomentsEditor;
 class ParameterEditor;
+#if defined (MEASURE_FORCES)
+class MeasureForce;
+#endif
 
 struct Error;
 
@@ -107,7 +109,6 @@ public:
 	ImportDesorption *importDesorption;
 	TimeSettings     *timeSettings;
 	Movement         *movement;
-	MeasureForce     *measureForce;
     FacetAdvParams   *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;
@@ -120,6 +121,9 @@ public:
 	OutgassingMapWindow    *outgassingMapWindow;
 	MomentsEditor    *momentsEditor;
 	ParameterEditor  *parameterEditor;
+#if defined (MEASURE_FORCES)
+	MeasureForce     *measureForce;
+#endif
 	char *nbF;
 
     // Testing

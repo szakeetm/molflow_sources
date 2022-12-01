@@ -32,7 +32,9 @@ WorkerParams::WorkerParams(){
     finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
     motionType = 0;
     torqueRefPoint = Vector3d(0.0, 0.0, 0.0); //origin
+#if defined (MEASURE_FORCES)
     measureForce = true;
+#endif
 }
 
 OntheflySimulationParams::OntheflySimulationParams(){
