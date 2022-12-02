@@ -2717,7 +2717,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) {
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) { //scheduled to be removed
     xml_node rootNode;
     if(mApp->useOldXMLFormat){
         rootNode = saveDoc;
@@ -3061,7 +3061,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 * \param work thread worker handling the task
 * \param progressDlg GLProgress window where visualising of the import progress is shown
 */
-void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg) {
+void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg) { //scheduled to be removed
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -3589,7 +3589,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param progressDlg GLProgress window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress* progressDlg) {
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress* progressDlg) { //scheduled to be removed
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 
 	xml_node resultNode = loadXML.child("MolflowResults");
