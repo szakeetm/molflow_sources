@@ -62,9 +62,7 @@ namespace MFSim {
 
 		void IncreaseFacetCounter(const SimulationFacet* f, int m, const size_t& hit, const size_t& desorb, const size_t& absorb,
 			const double& sum_1_per_v, const double& sum_v_ort,
-			const Vector3d& impulse = Vector3d(0.0, 0.0, 0.0),
-			const Vector3d& impulse_square = Vector3d(0.0, 0.0, 0.0),
-			const Vector3d& impulse_momentum = Vector3d(0.0, 0.0, 0.0));
+			const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum);
 
         void UpdateVelocity(const SimulationFacet *collidedFacet);
 
@@ -114,8 +112,9 @@ namespace MFSim {
         std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 
         bool allQuit{false};
-
         bool StartFromSource(Ray &ray);
+
+        Vector3d nullVector; //so we don't have to allocate and destroy for dummy uses
     };
 }
 

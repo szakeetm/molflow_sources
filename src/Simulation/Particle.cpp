@@ -212,7 +212,8 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
-                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+                         nullVector, nullVector, nullVector);
     tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += velocity*abs(DOT3(
@@ -742,18 +743,19 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
-    Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.enableForceMeasurement) {
-        velocityVector = velocity * ray.direction;
-        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
-    }
-
-	IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+        Vector3d velocityVector = velocity * ray.direction;
+        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
 		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
+    }
+    else {
+        IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            nullVector, nullVector, nullVector);
+    }
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -791,7 +793,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
             lastMomentIndex = momentIndex - 1;
         }
 
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0);
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0, nullVector, nullVector, nullVector);
         ray.structure = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
             if (particleTracerId == 0)RecordHit(HIT_MOVING);
@@ -821,7 +823,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
                 lastMomentIndex = momentIndex - 1;
             }
 
-            IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0);
+            IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0, nullVector, nullVector, nullVector);
             iFacet->isReady = false;
             LogHit(iFacet);
             ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
@@ -855,18 +857,19 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         lastMomentIndex = momentIndex - 1;
     }
 
-
-    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
-    Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.enableForceMeasurement) {
-        velocityVector = velocity * ray.direction;
-        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
-    }
-    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
+        Vector3d velocityVector = velocity * ray.direction;
+        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
+    }
+    else {
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
+            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            nullVector, nullVector, nullVector);
+    }
     nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
@@ -921,13 +924,18 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
 
     if (model->wp.enableForceMeasurement) {
-        velocityVector = -1.0 * velocity * ray.direction; //sum impulse unchanged
-        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
-    }
-    IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
+        Vector3d velocityVector = - 1.0 * velocity * ray.direction; //sum impulse unchanged
+        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
+    }
+    else {
+        IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
+            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            nullVector, nullVector, nullVector);
+    }
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
@@ -974,17 +982,20 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
     if (particleTracerId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
-    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
-    Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
+    
     if (model->wp.enableForceMeasurement) {
-        velocityVector = velocity * ray.direction;
-        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
-    }
-    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
+        Vector3d velocityVector = velocity * ray.direction;
+        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
+    }
+    else {
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
+            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            nullVector, nullVector, nullVector);
+    }
     LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1303,8 +1314,8 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
 
     IncreaseFacetCounter(facet, momentIndex, 1, 0, 0,
                          2.0 / (velocity * directionFactor),
-                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
-                         directionFactor);
+                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity * directionFactor,
+                         nullVector,nullVector,nullVector);
 
     tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
