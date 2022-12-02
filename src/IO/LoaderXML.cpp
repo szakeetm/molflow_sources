@@ -192,7 +192,6 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.motionVector2.z = v2.attribute("z").as_double();
     }
 
-#if defined (MEASURE_FORCES)
     auto torqueNode = simuParamNode.child("Torque");
     if (torqueNode) {
         model->wp.measureForce = torqueNode.attribute("measure").as_bool();
@@ -201,7 +200,6 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.torqueRefPoint.y = v.attribute("y").as_double();
         model->wp.torqueRefPoint.z = v.attribute("z").as_double();
     }
-#endif
 
     xml_node globalHistNode = simuParamNode.child("Global_histograms");
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
