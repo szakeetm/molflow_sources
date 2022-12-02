@@ -745,7 +745,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
     Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
-    if (model->wp.measureForce) {
+    if (model->wp.enableForceMeasurement) {
         velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
@@ -859,7 +859,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
     Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
-    if (model->wp.measureForce) {
+    if (model->wp.enableForceMeasurement) {
         velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
@@ -920,7 +920,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     ortVelocity = velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
 
 
-    if (model->wp.measureForce) {
+    if (model->wp.enableForceMeasurement) {
         velocityVector = -1.0 * velocity * ray.direction; //sum impulse unchanged
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
@@ -977,7 +977,7 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
     Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
     Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
-    if (model->wp.measureForce) {
+    if (model->wp.enableForceMeasurement) {
         velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
@@ -1268,7 +1268,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
-        if (model->wp.measureForce) {
+        if (model->wp.enableForceMeasurement) {
             hits.impulse += oriRatio * impulse;
             hits.impulse_square += oriRatio * impulse_square;
             hits.impulse_momentum += oriRatio * impulse_momentum;
@@ -1284,7 +1284,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
-        if (model->wp.measureForce) {
+        if (model->wp.enableForceMeasurement) {
             hits.impulse += oriRatio * impulse;
             hits.impulse_square += oriRatio * impulse_square;
             hits.impulse_momentum += oriRatio * impulse_momentum;

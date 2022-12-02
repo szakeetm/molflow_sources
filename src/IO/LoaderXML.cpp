@@ -194,7 +194,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
 
     auto torqueNode = simuParamNode.child("Torque");
     if (torqueNode) {
-        model->wp.measureForce = torqueNode.attribute("measure").as_bool();
+        model->wp.enableForceMeasurement = torqueNode.attribute("measure").as_bool();
         auto v = torqueNode.child("RefPoint");
         model->wp.torqueRefPoint.x = v.attribute("x").as_double();
         model->wp.torqueRefPoint.y = v.attribute("y").as_double();

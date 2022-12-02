@@ -107,7 +107,7 @@ public:
 	ImportDesorption *importDesorption;
 	TimeSettings     *timeSettings;
 	Movement         *movement;
-	MeasureForce     *measureForce;
+	MeasureForce     *measureForces;
     FacetAdvParams   *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;

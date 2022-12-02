@@ -237,7 +237,7 @@ MolFlow::MolFlow()
 
 	//Molflow only:
 	movement = nullptr;
-	measureForce = nullptr;
+	measureForces = nullptr;
 	timewisePlotter = nullptr;
 	pressureEvolution = nullptr;
     outgassingMapWindow = nullptr;
@@ -1045,7 +1045,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(importDesorption);
 	RVALIDATE_DLG(timeSettings);
 	RVALIDATE_DLG(movement);
-	RVALIDATE_DLG(measureForce);
+	RVALIDATE_DLG(measureForces);
 	RVALIDATE_DLG(outgassingMapWindow);
 	RVALIDATE_DLG(parameterEditor);
 	RVALIDATE_DLG(pressureEvolution);
@@ -1075,7 +1075,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(importDesorption);
 	IVALIDATE_DLG(timeSettings);
 	IVALIDATE_DLG(movement);
-	IVALIDATE_DLG(measureForce);
+	IVALIDATE_DLG(measureForces);
 	IVALIDATE_DLG(outgassingMapWindow);
 	IVALIDATE_DLG(parameterEditor);
 	IVALIDATE_DLG(pressureEvolution);
@@ -1361,7 +1361,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
-		if (measureForce) measureForce->Update();
+		if (measureForces) measureForces->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
@@ -1604,9 +1604,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_TOOLS_MEASUREFORCE:
-			if (!measureForce) measureForce = new MeasureForce(geom, &worker);
-			measureForce->Update();
-			measureForce->SetVisible(true);
+			if (!measureForces) measureForces = new MeasureForce(geom, &worker);
+			measureForces->Update();
+			measureForces->SetVisible(true);
 			break;
 
 		case MENU_EDIT_TSCALING:
@@ -2009,7 +2009,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
-	if (measureForce) measureForce->Update();
+	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	UpdateTitle();
@@ -2077,7 +2077,7 @@ void MolFlow::EmptyGeometry() {
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
-	if (measureForce) measureForce->Update();
+	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	
