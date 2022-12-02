@@ -40,6 +40,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/StringHelper.h>
 #include <Helper/ConsoleLogger.h>
 #include <ZipLib/ZipFile.h>
+#include "versionId.h"
 
 //#if defined(MOLFLOW)
 #include <SettingsIO.h>
@@ -54,7 +55,7 @@ static constexpr const char* molflowCliLogo = R"(
  |  \/  |___| |/ _| |_____ __ __
  | |\/| / _ \ |  _| / _ \ V  V /
  |_|  |_\___/_|_| |_\___/\_/\_/
-    )";
+    )"; //Unused, clutters iterative simulations and parameter sweeps
 
 void GatherResults(MolflowSimulationModel& model, GlobalSimuState& globSim){
     for(int i = 0; i < model.facets.size(); i++ ) {
@@ -126,7 +127,7 @@ int main(int argc, char** argv) {
     MFMPI::mpi_initialize();
 #endif
 
-    Log::console_msg_master(1, "{}\n", molflowCliLogo);
+    Log::console_msg_master(1, "{} command line mode\n", appTitle);
 
     // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
