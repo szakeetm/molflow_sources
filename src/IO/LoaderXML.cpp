@@ -479,7 +479,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
 
                     if (forcesNode) { //Load if there's recorded information
 
-                        auto impulseNode = facetHitNode.child("Impulse");
+                        auto impulseNode = forcesNode.child("Impulse");
                         if (impulseNode) {
                             facetCounter->impulse = Vector3d(
                                 impulseNode.attribute("x").as_double(),
@@ -490,7 +490,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                         else {
                             facetCounter->impulse = Vector3d(0.0, 0.0, 0.0);
                         }
-                        auto impulse_sqr_Node = facetHitNode.child("Impulse_square");
+                        auto impulse_sqr_Node = forcesNode.child("Impulse_square");
                         if (impulse_sqr_Node) {
                             facetCounter->impulse_square = Vector3d(
                                 impulse_sqr_Node.attribute("x").as_double(),
@@ -501,7 +501,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                         else {
                             facetCounter->impulse_square = Vector3d(0.0, 0.0, 0.0);
                         }
-                        auto impulse_momentum_Node = facetHitNode.child("Impulse_momentum");
+                        auto impulse_momentum_Node = forcesNode.child("Impulse_momentum");
                         if (impulse_momentum_Node) {
                             facetCounter->impulse_momentum = Vector3d(
                                 impulse_momentum_Node.attribute("x").as_double(),
