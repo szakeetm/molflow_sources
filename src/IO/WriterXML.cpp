@@ -198,6 +198,14 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         v2.append_attribute("z") = model->wp.motionVector2.z;
     }
 
+    auto forcesNode = simuParamNode.append_child("MeasureForces");
+    forcesNode.append_attribute("enabled") = model->wp.enableForceMeasurement;
+    auto torqueNode = forcesNode.append_child("Torque");
+    auto v = torqueNode.append_child("refPoint");
+    v.append_attribute("x") = model->wp.torqueRefPoint.x;
+    v.append_attribute("y") = model->wp.torqueRefPoint.y;
+    v.append_attribute("z") = model->wp.torqueRefPoint.z;
+
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nonCatalogParameters = 0;
 
@@ -410,6 +418,27 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
             facetHitNode.append_attribute("sum_v_ort") = facetCounter.sum_v_ort;
             facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
             facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
+
+            if (model->wp.enableForceMeasurement) { //don't save all-zero quantities if not measured
+
+                auto forcesNode = newFacetResult.append_child("Forces");
+
+                auto impulseNode = forcesNode.append_child("Impulse");
+                impulseNode.append_attribute("x") = facetCounter.impulse.x;
+                impulseNode.append_attribute("y") = facetCounter.impulse.y;
+                impulseNode.append_attribute("z") = facetCounter.impulse.z;
+
+                auto impulse_square_Node = forcesNode.append_child("Impulse_square");
+                impulse_square_Node.append_attribute("x") = facetCounter.impulse_square.x;
+                impulse_square_Node.append_attribute("y") = facetCounter.impulse_square.y;
+                impulse_square_Node.append_attribute("z") = facetCounter.impulse_square.z;
+
+                auto impulse_momentum_Node = forcesNode.append_child("Impulse_momentum");
+                impulse_momentum_Node.append_attribute("x") = facetCounter.impulse_momentum.x;
+                impulse_momentum_Node.append_attribute("y") = facetCounter.impulse_momentum.y;
+                impulse_momentum_Node.append_attribute("z") = facetCounter.impulse_momentum.z;
+
+            }
 
             if (sFac.sh.isProfile) {
                 xml_node profileNode = newFacetResult.append_child("Profile");

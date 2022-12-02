@@ -192,6 +192,22 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.motionVector2.z = v2.attribute("z").as_double();
     }
 
+    auto forcesNode = simuParamNode.child("MeasureForces");
+    if (!forcesNode) {
+        model->wp.enableForceMeasurement = false;
+        model->wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
+    }
+    else {
+        model->wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
+        auto torqueNode = forcesNode.child("Torque");
+        if (torqueNode) {
+            auto v = torqueNode.child("refPoint");
+            model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+            model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+            model->wp.torqueRefPoint.z = v.attribute("z").as_double();
+        }
+    }
+
     xml_node globalHistNode = simuParamNode.child("Global_histograms");
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");
@@ -459,21 +475,63 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                                 4.0 * Sqr(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) /
                                 facetCounter->sum_1_per_ort_velocity;
                     }
+                    auto forcesNode = newFacetResult.child("Forces");
+
+                    if (forcesNode) { //Load if there's recorded information
+
+                        auto impulseNode = forcesNode.child("Impulse");
+                        if (impulseNode) {
+                            facetCounter->impulse = Vector3d(
+                                impulseNode.attribute("x").as_double(),
+                                impulseNode.attribute("y").as_double(),
+                                impulseNode.attribute("z").as_double()
+                            );
+                        }
+                        else {
+                            facetCounter->impulse = Vector3d(0.0, 0.0, 0.0);
+                        }
+                        auto impulse_sqr_Node = forcesNode.child("Impulse_square");
+                        if (impulse_sqr_Node) {
+                            facetCounter->impulse_square = Vector3d(
+                                impulse_sqr_Node.attribute("x").as_double(),
+                                impulse_sqr_Node.attribute("y").as_double(),
+                                impulse_sqr_Node.attribute("z").as_double()
+                            );
+                        }
+                        else {
+                            facetCounter->impulse_square = Vector3d(0.0, 0.0, 0.0);
+                        }
+                        auto impulse_momentum_Node = forcesNode.child("Impulse_momentum");
+                        if (impulse_momentum_Node) {
+                            facetCounter->impulse_momentum = Vector3d(
+                                impulse_momentum_Node.attribute("x").as_double(),
+                                impulse_momentum_Node.attribute("y").as_double(),
+                                impulse_momentum_Node.attribute("z").as_double()
+                            );
+                        }
+                        else {
+                            facetCounter->impulse_momentum = Vector3d(0.0, 0.0, 0.0);
+                        }
+                    }
 
                     // Do this after XML load
                     /*if (model->displayedMoment == m) { //For immediate display in facet hits list and facet counter
                         facet.facetHitCache.hit = facetCounter->hit;
                     }*/
                 } else { //No hit information, so set to 0
-                    facetCounter->nbMCHit =
-                    facetCounter->nbDesorbed =
-                            0;
-                    facetCounter->sum_v_ort =
-                    facetCounter->nbHitEquiv =
-                    facetCounter->sum_1_per_ort_velocity =
-                    facetCounter->sum_1_per_velocity =
-                    facetCounter->nbAbsEquiv =
-                            0.0;
+					facetCounter->nbMCHit =
+						facetCounter->nbDesorbed =
+						0;
+					facetCounter->sum_v_ort =
+						facetCounter->nbHitEquiv =
+						facetCounter->sum_1_per_ort_velocity =
+						facetCounter->sum_1_per_velocity =
+						facetCounter->nbAbsEquiv =
+						0.0;
+					facetCounter->impulse =
+                        facetCounter->impulse_square =
+                        facetCounter->impulse_momentum =
+                        Vector3d(0.0, 0.0, 0.0);
                 }
 
                 //Profiles

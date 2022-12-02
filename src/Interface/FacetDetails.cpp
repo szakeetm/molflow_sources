@@ -67,6 +67,9 @@ static COLUMN allColumn[] = {
   {"Equiv.hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Des."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Equiv.abs."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Force"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Force^2"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Torque"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
 };
 
 static const char *desStr[] = {
@@ -124,87 +127,98 @@ FacetDetails::FacetDetails():GLWindow() {
   sPanel->SetClosable(true);
   Add(sPanel);
 
-  show[0] = new GLToggle(0,"#");
-  show[0]->SetState(true);  // Always visible (not displayed)
+  size_t index = 0;
 
-  show[1] = new GLToggle(1,"Sticking");
-  show[1]->SetState(true);
-  sPanel->Add(show[1]);
-  show[2] = new GLToggle(2,"Opacity");
-  show[2]->SetState(true);
-  sPanel->Add(show[2]);
-  show[3] = new GLToggle(3,"Structure");
-  show[3]->SetState(true);
-  sPanel->Add(show[3]);
-  show[4] = new GLToggle(4,"Link");
-  show[4]->SetState(true);
-  sPanel->Add(show[4]);
-  show[5] = new GLToggle(5,"Desorption");
-  show[5]->SetState(true);
-  sPanel->Add(show[5]);
-  show[6] = new GLToggle(6,"Reflection");
-  show[6]->SetState(true);
-  sPanel->Add(show[6]);
-  show[7] = new GLToggle(7,"2 Sided");
-  show[7]->SetState(true);
-  sPanel->Add(show[7]);
-  show[8] = new GLToggle(8,"Vertex nb");
-  show[8]->SetState(true);
-  sPanel->Add(show[8]);
-  show[9] = new GLToggle(9,"Area");
-  show[9]->SetState(true);
-  sPanel->Add(show[9]);
-  show[10] = new GLToggle(10, "Temperature");
-  show[10]->SetState(true);
-  sPanel->Add(show[10]);
-  show[11] = new GLToggle(11,"2D Box");
-  show[11]->SetState(true);
-  sPanel->Add(show[11]);
-  show[12] = new GLToggle(12,"Texture UV");
-  show[12]->SetState(true);
-  sPanel->Add(show[12]);
-  show[13] = new GLToggle(13,"Mesh sample/cm");
-  show[13]->SetState(true);
-  sPanel->Add(show[13]);
-  show[14] = new GLToggle(14,"Count mode");
-  show[14]->SetState(true);
-  sPanel->Add(show[14]);
-  show[15] = new GLToggle(15,"Memory");
-  show[15]->SetState(true);
-  sPanel->Add(show[15]);
-  show[16] = new GLToggle(16,"Planarity");
-  show[16]->SetState(true);
-  sPanel->Add(show[16]);
-  show[17] = new GLToggle(17,"Profile");
-  show[17]->SetState(true);
-  sPanel->Add(show[17]);
-  show[18] = new GLToggle(18, "Imping.rate");
-  show[18]->SetState(true);
-  sPanel->Add(show[18]);
-  show[19] = new GLToggle(19, "Density[1/m3]");
-  show[19]->SetState(true);
-  sPanel->Add(show[19]);
-  show[20] = new GLToggle(20, "Density[kg/m3]");
-  show[20]->SetState(true);
-  sPanel->Add(show[20]);
-  show[21] = new GLToggle(21, "Pressure");
-  show[21]->SetState(true);
-  sPanel->Add(show[21]);
-  show[22] = new GLToggle(22, "Mol.speed");
-  show[22]->SetState(true);
-  sPanel->Add(show[22]);
-  show[23] = new GLToggle(23,"MC Hits");
-  show[23]->SetState(true);
-  sPanel->Add(show[23]);
-  show[24] = new GLToggle(24, "Equiv.hits");
-  show[24]->SetState(true);
-  sPanel->Add(show[24]);
-  show[25] = new GLToggle(25,"Des.");
-  show[25]->SetState(true);
-  sPanel->Add(show[25]);
-  show[26] = new GLToggle(26,"Equiv.Abs.");
-  show[26]->SetState(true);
-  sPanel->Add(show[26]);
+  show[index] = new GLToggle(index,"#");
+  show[index]->SetState(true);  // Always visible (not displayed)
+
+  show[++index] = new GLToggle(index,"Sticking");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Opacity");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Structure");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Link");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Desorption");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Reflection");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"2 Sided");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Vertex nb");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Area");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Temperature");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"2D Box");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Texture UV");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Mesh sample/cm");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Count mode");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Memory");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Planarity");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Profile");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Imping.rate");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Density[1/m3]");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Density[kg/m3]");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Pressure");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Mol.speed");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"MC Hits");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Equiv.hits");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Des.");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index,"Equiv.Abs.");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Force");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Force^2");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
+  show[++index] = new GLToggle(index, "Torque");
+  show[index]->SetState(true);
+  sPanel->Add(show[index]);
 
   // Center dialog
   int wS,hS;
@@ -284,16 +298,16 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
   strcpy(ret,"");
 
   switch(mode) {
-    case 0:
+    case 0: //index
       sprintf(ret,"%zd",idx+1);
       break;
-    case 1:
+    case 1: //sticking factor
       sprintf(ret,"%g",f->sh.sticking);
       break;
-    case 2:
+    case 2: //opacity
       sprintf(ret,"%g",f->sh.opacity);
       break;
-    case 3:
+    case 3: //Structure
 	{
 		std::ostringstream out;
 		if (f->sh.superIdx == -1) out << "All";
@@ -301,10 +315,10 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		sprintf(ret, "%s", out.str().c_str());
 		break;
 	}
-    case 4:
+    case 4: //Link destination
       sprintf(ret,"%zd",f->sh.superDest);
       break;
-    case 5:
+    case 5: //Desorption type
 	  if (f->sh.desorbType == DES_COSINE_N)
 	  {
 		  sprintf(ret, "%s%g", desStr[f->sh.desorbType], f->sh.desorbTypeN); //append exponent
@@ -314,48 +328,48 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		  sprintf(ret, "%s", desStr[f->sh.desorbType]);
 	  }
       break;
-    case 6:
+    case 6: //Reflection type
       sprintf(ret,"%g diff. %g spec. %g cos^%g",f->sh.reflection.diffusePart,f->sh.reflection.specularPart,1.0-f->sh.reflection.diffusePart-f->sh.reflection.specularPart,f->sh.reflection.cosineExponent);
       break;
-    case 7:
+    case 7: //2-sided
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      
       break;
-    case 8:
+    case 8: //Nb of vertex
       sprintf(ret,"%zd",f->sh.nbIndex);
       break;
-    case 9:
+    case 9: //Area
 		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
 		else sprintf(ret,"%g",f->sh.area);
       break;
-	case 10:
+	case 10: //Temperature
 		sprintf(ret, "%g", f->sh.temperature);
 		break;
-    case 11:
+    case 11: //2D box
       sprintf(ret,"%g x %g",f->sh.U.Norme(),f->sh.V.Norme());
       break;
-    case 12:
+    case 12: //Texture type
       if( f->sh.isTextured ) {
         sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidth_precise,f->sh.texHeight_precise);
       } else {
         sprintf(ret,"None");
       }
       break;
-    case 13:
+    case 13: //Texture sample/cm
         if(IsEqual(f->tRatioU,f->tRatioV))
             sprintf(ret,"%g",f->tRatioU);
         else
             sprintf(ret,"%g x %g",f->tRatioU,f->tRatioV);
       break;
-    case 14:
+    case 14: //Texture record type
       sprintf(ret,"%s",GetCountStr(f));
       break;
-    case 15:
+    case 15: //Texture memory
 		sprintf(ret,"%s",FormatMemory(f->GetTexRamSize(1+worker->moments.size())));
       break;
-    case 16:
+    case 16: //Planarity
       sprintf(ret,"%f",f->planarityError);
       break;
-    case 17:
+    case 17: //Profile type
 		sprintf(ret,"%s",profStr[f->sh.profileType]);
 		break;
 	case 18: //imp.rate
@@ -389,18 +403,36 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		//<v_surf>=2*<v_surf_ort>
 		//<v_gas>=1/<1/v_surf>
 		break;
-	case 23:
+	case 23: //MC Hits
 		sprintf(ret,"%zd",f->facetHitCache.nbMCHit);
 		break;
-	case 24:
+	case 24: //Equiv. hits (low-flux)
 		sprintf(ret, "%g", f->facetHitCache.nbHitEquiv);
 		break;
-	case 25:
+	case 25: //Des Abs.
 		sprintf(ret,"%zd",f->facetHitCache.nbDesorbed);
 		break;
-	case 26:
+	case 26: //MC Abs.
 		sprintf(ret,"%g",f->facetHitCache.nbAbsEquiv);
 		break;
+    case 27: //Force
+    {
+        auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+        strcpy(ret, fmt::format("{:.4g} N ({:.4g},{:.4g},{:.4g})", force.Norme(), force.x, force.y, force.z).c_str());
+        break;
+    }
+    case 28: //Force^2
+    {
+        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+        strcpy(ret, fmt::format("{:.4g} N^2 ({:.4g},{:.4g},{:.4g})", force_sqr.Norme(), force_sqr.x, force_sqr.y, force_sqr.z).c_str());
+        break;
+    }
+    case 29: //Torque
+    {
+        auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+        strcpy(ret, fmt::format("{:.4g} Nm ({:.4g},{:.4g},{:.4g})", torque.Norme(), torque.x, torque.y, torque.z).c_str());
+        break;
+    }
   }
 
   return ret;

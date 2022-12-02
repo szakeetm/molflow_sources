@@ -89,8 +89,104 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
     }
-    else if (iequals(v->name, "SUMDES")) {
-        v->value = (double)worker->globalHitCache.globalHits.nbDesorbed;
+    else if ((idx = GetVariable(v->name, "Force")) > 0) {
+        ok = (idx > 0 && idx <= nbFacet);
+        if (ok) {
+            InterfaceFacet* f = geom->GetFacet(idx - 1);
+            auto forceN = f->facetHitCache.impulse.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            v->value = forceN;
+        }
+    }
+    else if ((idx = GetVariable(v->name, "ForceX")) > 0) {
+        ok = (idx > 0 && idx <= nbFacet);
+        if (ok) {
+            InterfaceFacet* f = geom->GetFacet(idx - 1);
+            auto forceX = f->facetHitCache.impulse.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            v->value = forceX;
+        }
+    }
+	else if ((idx = GetVariable(v->name, "ForceY")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto forceY = f->facetHitCache.impulse.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+			v->value = forceY;
+		}
+	}
+	else if ((idx = GetVariable(v->name, "ForceZ")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto forceZ = f->facetHitCache.impulse.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+			v->value = forceZ;
+		}
+	}
+    else if ((idx = GetVariable(v->name, "ForceSqr")) > 0) {
+        ok = (idx > 0 && idx <= nbFacet);
+        if (ok) {
+            InterfaceFacet* f = geom->GetFacet(idx - 1);
+            auto force_sqrN = f->facetHitCache.impulse_square.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+            v->value = force_sqrN;
+        }
+    }
+    else if ((idx = GetVariable(v->name, "ForceSqrX")) > 0) {
+        ok = (idx > 0 && idx <= nbFacet);
+        if (ok) {
+            InterfaceFacet* f = geom->GetFacet(idx - 1);
+            auto force_sqrX = f->facetHitCache.impulse_square.x * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+            v->value = force_sqrX;
+        }
+    }
+	else if ((idx = GetVariable(v->name, "ForceSqrY")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto force_sqrY = f->facetHitCache.impulse_square.y * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+			v->value = force_sqrY;
+		}
+	}
+	else if ((idx = GetVariable(v->name, "ForceSqrZ")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto force_sqrZ = f->facetHitCache.impulse_square.z * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+			v->value = force_sqrZ;
+		}
+	}
+	else if ((idx = GetVariable(v->name, "Torque")) > 0) {
+	    ok = (idx > 0 && idx <= nbFacet);
+	    if (ok) {
+		    InterfaceFacet* f = geom->GetFacet(idx - 1);
+		    auto torqueN = f->facetHitCache.impulse_momentum.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+		    v->value = torqueN;
+	    }
+	}
+    else if ((idx = GetVariable(v->name, "TorqueX")) > 0) {
+    ok = (idx > 0 && idx <= nbFacet);
+    if (ok) {
+        InterfaceFacet* f = geom->GetFacet(idx - 1);
+        auto torqueX = f->facetHitCache.impulse_momentum.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+        v->value = torqueX;
+    }
+    }
+	else if ((idx = GetVariable(v->name, "TorqueY")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto torqueY = f->facetHitCache.impulse_momentum.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+			v->value = torqueY;
+		}
+	}
+	else if ((idx = GetVariable(v->name, "TorqueZ")) > 0) {
+		ok = (idx > 0 && idx <= nbFacet);
+		if (ok) {
+			InterfaceFacet* f = geom->GetFacet(idx - 1);
+			auto torqueZ = f->facetHitCache.impulse_momentum.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+			v->value = torqueZ;
+		}
+	}
+	else if (iequals(v->name, "SUMDES")) {
+		v->value = (double)worker->globalHitCache.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
         v->value = worker->globalHitCache.globalHits.nbAbsEquiv;
@@ -152,11 +248,11 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         if (!Contains({ 2,3 }, tokens.size()))
             return false;
         if (avgMode) {
-            if (!iContains({ "P","DEN","Z" }, tokens[0]))
+            if (!iContains({ "P","DEN","Z","Force","ForceX","ForceY","ForceZ","ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ","Torque","TorqueX","TorqueY","TorqueZ"}, tokens[0]))
                 return false;
         }
         else {
-            if (!iContains({ "MCH","H","D","A","AR" }, tokens[0]))
+            if (!iContains({ "MCH","H","D","A","AR","Force","ForceX","ForceY","ForceZ","ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ","Torque","TorqueX","TorqueY","TorqueZ" }, tokens[0]))
                 return false;
         }
         std::vector<size_t> facetsToSum;
@@ -197,38 +293,81 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (iequals("MCH",tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
-            else if (iequals( "H" , tokens[0])) {
+            else if (Contains({ "H", "h" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
-            else if (iequals( "D", tokens[0])) {
+            else if (Contains({ "D", "d" }, tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbDesorbed;
-            } else if (iequals( "A", tokens[0])) {
+            } else if (Contains({ "A", "a" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
-            } else if (iequals( "AR", tokens[0])) {
+            } else if (Contains({ "AR", "ar" }, tokens[0])) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
-            else if (iequals( "P", tokens[0])) {
+            else if (Contains({ "P", "p" }, tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
                        (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iequals( "DEN", tokens[0])) {
+            } else if (Contains({ "DEN", "den" }, tokens[0])) {
                 InterfaceFacet *f = geom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iequals( "Z", tokens[0])) {
+            } else if (Contains({ "Z", "z" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else return false;
+            }
+            else if(iequals("Force", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse.Norme();
+            }
+            else if(iequals("ForceX", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse.x;
+            }
+            else if (iequals("ForceY", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse.y;
+            }
+            else if (iequals("ForceZ", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse.z;
+            }
+            else if (iequals("ForceSqr", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_square.Norme();
+            }
+            else if (iequals("ForceSqrX", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_square.x;
+            }
+            else if (iequals("ForceSqrY", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_square.y;
+            }
+            else if (iequals("ForceSqrZ", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_square.z;
+            }
+            else if (iequals("Torque", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_momentum.Norme();
+            }
+            else if (iequals("TorqueX", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_momentum.x;
+            }
+            else if (iequals("TorqueY", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_momentum.y;
+            }
+            else if (iequals("TorqueZ", tokens[0])) {
+                sumD += geom->GetFacet(sel)->facetHitCache.impulse_momentum.z;
+            }
+            else return false;
         }
         if (avgMode) {
-            v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea; //area-weighed averaging
+            if (iContains({ "P","DEN","Z" },tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea;
+            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+            else if (iContains({ "ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
         }
         else { //sum mode
-            if (iequals("AR", tokens[0])) v->value = sumArea;
+            if (iequals("AR" , tokens[0])) v->value = sumArea;
             else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
-            else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
+            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            else if (iContains({ "ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
+            else v->value = static_cast<double>(sumLL); //One long->double conversion at the end (instead of at each summing operation)
         }
-    }
+     }
     else ok = false;
     return ok;
 }
