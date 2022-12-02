@@ -2659,8 +2659,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		v2.append_attribute("z") = work->model->wp.motionVector2.z;
 	}
 
-	auto torqueNode = simuParamNode.append_child("Torque");
-	torqueNode.append_attribute("measure") = work->model->wp.measureForce;
+	auto forcesNode = simuParamNode.append_child("MeasureForces");
+	forcesNode.append_attribute("enabled") = work->model->wp.enableForceMeasurement;
+	auto torqueNode = forcesNode.append_child("Torque");
 	auto v = torqueNode.append_child("RefPoint");
 	v.append_attribute("x") = work->model->wp.torqueRefPoint.x;
 	v.append_attribute("y") = work->model->wp.torqueRefPoint.y;
@@ -2859,20 +2860,26 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
 			facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
-			auto impulseNode = facetHitNode.append_child("Impulse");
-			impulseNode.append_attribute("x") = facetCounter.impulse.x;
-			impulseNode.append_attribute("y") = facetCounter.impulse.y;
-			impulseNode.append_attribute("z") = facetCounter.impulse.z;
+			if (work->model->wp.enableForceMeasurement) { //don't save all-zero quantities if not measured
 
-			auto impulse_square_Node = facetHitNode.append_child("Impulse_square");
-			impulse_square_Node.append_attribute("x") = facetCounter.impulse_square.x;
-			impulse_square_Node.append_attribute("y") = facetCounter.impulse_square.y;
-			impulse_square_Node.append_attribute("z") = facetCounter.impulse_square.z;
+				auto forcesNode = newFacetResult.append_child("Forces");
 
-			auto impulse_momentum_Node = facetHitNode.append_child("Impulse_momentum");
-			impulse_momentum_Node.append_attribute("x") = facetCounter.impulse_momentum.x;
-			impulse_momentum_Node.append_attribute("y") = facetCounter.impulse_momentum.y;
-			impulse_momentum_Node.append_attribute("z") = facetCounter.impulse_momentum.z;
+				auto impulseNode = forcesNode.append_child("Impulse");
+				impulseNode.append_attribute("x") = facetCounter.impulse.x;
+				impulseNode.append_attribute("y") = facetCounter.impulse.y;
+				impulseNode.append_attribute("z") = facetCounter.impulse.z;
+
+				auto impulse_square_Node = forcesNode.append_child("Impulse_square");
+				impulse_square_Node.append_attribute("x") = facetCounter.impulse_square.x;
+				impulse_square_Node.append_attribute("y") = facetCounter.impulse_square.y;
+				impulse_square_Node.append_attribute("z") = facetCounter.impulse_square.z;
+
+				auto impulse_momentum_Node = forcesNode.append_child("Impulse_momentum");
+				impulse_momentum_Node.append_attribute("x") = facetCounter.impulse_momentum.x;
+				impulse_momentum_Node.append_attribute("y") = facetCounter.impulse_momentum.y;
+				impulse_momentum_Node.append_attribute("z") = facetCounter.impulse_momentum.z;
+
+			}
 
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
@@ -3294,13 +3301,20 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 	}
 
-	auto torqueNode = simuParamNode.child("Torque");
-	if (torqueNode) {
-		work->model->wp.measureForce = torqueNode.attribute("measure").as_bool();
-		auto v = torqueNode.child("RefPoint");
-		work->model->wp.torqueRefPoint.x = v.attribute("x").as_double();
-		work->model->wp.torqueRefPoint.y = v.attribute("y").as_double();
-		work->model->wp.torqueRefPoint.z = v.attribute("z").as_double();
+	auto forcesNode = simuParamNode.child("MeasureForces");
+	if (!forcesNode) {
+		work->model->wp.enableForceMeasurement = false;
+		work->model->wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
+	}
+	else {
+		work->model->wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
+		auto torqueNode = forcesNode.child("Torque");
+		if (torqueNode) {
+			auto v = torqueNode.child("refPoint");
+			work->model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+			work->model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+			work->model->wp.torqueRefPoint.z = v.attribute("z").as_double();
+		}
 	}
 
 	xml_node globalHistNode = simuParamNode.child("Global_histograms");
@@ -3758,38 +3772,44 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 					//Backward compatibility
 					facetCounter.sum_1_per_velocity = 4.0 * Sqr(facetCounter.nbHitEquiv + static_cast<double>(facetCounter.nbDesorbed)) / facetCounter.sum_1_per_ort_velocity;
 				}
-				auto impulseNode = facetHitNode.child("Impulse");
-				if (impulseNode) {
-					facetCounter.impulse = Vector3d(
-						impulseNode.attribute("x").as_double(),
-						impulseNode.attribute("y").as_double(),
-						impulseNode.attribute("z").as_double()
-					);
-				}
-				else {
-					facetCounter.impulse = Vector3d(0.0, 0.0, 0.0);
-				}
-				auto impulse_sqr_Node = facetHitNode.child("Impulse_square");
-				if (impulse_sqr_Node) {
-					facetCounter.impulse_square = Vector3d(
-						impulse_sqr_Node.attribute("x").as_double(),
-						impulse_sqr_Node.attribute("y").as_double(),
-						impulse_sqr_Node.attribute("z").as_double()
-					);
-				}
-				else {
-					facetCounter.impulse_square = Vector3d(0.0, 0.0, 0.0);
-				}
-				auto impulse_momentum_Node = facetHitNode.child("Impulse_momentum");
-				if (impulse_momentum_Node) {
-					facetCounter.impulse_momentum = Vector3d(
-						impulse_momentum_Node.attribute("x").as_double(),
-						impulse_momentum_Node.attribute("y").as_double(),
-						impulse_momentum_Node.attribute("z").as_double()
-					);
-				}
-				else {
-					facetCounter.impulse_momentum = Vector3d(0.0, 0.0, 0.0);
+
+				auto forcesNode = newFacetResult.child("Forces");
+
+				if (forcesNode) { //Load if there's recorded information
+
+					auto impulseNode = facetHitNode.child("Impulse");
+					if (impulseNode) {
+						facetCounter.impulse = Vector3d(
+							impulseNode.attribute("x").as_double(),
+							impulseNode.attribute("y").as_double(),
+							impulseNode.attribute("z").as_double()
+						);
+					}
+					else {
+						facetCounter.impulse = Vector3d(0.0, 0.0, 0.0);
+					}
+					auto impulse_sqr_Node = facetHitNode.child("Impulse_square");
+					if (impulse_sqr_Node) {
+						facetCounter.impulse_square = Vector3d(
+							impulse_sqr_Node.attribute("x").as_double(),
+							impulse_sqr_Node.attribute("y").as_double(),
+							impulse_sqr_Node.attribute("z").as_double()
+						);
+					}
+					else {
+						facetCounter.impulse_square = Vector3d(0.0, 0.0, 0.0);
+					}
+					auto impulse_momentum_Node = facetHitNode.child("Impulse_momentum");
+					if (impulse_momentum_Node) {
+						facetCounter.impulse_momentum = Vector3d(
+							impulse_momentum_Node.attribute("x").as_double(),
+							impulse_momentum_Node.attribute("y").as_double(),
+							impulse_momentum_Node.attribute("z").as_double()
+						);
+					}
+					else {
+						facetCounter.impulse_momentum = Vector3d(0.0, 0.0, 0.0);
+					}
 				}
 
 				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter
