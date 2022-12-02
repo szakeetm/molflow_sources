@@ -192,13 +192,20 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.motionVector2.z = v2.attribute("z").as_double();
     }
 
-    auto torqueNode = simuParamNode.child("Torque");
-    if (torqueNode) {
-        model->wp.enableForceMeasurement = torqueNode.attribute("measure").as_bool();
-        auto v = torqueNode.child("RefPoint");
-        model->wp.torqueRefPoint.x = v.attribute("x").as_double();
-        model->wp.torqueRefPoint.y = v.attribute("y").as_double();
-        model->wp.torqueRefPoint.z = v.attribute("z").as_double();
+    auto forcesNode = simuParamNode.child("MeasureForces");
+    if (!forcesNode) {
+        model->wp.enableForceMeasurement = false;
+        model->wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
+    }
+    else {
+        model->wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
+        auto torqueNode = forcesNode.child("Torque");
+        if (torqueNode) {
+            auto v = torqueNode.child("refPoint");
+            model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+            model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+            model->wp.torqueRefPoint.z = v.attribute("z").as_double();
+        }
     }
 
     xml_node globalHistNode = simuParamNode.child("Global_histograms");

@@ -198,9 +198,10 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         v2.append_attribute("z") = model->wp.motionVector2.z;
     }
 
-    auto torqueNode = simuParamNode.append_child("Torque");
-    torqueNode.append_attribute("measure") = model->wp.enableForceMeasurement;
-    auto v = torqueNode.append_child("RefPoint");
+    auto forcesNode = simuParamNode.append_child("MeasureForces");
+    forcesNode.append_attribute("enabled") = model->wp.enableForceMeasurement;
+    auto torqueNode = forcesNode.append_child("Torque");
+    auto v = torqueNode.append_child("refPoint");
     v.append_attribute("x") = model->wp.torqueRefPoint.x;
     v.append_attribute("y") = model->wp.torqueRefPoint.y;
     v.append_attribute("z") = model->wp.torqueRefPoint.z;
