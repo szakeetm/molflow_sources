@@ -2662,7 +2662,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	auto forcesNode = simuParamNode.append_child("MeasureForces");
 	forcesNode.append_attribute("enabled") = work->model->wp.enableForceMeasurement;
 	auto torqueNode = forcesNode.append_child("Torque");
-	auto v = torqueNode.append_child("RefPoint");
+	auto v = torqueNode.append_child("refPoint");
 	v.append_attribute("x") = work->model->wp.torqueRefPoint.x;
 	v.append_attribute("y") = work->model->wp.torqueRefPoint.y;
 	v.append_attribute("z") = work->model->wp.torqueRefPoint.z;
