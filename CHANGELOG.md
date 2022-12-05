@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.9.8 (2022.12.05)
+### Feature
+- Added option to measure molecular forces and torque (See blog post on website)
+
+### Bugfix
+- Fixed very serious memory leak when collapsing a geometry
+- Fixed 100% CPU usage when simulation paused
+- Fixed app updater checking for debian versions on fedora
+
 ## v2.9.7 (2022.10.13)
 ### Bugfix
 - Simulation is properly reset on facet change even if scene auto-update is off
