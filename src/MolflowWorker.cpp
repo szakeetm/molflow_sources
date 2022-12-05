@@ -577,11 +577,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     if (!insert) {
         //Clear hits and leaks cache
         ResetMoments();
-        model->wp.globalHistogramParams = HistogramParams();
-
-        //default values
-        model->wp.enableDecay = false;
-        model->wp.gasMass = 28;
+        model->wp = WorkerParams(); //reset to default
     }
 
     /*

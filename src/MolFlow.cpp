@@ -1950,11 +1950,8 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model->wp.enableDecay = false;
-		worker.model->wp.halfLife = 1;
-		worker.model->wp.gasMass = 28;
+		worker.model->wp = WorkerParams(); //reset to default
 		worker.ResetMoments();
-		worker.model->wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
 	catch(const std::exception &e) {
@@ -2026,11 +2023,8 @@ void MolFlow::EmptyGeometry() {
 		geom->EmptyGeometry();
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model->wp.enableDecay = false;
-		worker.model->wp.halfLife = 1;
-		worker.model->wp.gasMass = 28;
+		worker.model->wp = WorkerParams(); //reset to default
 		worker.ResetMoments();
-		worker.model->wp.globalHistogramParams = HistogramParams();
 	}
 	catch(const std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
