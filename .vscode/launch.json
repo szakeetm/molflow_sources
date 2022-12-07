@@ -5,16 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
-        
-
-        {
-            "name": "(lldb) Attach to molflowSub",
-            "type": "cppdbg",
-            "request": "attach",
-            "program": "${workspaceFolder}/build_Debug/bin/molflowSub",
-            "processId": "${command:pickProcess}",
-            "MIMode": "lldb"
-        },
+    
         {
             "name": "(lldb) Launch & Debug",
             "type": "cppdbg",
