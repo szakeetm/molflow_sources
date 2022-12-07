@@ -108,7 +108,6 @@ set(SRC_FILES
         ../../src_shared/RayTracing/Ray.cpp)
 
 # set the path to the library folder
-# set the path to the library folder
 link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )
