@@ -28,12 +28,12 @@ endif()
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
-    message(STATUS "Build type not specified: Use Release by default.")
+    message(STATUS "Build type not specified, will use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    MESSAGE("Adding Debug flag...")
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
+    MESSAGE("Debug build mode, added DEBUG preprocessor macro.")
 endif()
 message(STATUS "Build type used: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -49,20 +49,19 @@ elseif(USE_KDTREE)
     MESSAGE("Simulation with KDTREE...")
     ADD_DEFINITIONS(-DUSE_KDTREE)
 else()
-    MESSAGE("Simulation with new BVH...")
+    MESSAGE("Simulation with new BVH (default)...")
     #ADD_DEFINITIONS(-DUSE_KDTREE)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
     if(CMAKE_BUILD_TYPE MATCHES Debug)
-        string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue instead of default /Zi
+        string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue (/ZI) instead of default /Zi
     endif()
 else() #not MSVC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-	
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++")
     endif()
 endif()
 
