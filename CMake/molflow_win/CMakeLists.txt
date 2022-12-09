@@ -221,7 +221,6 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
 
@@ -256,5 +255,6 @@ elseif(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 
 endif()
