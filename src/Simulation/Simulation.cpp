@@ -217,12 +217,12 @@ int Simulation::RebuildAccelStructure() {
 
 
 
-size_t Simulation::LoadSimulation(char *loadStatus) {
+size_t Simulation::LoadSimulation(std::string& loadStatus) {
     Chronometer timer;
     timer.Start();
-    strncpy(loadStatus, "Clearing previous simulation", 127);
+    loadStatus="Clearing previous simulation";
     ClearSimulation();
-    strncpy(loadStatus, "Loading simulation", 127);
+    loadStatus="Loading simulation";
     
     auto* simModel = (MolflowSimulationModel*) model.get();
 

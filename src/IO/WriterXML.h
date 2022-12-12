@@ -27,7 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <string>
 #include "Simulation/MolflowSimGeom.h"
 
-struct MolflowSimFacet;
+class MolflowSimFacet;
 namespace FlowIO {
 
     class Writer {

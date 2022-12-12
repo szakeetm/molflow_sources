@@ -66,9 +66,6 @@ struct MolflowSimFacet : public SimulationFacet {
     MolflowSimFacet &operator=(const MolflowSimFacet &o);
     MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
 
-    OutgassingMap ogMap;
-    Anglemap angleMap;
-
     bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
 
     size_t InitializeHistogram(const size_t &nbMoments) const;
@@ -93,6 +90,9 @@ struct MolflowSimFacet : public SimulationFacet {
 
     [[nodiscard]] size_t GetHitsSize(size_t nbMoments) const override;
     size_t GetMemSize() const override;
+
+    OutgassingMap ogMap;
+    Anglemap angleMap;
 };
 
 #endif //MOLFLOW_PROJ_MOLFLOWSIMFACET_H

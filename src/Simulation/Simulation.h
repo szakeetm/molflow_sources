@@ -46,7 +46,7 @@ public:
 
     std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
     void ClearSimulation() override;
-    size_t LoadSimulation(char *loadStatus) override;
+    size_t LoadSimulation(std::string& loadStatus) override;
     int RebuildAccelStructure() override;
 
     void ResetSimulation() override;
