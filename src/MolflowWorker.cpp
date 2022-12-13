@@ -1433,7 +1433,7 @@ bool Worker::InterfaceGeomToSimModel() {
 * \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
 */
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
-    if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
+    //if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
         GLProgress progressDlg("Performing preliminary calculations on geometry...",
                                            "Passing Geometry to workers");
@@ -1522,7 +1522,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         needsReload = false;
         progressDlg.SetVisible(false);
         //SAFE_DELETE(progressDlg);
-    }
+    //}
 }
 
 /**
