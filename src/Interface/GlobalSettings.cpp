@@ -290,10 +290,6 @@ void GlobalSettings::Update() {
 	enableDecay->SetState(worker->model->wp.enableDecay);
 	halfLifeText->SetText(worker->model->wp.halfLife);
 	halfLifeText->SetEditable(worker->model->wp.enableDecay);
-
-	size_t nb = worker->GetProcNumber();
-	sprintf(tmp, "%zd", nb);
-	nbProcText->SetText(tmp);
 }
 
 /**
