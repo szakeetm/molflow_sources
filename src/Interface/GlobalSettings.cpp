@@ -316,6 +316,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			}		
 		}
 		else if (src == applyButton) {
+			mApp->useOldXMLFormat = useOldXMLFormat->GetState();
             double gm;
 			if (!gasMassText->GetNumber(&gm) || gm <= 0.0) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);

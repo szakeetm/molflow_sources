@@ -2251,6 +2251,8 @@ void MolFlow::LoadConfig() {
 		worker.model->otfParams.lowFluxMode = f->ReadInt();
 		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
 		worker.model->otfParams.lowFluxCutoff = f->ReadDouble();
+		f->ReadKeyword("textureLogScale"); f->ReadKeyword(":");
+		geom->texLogScale = f->ReadInt();
 		f->ReadKeyword("leftHandedView"); f->ReadKeyword(":");
 		leftHandedView = f->ReadInt();
 		f->ReadKeyword("highlightNonplanarFacets"); f->ReadKeyword(":");
@@ -2392,6 +2394,7 @@ void MolFlow::SaveConfig() {
 		WRITEI("hideLot", hideLot);
 		f->Write("lowFluxMode:"); f->Write(worker.model->otfParams.lowFluxMode, "\n");
 		f->Write("lowFluxCutoff:"); f->Write(worker.model->otfParams.lowFluxCutoff, "\n");
+		f->Write("textureLogScale:"); f->Write(geom->texLogScale, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
 		f->Write("highlightSelection:"); f->Write(highlightSelection, "\n");

@@ -46,7 +46,7 @@ private:
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;
   GLButton* recalcButton;
-
+  GLToggle* useOldXMLFormat;
 
 };
 
