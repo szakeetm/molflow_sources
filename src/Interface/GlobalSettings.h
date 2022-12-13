@@ -20,53 +20,23 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #ifndef _GLOBALSETTINGSH_
 #define _GLOBALSETTINGSH_
 
-#include "GLApp/GLWindow.h"
-class GLButton;
-class GLTextField;
-class GLLabel;
-class GLToggle;
-class GLTitledPanel;
+#include "GlobalSettings_shared.h"
 
-class Worker;
-class GLList;
-
-class GlobalSettings : public GLWindow {
+class GlobalSettings : public GlobalSettingsBase {
 
 public:
 
   // Construction
   GlobalSettings(Worker *w);
   void UpdateOutgassing();
-  void SMPUpdate();
 
   // Implementation
-  void ProcessMessage(GLComponent *src,int message) override;
+  void ProcessMessage(GLComponent *src,int message);
   void Update();
 
 private:
 
-	void RestartProc();
-	  Worker      *worker;
-  GLList      *processList;
-  GLButton    *restartButton;
-  GLButton    *maxButton;
-  GLTextField *nbProcText;
-  GLTextField *autoSaveText;
- 
 
-  int lastUpdate;
-  //float lastCPUTime[MAX_PROCESS];
-  //float lastCPULoad[MAX_PROCESS];
-
-  GLToggle      *chkAntiAliasing;
-  GLToggle      *chkWhiteBg;
-  GLToggle		*leftHandedToggle;
-  GLToggle      *chkSimuOnly;
-  GLToggle      *chkCheckForUpdates;
-  GLToggle      *chkAutoUpdateFormulas;
-  GLToggle      *chkCompressSavedFiles;
-  GLButton    *applyButton;
-  GLButton    *recalcButton;
 
   GLTextField *outgassingGasRateText;
   GLTextField *outgassingMoleculeRateText;
@@ -75,16 +45,9 @@ private:
   GLTextField *gasMassText;
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;
-  GLToggle	*lowFluxToggle;
-  GLButton    *lowFluxInfo;
-  GLTextField *cutoffText;
+  GLButton* recalcButton;
 
-    GLToggle *highlightNonplanarToggle;
-    GLToggle *highlightSelectionToggle;
 
-    GLToggle *useOldXMLFormat;
-
-    GLToggle *prioToggle;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

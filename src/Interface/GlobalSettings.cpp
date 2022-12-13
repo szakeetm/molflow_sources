@@ -70,7 +70,7 @@ static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,AL
 * \brief Constructor for the global settings window with initial setup.
 * \param worker Worker that handles the window.
 */
-GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
+GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 	worker = w;
 	int wD = 580;
@@ -283,119 +283,17 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 * \brief Function to change global settings values (may happen due to change or load of file etc.)
 */
 void GlobalSettings::Update() {
-
-	char tmp[256];
-    useOldXMLFormat->SetState(mApp->useOldXMLFormat);
-    chkAntiAliasing->SetState(mApp->antiAliasing);
-	chkWhiteBg->SetState(mApp->whiteBg);
-    highlightNonplanarToggle->SetState(mApp->highlightNonplanarFacets);
-    highlightSelectionToggle->SetState(mApp->highlightSelection);
-    leftHandedToggle->SetState(mApp->leftHandedView);
-	//chkNonIsothermal->SetState(nonIsothermal);
+	Update_shared();
 	UpdateOutgassing();
-
 	gasMassText->SetText(worker->model->wp.gasMass);
 
 	enableDecay->SetState(worker->model->wp.enableDecay);
 	halfLifeText->SetText(worker->model->wp.halfLife);
 	halfLifeText->SetEditable(worker->model->wp.enableDecay);
 
-	cutoffText->SetText(worker->model->otfParams.lowFluxCutoff);
-	cutoffText->SetEditable(worker->model->otfParams.lowFluxMode);
-	lowFluxToggle->SetState(worker->model->otfParams.lowFluxMode);
-
-	autoSaveText->SetText(mApp->autoSaveFrequency);
-	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
-	if (mApp->appUpdater) { //Updater initialized
-		chkCheckForUpdates->SetState(mApp->appUpdater->IsUpdateCheckAllowed());
-	}
-	else {
-		chkCheckForUpdates->SetState(0);
-		chkCheckForUpdates->SetEnabled(false);
-	}
-	chkAutoUpdateFormulas->SetState(mApp->autoUpdateFormulas);
-	chkCompressSavedFiles->SetState(mApp->compressSavedFiles);
-
 	size_t nb = worker->GetProcNumber();
 	sprintf(tmp, "%zd", nb);
 	nbProcText->SetText(tmp);
-}
-
-/**
-* \brief Function to update the thread information table in the global settings window.
-*/
-void GlobalSettings::SMPUpdate() {
-	int time = SDL_GetTicks();
-
-	if (!IsVisible() || IsIconic()) return;
-	size_t nb = worker->GetProcNumber();
-	if (processList->GetNbRow() != (nb + 1)) processList->SetSize(5, nb + 1,true);
-
-	if( time-lastUpdate>333 ) {
-
-    ProcComm procInfo;
-    worker->GetProcStatus(procInfo);
-
-    processList->ResetValues();
-
-	//Interface
-#ifdef _WIN32
-	size_t currPid = GetCurrentProcessId();
-	double memDenominator = (1024.0 * 1024.0);
-#else
-	size_t currPid = getpid();
-	double memDenominator = (1024.0);
-#endif
-    PROCESS_INFO parentInfo{};
-    GetProcInfo(currPid, &parentInfo);
-
-    processList->SetValueAt(0, 0, "Interface");
-	processList->SetValueAt(1, 0, fmt::format("{}",currPid),currPid);
-	processList->SetValueAt(2, 0, fmt::format("{:.0f}", (double)parentInfo.mem_use / memDenominator));
-	processList->SetValueAt(3, 0, fmt::format("{:.0f}", (double)parentInfo.mem_peak / memDenominator));
-    processList->SetValueAt(4, 0, fmt::format("[Geom. {}]", worker->model->sh.name));
-
-    size_t i = 1;
-    for (auto& proc : procInfo.subProcInfo)
-    {
-        DWORD pid = proc.procId;
-		processList->SetValueAt(0, i, fmt::format("Thread {}",i));
-		processList->SetValueAt(1, i, ""); //placeholder for thread id
-        processList->SetValueAt(2, i, ""); //placeholder for memory
-        processList->SetValueAt(3, i, ""); //placeholder for memory
-		processList->SetValueAt(4, i, fmt::format("[{}] {}",procInfo.subProcInfo[i-1].slaveState, procInfo.subProcInfo[i-1].statusString));
-		++i;
-	}
-	lastUpdate = SDL_GetTicks();
-	}
-}
-
-/**
-* \brief Function to apply changes to the number of processes.
-*/
-void GlobalSettings::RestartProc() {
-
-	int nbProc;
-	if (!nbProcText->GetNumberInt(&nbProc)) {
-		GLMessageBox::Display("Invalid process number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-	}
-	else {
-			if (nbProc <= 0 || nbProc > MAX_PROCESS) {
-				GLMessageBox::Display("Invalid process number [1..64]", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			}
-			else {
-				try {
-					worker->Stop_Public();
-                    worker->SetProcNumber(nbProc);
-					worker->RealReload(true);
-					mApp->SaveConfig();
-				}
-				catch (const std::exception &e) {
-					GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-				}
-			}
-	}
-
 }
 
 /**
@@ -404,7 +302,10 @@ void GlobalSettings::RestartProc() {
 * \param message Type of the source (button)
 */
 void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
+	
+	ProcessMessage_shared(src, message); //Common Molflow-Synrad elements
 
+	//Molflow-specific
 	switch (message) {
 	case MSG_BUTTON:
 
@@ -416,56 +317,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
 				}
-			}
-		}
-		else if (src == restartButton) {
-			RestartProc();
-		}
-		else if (src == maxButton) {
-			if (worker->GetGeometry()->IsLoaded()) {
-				char tmp[128];
-				sprintf(tmp, "%zd", worker->model->otfParams.desorptionLimit);
-				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
-				if (val) {
-                    char* endptr;
-                    size_t maxDes = strtold(val,&endptr); // use double function to allow exponential format
-					if (val==endptr) {
-						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-					}
-					else {
-                        worker->model->otfParams.desorptionLimit = maxDes;
-                        worker->ChangeSimuParams(); //Sync with subprocesses
-                    }
-				}
-			}
-			else {
-				GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
-			}
+			}		
 		}
 		else if (src == applyButton) {
-            mApp->useOldXMLFormat = useOldXMLFormat->GetState();
-            mApp->antiAliasing = chkAntiAliasing->GetState();
-			mApp->whiteBg = chkWhiteBg->GetState();
-            mApp->highlightSelection = highlightSelectionToggle->GetState();
-            if(mApp->highlightSelection)
-                worker->GetGeometry()->UpdateSelection();
-            mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
-            mApp->leftHandedView = (bool)leftHandedToggle->GetState();
-			for (auto & i : mApp->viewer) {
-				i->UpdateMatrix();
-				i->UpdateLabelColors();
-			}
-			mApp->wereEvents = true;
-			bool updateCheckPreference = chkCheckForUpdates->GetState();
-			if (mApp->appUpdater) {
-				if (mApp->appUpdater->IsUpdateCheckAllowed() != updateCheckPreference) {
-					mApp->appUpdater->SetUserUpdatePreference(updateCheckPreference);
-				}
-			}
-			mApp->autoUpdateFormulas = chkAutoUpdateFormulas->GetState();
-			mApp->compressSavedFiles = chkCompressSavedFiles->GetState();
-			mApp->autoSaveSimuOnly = chkSimuOnly->GetState();
-			double gm;
+            double gm;
 			if (!gasMassText->GetNumber(&gm) || gm <= 0.0) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -499,28 +354,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 					if (worker->model->wp.enableDecay) worker->model->wp.halfLife = hl;
 				}
 			}
-
-			double cutoffnumber;
-			if (!cutoffText->GetNumber(&cutoffnumber) || !(cutoffnumber>0.0 && cutoffnumber<1.0)) {
-				GLMessageBox::Display("Invalid cutoff ratio, must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONWARNING);
-				return;
-			}
-
-			if (!IsEqual(worker->model->otfParams.lowFluxCutoff, cutoffnumber) || (int)worker->model->otfParams.lowFluxMode != lowFluxToggle->GetState()) {
-				worker->model->otfParams.lowFluxCutoff = cutoffnumber;
-				worker->model->otfParams.lowFluxMode = lowFluxToggle->GetState();
-				worker->ChangeSimuParams();
-			}
-
-			double autosavefreq;
-			if (!autoSaveText->GetNumber(&autosavefreq) || autosavefreq <= 0.0) {
-				GLMessageBox::Display("Invalid autosave frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
-			}
-			mApp->autoSaveFrequency = autosavefreq;
-
 			return;
-
 		}
 		else if (src == lowFluxInfo) {
 			GLMessageBox::Display("Low flux mode helps to gain more statistics on low pressure parts of the system, at the expense\n"
@@ -541,12 +375,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 	case MSG_TOGGLE:
 		if (src == enableDecay) {
 			halfLifeText->SetEditable(enableDecay->GetState());
-		} else if (src == lowFluxToggle) {
-			cutoffText->SetEditable(lowFluxToggle->GetState());
-		} else if (src == prioToggle) {
-            //prioToggle->SetState(prioToggle->GetState() ? 0 : 1);
-            worker->ChangePriority(prioToggle->GetState());
-        }
+		}
 		break;
 
     default:
