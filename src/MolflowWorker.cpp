@@ -947,14 +947,16 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Initialising geometry...");
 
                 geom->InitializeGeometry();
-                geom->InitializeInterfaceGeometry();
                 progressDlg->SetMessage("Building mesh...");
                 auto nbFacet = geom->GetNbFacet();
+
+
                 for (size_t i = 0; i < nbFacet; i++) {
                     double p = (double)i / (double)nbFacet;
 
                     progressDlg->SetProgress(p);
                     auto f = geom->GetFacet(i);
+                    f->InitVisibleEdge();
                     if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
                         char errMsg[512];
                         sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
@@ -970,8 +972,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON) {
                         f->tRatioV = f->tRatioU;
                     }
+                    
                 }
-
+                geom->InitializeInterfaceGeometry();
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
