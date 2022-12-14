@@ -948,10 +948,29 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->InitializeGeometry();
                 geom->InitializeInterfaceGeometry();
-                //AdjustProfile();
-                //isLoaded = true; //InitializeGeometry() sets to true
-                //progressDlg->SetMessage("Building mesh...");
-                // end init
+                progressDlg->SetMessage("Building mesh...");
+                auto nbFacet = geom->GetNbFacet();
+                for (size_t i = 0; i < nbFacet; i++) {
+                    double p = (double)i / (double)nbFacet;
+
+                    progressDlg->SetProgress(p);
+                    auto f = geom->GetFacet(i);
+                    if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
+                        char errMsg[512];
+                        sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
+                        throw Error(errMsg);
+                    }
+                    geom->BuildFacetList(f);
+                    const double nU = f->sh.U.Norme();
+                    const double nV = f->sh.V.Norme();
+
+                    f->tRatioU = f->sh.texWidth_precise / nU;
+                    f->tRatioV = f->sh.texHeight_precise / nV;
+
+                    if (std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON) {
+                        f->tRatioV = f->tRatioU;
+                    }
+                }
 
                 geom->UpdateName(fileName.c_str());
 
