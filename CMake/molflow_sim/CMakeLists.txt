@@ -137,9 +137,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 if(MSVC)
         set(HEADER_DIR_6 ../include/windows_only)
-        target_include_directories(${PROJECT_NAME} PUBLIC
-                ${HEADER_DIR_6}
-                )
+        target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR_6})
 endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
