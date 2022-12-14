@@ -56,7 +56,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");
     if(!rootNode){
-        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
+        std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+" <<std::endl;
         rootNode = loadXML.root();
         //return 1;
     }
@@ -249,7 +249,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");
     if(!rootNode){
-        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
+        std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+" <<std::endl;
         return selGroup;
     }
 
@@ -280,7 +280,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
         xml_node rootNode = loadXML.child("SimulationEnvironment");
 
         if (!rootNode) {
-            std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"
+            std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+"
                       << std::endl;
             rootNode = loadXML.root();
         }
@@ -997,7 +997,7 @@ int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vect
     xml_node rootNode = loadXML.child("SimulationEnvironment");
 
     if (!rootNode) {
-        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"
+        std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+"
                   << std::endl;
         rootNode = loadXML.root();
     }
