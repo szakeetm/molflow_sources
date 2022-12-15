@@ -18,7 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#ifdef _WIN32
 #define NOMINMAX
 //#include <Windows.h>
 #include <direct.h>
@@ -192,7 +192,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     bool isSTL = ext == "stl";
 
     if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL) {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#ifdef _WIN32
         //Check (using native handle) if background compressor is still alive
         if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
             GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes "
@@ -388,7 +388,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     //File written, compress it if the user wanted to
     if (ok && isGEO7Z) {
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#ifdef _WIN32
         std::string compressorName = "compress.exe";
 #else
         std::string compressorName = "./compress";
@@ -397,7 +397,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
         if (FileUtils::Exist(compressorName)) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
             std::ostringstream tmp;
             tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#ifdef _WIN32
             char *command[1];
             command[0] = new char[512];
             sprintf(command[0], "%s", tmp.str().c_str());

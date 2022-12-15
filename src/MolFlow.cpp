@@ -41,7 +41,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <numeric> //std::iota
 #include <filesystem>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#ifdef _WIN32
 #include "direct.h"
 #else
 #include <unistd.h> //chdir
