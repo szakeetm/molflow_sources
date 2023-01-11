@@ -1,4 +1,13 @@
-2.8.9 (2022-11-14)
+# Changelog
+
+## v2.8.10 (2023-01-11)
+
+### Bugfix
+
+- Fixed memory leak when collapsing
+- Fixed error messages on dynamic desorption import
+
+## v2.8.9 (2022-11-14)
 
 ### Feature
 
@@ -6,7 +15,7 @@
 - Support multibody STL files
 - When deleting facets, teleports are also renumbered
 
-2.8.8 (2022-07-12)
+## v2.8.8 (2022-07-12)
 
 ### Bugfix
 - Collinearity condition fixed (no more false NULL facets)
