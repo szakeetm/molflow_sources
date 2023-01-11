@@ -142,7 +142,6 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
 
         if (optionType == "facet") {
             parseFacet(lineStream, selections);
-            //printf("[%zu] Parsing %s\n", i, lineStream.str().c_str());
         } else if (optionType == "simulation") {
             parseSimu(lineStream);
         } else {
@@ -168,10 +167,10 @@ void ParameterParser::ParseFile(const std::string &paramFile, const std::vector<
 }
 
 //! Parse parameter sweeps from file
-void ParameterParser::ParseInput(const std::vector<std::string> &paramSweep, const std::vector<SelectionGroup> &selections) {
+void ParameterParser::ParseInput(const std::vector<std::string> &paramChanges, const std::vector<SelectionGroup> &selections) {
     std::stringstream inputStream(std::ios_base::app | std::ios_base::out | std::ios_base::in);
     const char delimiter = ';';
-    for(auto sweep : paramSweep){
+    for(auto sweep : paramChanges){
         size_t pos = 0;
         std::string token;
         while ((pos = sweep.find(delimiter)) != std::string::npos) {

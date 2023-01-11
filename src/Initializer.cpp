@@ -36,7 +36,7 @@ namespace Settings {
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
     std::string paramFile;
-    std::vector<std::string> paramSweep;
+    std::vector<std::string> paramChanges;
 }
 
 void initDefaultSettings() {
@@ -48,7 +48,7 @@ void initDefaultSettings() {
     Settings::desLimit.clear();
     Settings::resetOnStart = false;
     Settings::paramFile.clear();
-    Settings::paramSweep.clear();
+    Settings::paramChanges.clear();
 
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
@@ -112,7 +112,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("--setParamsByFile", Settings::paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
-    app.add_option("--setParams", Settings::paramSweep,
+    app.add_option("--setParams", Settings::paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
@@ -184,7 +184,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 }
 
 /**
-* \brief Initializes the simulation model from a valid input file and handles parameter sweeps
+* \brief Initializes the simulation model from a valid input file and handles parameter changes
  * \return 0> error code, 0 when ok
  */
 int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel>& model,
@@ -204,14 +204,14 @@ int Initializer::initFromFile(SimulationManager *simManager, const std::shared_p
                            std::filesystem::path(SettingsIO::workFile).extension().string());
         return 1;
     }
-    if (!Settings::paramFile.empty() || !Settings::paramSweep.empty()) {
+    if (!Settings::paramFile.empty() || !Settings::paramChanges.empty()) {
         // 1. Load selection groups in case we need them for parsing
         std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
         // 2. Sweep parameters from file
         if (!Settings::paramFile.empty())
             ParameterParser::ParseFile(Settings::paramFile, selGroups);
-        if (!Settings::paramSweep.empty())
-            ParameterParser::ParseInput(Settings::paramSweep, selGroups);
+        if (!Settings::paramChanges.empty())
+            ParameterParser::ParseInput(Settings::paramChanges, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
         if(ParameterParser::ChangeFacetParams(model->facets)){
             return 1;

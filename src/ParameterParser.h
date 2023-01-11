@@ -32,7 +32,7 @@ class ParameterParser {
 public:
     static void ParseFile(const std::string &paramFile, const std::vector<SelectionGroup> &selections);
 
-    static void ParseInput(const std::vector<std::string> &paramSweep, const std::vector<SelectionGroup> &selections);
+    static void ParseInput(const std::vector<std::string> &paramChanges, const std::vector<SelectionGroup> &selections);
 
     static void ChangeSimuParams(WorkerParams& params);
 

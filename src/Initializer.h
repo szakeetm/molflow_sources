@@ -35,7 +35,7 @@ namespace Settings {
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
     extern std::string paramFile;
-    extern std::vector<std::string> paramSweep;
+    extern std::vector<std::string> paramChanges;
 }
 
 class Initializer {
