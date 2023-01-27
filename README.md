@@ -11,7 +11,7 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 
   
 # Building
-Molflow uses cmake for its build system. On Windows it comes with *Visual Studio 2019* or it has to be build/downloaded manually from [cmake's download page](https://cmake.org/download/).
+Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2019* or it has to be build/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS it is part of most package managers.
 
 ## Windows
@@ -107,6 +107,35 @@ To change the directory, the installation prefix can be adjusted `cmake --instal
 For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
 
 The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
+
+## Build example on Mac
+
+1) We install Homebrew and dependencies:
+
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install cmake libpng gsl sdl2 p7zip libomp
+```
+
+2) then we clone and build the repo:
+
+```
+git checkout https://gitlab.cern.ch/molflow_synrad/molflow.git
+cd molflow
+git submodule init
+git submodule update
+mkdir build
+cd build
+cmake ..
+make -j8
+```
+
+On Linux, the dependency part is different (using `apt` or `yum`), but the second part is the same.
+
+## Branches
+
+* For MolFlow, `master` is the 2.9 beta, and `master_2.8` is the 2.8 public
+* For SynRad, `master_cli` is the 1.5 beta, and `master` is the 1.4 public
 
 ## Building for MPI
 
