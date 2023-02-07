@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.9.9 beta
+
+### Bugfix
+
+- Fixed a few OpenGL crashes related to camera views
+
 ## v2.9.8 (2022.12.05)
 ### Feature
 - Added option to measure molecular forces and torque (See blog post on website)
