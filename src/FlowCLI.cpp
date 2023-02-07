@@ -385,13 +385,18 @@ int main(int argc, char** argv) {
             if (std::filesystem::exists(fileNameWithZIP)) { // should be workFile == inputFile
                 try {
                     std::filesystem::remove(fileNameWithZIP);
-                    ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
                 }
                 catch (std::exception &e) {
                     Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP, e.what());
                 }
             }
-            
+            try {
+                ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
+            }
+            catch (std::exception& e) {
+                Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}", fileNameWithZIP, e.what());
+            }
+
             //At this point, if no error was thrown, the compression is successful
             try {
                 Log::console_msg_master(2, "Successfully compressed to {}, removing {} ...\n", fileNameWithZIP, fullOutFile);
