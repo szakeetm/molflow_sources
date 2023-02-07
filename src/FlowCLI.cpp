@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
     simManager.StopSimulation();
     simManager.KillAllSimUnits();
     GatherResults(*model, globState);
-    Log::console_msg(1,"[{}][{}] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString());
+    Log::console_msg(1,"[{}][{}] Simulation finished.\n", MFMPI::world_rank, Util::getTimepointString());
 
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
