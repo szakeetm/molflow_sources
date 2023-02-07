@@ -370,27 +370,31 @@ int main(int argc, char** argv) {
         }
         FlowIO::WriterXML writer(false, true);
         pugi::xml_document newDoc;
+        Log::console_msg_master(2, "Writing file {} ...\n", fullOutFile);
+
         newDoc.load_file(fullOutFile.c_str());
         writer.SaveGeometry(newDoc, model);
         writer.SaveSimulationState(newDoc, model, globState);
         writer.SaveXMLToFile(newDoc, fullOutFile);
 
         if(createZip){
-            Log::console_msg_master(3, "Compressing xml to zip...\n");
+            Log::console_msg_master(2, "Compressing xml to zip...\n");
 
             //Zipper library
             std::string fileNameWithZIP = std::filesystem::path(fullOutFile).replace_extension(".zip").string();
             if (std::filesystem::exists(fileNameWithZIP)) { // should be workFile == inputFile
                 try {
                     std::filesystem::remove(fileNameWithZIP);
+                    ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
                 }
                 catch (std::exception &e) {
                     Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP, e.what());
                 }
             }
-            ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
+            
             //At this point, if no error was thrown, the compression is successful
             try {
+                Log::console_msg_master(2, "Successfully compressed to {}, removing {} ...\n", fileNameWithZIP, fullOutFile);
                 std::filesystem::remove(fullOutFile);
             }
             catch (std::exception &e) {
