@@ -669,6 +669,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     geom->InsertSTL(f, progressDlg, scaleFactor, newStr);
                     SAFE_DELETE(f);
                     Reload();
+                    mApp->DisplayCollapseDialog();
                 }
             }
         }
