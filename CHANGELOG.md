@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.8.11 (2023-02-09)
+
+### Bugfix
+
+- Fixed crash when inserting STL geometries
+
+### Interface
+
+- Display collapse dialog after STL insert
+
 ## v2.8.10 (2023-01-11)
 
 ### Bugfix
