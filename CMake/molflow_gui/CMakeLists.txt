@@ -161,7 +161,7 @@ if(MSVC)
             )
 
     # Add Windows Console output
-    #if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #if(CMAKE_BUILD_TYPE STREQUAL "Debug") #Always show console for CLI builds as error reporting not complete
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
     #endif()
 
