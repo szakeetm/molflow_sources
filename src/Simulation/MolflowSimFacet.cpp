@@ -59,10 +59,7 @@ bool MolflowSimFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments
     if(InitializeAngleMap() < 0)
         return false;
 
-    InitializeTexture(nbMoments);
-    InitializeProfile(nbMoments);
-    InitializeDirectionTexture(nbMoments);
-    InitializeHistogram(nbMoments);
+    InitializeTexture();
 
     return true;
 }
@@ -219,19 +216,6 @@ void MolflowSimFacet::InitializeOutgassingMap()
             ogMap.outgassingMap_cdf[i] = ogMap.outgassingMap_cdf[i - 1] + ogMap.outgassingMap_cdf[i]; //Convert p.d.f to cumulative distr.
         }
     }
-}
-
-size_t MolflowSimFacet::InitializeHistogram(const size_t &nbMoments) const
-{
-    //FacetHistogramBuffer hist;
-    //hist.Resize(sh.facetHistogramParams);
-    //tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
-    size_t histSize = (1 + nbMoments) *
-                      (sh.facetHistogramParams.GetBouncesDataSize()
-                       + sh.facetHistogramParams.GetDistanceDataSize()
-                       + sh.facetHistogramParams.GetTimeDataSize());
-
-    return histSize;
 }
 
 bool MolflowSimFacet::InitializeLinkAndVolatile(const size_t & id)

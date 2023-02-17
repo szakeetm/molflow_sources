@@ -68,20 +68,6 @@ struct MolflowSimFacet : public SimulationFacet {
 
     bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
 
-    size_t InitializeHistogram(const size_t &nbMoments) const;
-
-    size_t InitializeDirectionTexture(const size_t &nbMoments){
-        return SimulationFacet::InitializeDirectionTexture();
-    };
-
-    size_t InitializeProfile(const size_t &nbMoments){
-        return SimulationFacet::InitializeProfile();
-    };
-
-    size_t InitializeTexture(const size_t &nbMoments) {
-        return SimulationFacet::InitializeTexture();
-    };
-
     bool InitializeLinkAndVolatile(const size_t & id) override;
 
     int InitializeAngleMap();
