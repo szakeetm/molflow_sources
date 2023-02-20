@@ -86,7 +86,6 @@ build-windows:
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'$FNAME'/' || true
-    - ls ~/
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
 
