@@ -53,7 +53,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/PressureEvolution.h"
 #include "Interface/TimewisePlotter.h"
 #include "Interface/TexturePlotter.h"
-#include "ConvergencePlotter.h"
+#include "Interface/ConvergencePlotter.h"
 
 #include "AppUpdater.h"
 #include "Worker.h"
