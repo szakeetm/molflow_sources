@@ -278,7 +278,7 @@ public:
 
     void clear();
 
-    void Resize(const std::shared_ptr<SimulationModel> &model);
+    void Resize(std::shared_ptr<SimulationModel> model);
 
     void Reset();
 

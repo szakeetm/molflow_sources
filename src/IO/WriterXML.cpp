@@ -98,7 +98,7 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     return rootNode;
 }
 
-void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> &model,
+void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
                              const std::vector<size_t> &selection) {
     xml_node rootNode = GetRootNode(saveDoc);
 

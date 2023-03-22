@@ -478,7 +478,7 @@ void GlobalSimuState::clear() {
 * \brief Constructs the 'Global Hit counter structure' structure to hold all results, zero-init
 * \param model Contains all related parameters
 */
-void GlobalSimuState::Resize(const std::shared_ptr<SimulationModel> &model) {
+void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
 
     tMutex.lock();
     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);

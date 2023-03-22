@@ -36,7 +36,7 @@ public:
 
     static void ChangeSimuParams(WorkerParams& params);
 
-    static int ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> &facets);
+    static int ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> facets);
 };
 
 

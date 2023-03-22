@@ -4140,7 +4140,7 @@ bool MolflowGeometry::InitOldStruct(MolflowSimulationModel* model){
 
 
 
-void MolflowGeometry::InitInterfaceFacets(const std::vector<std::shared_ptr<SimulationFacet>> &sFacets, Worker* work) {
+void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
     //General Facets
     try{
         Geometry::InitInterfaceFacets(sFacets, work);
