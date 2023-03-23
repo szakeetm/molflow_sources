@@ -589,6 +589,7 @@ build-artifact-fedora:
 build-artifact-fedora-mpi:
   variables:
     TAG_SUFFIX: ""
+    OS_NAME: "fedora"
   stage: build-artifact
   before_script:
     - rm -rf ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
@@ -613,12 +614,16 @@ build-artifact-fedora-mpi:
     name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'_'MPI
     paths:
       - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'_'MPI
-  variables:
-    OS_NAME: "fedora"
+    expire_in: 8 weeks
   needs:
     - job: build-fedora-mpi
   tags:
     - fedora
+  rules:
+    - if: '($CI_COMMIT_BRANCH && ($OS_NAME != "mac" && $OS_NAME != "mac_arm"))'
+      when: always
+    - if: '($CI_COMMIT_BRANCH && ($OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
+      allow_failure: true
 
 build-artifact-macos:
   extends:
