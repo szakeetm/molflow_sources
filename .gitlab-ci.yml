@@ -611,9 +611,9 @@ build-artifact-fedora-mpi:
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
-    name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'_'MPI
+    name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
     paths:
-      - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'_'MPI
+      - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
     expire_in: 8 weeks
   needs:
     - job: build-fedora-mpi
