@@ -220,6 +220,8 @@ build-fedora-mpi:
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
+    - source /etc/profile.d/modules.sh
+    - module load mpi
     - buildpath=$(pwd)"/build"
     - mkdir -p $buildpath
     - cd $buildpath
