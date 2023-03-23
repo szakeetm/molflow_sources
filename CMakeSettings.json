@@ -42,8 +42,7 @@
       "cmakeCommandArgs": "-DUSE_MPI=ON -DNO_INTERFACE=ON",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
+      "inheritEnvironments": [ "msvc_x64_x64" ]
     }
   ]
 }
