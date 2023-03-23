@@ -298,11 +298,11 @@ int main(int argc, char** argv) {
     GatherResults(*model, globState);
     Log::console_msg(1,"[{}][{}] Simulation finished.\n", MFMPI::world_rank, Util::getTimepointString());
 
-#ifdef USE_MPI
+#if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     printer.PrintHeader();
-#ifdef USE_MPI
+#if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
