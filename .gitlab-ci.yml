@@ -211,7 +211,7 @@ build-fedora:
   tags:
     - fedora
 
-.build-fedora-mpi:
+build-fedora-mpi:
   stage: build
   before_script:
     - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID with MPI"
