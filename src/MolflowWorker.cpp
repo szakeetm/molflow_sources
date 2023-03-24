@@ -75,6 +75,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <ZipLib/ZipArchive.h>
 //#include "ziplib/ZipArchiveEntry.h"
 #include <ZipLib/ZipFile.h>
+#include <zip_file.hpp>
 //#include "File.h" //File utils (Get extension, etc)
 //#include "ProcessControl.h"
 #include "versionId.h"

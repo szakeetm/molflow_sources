@@ -18,6 +18,7 @@ set(HEADER_DIR_2 ../../src_shared)
 set(HEADER_DIR_3 ../../include)
 
 set(HEADER_DIR_ZIP ../../src_shared/external/ziplib/Source)
+set(HEADER_DIR_ZIP2 ../../src_shared/external/miniz-cpp)
 
 IF (WIN32)
     # set stuff for windows
@@ -142,6 +143,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         ${HEADER_DIR_ZIP}
+        ${HEADER_DIR_ZIP2}
         )
 
 
