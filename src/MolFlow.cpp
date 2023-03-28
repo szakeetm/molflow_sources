@@ -1241,9 +1241,10 @@ void MolFlow::ImportDesorption_DES() {
 void MolFlow::SaveFile() {
 	if (!worker.fullFileName.empty()) {
 
-		auto *progressDlg2 = new GLProgress("Saving...", "Please wait");
-		progressDlg2->SetProgress(0.5);
+		auto *progressDlg2 = new GLProgress("Saving file...\nIn this beta, you can see progress in the console.", "Please wait");
 		progressDlg2->SetVisible(true);
+		progressDlg2->SetProgress(0.5);
+		
 		//GLWindowManager::Repaint();
 
 		try {

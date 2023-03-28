@@ -104,6 +104,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
 
     if(update)
         rootNode.remove_child("Geometry");
+    reportWriteStatus("Saving vertices...");
     xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
@@ -115,7 +116,9 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         v.append_attribute("y") = model->vertices3[i].y;
         v.append_attribute("z") = model->vertices3[i].z;
     }
+    finishWriteStatus("Saving vertices...");
 
+    reportWriteStatus("Writing facets!...");
     geomNode.append_child("Facets");
     
     if (selection.empty()) {
@@ -141,7 +144,9 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
             //}
         }
     }
+    finishWriteStatus("Writing facets...");
 
+    reportWriteStatus("Writing structures...");
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
 
     if (model->structures.size() == model->sh.nbSuper) {
@@ -152,8 +157,10 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
 
         }
     }
+    finishWriteStatus("Writing structures...");
 
     // Simulation Settings
+    reportWriteStatus("Writing simulation parameters...");
     if(update)
         rootNode.remove_child("MolflowSimuSettings");
     xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
@@ -245,6 +252,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
     }
 #endif
+    finishWriteStatus("Writing simulation parameters...");
 }
 
 // Save XML document to file
