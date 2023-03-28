@@ -118,7 +118,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     }
     finishWriteStatus("Saving vertices...");
 
-    reportWriteStatus("Writing facets!...");
+    reportWriteStatus("Writing facets...");
     geomNode.append_child("Facets");
     
     if (selection.empty()) {
