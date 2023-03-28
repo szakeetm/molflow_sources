@@ -32,22 +32,29 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace FlowIO;
 using namespace pugi;
 
-void WriterXML::setWriteProgress(double newProgress) {
+void WriterXML::setWriteProgress(const double& newProgress) {
+    setWriteProgress((size_t)newProgress);
+}
+
+void WriterXML::setWriteProgress(const size_t& newProgress) {
     writeProgress = newProgress;
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    Log::console_msg(2, "[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
+    Log::console_msg(2, "[{}] {} [{}%]", Util::getTimepointString(), statusString, writeProgress);
 }
 
 void WriterXML::reportNewWriteStatus(const std::string &statusString, double newProgress) {
-    setWriteProgress(newProgress);
-    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
+    size_t p = (size_t)(newProgress * 100.0 + 0.5);
+    if (writeProgress != p) {
+        setWriteProgress(p);
+        Log::console_msg(2, "\r[{}] {} [{}%]", Util::getTimepointString(), statusString, writeProgress);
+    }
 }
 
 void WriterXML::finishWriteStatus(const std::string &statusString) {
-    setWriteProgress(100.0);
-    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]\n", Util::getTimepointString(), statusString, 100.0);
+    setWriteProgress((size_t)100);
+    Log::console_msg(2, "\r[{}] {} [{}%]\n", Util::getTimepointString(), statusString, writeProgress);
 }
 
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
@@ -126,6 +133,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         for (size_t i = 0; i < model->facets.size(); i++) {
             //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
             //if (!saveSelected || model->facets[i]->selected) {
+            reportNewWriteStatus("Writing facets...", (double)i / (double)model->facets.size());
             xml_node f = geomNode.child("Facets").append_child("Facet");
             f.append_attribute("id") = i;
             SaveFacet(f, (MolflowSimFacet*) model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
@@ -138,6 +146,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         for (size_t i = 0; i < selection.size();i++) {
             //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
             //if (!saveSelected || model->facets[i]->selected) {
+            reportNewWriteStatus("Writing facets...", (double)i / (double)selection.size());
             xml_node f = geomNode.child("Facets").append_child("Facet");
             f.append_attribute("id") = i; //Different from global facet id
             SaveFacet(f, (MolflowSimFacet*) model->facets[selection[i]].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);

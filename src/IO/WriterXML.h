@@ -58,12 +58,13 @@ namespace FlowIO {
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
         UserInput uInput;
-        double writeProgress{0.0};
+        size_t writeProgress{0};
 
         void reportWriteStatus(const std::string &statusString) const;
         void reportNewWriteStatus(const std::string &statusString, double newProgress);
         void finishWriteStatus(const std::string &statusString);
-        void setWriteProgress(double newProgress);
+        void setWriteProgress(const double& newProgress);
+        void setWriteProgress(const size_t& newProgress);
     };
 }
 
