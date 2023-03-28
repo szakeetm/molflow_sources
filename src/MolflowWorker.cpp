@@ -219,10 +219,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
         }
 
         if (isXML || isXMLzip) {
-            fileNameWithoutExtension = fileName.substr(0, fileName.length() - 4);
+            fileNameWithoutExtension = FileUtils::StripExtension(fileName);
             fileNameWithXML = fileNameWithoutExtension + ".xml";
             fileNameWithZIP = fileNameWithoutExtension + ".zip";
         }
+        /*
         if (isXMLzip) {
             char tmp[1024];
             sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP.c_str());
@@ -231,17 +232,21 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
             }
         }
+        */
         if (isSTL) {
             //Nothing to prepare
             ok = true;
         }
 
+        //Commented out: nativefiledialog already asks to confirm overwrite
+        /*
         if (!autoSave && ok && FileUtils::Exist(fileName)) {
             char tmp[1024];
             sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
             if (askConfirm)
                 ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
         }
+        */
 
         if (ok) {
             // Get copy of hit buffer, once a load can be initiated
@@ -291,17 +296,16 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     geom->SaveSTL(f, prg);
                 } else if (isXML || isXMLzip) {
                     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-                    std::stringstream xmlStream;
-                    { //Construct XML tree
+                    std::stringstream xmlStream; //Will store XML file content
+                    { //Scope to store XML tree
                         xml_document saveDoc;
-                        //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
                         FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
                         this->uInput.facetViewSettings.clear();
                         for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
                             auto facet = geom->GetFacet(facetId);
                             bool textureVisible = facet->textureVisible;
                             bool volumeVisible = facet->volumeVisible;
-                            this->uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible,volumeVisible));
+                            this->uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
                         }
                         this->uInput.userMoments = userMoments;
                         this->uInput.parameters = parameters;
@@ -309,7 +313,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
                         writer.uInput = this->uInput;
 
-                        if(saveSelected)
+                        if (saveSelected)
                             writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
                         else
                             writer.SaveGeometry(saveDoc, mf_model);
@@ -323,66 +327,100 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                                 //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
                                 success = writer.SaveSimulationState(saveDoc, mf_model, globState);
                             }
-                            catch (const std::exception &e) {
+                            catch (const std::exception& e) {
                                 SAFE_DELETE(f);
                                 simManager.UnlockHitBuffer();
                                 GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
-                                                    GLDLG_ICONERROR);
+                                    GLDLG_ICONERROR);
                                 return;
                             }
                         }
 
-                        prg->SetMessage("Writing xml file to memory...");
+                        prg->SetMessage("Writing xml file to disk...");
+                        
                         if (success) {
                             saveDoc.save(xmlStream);
-                        } 
-                    } //saveDoc goes out of scope for the compress duration
+                        }
+                        else {
+                            geom_only.save(xmlStream);
+                        }
+                        simManager.UnlockHitBuffer();
+                    }//saveDoc goes out of scope for the compress duration
+                    
                     if (isXMLzip) {
                         prg->SetProgress(0.75);
                         prg->SetMessage("Compressing xml to zip...");
 
-                        //Zipper library
                         if (FileUtils::Exist(fileNameWithZIP)) {
                             try {
-                                remove(fileNameWithZIP.c_str());
+                                std::filesystem::remove(fileNameWithZIP);
                             }
                             catch (const std::exception &e) {
                                 SAFE_DELETE(f);
                                 simManager.UnlockHitBuffer();
                                 std::string msg =
-                                        "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
-                                GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                                        "Can't overwrite \n" + fileNameWithZIP + "\nMaybe file is in use.\n" + e.what();
+                                GLMessageBox::Display(msg.c_str(), "File save error", GLDLG_OK, GLDLG_ICONERROR);
                                 return;
                             }
                         }
-
-                        //ZipFile::AddFile(fileNameWithZIP, fileNameWithXML, FileUtils::GetFilename(fileNameWithXML));
-                        //At this point, if no error was thrown, the compression is successful
                         try {
                             auto zipFile = ZipFile::Open(fileNameWithZIP);
-                            auto zipEntry = zipFile->CreateEntry(FileUtils::GetFilename(fileNameWithXML));
+                            auto entry = zipFile->CreateEntry(FileUtils::GetFilename(fileNameWithXML));
                             auto method = DeflateMethod::Create();
-                            method->SetCompressionLevel(DeflateMethod::CompressionLevel::Fastest);
-                            zipEntry->SetCompressionStream(xmlStream,method,ZipArchiveEntry::CompressionMode::Deferred);
+                            method->SetCompressionLevel(DeflateMethod::CompressionLevel::Fastest); //+15% size is acceptable
+                            entry->SetCompressionStream(   // data from contentStream are pumped here (into the memory)
+                                xmlStream,
+                                method,
+                                ZipArchiveEntry::CompressionMode::Deferred
+                            );
+                            prg->SetProgress(0.9);
+                            prg->SetMessage("Writing zip file...");
                             ZipFile::SaveAndClose(zipFile, fileNameWithZIP);
                         }
-                        catch (const std::exception &e) {
+                        catch (const std::exception& e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
-                            std::string msg = "Couldn't compress to " + fileNameWithZIP + "\n"
-                            "Maybe you don't have write permission at that location.";
-                            GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                            std::string msg =
+                                "Can't write \n" + fileNameWithZIP + "\n" + e.what();
+                            GLMessageBox::Display(msg.c_str(), "File save error", GLDLG_OK, GLDLG_ICONERROR);
                             return;
                         }
                     }
-                }
-                simManager.UnlockHitBuffer();
-            }
-            /*if (!autoSave && !saveSelected) {
-                strcpy(fullFileName, fileName);
-                remove("Molflow_AutoSave.zip");
-                }*/
-        }
+                    else { //simple XML
+                        prg->SetProgress(0.9);
+                        prg->SetMessage("Writing xml file...");
+
+                        if (FileUtils::Exist(fileNameWithXML)) {
+                            try {
+                                std::filesystem::remove(fileNameWithXML);
+                            }
+                            catch (const std::exception& e) {
+                                SAFE_DELETE(f);
+                                simManager.UnlockHitBuffer();
+                                std::string msg =
+                                    "Can't overwrite \n" + fileNameWithXML + "\nMaybe file is in use.\n" + e.what();
+                                GLMessageBox::Display(msg.c_str(), "File save error", GLDLG_OK, GLDLG_ICONERROR);
+                                return;
+                            }
+                        }
+                        try {
+                            std::ofstream outFile;
+                            outFile.open(fileNameWithXML);
+                            outFile << xmlStream.rdbuf();
+                        } //outFile goes out of scope: file flushed
+                        catch (const std::exception& e) {
+                            SAFE_DELETE(f);
+                            simManager.UnlockHitBuffer();
+                            std::string msg =
+                                "Can't write \n" + fileNameWithXML + "\n" + e.what();
+                            GLMessageBox::Display(msg.c_str(), "File save error", GLDLG_OK, GLDLG_ICONERROR);
+                            return;
+                        }
+                    } //end xml
+                } //end xml or zip
+            } //end not str
+        } //end "extension ok"
     } else {
         SAFE_DELETE(f);
         throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
