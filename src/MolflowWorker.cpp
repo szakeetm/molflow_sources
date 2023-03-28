@@ -291,57 +291,55 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     geom->SaveSTL(f, prg);
                 } else if (isXML || isXMLzip) {
                     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-                    xml_document saveDoc;
-                    //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
-                    FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
-                    this->uInput.facetViewSettings.clear();
-                    for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
-                        auto facet = geom->GetFacet(facetId);
-                        bool textureVisible = facet->textureVisible;
-                        bool volumeVisible = facet->volumeVisible;
-                        this->uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible,volumeVisible));
-                    }
-                    this->uInput.userMoments = userMoments;
-                    this->uInput.parameters = parameters;
-                    this->uInput.selections = mApp->selections;
-
-                    writer.uInput = this->uInput;
-
-                    if(saveSelected)
-                        writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
-                    else
-                        writer.SaveGeometry(saveDoc, mf_model);
-                    FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
-
-                    xml_document geom_only;
-                    geom_only.reset(saveDoc);
-                    bool success = false; //success: simulation state could be saved
-                    if (!crashSave && !saveSelected) {
-                        try {
-                            //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
-                            success = writer.SaveSimulationState(saveDoc, mf_model, globState);
+                    std::stringstream xmlStream;
+                    { //Construct XML tree
+                        xml_document saveDoc;
+                        //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
+                        FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
+                        this->uInput.facetViewSettings.clear();
+                        for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
+                            auto facet = geom->GetFacet(facetId);
+                            bool textureVisible = facet->textureVisible;
+                            bool volumeVisible = facet->volumeVisible;
+                            this->uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible,volumeVisible));
                         }
-                        catch (const std::exception &e) {
-                            SAFE_DELETE(f);
-                            simManager.UnlockHitBuffer();
-                            GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
-                                                  GLDLG_ICONERROR);
-                            return;
-                        }
-                    }
+                        this->uInput.userMoments = userMoments;
+                        this->uInput.parameters = parameters;
+                        this->uInput.selections = mApp->selections;
 
-                    prg->SetMessage("Writing xml file to disk...");
-                    if (success) {
-                        if (!saveDoc.save_file(fileNameWithXML.c_str()))
-                            throw std::runtime_error("Error writing XML file."); //successful save
-                    } else {
-                        if (!geom_only.save_file(fileNameWithXML.c_str()))
-                            throw std::runtime_error("Error writing XML file."); //simu state error
+                        writer.uInput = this->uInput;
+
+                        if(saveSelected)
+                            writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
+                        else
+                            writer.SaveGeometry(saveDoc, mf_model);
+                        FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
+
+                        xml_document geom_only;
+                        geom_only.reset(saveDoc);
+                        bool success = false; //success: simulation state could be saved
+                        if (!crashSave && !saveSelected) {
+                            try {
+                                //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
+                                success = writer.SaveSimulationState(saveDoc, mf_model, globState);
+                            }
+                            catch (const std::exception &e) {
+                                SAFE_DELETE(f);
+                                simManager.UnlockHitBuffer();
+                                GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
+                                                    GLDLG_ICONERROR);
+                                return;
+                            }
+                        }
+
+                        prg->SetMessage("Writing xml file to memory...");
+                        if (success) {
+                            saveDoc.save(xmlStream);
+                        } 
                     } //saveDoc goes out of scope for the compress duration
                     if (isXMLzip) {
                         prg->SetProgress(0.75);
                         prg->SetMessage("Compressing xml to zip...");
-                        //mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 
                         //Zipper library
                         if (FileUtils::Exist(fileNameWithZIP)) {
@@ -357,15 +355,22 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                                 return;
                             }
                         }
-                        ZipFile::AddFile(fileNameWithZIP, fileNameWithXML, FileUtils::GetFilename(fileNameWithXML));
+
+                        //ZipFile::AddFile(fileNameWithZIP, fileNameWithXML, FileUtils::GetFilename(fileNameWithXML));
                         //At this point, if no error was thrown, the compression is successful
                         try {
-                            remove(fileNameWithXML.c_str());
+                            auto zipFile = ZipFile::Open(fileNameWithZIP);
+                            auto zipEntry = zipFile->CreateEntry(FileUtils::GetFilename(fileNameWithXML));
+                            auto method = DeflateMethod::Create();
+                            method->SetCompressionLevel(DeflateMethod::CompressionLevel::Fastest);
+                            zipEntry->SetCompressionStream(xmlStream,method,ZipArchiveEntry::CompressionMode::Deferred);
+                            ZipFile::SaveAndClose(zipFile, fileNameWithZIP);
                         }
                         catch (const std::exception &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
-                            std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
+                            std::string msg = "Couldn't compress to " + fileNameWithZIP + "\n"
+                            "Maybe you don't have write permission at that location.";
                             GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
                             return;
                         }
