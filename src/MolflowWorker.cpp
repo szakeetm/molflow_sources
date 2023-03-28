@@ -172,12 +172,15 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     if (ext.empty()) {
         fileName = fileName + (mApp->compressSavedFiles ? ".zip" : ".xml");
         ext = FileUtils::GetExtension(fileName);
+        //Nativefiledialog already asks for overwrite
+        /*
         if (!autoSave && FileUtils::Exist(fileName)) {
             char tmp[1024];
             sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
             if (askConfirm)
                 ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
         }
+        */
     }
 
     // Read a file
