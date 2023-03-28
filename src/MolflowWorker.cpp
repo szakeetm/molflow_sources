@@ -336,7 +336,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             }
                         }
 
-                        prg->SetMessage("Writing xml file to disk...");
+                        prg->SetMessage("Assembling xml file in memory...");
                         
                         if (success) {
                             saveDoc.save(xmlStream);
