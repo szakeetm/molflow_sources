@@ -2,9 +2,21 @@
 
 ## v2.9.9 beta
 
+###Feature
+- Immediate ZIP compression without intermediate XML
+
+###Interface
+- File save progress displayed in console
+- Support for progressbars with wide/multiline status
+- Added few missing options to Global Settings
+
 ### Bugfix
 
 - Fixed a few OpenGL crashes related to camera views
+- MPI version compiles again
+- Fixed convergence plotter interface elements becoming black rectangles
+- Fixed crash at "auto-create difference of 2 facets" function
+- Fixed crash at 0-depth geometries at certain camera angles
 
 ## v2.9.8 (2022.12.05)
 ### Feature
