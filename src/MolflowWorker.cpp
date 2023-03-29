@@ -423,8 +423,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     } //end xml
                 } //end xml or zip
             } //end not str
-        } //end "extension ok"
-    } else {
+        } //end "ok"
+    } //end valid extension
+    else 
+    {
         SAFE_DELETE(f);
         throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
     }
