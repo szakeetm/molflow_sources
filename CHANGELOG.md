@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.8.12
+
+###Feature
+- Immediate ZIP compression without intermediate XML
+
+###Interface
+- Support for progressbars with wide/multiline status
+- Allow computer to use lock / screensaver while MolFlow is running
+
+### Bugfix
+
+- Fixed convergence plotter interface elements becoming black rectangles
+
 ## v2.8.11 (2023-02-09)
 
 ### Bugfix
