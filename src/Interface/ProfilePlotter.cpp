@@ -257,8 +257,9 @@ void ProfilePlotter::Display(Worker *w) {
 
 	
     SetWorker(w);
-	Refresh();
 	SetVisible(true);
+	Refresh();
+	
 
 }
 
@@ -777,7 +778,9 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
             applyFacetHighlighting();
         }
 		break;
-
+	case MSG_CLOSE:
+		SetVisible(false);
+		geom->UpdateSelection(); //Hide color highlighting
     default:
         break;
 	}
