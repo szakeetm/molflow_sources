@@ -64,8 +64,8 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   showMode->SetEditable(true);
   showMode->SetSize(3);
   showMode->SetValueAt(0,"Front & Back");
-  showMode->SetValueAt(1,"Back");
-  showMode->SetValueAt(2,"Front");
+  showMode->SetValueAt(1,"Front");
+  showMode->SetValueAt(2,"Back");
   showMode->SetBounds(100,25,100,19);
   Add(showMode);
 
