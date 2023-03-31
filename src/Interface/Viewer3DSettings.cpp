@@ -111,7 +111,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   hiddenVertex->SetBounds(10,175,50,18);
   Add(hiddenVertex);
 
-  showMesh = new GLToggle(0,"Show texture mesh (Slow!)");
+  showMesh = new GLToggle(0,"Show texture grid");
   showMesh->SetBounds(10,200,50,18);
   Add(showMesh);
 
