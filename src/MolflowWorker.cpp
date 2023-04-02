@@ -1757,7 +1757,7 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
 }
 
 /**
-* \brief To analyse desorption data from a SYN file
+* \brief To analyze desorption data from a SYN file
 * \param fileName name of the input file
 * \param nbFacet number of facets in the file
 * \param nbTextured number of textured facets in the file

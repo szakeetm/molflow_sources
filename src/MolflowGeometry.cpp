@@ -2389,7 +2389,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 }
 
 /**
-* \brief To analyse desorption data from a SYN file
+* \brief To analyze desorption data from a SYN file
 * \param file name of the input file
 * \param progressDlg GLProgress dialog (TODO: but is it ever used?)
 * \param nbNewFacet number of facets in the file
