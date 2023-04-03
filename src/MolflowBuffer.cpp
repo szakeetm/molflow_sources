@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 WorkerParams::WorkerParams(){
     accel_type = BVH;
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
+    latestMoment = 1E-10;
     useMaxwellDistribution = true;
     calcConstantFlow = true;
     gasMass = 28.0;
