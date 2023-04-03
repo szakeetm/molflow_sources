@@ -288,10 +288,12 @@ int MolflowSimulationModel::PrepareToRun() {
     std::string errLog;
 
     //determine latest moment
-    wp.latestMoment = 1E-10;
-    if(!tdParams.moments.empty())
+    
+    if(!tdParams.moments.empty()) {
         wp.latestMoment = (tdParams.moments.end()-1)->second;
-        //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
+    } else {
+        wp.latestMoment = wp.timeWindowSize * .5;
+    }
 
     std::set<size_t> desorptionParameterIDs;
     std::vector<double> temperatureList;
@@ -336,6 +338,7 @@ int MolflowSimulationModel::PrepareToRun() {
             facet->sh.CDFid = cdf_id;
             tdParams.CDFs.emplace_back(cdf_vec);
         }
+        
         //Angle map
         if (facet->sh.desorbType == DES_ANGLEMAP) {
             auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
