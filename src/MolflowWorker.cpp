@@ -1817,15 +1817,15 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 void Worker::PrepareToRun() {
 
     //determine latest moment
-    model->wp.latestMoment = model->wp.timeWindowSize * .5;
-
     if (!moments.empty())
         model->wp.latestMoment = (moments.end() - 1)->first + (moments.end() - 1)->second / 2.0;
-    //model->wp.latestMoment += model->wp.timeWindowSize / 2.0;
+    else {
+        model->wp.latestMoment = model->wp.timeWindowSize * .5;
+    }
 
     Geometry *g = GetGeometry();
-    //Generate integrated desorption functions
 
+    //Reset Maxwell-Boltzmann precalculated distributions
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
@@ -1836,7 +1836,7 @@ void Worker::PrepareToRun() {
     for (size_t i = 0; i < g->GetNbFacet(); i++) {
         InterfaceFacet *f = g->GetFacet(i);
 
-        //match parameters
+        //match time-dependent parameters
         if (f->userOutgassing.length() > 0) {
             int id = GetParamId(f->userOutgassing);
             if (id == -1) { //parameter not found
@@ -1865,58 +1865,7 @@ void Worker::PrepareToRun() {
             } else f->sh.sticking_paramId = id;
         } else f->sh.sticking_paramId = -1;
 
-        /*if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = GetIDId(static_cast<size_t>(f->sh.outgassing_paramId));
-            if (id >= 0)
-                f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
-            else
-                f->sh.IDid = GenerateNewID(
-                        static_cast<size_t>(f->sh.outgassing_paramId)); //Convert timedep outg. (PDF) to CDF
-        }
-
-        //Generate speed distribution functions
-        int id = GetCDFId(f->sh.temperature);
-        if (id >= 0)
-            f->sh.CDFid = id; //we've already generated a CDF for this temperature
-        else
-            f->sh.CDFid = GenerateNewCDF(f->sh.temperature);
-
-        //Angle map
-        if (f->sh.desorbType == DES_ANGLEMAP) {
-            if (!f->sh.anglemapParams.hasRecorded) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
-                throw std::runtime_error(tmp);
-            }
-            if (f->sh.anglemapParams.record) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
-                throw std::runtime_error(tmp);
-            }
-        }*/
-
-        //First worker::update will do it
-        /*if (f->sh.anglemapParams.record) {
-            if (!f->angleMapCache.empty() || f->angleMapCache.size() != f->sh.anglemapParams.GetMapSize()) {
-                //Initialize angle map and Set values to zero
-                try {
-                    f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);
-                }
-                catch (...) {
-                    std::stringstream tmp;
-                    tmp << "Not enough memory for incident angle map on facet " << i + 1;
-                    throw std::runtime_error(tmp.str().c_str());
-                }
-                f->sh.anglemapParams.hasRecorded = true;
-                if (f->selected) needsAngleMapStatusRefresh = true;
-            }
-        }*/
-
     }
-
-    if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
-        mApp->facetAdvParams->Refresh(geom->GetSelectedFacets());
-
 }
 
 /**
