@@ -1055,7 +1055,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
 			throw Error(errMsg);
 		}
-		BuildFacetList(f);
+		BuildFacetTextureGLList(f);
         const double nU = f->sh.U.Norme();
         const double nV = f->sh.V.Norme();
 
@@ -1333,7 +1333,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		prg->SetProgress(p);
 		InterfaceFacet *f = facets[i];
 		//f->SetTexture(f->wp.texWidth_precise,f->wp.texHeight_precise,f->hasMesh);
-		BuildFacetList(f);
+		BuildFacetTextureGLList(f);
 		//double nU = &(f->wp.U).Norme();
 		//f->tRatio = f->wp.texWidth_precise / nU;
 	}
@@ -3568,7 +3568,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 			throw Error(errMsg);
 		}
-		BuildFacetList(f);
+		BuildFacetTextureGLList(f);
         const double nU = f->sh.U.Norme();
         const double nV = f->sh.V.Norme();
 
