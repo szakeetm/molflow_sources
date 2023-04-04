@@ -1010,7 +1010,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
                         throw Error(errMsg);
                     }
-                    geom->BuildFacetTextureGLList(f);
+                    geom->BuildFacetList(f);
                     const double nU = f->sh.U.Norme();
                     const double nV = f->sh.V.Norme();
 
