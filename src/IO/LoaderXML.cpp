@@ -943,7 +943,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
     std::tuple<bool,bool> viewSettings; // texture, volume visible
     bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
     bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
-    uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
+    uInput.facetViewSettings.emplace_back(textureVisible, volumeVisible);
 
     xml_node facetHistNode = facetNode.child("Histograms");
     if (facetHistNode) { // Molflow version before 2.8 didn't save histograms

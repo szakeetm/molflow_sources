@@ -102,7 +102,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     for(auto& id : id_range)
-        Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
+        Parameters::facetParams.emplace_back(id, param, paramVal);
     if(fromSelection)
         Log::console_msg_master(3, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
     else
@@ -123,7 +123,7 @@ void parseSimu(std::istringstream& facetString){
     }
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
-    Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
+    Parameters::simuParams.emplace_back(param, paramVal);
 
     Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter {} to {}\n", param_str, paramVal_str);
 
