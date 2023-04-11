@@ -237,7 +237,7 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     facet.sh.temperature = std::get<2>(par);
                     break;
                 default:
-                    Log::console_error("Unknown FacetParam {}\n", std::get<1>(par));
+                    Log::console_error("Unknown FacetParam {}\n", (size_t)(std::get<1>(par)));
             }
         }
         else{
