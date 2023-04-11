@@ -199,7 +199,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
                 params.halfLife = std::get<1>(par);
                 break;
             default:
-                Log::console_error("Unknown SimuParam {}\n", (size_t)std::get<0>(par));
+                Log::console_error("Unknown SimuParam {}\n", (size_t)(std::get<0>(par)));
         }
     }
 }
