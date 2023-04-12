@@ -473,9 +473,9 @@ namespace {
             EXPECT_EQ(0, diff_loc);
 
             if (diff_loc > 0)
-                fmt::print(stderr, "[Warning] {} local differences found!\n", diff_loc);
+                fmt::print(stderr, "[Warning] {} local differences found\n", diff_loc);
             if (diff_fine > 0)
-                fmt::print(stderr, "[Warning] {} differences on fine counters found!\n", diff_fine);
+                fmt::print(stderr, "[Warning] {} differences on fine counters found\n", diff_fine);
             break;
         }
 
@@ -577,11 +577,11 @@ namespace {
                 EXPECT_NE(0, diff_loc);*/
 
             if (diff_glob <= 0)
-                fmt::print(stderr, "[{}][Warning] No global differences found!\n", runNb);
+                fmt::print(stdout, "[{}][Info] No global differences found.\n", runNb);
             else if (diff_loc <= 0)
-                fmt::print(stderr, "[{}][Warning] No local differences found!\n", runNb);
+                fmt::print(stdout, "[{}][Info] No local differences found.\n", runNb);
             else if (diff_fine <= 0)
-                fmt::print(stderr, "[{}][Warning] No differences on fine counters found!\n", runNb);
+                fmt::print(stdout, "[{}][Info] No differences on fine counters found.\n", runNb);
         }
         if ((double) nbSuccess / nRuns < 0.66) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
