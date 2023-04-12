@@ -558,9 +558,9 @@ namespace {
             if (globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed) {
                 nbSuccess = nRuns;
                 fmt::print(stderr,
-                        "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n",
+                        "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions\n",
                         runNb);
-                fmt::print(stderr, "[{}][Warning] Results will only differ on finer counters, which demand more hits!\n",
+                fmt::print(stderr, "[{}][Warning] Results will only differ on finer counters, which demand more hits\n",
                         runNb);
                 break;
             }
@@ -585,14 +585,14 @@ namespace {
         }
         if ((double) nbSuccess / nRuns < 0.66) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
-            fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
+            fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed\n"
                             "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
                     nRuns - nbSuccess, nRuns);
         }
         else {
-            fmt::print("[SUCCESS] Necessary threshold for results of a low sample run was crossed!\n"
-                               "{} out of {} runs were correct!\n",
+            fmt::print("[SUCCESS] Necessary threshold for results of a low sample run was crossed\n"
+                               "{} out of {} runs were correct\n",
                        nRuns - nbSuccess, nRuns);
         }
     }
