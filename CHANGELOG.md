@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.9.10 beta
+
+### Feature
+
+- Auto-updater can now execute post-install scripts
+   - Gives executable permission to updates (Mac and Linux)
+
 ## v2.9.9 beta (2023-04-13)
 
 ### Feature
