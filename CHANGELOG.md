@@ -1,22 +1,39 @@
 # Changelog
 
-## v2.9.9 beta
+## v2.9.9 beta (2023-04-13)
 
-###Feature
+### Feature
 - Immediate ZIP compression without intermediate XML
+   - This solves hang when saving in cloud-synced folders
+- New Clipper2 polygon library providing drastically faster texture meshing
+- Facet collapse can leave max. vertices per facet (default: 100)
+- PugiXML "compact" mode reduces memory consumption when opening/saving large XML files
 
-###Interface
+### Interface
+- Fully rewritten OpenGL rendering, much faster graphics allowing up to 1M facets
+   - Using triangles for volume and direction textures
+   - Using vertex arrays for facet wireframe, including deduplication of shared edges
+   - Using gridlines (instead of cell quads) for texture grid
+- Texture mesh (now renamed "grid") rendering drastically faster
+- Cordinate axes in lower left corner
 - File save progress displayed in console
+- Color-highlight facets only if profile plotter is open
 - Support for progressbars with wide/multiline status
 - Added few missing options to Global Settings
+- Added IMGui test window (Test/ImGui test suite/Demo window in menu)
+- Light-rotation (ALT + right-drag) speed independent of "Angle step" setting
 
 ### Bugfix
 
 - Fixed a few OpenGL crashes related to camera views
 - MPI version compiles again
+- Fixed crash in certain cases when collapsing
 - Fixed convergence plotter interface elements becoming black rectangles
 - Fixed crash at "auto-create difference of 2 facets" function
 - Fixed crash at 0-depth geometries at certain camera angles
+- "Front" and "Back" facet views were inversed
+- Don't ask twice for "overwrite file?"
+- MPI builds throw error if no MPI is present (previously silent fail)
 
 ## v2.9.8 (2022.12.05)
 ### Feature
