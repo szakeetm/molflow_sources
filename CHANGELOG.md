@@ -15,7 +15,7 @@
    - Using vertex arrays for facet wireframe, including deduplication of shared edges
    - Using gridlines (instead of cell quads) for texture grid
 - Texture mesh (now renamed "grid") rendering drastically faster
-- Cordinate axes in lower left corner
+- Coordinate axes in lower left corner
 - File save progress displayed in console
 - Color-highlight facets only if profile plotter is open
 - Support for progressbars with wide/multiline status
@@ -26,13 +26,13 @@
 ### Bugfix
 
 - Fixed a few OpenGL crashes related to camera views
-- MPI version compiles again
 - Fixed crash in certain cases when collapsing
 - Fixed convergence plotter interface elements becoming black rectangles
 - Fixed crash at "auto-create difference of 2 facets" function
 - Fixed crash at 0-depth geometries at certain camera angles
-- "Front" and "Back" facet views were inversed
-- Don't ask twice for "overwrite file?"
+- "Front" and "Back" facet render modes were inversed
+- Don't ask twice for overwriting files
+- MPI version compiles again
 - MPI builds throw error if no MPI is present (previously silent fail)
 
 ## v2.9.8 (2022.12.05)
