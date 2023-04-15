@@ -263,16 +263,6 @@ int MolFlow::OneTimeSceneInit()
 	_CrtSetDbgFlag( tmpFlag );
 	*/
 
-	    	std::cout<<"Init: OMP max = " <<
-               omp_get_max_threads() << std::endl;
-     // Beginning of parallel region
-    #pragma omp parallel
-    {
-        std::cout<<omp_get_thread_num();
-    }
-    // Ending of parallel region
-	std::cout<<"\nOMP init ok.\n";
-
 	OneTimeSceneInit_shared_pre();
 
 	menu->GetSubMenu("File")->Add("Export selected textures");
