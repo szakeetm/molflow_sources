@@ -129,11 +129,7 @@ IF (WIN32)
     set(COPY_FILES ${COPY_FILES}
             ${COPY_DIR}/7za.exe
             )
-ELSEIF(APPLE)
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/molflow_launcher.app
-            )
-ELSE() #linux
+ELSEIF(NOT APPLE)
     set(COPY_FILES ${COPY_FILES}
             ${COPY_DIR}/7za
             )
