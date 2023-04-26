@@ -128,7 +128,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             auto force_sqrN = f->facetHitCache.impulse_square.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment)
                 * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
             v->value = force_sqrN;
-            if (worker->displayedMoment!=0) v->value/worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
+            if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
         }
     }
     else if ((idx = GetVariable(v->name, "ForceSqrX")) > 0) {

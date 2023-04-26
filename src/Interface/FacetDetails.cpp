@@ -421,10 +421,12 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
         strcpy(ret, fmt::format("{:.4g} N ({:.4g},{:.4g},{:.4g})", force.Norme(), force.x, force.y, force.z).c_str());
         break;
     }
-    case 28: //Force^2
+    case 28: //Force^2 
     {
         auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
-        if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
+        if (worker->displayedMoment != 0) {
+            force_sqr = 1.0 / worker->moments[worker->displayedMoment - 1].second * force_sqr; //force2 divided by dt^2 to get N^2 
+        }
         strcpy(ret, fmt::format("{:.4g} N^2 ({:.4g},{:.4g},{:.4g})", force_sqr.Norme(), force_sqr.x, force_sqr.y, force_sqr.z).c_str());
         break;
     }
