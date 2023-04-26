@@ -416,6 +416,7 @@ void ParameterEditor::CopyToClipboard() {
 */
 void ParameterEditor::Plot() {
 	dataView->Reset();
+	if (tempParam.GetSize() > 0 && tempParam.GetX(0) >= 1E-10) dataView->Add(0.0, tempParam.GetY(0)); //Copy first user value if t0>0
 	for (size_t i = 0; i < tempParam.GetSize(); i++) {
 		dataView->Add(tempParam.GetX(i), tempParam.GetY(i));
 	}
