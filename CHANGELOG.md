@@ -8,6 +8,7 @@
 ###Interface
 - Support for progressbars with wide/multiline status
 - Allow computer to use lock / screensaver while MolFlow is running
+- Don't allow 0K temperature
 
 ### Bugfix
 
