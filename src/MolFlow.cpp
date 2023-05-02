@@ -636,7 +636,7 @@ void MolFlow::ApplyFacetParams() {
 	double temperature;
 	bool doTemperature = false;
 	if (facetTemperature->GetNumber(&temperature)) {
-		if (temperature < 0.0) {
+		if (temperature <= 0.0) {
 			GLMessageBox::Display("Temperature must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
