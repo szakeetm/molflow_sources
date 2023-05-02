@@ -7,6 +7,10 @@
 - Auto-updater can now execute post-install scripts
    - Gives executable permission to updates (Mac and Linux)
 
+### Interface
+
+- Don't allow 0K temperature
+
 ## v2.9.9 beta (2023-04-13)
 
 ### Feature
