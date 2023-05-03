@@ -1347,7 +1347,13 @@ int Worker::SendAngleMaps() {
 }
 
 bool Worker::InterfaceGeomToSimModel() {
+    //Converts iterface-extended geometry to subprocess-formatted geometry, but doesn't forward or copy anything
+    //result is stored in worker::model
     //InterfaceVertex -> Vector3d
+    //InterfaceFacet-> MolflowSimFacet
+    //cellPropertiesIds->textIncVector
+    //etc.   
+    
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
@@ -1649,7 +1655,7 @@ void Worker::Start() {
         throw std::runtime_error("Desorption limit has already been reached.");
 
     try {
-        simManager.ForwardGlobalCounter(&globState, &particleLog);
+        //simManager.ForwardGlobalCounter(&globState, &particleLog); //Reload already did it
 
         if (simManager.StartSimulation()) {
             throw std::logic_error("Processes are already done!");
