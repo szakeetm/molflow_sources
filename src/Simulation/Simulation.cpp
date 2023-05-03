@@ -204,7 +204,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, BVH, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globState, AccelType::BVH, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particleTracer : particleTracers)
