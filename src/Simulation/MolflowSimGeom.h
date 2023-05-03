@@ -86,7 +86,7 @@ struct TimeDependentParamters {
 };
 
 // Local simulation structure for Molflow specific simulations
-// Appends general Model by time dependent parameters
+// Appends general SimulationModel by time dependent parameters
 class MolflowSimulationModel : public SimulationModel {
 public:
     MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};

@@ -246,7 +246,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            if(accel_type == 1)
+            if(accel_type == AccelType::KD)
                 this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
@@ -254,7 +254,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            if(accel_type == 1)
+            if(accel_type == AccelType::KD)
                 this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
