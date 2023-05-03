@@ -86,7 +86,7 @@ ENDIF(WIN32)
 
 add_dependencies(molflow molflowSub compress ziplib)
 
-option(USE_TESTS "Build the tests" ON)
+option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)
     enable_testing()
     include(GoogleTest)
