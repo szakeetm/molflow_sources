@@ -1347,6 +1347,7 @@ int Worker::SendAngleMaps() {
 }
 
 bool Worker::InterfaceGeomToSimModel() {
+    //InterfaceVertex -> Vector3d
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
@@ -1533,7 +1534,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
         progressDlg.SetMessage("Reloading structures for simulation unit...");
         try{
-            ReloadSim(sendOnly, &progressDlg);
+            ReloadSim(sendOnly, &progressDlg); //Convert interf. geom to worker::mode and construct global counters, then copy to simManagar.simulations[0]
         }
         catch (const std::exception &e) {
             progressDlg.SetVisible(false);
