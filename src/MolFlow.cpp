@@ -1241,7 +1241,7 @@ void MolFlow::ImportDesorption_DES() {
 void MolFlow::SaveFile() {
 	if (!worker.fullFileName.empty()) {
 
-		auto *progressDlg2 = new GLProgress("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
+		auto *progressDlg2 = new GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
 		progressDlg2->SetVisible(true);
 		progressDlg2->SetProgress(0.5);
 		
@@ -1289,7 +1289,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		return;
 	}
 
-	auto *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
+	auto *progressDlg2 = new GLProgress_GUI("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();
@@ -1393,7 +1393,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
     }
 
 
-	auto *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
+	auto *progressDlg2 = new GLProgress_GUI("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();

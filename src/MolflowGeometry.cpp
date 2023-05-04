@@ -399,10 +399,10 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 /**
 * \brief File handling for inserting a SYN geometry + initialisation
 * \param file name of the input file
-* \param prg GLProgress (TODO: which is never used)
+* \param prg GLProgress_GUI (TODO: which is never used)
 * \param newStr newStructure if a super structure will be used or not
 */
-void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) {
+void MolflowGeometry::InsertSYN(FileReader *file, GLProgress_GUI *prg, bool newStr) {
 
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
@@ -744,11 +744,11 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, GlobalSimuState &globStat
 /**
 * \brief For loading geometry data from GEO format
 * \param file name of the input file
-* \param prg GLProgress window
+* \param prg GLProgress_GUI window
 * \param version version of the GEO description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -1072,11 +1072,11 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 /**
 * \brief For loading geometry data from SYN format
 * \param file name of the input file
-* \param prg GLProgress window
+* \param prg GLProgress_GUI window
 * \param version version of the SYN description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -1344,11 +1344,11 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 /**
 * \brief For loading texture data from GEO format
 * \param file name of the input file
-* \param prg GLProgress window
+* \param prg GLProgress_GUI window
 * \param results simulation results describing the texture
 * \param version version of the GEO description
 */
-bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalSimuState &globState, int version) {
+bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_GUI *prg, GlobalSimuState &globState, int version) {
 
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
@@ -1492,13 +1492,13 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalS
 /**
 * \brief For saving the geometry data into GEO format
 * \param file name of the output file
-* \param prg GLProgress window
+* \param prg GLProgress_GUI window
 * \param results simulation results describing the texture
 * \param worker thread worker handling this task
 * \param saveSelected if a selection is to be saved
 * \param crashSave if crash save is enabled
 */
-void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState &globState, Worker *worker,
+void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuState &globState, Worker *worker,
 							  bool saveSelected, bool crashSave) {
 
 	prg->SetMessage("Counting hits...");
@@ -2161,13 +2161,13 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 * \param alpha exponent for outgassing calculation in mode==1
 * \param cutoffdose cutoff dose for outgassing calculation in mode==1
 * \param convDistr distribution for outgassing calculation in mode==2
-* \param prg GLProgress window where visualising of the import progress is shown
+* \param prg GLProgress_GUI window where visualising of the import progress is shown
 */
 void MolflowGeometry::ImportDesorption_SYN(
 	FileReader *file, const size_t source, const double time,
 	const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
-	GLProgress *prg) {
+	GLProgress_GUI *prg) {
 
 	//UnselectAll();
 	char tmp[512];
@@ -2391,14 +2391,14 @@ void MolflowGeometry::ImportDesorption_SYN(
 /**
 * \brief To analyze desorption data from a SYN file
 * \param file name of the input file
-* \param progressDlg GLProgress dialog (TODO: but is it ever used?)
+* \param progressDlg GLProgress_GUI dialog (TODO: but is it ever used?)
 * \param nbNewFacet number of facets in the file
 * \param nbTextured number of textured facets in the file
 * \param nbDifferent number that is only set to 0 but never used (TODO: check usage)
-* \param prg GLProgress window where visualising of the analysation progress is shown
+* \param prg GLProgress_GUI window where visualising of the analysation progress is shown
 */
-void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, size_t *nbNewFacet,
-	size_t *nbTextured, size_t *nbDifferent, GLProgress *prg) {
+void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_GUI *progressDlg, size_t *nbNewFacet,
+	size_t *nbTextured, size_t *nbDifferent, GLProgress_GUI *prg) {
 	//init
 	*nbTextured = 0;
 	*nbNewFacet = 0;
@@ -2497,10 +2497,10 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 * \brief To save geometry data into a XML file
 * \param saveDoc xml output file
 * \param work thread worker handling the task
-* \param prg GLProgress window where visualising of the export progress is shown
+* \param prg GLProgress_GUI window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) { //scheduled to be removed
+void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress_GUI *prg, bool saveSelected) { //scheduled to be removed
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
@@ -2713,11 +2713,11 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveDoc xml output file
 * \param work thread worker handling the task
 * \param results simulation results
-* \param prg GLProgress window where visualising of the export progress is shown
+* \param prg GLProgress_GUI window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) { //scheduled to be removed
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_GUI *progressDlg, bool saveSelected) { //scheduled to be removed
     xml_node rootNode;
     if(mApp->useOldXMLFormat){
         rootNode = saveDoc;
@@ -3059,9 +3059,9 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 * \brief To load geometry data from a XML file
 * \param loadXML xml input file
 * \param work thread worker handling the task
-* \param progressDlg GLProgress window where visualising of the import progress is shown
+* \param progressDlg GLProgress_GUI window where visualising of the import progress is shown
 */
-void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg) { //scheduled to be removed
+void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg) { //scheduled to be removed
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -3347,10 +3347,10 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 * \brief To load geometry data from a XML file and insert into an existing structure
 * \param loadXML xml input file
 * \param work thread worker handling the task
-* \param progressDlg GLProgress window where visualising of the insert progress is shown
+* \param progressDlg GLProgress_GUI window where visualising of the insert progress is shown
 * \param newStr if a new super structure is to be used
 */
-void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr) {
+void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg, bool newStr) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -3586,10 +3586,10 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param loadXML xml input file
 * \param results current simulation results
 * \param work thread worker handling the task
-* \param progressDlg GLProgress window where visualising of the load progress is shown
+* \param progressDlg GLProgress_GUI window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress* progressDlg) { //scheduled to be removed
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress_GUI* progressDlg) { //scheduled to be removed
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 
 	xml_node resultNode = loadXML.child("MolflowResults");

@@ -329,7 +329,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			doseSource=sourceSelectCombo->GetSelectedIndex();
 			//Everything fine, let's go!
 			if (!mApp->AskToReset(work)) return;
-			GLProgress *progressDlg = new GLProgress("Importing...","Please wait");
+			GLProgress_GUI *progressDlg = new GLProgress_GUI("Importing...","Please wait");
 			progressDlg->SetProgress(0.0);
 			progressDlg->SetVisible(true);
 			

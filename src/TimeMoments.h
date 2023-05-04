@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <vector>
 #include "MolflowTypes.h"
+#include <Helper/GLProgress_abstract.hpp>
 
 class TimeMoments {
 public:
@@ -31,7 +32,7 @@ public:
     static std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow);
     static int
     ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vector<UserMoment> *userMoments,
-                             GLStatus& progress);
+        GLProgress_Abstract* progress);
 
     static int AddMoment(std::vector<Moment> *moments, std::vector<Moment> newMoments); //Adds a time serie to moments and returns the number of elements
 };

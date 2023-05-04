@@ -34,7 +34,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLTitledPanel.h"
 //#include "GLApp/GLFileBox.h"
-//#include "GLApp/GLProgress.h"
+//#include "GLApp/GLProgress_GUI.h"
 #include "GLApp/GLCombo.h"
 //#include "Worker.h"
 #include "Geometry_shared.h"
@@ -1104,7 +1104,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	}
 
 	if (!mApp->AskToReset(worker)) return false;
-	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
+	progressDlg = new GLProgress_GUI("Applying mesh settings", "Please wait");
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
@@ -1506,7 +1506,7 @@ bool FacetAdvParams::Apply() {
 	}
 	
 	if (!mApp->AskToReset(worker)) return false;
-	progressDlg = new GLProgress("Applying facet parameters", "Please wait");
+	progressDlg = new GLProgress_GUI("Applying facet parameters", "Please wait");
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
@@ -1774,7 +1774,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 	case MSG_BUTTON:
 		if (src == quickApply) {
 
-			progressDlg = new GLProgress("Applying view settings", "Please wait");
+			progressDlg = new GLProgress_GUI("Applying view settings", "Please wait");
 			progressDlg->SetVisible(true);
 			progressDlg->SetProgress(0.5);
 

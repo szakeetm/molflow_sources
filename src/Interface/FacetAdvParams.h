@@ -26,7 +26,7 @@ class GLButton;
 class GLTextField;
 class GLTitledPanel;
 class GLLabel;
-class GLProgress;
+class GLProgress_GUI;
 class GLCombo;
 class Geometry;
 class Worker;
@@ -66,7 +66,7 @@ private:
 	size_t sumAngleMapSize;
 	int desPanelFullHeight, angleMapPanelFullHeight;
 
-	GLProgress* progressDlg;
+	GLProgress_GUI* progressDlg;
 
 	//Designer generated code below
 	GLTitledPanel	*aPanel;

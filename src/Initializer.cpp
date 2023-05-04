@@ -21,6 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Initializer.h"
 #include "IO/LoaderXML.h"
 #include "ParameterParser.h"
+#include <Helper/GLProgress_CLI.hpp>
 
 #include <CLI11/CLI11.hpp>
 #include <Helper/StringHelper.h>
@@ -336,7 +337,9 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
                              GlobalSimuState *globState) {
 
-    Log::console_header(1, "Loading geometry from file {}\n", fileName);
+    //Log::console_header(1, "Loading geometry from file {}\n", fileName);
+    GLProgress_CLI loader_progress;
+    loader_progress.SetMessage(fmt::format("Loading geometry from file {}\n", fileName));
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -344,8 +347,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Geometry
     // Settings
     // Previous results
-    GLStatus progress;
-    if (loader.LoadGeometry(fileName, model, progress)) {
+    if (loader.LoadGeometry(fileName, model, &loader_progress)) {
         Log::console_error("Load error.\n");
         return 1;
     }
@@ -380,7 +382,6 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
         // 3. init counters with previous results
         if (loadState) {
             Log::console_msg_master(3, "Loading simulation state...\n");
-            GLStatus loadProgress; //To display in console
             if (Settings::loadAutosave) {
                 std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
@@ -388,10 +389,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
                 
                 if (std::filesystem::exists(autosaveFileName)) {
                     Log::console_msg_master(2, "Found autosave file {}, loading simulation state...\n");
-                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, loadProgress);
+                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, &loader_progress);
                 }
             } else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, loadProgress);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, &loader_progress);
             }
 
             // Update Angle map status

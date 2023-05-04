@@ -57,7 +57,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 	int nbMoments = (int)mApp->worker.moments.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 
-	GLProgress *prg = new GLProgress("Building texture", "Frame update");
+	GLProgress_GUI *prg = new GLProgress_GUI("Building texture", "Frame update");
 	prg->SetBounds(5, 28, 300, 90);
 	int startTime = SDL_GetTicks();
 

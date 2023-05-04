@@ -37,6 +37,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <filesystem>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
+#include <stdexcept>
 /*//#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>*/
@@ -49,7 +50,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Worker.h"
 #include "GLApp/GLApp.h"
 #include "GLApp/GLMessageBox.h"
-
+#include "GLApp/GLProgress_GUI.hpp"
 #include "GLApp/GLUnitDialog.h"
 #include "Helper/MathTools.h"
 #include "Helper/StringHelper.h"
@@ -139,13 +140,13 @@ MolflowGeometry *Worker::GetMolflowGeometry() {
 /**
 * \brief Function for saving geometry to a set file
 * \param fileName output file name with extension
-* \param prg GLProgress window where loading is visualised
+* \param prg GLProgress_GUI window where loading is visualised
 * \param askConfirm if a window should be opened to ask if the file should be overwritten
 * \param saveSelected if a selection is to be saved
 * \param autoSave if automatic saving is enabled
 * \param crashSave if save on crash is enabled
 */
-void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm, bool saveSelected, bool autoSave,
+void Worker::SaveGeometry(std::string fileName, GLProgress_GUI *prg, bool askConfirm, bool saveSelected, bool autoSave,
                           bool crashSave) {
 
     try {
@@ -616,7 +617,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
     // Read a file
     FileReader *f = nullptr;
-    auto *progressDlg = new GLProgress("Reading file...", "Please wait");
+    auto *progressDlg = new GLProgress_GUI("Reading file...", "Please wait");
     progressDlg->SetVisible(true);
     progressDlg->SetProgress(0.0);
 
@@ -800,9 +801,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
 
                 geom->LoadGEO(f, progressDlg, &version, this);
-                GLStatus progress;
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, progress)) {
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, progressDlg)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                           GLDLG_OK, GLDLG_ICONWARNING);
                     return;
@@ -918,9 +918,18 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                GLStatus load_progress;
                 auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
+                    try {
+                        loader.LoadGeometry(parseFileName, mf_model, progressDlg);
+                    }
+                    catch (const std::exception& ex) {
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
+                        std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
+                        throw std::runtime_error(msg);
+                    }
+                    /*
                     auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
                                              parseFileName, mf_model, load_progress);
                     do {
@@ -933,6 +942,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         SAFE_DELETE(progressDlg);
                         throw std::runtime_error("There was an error loading this file, check console for details.");
                     }
+                    */
                 }
                 geom->InitOldStruct(mf_model.get());
                 progressDlg->SetProgress(0.0);
@@ -972,6 +982,17 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 // Add moments only after user Moments are completely initialized
 
                 {
+                    try {
+                        TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, progressDlg);
+                    }
+                    catch (...) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                            GLDLG_OK, GLDLG_ICONWARNING);
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
+                        return;
+                    }
+                    /*
                     auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, load_progress);
                     do {
                         progressDlg->SetProgress(load_progress);
@@ -985,6 +1006,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         SAFE_DELETE(progressDlg);
                         return;
                     }
+                    */
                 }
 
 
@@ -1041,7 +1063,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     simManager.ForwardGlobalCounter(&globState, &particleLog);
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
                     {
-                        auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
+                        /*
+                        auto future = std::async(std::launch::async, FlowIO::LoadSimulationState,
                                                  parseFileName, mf_model, &globState, load_progress);
                         do {
                             progressDlg->SetProgress(load_progress);
@@ -1054,19 +1077,20 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         catch (const std::exception &e){
                             throw;
                         }
+                        */
+
+                        FlowIO::LoaderXML::LoadSimulationState(parseFileName, mf_model, &globState, progressDlg);
+
+                        /*
                         future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
                                             parseFileName, &mApp->formula_ptr->convergenceValues, load_progress);
                         do {
                             progressDlg->SetProgress(load_progress);
                             ProcessSleep(100);
                         } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-                        progressDlg->SetProgress(0.0);
-                        try{
-                            future.get(); //exception thrown if it was stored
-                        }
-                        catch (const std::exception &e){
-                            throw;
-                        }
+                        */
+                        FlowIO::LoaderInterfaceXML::LoadConvergenceValues(parseFileName, &mApp->formula_ptr->convergenceValues, progressDlg);
+
                     }
                     //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     simManager.simulationChanged = true;
@@ -1211,7 +1235,7 @@ bool Worker::SimModelToInterfaceGeom() {
 * \param version version of the GEO data description
 */
 void Worker::LoadTexturesGEO(FileReader *f, int version) {
-    auto *progressDlg = new GLProgress("Loading textures", "Please wait");
+    auto *progressDlg = new GLProgress_GUI("Loading textures", "Please wait");
     progressDlg->SetProgress(0.0);
     try {
         bool buffer_old = simManager.GetLockedHitBuffer();
@@ -1514,7 +1538,7 @@ bool Worker::InterfaceGeomToSimModel() {
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     //if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
-        GLProgress progressDlg("Performing preliminary calculations on geometry...",
+        GLProgress_GUI progressDlg("Performing preliminary calculations on geometry...",
                                            "Passing Geometry to workers");
         progressDlg.SetVisible(true);
         progressDlg.SetProgress(0.0);
@@ -1719,12 +1743,12 @@ void Worker::ImportDesorption_DES(const char *fileName) {
 * \param alpha exponent for outgassing calculation in mode==1
 * \param cutoffdose cutoff dose for outgassing calculation in mode==1
 * \param convDistr distribution for outgassing calculation in mode==2
-* \param prg GLProgress window where visualising of the import progress is shown
+* \param prg GLProgress_GUI window where visualising of the import progress is shown
 */
 void Worker::ImportDesorption_SYN(const char *fileName, const size_t source, const double time,
                                   const size_t mode, const double eta0, const double alpha, const double cutoffdose,
                                   const std::vector<std::pair<double, double>> &convDistr,
-                                  GLProgress *prg) {
+                                  GLProgress_GUI *prg) {
     std::string ext = FileUtils::GetExtension(fileName);
     if (!Contains({"syn7z", "syn"}, ext))
         throw std::runtime_error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
@@ -1733,7 +1757,7 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t source, con
 
     FileReader *f = nullptr;
 
-    auto *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
+    auto *progressDlg = new GLProgress_GUI("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
     progressDlg->SetVisible(true);
     bool isSYN7Z = (iequals(ext, "syn7z"));
@@ -1783,7 +1807,7 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
     // Read a file
     FileReader *f = nullptr;
 
-    auto *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
+    auto *progressDlg = new GLProgress_GUI("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
     progressDlg->SetVisible(true);
 

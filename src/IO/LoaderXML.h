@@ -28,6 +28,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation/MolflowSimGeom.h"
 #include "PugiXML/pugixml.hpp"
 #include "Simulation/MolflowSimFacet.h"
+#include <Helper/GLProgress_abstract.hpp>
 
 namespace FlowIO {
     class Loader {
@@ -35,7 +36,7 @@ namespace FlowIO {
         std::vector<std::vector<std::pair<double, double>>> IDs;         //integrated distribution function for each time-dependent desorption type
         std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
     public:
-        virtual int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLStatus& progress) = 0;
+        virtual int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract* progress) = 0;
     };
 
     class LoaderXML : public Loader {
@@ -43,12 +44,12 @@ namespace FlowIO {
     protected:
         void LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
     public:
-        int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLStatus& progress) override;
+        int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract* progress) override;
         static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);
         static int LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
-                                       GlobalSimuState *globState, GLStatus& progress);
+                                       GlobalSimuState *globState, GLProgress_Abstract* progress);
         static int
-        LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues, GLStatus& progress);
+        LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues, GLProgress_Abstract* progress);
         UserInput uInput;
     };
 }
