@@ -918,7 +918,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                GLStatus load_progress;
+                GLStatus load_progress;load_progress.status="Building geometry...";
                 auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
                     auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
@@ -969,6 +969,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
 
                 progressDlg->SetMessage("Parsing user moments...");
+                load_progress.status="Parsing user moments...";
                 // Add moments only after user Moments are completely initialized
 
                 {
@@ -1028,6 +1029,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
+                load_progress.status="Reloading worker with new geometry...";
                 try {
                     fullFileName = fileName;
 
