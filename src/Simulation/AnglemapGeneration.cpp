@@ -142,7 +142,7 @@ namespace AnglemapGeneration {
 	* \param randomGenerator reference to the random number generator (Mersenne Twister)
 	* \return phi angle
 	*/
-	double GeneratePhiFromAngleMap(const int thetaLowerIndex, const double thetaOvershoot, const AnglemapParams& anglemapParams, Anglemap& anglemap, double lookupValue) {
+	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams, Anglemap& anglemap, double lookupValue) {
 		if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //simplest case speedup, uniform phi distribution
 		int phiLowerIndex;
 		//The lookupValue is looked up from first midpoint to "width+1"th midpoint. It will never be in the first half bin, but can go over width by half bin due to periodic BC
@@ -275,7 +275,7 @@ namespace AnglemapGeneration {
 	* \param anglemapParams parameters of the angle map
 	* \return theta angle in rad
 	*/
-	double GetTheta(const double thetaIndex, const AnglemapParams& anglemapParams) {
+	double GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams) {
 		if ((size_t)(thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
 			return anglemapParams.thetaLimit * (thetaIndex) / (double)anglemapParams.thetaLowerRes;
 		}
@@ -293,7 +293,7 @@ namespace AnglemapGeneration {
 	* \return phi angle
 	*/
 
-	double GetPhi(const double phiIndex, const AnglemapParams& anglemapParams)
+	double GetPhi(const double& phiIndex, const AnglemapParams& anglemapParams)
 		//makes phiIndex circular and converts from index to -pi...pi
 	{
 		double width = (double)anglemapParams.phiWidth;
@@ -301,7 +301,7 @@ namespace AnglemapGeneration {
 		return -PI + 2.0 * PI * correctedIndex / width;
 	}
 
-	double GetPhiNormalizedPdfValue(const double thetaIndex, const int phiLowerIndex,
+	double GetPhiNormalizedPdfValue(const double& thetaIndex, const int& phiLowerIndex,
 		const AnglemapParams& anglemapParams, const Anglemap& anglemap)
 	{
 		size_t phiIndex = IDX(phiLowerIndex,anglemapParams.phiWidth);//phiLowerIndex is circularized
@@ -337,7 +337,7 @@ namespace AnglemapGeneration {
 	* \return phi cdf value
 	*/
 
-	double GetPhiCDFValue(const double thetaIndex, const int phiLowerIndex, const AnglemapParams& anglemapParams, const Anglemap& anglemap) {
+	double GetPhiCDFValue(const double& thetaIndex, const int& phiLowerIndex, const AnglemapParams& anglemapParams, const Anglemap& anglemap) {
 		//todo: check if circular mapping ever happens (phiLowerIndex >= anglemapParams.phiWidth)
 		if (thetaIndex < (double)anglemapParams.thetaLowerRes) { //In lower part
 			if (thetaIndex < 0.5) {
@@ -392,7 +392,7 @@ namespace AnglemapGeneration {
 	* \return phi cdf summed value
 	*/
 
-	double GetPhiCDFSum(const double thetaIndex, const AnglemapParams& anglemapParams,
+	double GetPhiCDFSum(const double& thetaIndex, const AnglemapParams& anglemapParams,
 		const Anglemap& anglemap) {
 		if (thetaIndex < (double)anglemapParams.thetaLowerRes) { //In lower part
 

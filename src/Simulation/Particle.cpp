@@ -1265,8 +1265,8 @@ double ParticleTracer::GenerateDesorptionTime(const SimulationFacet *src, const 
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size_t hit, const size_t desorb,
-                               const size_t absorb, const double sum_1_per_v, const double sum_v_ort,
+ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size_t& hit, const size_t& desorb,
+                               const size_t& absorb, const double& sum_1_per_v, const double& sum_v_ort,
                                const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
