@@ -1399,7 +1399,7 @@ bool ParticleTracer::UpdateLog(ParticleLog *globalLog, size_t timeout){
 
     return true;
 }
-void ParticleTracer::RecordHit(const int &type) {
+void ParticleTracer::RecordHit(const inttype) {
     if (tmpState.globalHits.hitCacheSize < HITCACHESIZE) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].pos = ray.origin;
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;

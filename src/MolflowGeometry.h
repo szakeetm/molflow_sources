@@ -46,8 +46,8 @@ public:
 	void LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker);
 	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalSimuState &globState, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
-	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
-		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
+	void ImportDesorption_SYN(FileReader *synFile, const size_tsource, const doubletime,
+		const size_tmode, const doubleeta0, const doublealpha, const doublecutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
 		GLProgress *prg);
 	void AnalyzeSYNfile(FileReader *f, GLProgress *progressDlg, size_t *nbNewFacet,
