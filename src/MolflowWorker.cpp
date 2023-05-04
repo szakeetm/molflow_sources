@@ -1022,7 +1022,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     }
                     
                 }
+                progressDlg->SetMessage("Calculating OpenGL render data...");
                 geom->InitializeInterfaceGeometry();
+                
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
