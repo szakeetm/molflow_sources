@@ -12,6 +12,7 @@ set(SIMU_DIR ../../src/Simulation)
 set(IO_DIR ../../src/IO)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
+set(HELPER_DIR ../../src_shared/Helper)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
@@ -105,7 +106,13 @@ set(SRC_FILES
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
-        ../../src_shared/RayTracing/Ray.cpp)
+        ../../src_shared/RayTracing/Ray.cpp
+        
+        ${HELPER_DIR}/GLProgress_CLI.cpp
+        ${HELPER_DIR}/GLProgress_CLI.hpp
+        ${HELPER_DIR}/GLProgress_abstract.cpp
+        ${HELPER_DIR}/GLProgress_abstract.hpp
+)
 
 # set the path to the library folder
 link_directories(${LINK_DIR_1}
