@@ -800,9 +800,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
 
                 geom->LoadGEO(f, progressDlg, &version, this);
-
+                GLStatus progress;
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, nullptr)) {
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, progress)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                           GLDLG_OK, GLDLG_ICONWARNING);
                     return;
@@ -972,7 +972,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 // Add moments only after user Moments are completely initialized
 
                 {
-                    auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, &load_progress);
+                    auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, load_progress);
                     do {
                         progressDlg->SetProgress(load_progress);
                         ProcessSleep(100);
@@ -1042,7 +1042,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
                     {
                         auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
-                                                 parseFileName, mf_model, &globState, &load_progress);
+                                                 parseFileName, mf_model, &globState, load_progress);
                         do {
                             progressDlg->SetProgress(load_progress);
                             ProcessSleep(100);
@@ -1055,7 +1055,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                             throw;
                         }
                         future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
-                                            parseFileName, &mApp->formula_ptr->convergenceValues, &load_progress);
+                                            parseFileName, &mApp->formula_ptr->convergenceValues, load_progress);
                         do {
                             progressDlg->SetProgress(load_progress);
                             ProcessSleep(100);
