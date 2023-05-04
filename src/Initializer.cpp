@@ -345,7 +345,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Settings
     // Previous results
     GLStatus progress;
-    if (loader.LoadGeometry(fileName, model, &progress)) {
+    if (loader.LoadGeometry(fileName, model, progress)) {
         Log::console_error("Load error.\n");
         return 1;
     }
@@ -380,17 +380,18 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
         // 3. init counters with previous results
         if (loadState) {
             Log::console_msg_master(3, "Loading simulation state...\n");
-
+            GLStatus loadProgress; //To display in console
             if (Settings::loadAutosave) {
                 std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 autosaveFileName = autoSavePrefix + autosaveFileName;
+                
                 if (std::filesystem::exists(autosaveFileName)) {
                     Log::console_msg_master(2, "Found autosave file {}, loading simulation state...\n");
-                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, nullptr);
+                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, loadProgress);
                 }
             } else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, nullptr);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, loadProgress);
             }
 
             // Update Angle map status

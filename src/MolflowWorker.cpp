@@ -922,7 +922,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
                     auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
-                                             parseFileName, mf_model, &load_progress);
+                                             parseFileName, mf_model, load_progress);
                     do {
                         progressDlg->SetProgress(load_progress);
                         ProcessSleep(100);

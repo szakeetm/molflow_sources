@@ -31,7 +31,7 @@ public:
     static std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow);
     static int
     ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vector<UserMoment> *userMoments,
-                             GLStatus *progress);
+                             GLStatus& progress);
 
     static int AddMoment(std::vector<Moment> *moments, std::vector<Moment> newMoments); //Adds a time serie to moments and returns the number of elements
 };
