@@ -129,11 +129,14 @@ std::vector<Moment> TimeMoments::ParseMoment(const std::string& userInput, doubl
 }
 
 int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vector<UserMoment> *userMoments,
-                                          double *progress) {
+                                          GLStatus *progress) {
     std::vector<std::vector<Moment>> parsedMoments;
+    if (progress) progress->status = "Parsing moments...";
     for (size_t u = 0; u != userMoments->size(); u++) {
         parsedMoments.emplace_back(ParseMoment((*userMoments)[u].first, (*userMoments)[u].second));
-        if(progress)*progress = (double)0.5*(double)u/(double)userMoments->size();
+        if (progress) {
+            progress->progress = (double)0.5 * (double)u / (double)userMoments->size();
+        }
     }
 
     auto overlapPair = CheckIntervalOverlap(parsedMoments);
@@ -147,7 +150,7 @@ int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vec
         int m = 0;
         for (auto &newMoment : parsedMoments) {
             AddMoment(moments, newMoment);
-            if(progress)*progress = (double)0.5 + (double)m++/(double)parsedMoments.size();
+            if(progress) progress->progress = (double)0.5 + (double)m++/(double)parsedMoments.size();
         }
         std::sort(moments->begin(),moments->end());
     }

@@ -35,18 +35,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace pugi;
 using namespace FlowIO;
 
-static double loadProgress = 0.0;
-void setLoadProgress(double newProgress) {
-    loadProgress = newProgress;
-}
-
-void reportLoadStatus(const std::string& statusString) {
-    Log::console_msg(2, "[Loader at {:3.2f}%] {}", loadProgress , statusString);
-}
-
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, double *progress) {
+int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLStatus *progress) {
     if (!model->m.try_lock()) {
         return 1;
     }
@@ -64,6 +55,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
 
     xml_node geomNode = rootNode.child("Geometry");
 
+    progress->status = "Loading vertices...";
     //Vertices
     model->sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
@@ -113,6 +105,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->tdParams.parameters.insert(model->tdParams.parameters.end(),uInput.parameters.begin(),uInput.parameters.end());
     }
 
+    progress->status = "Loading facets...";
     //Facets , load for now via temp pointers and convert to vector afterwards
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
     //SubprocessFac** loadFacets = (SubprocessFac **)malloc(model->sh.nbFacet * sizeof(SubprocessFac *));
@@ -138,7 +131,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 */
         idx++;
-        *progress = (double)idx/(double)model->sh.nbFacet;
+        progress->progress = (double)idx/(double)model->sh.nbFacet;
     }
 
     model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
@@ -150,6 +143,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.enableDecay = model->wp.halfLife < 1e100;
     }
 
+    progress->status = "Loading physics parameters...";
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
     model->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
     // Default initialization
@@ -208,6 +202,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
     }
 
+    progress->status = "Loading histograms...";
     xml_node globalHistNode = simuParamNode.child("Global_histograms");
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");
@@ -272,7 +267,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
 }
 
 int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
-                                   GlobalSimuState *globState, double *progress) {
+                                   GlobalSimuState *globState, GLStatus *progress) {
 
     try {
         xml_document loadXML;
@@ -298,7 +293,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
         size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
         size_t m = 0;
         for (xml_node newMoment: momentsNode.children("Moment")) {
-
+            progress->status = fmt::format("Loading global results [moment {}]...",m);
             if (m == 0) { //read global results
                 xml_node globalNode = newMoment.child("Global");
                 xml_node hitsNode = globalNode.child("Hits");
@@ -364,6 +359,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             } //end global node
 
+            progress->status = fmt::format("Loading histograms [moment {}]...", m);
             bool hasHistogram =
                     model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
@@ -440,9 +436,12 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             }
 
+            progress->status = fmt::format("Loading facet results [moment {}]...", m);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();
+                if (progress) progress->progress = (double)((m * model->sh.nbFacet) + facetId) /
+                    ((double)nbMoments * model->sh.nbFacet);
                 if(facetId >= model->facets.size()){
                     throw std::runtime_error(fmt::format("Accessing simulation state for facet #{}, but only {} facets have been loaded!\nMaybe the input file is corrupted?",facetId+1, model->facets.size()));
                 }
@@ -719,10 +718,6 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                         }
                     }
                 }
-                setLoadProgress(
-                        (double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet));
-                if (progress) *progress = (double) ((m * model->sh.nbFacet) + facetId) /
-                                          ((double) nbMoments * model->sh.nbFacet);
             } //end facetResult
             m++;
         } //end moment
@@ -990,7 +985,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
 }
 
 int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues,
-                                     double *progress) {
+                                     GLStatus *progress) {
 
     xml_document loadXML;
     xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly

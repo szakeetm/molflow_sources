@@ -918,7 +918,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                double load_progress = 0.0;
+                GLStatus load_progress;
                 auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
                     auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,

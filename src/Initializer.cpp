@@ -344,7 +344,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Geometry
     // Settings
     // Previous results
-    double progress = 0.0;
+    GLStatus progress;
     if (loader.LoadGeometry(fileName, model, &progress)) {
         Log::console_error("Load error.\n");
         return 1;
