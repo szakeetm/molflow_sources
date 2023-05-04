@@ -881,7 +881,7 @@ double InterfaceFacet::GetSmooth(int i, int j, TextureCell *texBuffer, int textu
 * \param sum pointer to an existing sum counter
 * \param totalWeight pointer to an existing counter for the total weight
 */
-void InterfaceFacet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
+void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight, TextureCell *texBuffer, const int textureMode, const double scaleF, double *sum, double *totalWeight) {
 												
 	if( i>=0 && i<sh.texWidth && j>=0 && j<sh.texHeight ) {								
 		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
