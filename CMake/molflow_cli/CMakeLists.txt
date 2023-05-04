@@ -107,8 +107,8 @@ set(SRC_FILES
 
         ${HELPER_DIR}/GLProgress_CLI.cpp
         ${HELPER_DIR}/GLProgress_CLI.hpp
-        ${HELPER_DIR}/GLProgress_Abstract.cpp
-        ${HELPER_DIR}/GLProgress_Abstract.hpp
+        ${HELPER_DIR}/GLProgress_abstract.cpp
+        ${HELPER_DIR}/GLProgress_abstract.hpp
 
         )
 
