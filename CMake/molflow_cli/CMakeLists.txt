@@ -12,6 +12,7 @@ set(SIMU_DIR ../../src/Simulation)
 set(IO_DIR ../../src/IO)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
+set(HELPER_DIR ../../src_shared/Helper)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
@@ -103,6 +104,11 @@ set(SRC_FILES
 
         ${IO_DIR}/CSVExporter.cpp
         ${IO_DIR}/CSVExporter.h
+
+        ${HELPER_DIR}/GLProgress_CLI.cpp
+        ${HELPER_DIR}/GLProgress_CLI.hpp
+        ${HELPER_DIR}/GLProgress_Abstract.cpp
+        ${HELPER_DIR}/GLProgress_Abstract.hpp
 
         )
 
