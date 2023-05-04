@@ -918,7 +918,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                GLStatus load_progress;load_progress.status="Building geometry...";
                 auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
                 {
                     try {
