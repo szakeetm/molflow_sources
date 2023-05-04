@@ -631,7 +631,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         return;
                     }
 
-                    for (const auto &facetId : facetIds) {
+                    for (const auto facetId : facetIds) {
                         geom->GetFacet(facetId)->selected = Contains({selButton, addButton}, src);
                     }
 
@@ -662,7 +662,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     }
 
                     bool warnedOnce = false;
-                    for (const auto &facetId : facetIds) {
+                    for (const auto facetId : facetIds) {
                         if(geom->GetFacet(facetId)->sh.isProfile) {
                             if(addView(facetId) && !warnedOnce) {
                                 warnedOnce = true;
@@ -694,7 +694,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         return;
                     }
 
-                    for (const auto &facetId : facetIds) {
+                    for (const auto facetId : facetIds) {
                         /*
 						if(remView(facetId)){
                             GLMessageBox::Display("Profile not plotted", "Error", GLDLG_OK, GLDLG_ICONERROR);

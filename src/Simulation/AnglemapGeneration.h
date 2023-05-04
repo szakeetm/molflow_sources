@@ -26,24 +26,24 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowSimFacet.h" // Anglemap
 
 namespace AnglemapGeneration {
-    double GetTheta(const double &thetaIndex, const AnglemapParams &anglemapParams);
+    double GetTheta(const double thetaIndex, const AnglemapParams &anglemapParams);
 
-    double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
+    double GetPhi(const double phiIndex, const AnglemapParams &anglemapParams);
 
-    double GetPhiNormalizedPdfValue(const double &thetaIndex, const int &phiLowerIndex,
+    double GetPhiNormalizedPdfValue(const double thetaIndex, const int phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap & anglemap);
 
-    double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
+    double GetPhiCDFValue(const double thetaIndex, const int phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap &anglemap);
 
-    double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
+    double GetPhiCDFSum(const double thetaIndex, const AnglemapParams &anglemapParams,
                                const Anglemap &anglemap);
 
     std::tuple<double, int, double>
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, Anglemap &anglemap,
                               double lookupValue);
 
-    double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
+    double GeneratePhiFromAngleMap(const int thetaLowerIndex, const double thetaOvershoot,
                                    const AnglemapParams &anglemapParams,
                                    Anglemap &anglemap, double lookupValue);
 };

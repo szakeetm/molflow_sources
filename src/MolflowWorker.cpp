@@ -1721,8 +1721,8 @@ void Worker::ImportDesorption_DES(const char *fileName) {
 * \param convDistr distribution for outgassing calculation in mode==2
 * \param prg GLProgress window where visualising of the import progress is shown
 */
-void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, const double &time,
-                                  const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
+void Worker::ImportDesorption_SYN(const char *fileName, const size_t source, const double time,
+                                  const size_t mode, const double eta0, const double alpha, const double cutoffdose,
                                   const std::vector<std::pair<double, double>> &convDistr,
                                   GLProgress *prg) {
     std::string ext = FileUtils::GetExtension(fileName);

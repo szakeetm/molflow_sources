@@ -2164,8 +2164,8 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 * \param prg GLProgress window where visualising of the import progress is shown
 */
 void MolflowGeometry::ImportDesorption_SYN(
-	FileReader *file, const size_t &source, const double &time,
-	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
+	FileReader *file, const size_t source, const double time,
+	const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg) {
 
