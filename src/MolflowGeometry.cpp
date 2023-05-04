@@ -834,7 +834,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
             strcpy(tmpExpr, file->ReadString());
             file->ReadKeyword(":");
             tmpWindow = file->ReadDouble();
-            worker->userMoments.push_back(tmpExpr,tmpWindow);
+            worker->userMoments.emplace_back(tmpExpr,tmpWindow);
         }
         file->ReadKeyword("}");
     }
@@ -847,7 +847,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			char tmpExpr[512];
 			strcpy(tmpExpr, file->ReadString());
 			// Try to set a fixed time window later for GEO versions >= 11
-            worker->userMoments.push_back(tmpExpr,0.0);
+            worker->userMoments.emplace_back(tmpExpr,0.0);
 		}
 		file->ReadKeyword("}");
 	}

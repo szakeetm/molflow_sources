@@ -308,7 +308,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             auto facet = geom->GetFacet(facetId);
                             bool textureVisible = facet->textureVisible;
                             bool volumeVisible = facet->volumeVisible;
-                            this->uInput.facetViewSettings.push_back(textureVisible, volumeVisible);
+                            this->uInput.facetViewSettings.emplace_back(textureVisible, volumeVisible);
                         }
                         this->uInput.userMoments = userMoments;
                         this->uInput.parameters = parameters;
