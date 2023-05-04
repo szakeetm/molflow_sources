@@ -1014,7 +1014,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 this->uInput = loader.uInput;
                 // Init after load stage
                 //geom->InitializeMesh();
-                progressDlg->SetMessage("Initialising geometry...");
+                progressDlg->SetMessage("Initializing geometry...");
 
                 geom->InitializeGeometry();
                 progressDlg->SetMessage("Building mesh...");
