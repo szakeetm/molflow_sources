@@ -66,6 +66,7 @@
         "vector": "cpp",
         "chrono": "cpp",
         "format": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "future": "cpp"
     }
 }
