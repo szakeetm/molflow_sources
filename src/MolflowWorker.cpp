@@ -979,7 +979,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
 
                 progressDlg->SetMessage("Parsing user moments...");
-                load_progress.status="Parsing user moments...";
                 // Add moments only after user Moments are completely initialized
 
                 {
@@ -1051,7 +1050,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
-                load_progress.status="Reloading worker with new geometry...";
                 try {
                     fullFileName = fileName;
 
