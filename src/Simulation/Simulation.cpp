@@ -68,9 +68,16 @@ int Simulation::ReinitializeParticleLog() {
         tmpParticleLog.reserve(model->otfParams.logLimit*//* / model->otfParams.nbProcess*//*);
     }*/
 
-    for(auto& particleTracer : particleTracers) {
-        if(!particleTracer.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10)))
-           return -1;
+bool result = 0;
+#pragma omp parallel for shared(result)
+    // New GlobalSimuState structure for threads
+    for (int i = 0; i < particleTracers.size(); i++)
+    {
+        auto& particleTracer = particleTracers[i];
+        if (!particleTracer.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10))) {
+#pragma omp critical            
+            result = -1;
+        }
         particleTracer.tmpParticleLog.clear();
         particleTracer.tmpParticleLog.pLog.shrink_to_fit();
         if (model->otfParams.enableLogging) {
@@ -78,7 +85,7 @@ int Simulation::ReinitializeParticleLog() {
         }
         particleTracer.tmpParticleLog.tMutex.unlock();
     }
-    return 0;
+    return result;
 }
 
 MFSim::ParticleTracer * Simulation::GetParticleTracer(size_t i) {
@@ -174,9 +181,11 @@ void Simulation::ClearSimulation() {
 
     //loadOK = false;
 
-    //this->currentParticles.clear();// = CurrentParticleStatus();
-    //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particleTracer : particleTracers) {
+#pragma omp parallel for
+    // New GlobalSimuState structure for threads
+    for (int i = 0; i < particleTracers.size(); i++)
+    {
+        auto& particleTracer = particleTracers[i];
         particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
         particleTracer.tmpState.Reset();
         particleTracer.model = (MolflowSimulationModel*) model.get();
@@ -226,9 +235,11 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     
     auto* simModel = (MolflowSimulationModel*) model.get();
 
+#pragma omp parallel for
     // New GlobalSimuState structure for threads
-    for(auto& particleTracer : particleTracers)
+    for(int i=0;i<particleTracers.size();i++)
     {
+        auto& particleTracer = particleTracers[i];
         auto& tmpResults = particleTracer.tmpState;
         tmpResults.Resize(model);
 
@@ -283,7 +294,11 @@ void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
 
-    for(auto& particleTracer : particleTracers) {
+#pragma omp parallel for
+// New GlobalSimuState structure for threads
+    for (int i = 0; i < particleTracers.size(); i++)
+    {
+        auto& particleTracer = particleTracers[i];
         particleTracer.Reset();
         particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
         particleTracer.model = (MolflowSimulationModel*) model.get();
