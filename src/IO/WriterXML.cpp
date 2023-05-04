@@ -32,11 +32,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace FlowIO;
 using namespace pugi;
 
-void WriterXML::setWriteProgress(const double& newProgress) {
+void WriterXML::setWriteProgress(const double newProgress) {
     setWriteProgress((size_t)newProgress);
 }
 
-void WriterXML::setWriteProgress(const size_t& newProgress) {
+void WriterXML::setWriteProgress(const size_t newProgress) {
     writeProgress = newProgress;
 }
 
