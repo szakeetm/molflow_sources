@@ -64,6 +64,8 @@
         "unordered_set": "cpp",
         "variant": "cpp",
         "vector": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "format": "cpp",
+        "xstring": "cpp"
     }
 }

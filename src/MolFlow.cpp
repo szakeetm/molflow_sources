@@ -2215,7 +2215,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("recents"); f->ReadKeyword(":"); f->ReadKeyword("{");
 		w = f->ReadString();
 		while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
-			recentsList.emplace_back(strdup(w));
+			recentsList.push_back(strdup(w));
 			w = f->ReadString();
 		}
 
