@@ -66,9 +66,9 @@ struct MolflowSimFacet : public SimulationFacet {
     MolflowSimFacet &operator=(const MolflowSimFacet &o);
     MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
 
-    bool InitializeOnLoad(const size_tid, const size_tnbMoments);
+    bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
 
-    bool InitializeLinkAndVolatile(const size_t id) override;
+    bool InitializeLinkAndVolatile(const size_t & id) override;
 
     int InitializeAngleMap();
 

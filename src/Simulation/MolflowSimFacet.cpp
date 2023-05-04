@@ -51,7 +51,7 @@ MolflowSimFacet& MolflowSimFacet::operator=(MolflowSimFacet&& cpy) noexcept {
 * \param regions vector containing the regions and their parameters used to fetch the min/max energy for a spectrum
 * \return boolean that is true on successful init
 */
-bool MolflowSimFacet::InitializeOnLoad(const size_tid, const size_tnbMoments) {
+bool MolflowSimFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
     globalId = id;
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
@@ -218,7 +218,7 @@ void MolflowSimFacet::InitializeOutgassingMap()
     }
 }
 
-bool MolflowSimFacet::InitializeLinkAndVolatile(const size_t id)
+bool MolflowSimFacet::InitializeLinkAndVolatile(const size_t & id)
 {
     SimulationFacet::InitializeLinkAndVolatile(id);
     if (sh.superDest || sh.isVolatile) {

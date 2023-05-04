@@ -56,7 +56,7 @@ namespace MFSim {
         void ProfileFacet(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                           double ortSpeedFactor);
 
-        void RecordHit(const inttype);
+        void RecordHit(const int &type);
 
         void RecordLeakPos();
 
