@@ -55,7 +55,6 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	int wD = 500;
 	int hD = 300;
 	lastUpdate = 0.0f;
-	strcpy(currentDir, ".");
 
 	SetTitle("Texture plotter");
 	SetResizable(true);
@@ -576,7 +575,6 @@ void TexturePlotter::SaveFile() {
 
 	if (!selFacet) return;
 
-	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileFilters, nbFilter);
 	std::string fn = NFD_SaveFile_Cpp(fileFilters, "");
 	if (!fn.empty()) {
 

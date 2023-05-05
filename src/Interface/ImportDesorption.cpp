@@ -220,7 +220,6 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 		} else if (src==loadConvButton) {
 			/*
 			//load file dialog
-			FILENAME *convFile=GLFileBox::OpenFile(mApp->currentDir,NULL,"Open conversion file","All files\0*.*\0",2);
 			if (!convFile) return;
 			if (!convFile->fullName) return;
 			*/
@@ -255,8 +254,6 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			*/
 			std::string fileName;
 			if (src == loadSynButton) {
-				/*synFilePtr = GLFileBox::OpenFile(mApp->currentDir, NULL, "Open source SYN file",
-					"SynRad+ files\0*.syn;*.syn7z\0All files\0*.*\0", 2);*/
 				fileName = NFD_OpenFile_Cpp("syn,syn7z", "");
 			}
 			else if (src==useCurrentButton) {

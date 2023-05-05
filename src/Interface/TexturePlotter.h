@@ -60,7 +60,6 @@ private:
   float        lastUpdate;
   double    	maxValue;
   size_t			maxX,maxY;
-  char         currentDir[512];
 
   GLList      *mapList;
   GLButton    *saveButton;

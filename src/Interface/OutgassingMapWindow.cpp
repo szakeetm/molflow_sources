@@ -42,7 +42,6 @@ OutgassingMapWindow::OutgassingMapWindow(): GLWindow() {
   int wD = 600;
   int hD = 300;
   lastUpdate = 0.0f;
-  strcpy(currentDir,".");
 
   SetTitle("Outgassing map");
   SetResizable(true);

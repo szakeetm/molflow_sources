@@ -1092,7 +1092,6 @@ void MolFlow::ExportProfiles() {
 		return;
 	}
 
-	//FILENAME *fn = GLFileBox::SaveFile(currentDir, nullptr, "Save File", fileProfFilters, 0);
 	std::string saveFile = NFD_SaveFile_Cpp(fileProfFilters, "");
 
 	if (!saveFile.empty()) {
@@ -1317,11 +1316,10 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		ClearFacetParams();
 		nbDesStart = worker.globalHitCache.globalHits.nbDesorbed;
 		nbHitStart = worker.globalHitCache.globalHits.nbMCHit;
-		AddRecent(filePath.c_str());
+		AddRecent(filePath);
 		geom->viewStruct = -1;
 
 		UpdateStructMenu();
-		UpdateCurrentDir(filePath.c_str());
 
 		// Check non simple polygon
 		prg.SetMessage("Checking for non simple polygons...");
@@ -1423,13 +1421,11 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		//ClearFacetParams();
 		//nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
 		//nbHitStart = worker.globState.globalHits.globalHits.hit.nbMC;
-		AddRecent(filePath.c_str());
+		AddRecent(filePath);
 		geom->viewStruct = -1;
 
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
-		
-		//UpdateCurrentDir(fullName);
 
 		geom->CheckCollinear();
 		//geom->CheckNonSimple();
@@ -2208,11 +2204,6 @@ void MolFlow::LoadConfig() {
 			recentsList.push_back(strdup(w));
 			w = f->ReadString();
 		}
-
-		f->ReadKeyword("cdir"); f->ReadKeyword(":");
-		strcpy(currentDir, f->ReadString());
-		f->ReadKeyword("cseldir"); f->ReadKeyword(":");
-		strcpy(currentSelDir, f->ReadString());
 		f->ReadKeyword("autonorme"); f->ReadKeyword(":");
 		geom->SetAutoNorme(f->ReadInt());
 		f->ReadKeyword("centernorme"); f->ReadKeyword(":");
@@ -2368,8 +2359,6 @@ void MolFlow::SaveConfig() {
 		}
 		f->Write("}\n");
 
-		f->Write("cdir:\""); f->Write(currentDir); f->Write("\"\n");
-		f->Write("cseldir:\""); f->Write(currentSelDir); f->Write("\"\n");
 		f->Write("autonorme:"); f->Write(geom->GetAutoNorme(), "\n");
 		f->Write("centernorme:"); f->Write(geom->GetCenterNorme(), "\n");
 		f->Write("normeratio:"); f->Write((double)(geom->GetNormeRatio()), "\n");

@@ -59,7 +59,6 @@ private:
   float        lastUpdate;
   float			maxValue;
   int			maxX,maxY;
-  char         currentDir[512];
 
   GLLabel     *desLabel;
   GLList      *mapList;
