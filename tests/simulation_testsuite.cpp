@@ -461,12 +461,12 @@ namespace {
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1) {
                 nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{}\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences)\n", runNb, nCorrect, diff_fine);
 
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak) {
                 nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{} -- Done\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences) - Done.\n", runNb, nCorrect, diff_fine);
             }
 
             EXPECT_EQ(0, diff_glob);
