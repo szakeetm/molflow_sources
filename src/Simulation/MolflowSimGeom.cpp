@@ -602,7 +602,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         double absRatio_rhs = rhsGlobHit.globalHits.globalHits.nbAbsEquiv / static_cast<double>(rhsGlobHit.globalHits.globalHits.nbDesorbed);
         if (!IsEqual(absRatio, absRatio_rhs, globThreshold)) {
             cmpFile += fmt::format("[Global][absRatio abs/des] has large difference: {} vs {}\n"
-                                   "{}abs / {}des vs {}abs / {}des\n",
+                                   "    {}abs / {}des vs {}abs / {}des\n",
                                    absRatio, absRatio_rhs,
                                 lhsGlobHit.globalHits.globalHits.nbAbsEquiv,lhsGlobHit.globalHits.globalHits.nbDesorbed,
                                 rhsGlobHit.globalHits.globalHits.nbAbsEquiv,rhsGlobHit.globalHits.globalHits.nbDesorbed);
@@ -615,7 +615,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         double hitRatio_rhs = static_cast<double>(rhsGlobHit.globalHits.globalHits.nbMCHit) / static_cast<double>(rhsGlobHit.globalHits.globalHits.nbDesorbed);
         if (!IsEqual(hitRatio, hitRatio_rhs, globThreshold)) {
             cmpFile += fmt::format("[Global][hits/des] has large difference: {} vs {}\n"
-                                   "{}hit / {}des vs {}hit / {}des\n",
+                                   "    {}hit / {}des vs {}hit / {}des\n",
                                    hitRatio,hitRatio_rhs,
                                    lhsGlobHit.globalHits.globalHits.nbMCHit, lhsGlobHit.globalHits.globalHits.nbDesorbed,
                                    rhsGlobHit.globalHits.globalHits.nbMCHit, rhsGlobHit.globalHits.globalHits.nbDesorbed);
@@ -772,9 +772,8 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 double hitRatio = facetCounter_lhs.hits.nbHitEquiv * scale;
                 double hitRatio_rhs = facetCounter_rhs.hits.nbHitEquiv * scale_rhs;
                 if (!IsEqual(hitRatio, hitRatio_rhs, locThreshold)) {
-                    cmpFile += fmt::format("[Facet][{}][facet_hits / global_hits][moment{}] has large difference: "
-                                           "{} vs {}\n"
-                                           "{}fh / {}gh vs {}fh / {}gh\n",
+                    cmpFile += fmt::format("[Facet][{}][facet_hits / global_hits][moment{}] has large difference: {} vs {}\n"
+                                           "    {}fh / {}gh vs {}fh / {}gh\n",
                                            facetId, m,
                                            hitRatio,hitRatio_rhs,
                                            facetCounter_lhs.hits.nbHitEquiv, lhsGlobHit.globalHits.globalHits.nbHitEquiv,
@@ -783,9 +782,8 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 }
                 if (!IsEqual(facetCounter_lhs.hits.sum_v_ort * scale, facetCounter_rhs.hits.sum_v_ort * scale_rhs,
                              locThreshold)) {
-                    cmpFile += fmt::format("[Facet][{}][sum_v_ort][moment{}] has large difference: "
-                                           "{} vs {} --> "
-                                           "{}fv / {}gh vs {}fv / {}gh\n",
+                    cmpFile += fmt::format("[Facet][{}][sum_v_ort][moment{}] has large difference: {} vs {}\n"
+                                           "    {}fv / {}gh vs {}fv / {}gh\n",
                                            facetId, m,
                                            facetCounter_lhs.hits.sum_v_ort * scale, facetCounter_rhs.hits.sum_v_ort * scale_rhs,
                                            facetCounter_lhs.hits.sum_v_ort, lhsGlobHit.globalHits.globalHits.nbHitEquiv,
@@ -795,8 +793,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 if (!IsEqual(facetCounter_lhs.hits.sum_1_per_velocity * fullScale,
                              facetCounter_rhs.hits.sum_1_per_velocity * fullScale_rhs,
                              locThreshold * velocityThresholdFactor)) {
-                    cmpFile += fmt::format("[Facet][{}][sum_1_per_velocity][moment{}] has large difference: "
-                                           "{} (normalized: {})\n",
+                    cmpFile += fmt::format("[Facet][{}][sum_1_per_velocity][moment{}] has large difference: {} (normalized: {})\n",
                                            facetId, m,
                                            std::abs(facetCounter_lhs.hits.sum_1_per_velocity * fullScale - facetCounter_rhs.hits.sum_1_per_velocity * fullScale_rhs),
                                            std::abs(facetCounter_lhs.hits.sum_1_per_velocity * fullScale - facetCounter_rhs.hits.sum_1_per_velocity * fullScale_rhs) / std::max(facetCounter_lhs.hits.sum_1_per_velocity * fullScale, facetCounter_rhs.hits.sum_1_per_velocity * fullScale_rhs));
@@ -805,8 +802,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 if (!IsEqual(facetCounter_lhs.hits.sum_1_per_ort_velocity * fullScale,
                              facetCounter_rhs.hits.sum_1_per_ort_velocity * fullScale_rhs,
                              locThreshold * velocityThresholdFactor)) {
-                    cmpFile += fmt::format("[Facet][{}][sum_1_per_ort_velocity][moment{}] has large difference: "
-                                           "{} (normalized: {})\n",
+                    cmpFile += fmt::format("[Facet][{}][sum_1_per_ort_velocity][moment{}] has large difference: {} (normalized: {})\n",
                                            facetId, m,
                                            std::abs(facetCounter_lhs.hits.sum_1_per_ort_velocity * fullScale - facetCounter_rhs.hits.sum_1_per_ort_velocity * fullScale_rhs),
                                            std::abs(facetCounter_lhs.hits.sum_1_per_ort_velocity * fullScale - facetCounter_rhs.hits.sum_1_per_ort_velocity * fullScale_rhs) / std::max(facetCounter_lhs.hits.sum_1_per_ort_velocity * fullScale, facetCounter_rhs.hits.sum_1_per_ort_velocity * fullScale_rhs));
@@ -820,9 +816,8 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 double absRatio = facetCounter_lhs.hits.nbAbsEquiv / static_cast<double>(facetCounter_lhs.hits.nbMCHit);
                 double absRatio_rhs = facetCounter_rhs.hits.nbAbsEquiv / static_cast<double>(facetCounter_rhs.hits.nbMCHit);
                 if (!IsEqual(absRatio, absRatio_rhs, locThreshold)) {
-                    cmpFile += fmt::format("[Facet][{}][abs/hits ratio][moment{}] has large difference: "
-                                           "{} vs {}\n"
-                                           "{}fa / {}fh vs {}fa / {}fh\n",
+                    cmpFile += fmt::format("[Facet][{}][abs/hits ratio][moment{}] has large difference: {} vs {}\n"
+                                           "    {}fa / {}fh vs {}fa / {}fh\n",
                                            facetId, m,
                                            absRatio, absRatio_rhs,
                                             facetCounter_lhs.hits.nbAbsEquiv,facetCounter_lhs.hits.nbMCHit,
@@ -837,8 +832,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 double desRatio = (double) facetCounter_lhs.hits.nbDesorbed / static_cast<double>(facetCounter_lhs.hits.nbMCHit);
                 double desRatio_rhs = (double) facetCounter_rhs.hits.nbDesorbed / static_cast<double>(facetCounter_rhs.hits.nbMCHit);
                 if (!IsEqual(desRatio, desRatio_rhs, locThreshold)) {
-                    cmpFile += fmt::format("[Facet][{}][desRatio][moment{}] has large difference: "
-                                           "{} (normalized: {})\n",
+                    cmpFile += fmt::format("[Facet][{}][desRatio][moment{}] has large difference: {} (normalized: {})\n",
                                            facetId, m,
                                            std::abs(desRatio - desRatio_rhs), std::abs(desRatio - desRatio_rhs) / std::max(desRatio, desRatio_rhs));
                     ++facetErrNb;
@@ -867,8 +861,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                         if (!IsEqual(smooth_countEquiv_lhs / sumHitDes, smooth_countEquiv_rhs / sumHitDes_rhs,
                                      locThreshold)) {
                             cmpFileFine += fmt::format(
-                                    "[Facet][{}][Profile][Moment{}][countEquiv][{}] has large difference: "
-                                    "{} : {} - {}\n",
+                                    "[Facet][{}][Profile][Moment{}][countEquiv][{}] has large difference: {} : {} - {}\n",
                                     facetId, id, m,
                                     std::abs(smooth_countEquiv_lhs / sumHitDes -
                                                      smooth_countEquiv_rhs / sumHitDes_rhs) /
