@@ -303,7 +303,6 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
     //InitializeGeometry();
     model->InitialiseFacets();
 
-    Log::console_msg_master(3, "Initializing geometry...\n");
     initSimModel(model);
     if(model->PrepareToRun()){
         return 1;
@@ -318,14 +317,11 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        Log::console_msg_master(3, "Resizing global state counters...\n");
         globState->Resize(model);
     }
     catch (const std::exception &e) {
         Log::console_error("[Warning] {}\n", e.what());
     }
-
-    Log::console_footer(1, "Geometry loaded.\n");
 
     return 0;
 }
@@ -409,8 +405,6 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     catch (const std::exception &e) {
         Log::console_error("[Warning] {}\n", e.what());
     }
-
-    prg.SetMessage("Geometry loaded.");
 
     return 0;
 }
