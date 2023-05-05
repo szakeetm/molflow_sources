@@ -345,7 +345,6 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			// Send to sub process
 			work->Reload();
 
-			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 		} else if (src==convInfoButton) {

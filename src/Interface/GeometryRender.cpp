@@ -153,7 +153,6 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 		}
 	}
 
-	prg->SetVisible(false);
 	SAFE_DELETE(prg);
 }
 

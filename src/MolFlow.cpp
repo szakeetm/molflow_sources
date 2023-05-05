@@ -1256,7 +1256,6 @@ void MolFlow::SaveFile() {
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
-		progressDlg2->SetVisible(false);
 		SAFE_DELETE(progressDlg2);
 		changedSinceSave = false;
 
@@ -1375,7 +1374,6 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		RemoveRecent(filePath.c_str());
 
 	}
-	progressDlg2->SetVisible(false);
 	SAFE_DELETE(progressDlg2);
 	changedSinceSave = false;
 }
@@ -1399,7 +1397,6 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 	//GLWindowManager::Repaint();
 
 	if (filePath.empty()) {
-		progressDlg2->SetVisible(false);
 		SAFE_DELETE(progressDlg2);
 		return;
 	}
@@ -1474,7 +1471,6 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		RemoveRecent(filePath.c_str());
 
 	}
-	progressDlg2->SetVisible(false);
 	SAFE_DELETE(progressDlg2);
 	changedSinceSave = true;
 }

@@ -669,7 +669,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
@@ -720,7 +719,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
 
@@ -741,7 +739,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         catch (const std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
@@ -780,7 +777,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             //if (isSYN7Z) remove(tmp2);
 
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
@@ -837,7 +833,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             //if (isGEO7Z) remove(tmp2);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
@@ -924,7 +919,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         loader.LoadGeometry(parseFileName, mf_model, progressDlg);
                     }
                     catch (const std::exception& ex) {
-                        progressDlg->SetVisible(false);
                         SAFE_DELETE(progressDlg);
                         std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
                         throw std::runtime_error(msg);
@@ -988,7 +982,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     catch (...) {
                         GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                             GLDLG_OK, GLDLG_ICONWARNING);
-                        progressDlg->SetVisible(false);
                         SAFE_DELETE(progressDlg);
                         return;
                     }
@@ -1113,7 +1106,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     RebuildTextures();
                 }
                 catch (const std::exception &e) {
-                    if(progressDlg) progressDlg->SetVisible(false);
                     SAFE_DELETE(progressDlg);
                     if (!mApp->profilePlotter) {
                         mApp->profilePlotter = new ProfilePlotter();
@@ -1140,7 +1132,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         }
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            if(progressDlg) progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
@@ -1160,12 +1151,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         catch (const std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
     } else {
-        progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
         throw std::runtime_error(
                 "LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
@@ -1196,7 +1185,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     }
 
     globalHitCache = globState.globalHits;
-    progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
     if (insert) {
         mApp->UpdateFacetlistSelected();
@@ -1253,7 +1241,6 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
                 e.what());
         GLMessageBox::Display(tmp, "Error while loading textures.", GLDLG_OK, GLDLG_ICONWARNING);
     }
-    progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
 }
 
@@ -1780,11 +1767,9 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t source, con
         catch (const std::exception &e) {
 
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
-        progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
     }
 }
@@ -1829,11 +1814,9 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
         }
         catch (const std::exception &e) {
             SAFE_DELETE(f);
-            progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
-        progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
 
     }

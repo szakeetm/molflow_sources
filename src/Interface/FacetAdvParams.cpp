@@ -1148,13 +1148,11 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		}
 		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			return false;
 		}
 		catch (...) {
 			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			return false;
 		}
@@ -1162,7 +1160,6 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		progressDlg->SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
 
-	if (progressDlg) progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
 
 	// Update state in case of change
@@ -1613,7 +1610,6 @@ bool FacetAdvParams::Apply() {
 	} //main cycle end
 	if (structChanged) geom->BuildGLList(); //Re-render facets
 
-	if (progressDlg) progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
 
 	return ApplyTexture(); //Finally, apply textures
@@ -1780,7 +1776,6 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
 			ApplyDrawSettings();
 
-			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 
 		}
