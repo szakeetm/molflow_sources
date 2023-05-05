@@ -614,7 +614,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         double hitRatio = static_cast<double>(lhsGlobHit.globalHits.globalHits.nbMCHit) / static_cast<double>(lhsGlobHit.globalHits.globalHits.nbDesorbed);
         double hitRatio_rhs = static_cast<double>(rhsGlobHit.globalHits.globalHits.nbMCHit) / static_cast<double>(rhsGlobHit.globalHits.globalHits.nbDesorbed);
         if (!IsEqual(hitRatio, hitRatio_rhs, globThreshold)) {
-            cmpFile += fmt::format("[Global][hits/des] has large difference: {} vs {} --> "
+            cmpFile += fmt::format("[Global][hits/des] has large difference: {} vs {}\n"
                                    "{}hit / {}des vs {}hit / {}des\n",
                                    hitRatio,hitRatio_rhs,
                                    lhsGlobHit.globalHits.globalHits.nbMCHit, lhsGlobHit.globalHits.globalHits.nbDesorbed,
