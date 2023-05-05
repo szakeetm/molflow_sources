@@ -161,6 +161,7 @@ public:
         phiWidth = 0;
         thetaLimit = 0.0;
         thetaLimit = 0;
+		thetaLowerRes = 0;
         thetaHigherRes = 0;
     }
 	bool   record; // Record incident angle 2-dim distribution

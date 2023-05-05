@@ -329,12 +329,11 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			doseSource=sourceSelectCombo->GetSelectedIndex();
 			//Everything fine, let's go!
 			if (!mApp->AskToReset(work)) return;
-			GLProgress_GUI *progressDlg = new GLProgress_GUI("Importing...","Please wait");
-			progressDlg->SetProgress(0.0);
-			progressDlg->SetVisible(true);
+			auto prg = GLProgress_GUI("Importing...","Please wait");
+			prg.SetVisible(true);
 			
 			try{
-				work->ImportDesorption_SYN(synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,progressDlg);
+				work->ImportDesorption_SYN(synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,prg);
 			} catch (const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.what(),synFile.c_str());
@@ -344,8 +343,6 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			mApp->UpdateFacetParams(false);
 			// Send to sub process
 			work->Reload();
-
-			SAFE_DELETE(progressDlg);
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 		} else if (src==convInfoButton) {
 			GLMessageBox::Display("A conversion file should contain several lines for interpolation\n"

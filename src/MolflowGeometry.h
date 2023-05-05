@@ -42,32 +42,32 @@ public:
 	MolflowGeometry();
 
 	// Load
-	void LoadGEO(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker);
-	void LoadSYN(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker);
-	bool LoadTexturesGEO(FileReader *file, GLProgress_GUI *prg, GlobalSimuState &globState, int version);
+	void LoadGEO(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker);
+	void LoadSYN(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker);
+	bool LoadTexturesGEO(FileReader *file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t source, const double time,
 		const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
-		GLProgress_GUI *prg);
-	void AnalyzeSYNfile(FileReader *f, GLProgress_GUI *progressDlg, size_t *nbNewFacet,
-		size_t *nbTextured, size_t *nbDifferent, GLProgress_GUI *prg);
+		GLProgress_Abstract& prg);
+	void AnalyzeSYNfile(FileReader *f, GLProgress_Abstract& prg, size_t *nbNewFacet,
+		size_t *nbTextured, size_t *nbDifferent);
 
 	// Insert
-	void InsertSYN(FileReader *file, GLProgress_GUI *prg, bool newStr);
+	void InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool newStr);
 
 	// Save
 	void SaveTXT(FileWriter *file, GlobalSimuState &globState, bool saveSelected);
 	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected);
 	void ExportProfiles(FILE *file, int isTXT, Worker *worker);
-	void SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuState &globState, Worker *worker,
+	void SaveGEO(FileWriter *file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
-	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_GUI *prg, bool saveSelected);
-	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_GUI *prg, bool saveSelected);
-	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg);
-	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg, bool newStr);
-	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress_GUI *progressDlg);
+	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected);
+	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_Abstract& prg, bool saveSelected);
+	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg);
+	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr);
+	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress_Abstract& prg);
     bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
                               const std::string &fileName_out, double cmpThreshold) override;
 	// Geometry

@@ -402,7 +402,7 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 * \param prg GLProgress_GUI (TODO: which is never used)
 * \param newStr newStructure if a super structure will be used or not
 */
-void MolflowGeometry::InsertSYN(FileReader *file, GLProgress_GUI *prg, bool newStr) {
+void MolflowGeometry::InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool newStr) {
 
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
@@ -624,7 +624,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		}
 
 		facets[i] = new InterfaceFacet(nb);
-		facets[i]->LoadSYN(file, version2, nbNewVertex);
+		facets[i]->LoadSYN_facet(file, version2, nbNewVertex);
 		facets[i]->selected = true;
 		for (size_t j = 0; j < nb; j++)
 			facets[i]->indices[j] += sh.nbVertex;
@@ -748,17 +748,17 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, GlobalSimuState &globStat
 * \param version version of the GEO description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	prg->SetMessage("Clearing current geometry...");
+	prg.SetMessage("Clearing current geometry...");
 	Clear();
 	//mApp->ClearFormulas();
 
 	// Globals
 	char tmp[512];
-	prg->SetMessage("Reading GEO file header...");
+	prg.SetMessage("Reading GEO file header...");
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	*version = file->ReadInt();
 	if (*version > GEOVERSION) {
@@ -955,7 +955,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	// Read vertices
-	prg->SetMessage("Reading vertices...");
+	prg.SetMessage("Reading vertices...");
 	file->ReadKeyword("vertices"); file->ReadKeyword("{");
 	for (int i = 0; i < sh.nbVertex; i++) {
 		// Check idx
@@ -969,7 +969,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 	file->ReadKeyword("}");
 
 	if (*version >= 6) {
-		prg->SetMessage("Reading leaks and hits...");
+		prg.SetMessage("Reading leaks and hits...");
 		// Read leaks
 		file->ReadKeyword("leaks"); file->ReadKeyword("{");
 		file->ReadKeyword("nbLeak"); file->ReadKeyword(":");
@@ -1017,7 +1017,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 	}
 
 	// Read facets
-	prg->SetMessage("Reading facets...");
+	prg.SetMessage("Reading facets...");
 	for (int i = 0; i < sh.nbFacet; i++) {
 		file->ReadKeyword("facet");
 		// Check idx
@@ -1032,7 +1032,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 			sprintf(errMsg, "Facet %d has only %d vertices. ", i + 1, nbI);
 			throw Error(errMsg);
 		}
-		prg->SetProgress((float)i / sh.nbFacet);
+		prg.SetProgress((float)i / sh.nbFacet);
 		facets[i] = new InterfaceFacet(nbI);
 		facets[i]->LoadGEO(file, *version, sh.nbVertex);
 		file->ReadKeyword("}");
@@ -1045,10 +1045,10 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 	UpdateName(file);
 
 	// Update mesh
-	prg->SetMessage("Building mesh...");
+	prg.SetMessage("Building mesh...");
 	for (int i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
-		prg->SetProgress(p);
+		prg.SetProgress(p);
 		InterfaceFacet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 			char errMsg[512];
@@ -1076,17 +1076,17 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_GUI *prg, int *versio
 * \param version version of the SYN description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	prg->SetMessage("Clearing current geometry...");
+	prg.SetMessage("Clearing current geometry...");
 	Clear();
 	//mApp->ClearFormulas();
 
 	// Globals
 	char tmp[512];
-	prg->SetMessage("Reading SYN file header...");
+	prg.SetMessage("Reading SYN file header...");
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	*version = file->ReadInt();
 	if (*version > SYNVERSION) {
@@ -1238,7 +1238,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 
 	// Read vertices
-	prg->SetMessage("Reading vertices...");
+	prg.SetMessage("Reading vertices...");
 	file->ReadKeyword("vertices"); file->ReadKeyword("{");
 	for (int i = 0; i < sh.nbVertex; i++) {
 		// Check idx
@@ -1250,7 +1250,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 		vertices3[i].selected = false;
 	}
 	file->ReadKeyword("}");
-	prg->SetMessage("Reading leaks and hits...");
+	prg.SetMessage("Reading leaks and hits...");
 	// Read leaks
 	file->ReadKeyword("leaks"); file->ReadKeyword("{");
 	file->ReadKeyword("nbLeak"); file->ReadKeyword(":");
@@ -1298,7 +1298,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 	}
 	file->ReadKeyword("}");
 	// Read facets
-	prg->SetMessage("Reading facets...");
+	prg.SetMessage("Reading facets...");
 	for (int i = 0; i < sh.nbFacet; i++) {
 		file->ReadKeyword("facet");
 		// Check idx
@@ -1313,13 +1313,13 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 			sprintf(errMsg, "Facet %d has only %d vertices. ", i+1, nbI);
 			throw Error(errMsg);
 		}
-		prg->SetProgress((float)i / sh.nbFacet);
+		prg.SetProgress((float)i / sh.nbFacet);
 		facets[i] = new InterfaceFacet(nbI);
-		facets[i]->LoadSYN(file, *version, sh.nbVertex);
+		facets[i]->LoadSYN_facet(file, *version, sh.nbVertex);
 		file->ReadKeyword("}");
 	}
 
-	prg->SetMessage("Initalizing geometry and building mesh...");
+	prg.SetMessage("Initalizing geometry and building mesh...");
 	InitializeGeometry();
     InitializeInterfaceGeometry();
     //AdjustProfile();
@@ -1327,10 +1327,10 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 	UpdateName(file);
 
 	// Update mesh
-	prg->SetMessage("Drawing textures...");
+	prg.SetMessage("Drawing textures...");
 	for (int i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
-		prg->SetProgress(p);
+		prg.SetProgress(p);
 		InterfaceFacet *f = facets[i];
 		//f->SetTexture(f->wp.texWidth_precise,f->wp.texHeight_precise,f->hasMesh);
 		BuildFacetList(f);
@@ -1348,7 +1348,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_GUI *prg, int *versio
 * \param results simulation results describing the texture
 * \param version version of the GEO description
 */
-bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_GUI *prg, GlobalSimuState &globState, int version) {
+bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version) {
 
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
@@ -1414,7 +1414,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_GUI *prg, Glo
 				for (int i = 0; i < sh.nbFacet; i++) {
 					InterfaceFacet *f = facets[i];
 					if (f->hasMesh/* || version<8*/) {
-						prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
+						prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
 						file->ReadKeyword("texture_facet");
 						// Check idx
 						int idx = file->ReadInt();
@@ -1498,10 +1498,10 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_GUI *prg, Glo
 * \param saveSelected if a selection is to be saved
 * \param crashSave if crash save is enabled
 */
-void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuState &globState, Worker *worker,
+void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
 							  bool saveSelected, bool crashSave) {
 
-	prg->SetMessage("Counting hits...");
+	prg.SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
@@ -1534,7 +1534,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 
 	}*/
 
-	prg->SetMessage("Writing geometry details...");
+	prg.SetMessage("Writing geometry details...");
 	file->Write("version:"); file->Write(GEOVERSION, "\n");
 	file->Write("totalHit:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbMCHit : 0, "\n");
 	file->Write("totalDes:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbDesorbed : 0, "\n");
@@ -1626,10 +1626,10 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 	}
 	file->Write("}\n");
 	//vertices
-	prg->SetMessage("Writing vertices...");
+	prg.SetMessage("Writing vertices...");
 	file->Write("vertices {\n");
 	for (size_t i = 0; i < sh.nbVertex; i++) {
-		prg->SetProgress(0.33*((double)i / (double)sh.nbVertex));
+		prg.SetProgress(0.33*((double)i / (double)sh.nbVertex));
 		file->Write("  ");
 		file->Write(i + 1, " ");
 		file->Write(vertices3[i].x, " ");
@@ -1639,7 +1639,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 	file->Write("}\n");
 
 	//leaks
-	prg->SetMessage("Writing leaks...");
+	prg.SetMessage("Writing leaks...");
 	file->Write("leaks {\n");
 	file->Write("  nbLeak:"); file->Write((!crashSave && !saveSelected) ? worker->globState.globalHits.leakCacheSize : 0, "\n");
 	for (int i = 0; (i < worker->globState.globalHits.leakCacheSize) && (!crashSave && !saveSelected); i++) {
@@ -1658,7 +1658,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 	file->Write("}\n");
 
 	//hit cache (lines and dots)
-	prg->SetMessage("Writing hit cache...");
+	prg.SetMessage("Writing hit cache...");
 
 	file->Write("hits {\n");
 	file->Write("  nbHHit:"); file->Write((!crashSave && !saveSelected) ? worker->globState.globalHits.hitCacheSize : 0, "\n");
@@ -1677,16 +1677,16 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 
 	//facets
 
-	prg->SetMessage("Writing facets...");
+	prg.SetMessage("Writing facets...");
 
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
-		prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
+		prg.SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
 
 		if (!saveSelected || facets[i]->selected) facets[i]->SaveGEO(file, k++);
 
 	}
 
-	prg->SetMessage("Writing profiles...");
+	prg.SetMessage("Writing profiles...");
 	SaveProfileGEO(file, globState, -1, saveSelected, crashSave);
 
 	///Save textures, for GEO file version 3+
@@ -1724,7 +1724,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 	//Selections
 	//SaveSelections();
 
-	prg->SetMessage("Writing textures...");
+	prg.SetMessage("Writing textures...");
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		sprintf(tmp, "moment %zd {\n", m);
@@ -1732,7 +1732,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_GUI *prg, GlobalSimuS
 		for (size_t i = 0, k = 0; i < sh.nbFacet; i++) {
 			if (!saveSelected || facets[i]->selected) {
 				k++; //facet id in the group of selected facets
-				prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size() * sh.nbFacet) * 0.33 + 0.66);
+				prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size() * sh.nbFacet) * 0.33 + 0.66);
 				InterfaceFacet* f = facets[i];
 				if (f->hasMesh) {
 					size_t h = f->sh.texHeight;
@@ -2167,7 +2167,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 	FileReader *file, const size_t source, const double time,
 	const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
-	GLProgress_GUI *prg) {
+	GLProgress_Abstract& prg) {
 
 	//UnselectAll();
 	char tmp[512];
@@ -2234,7 +2234,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 	//now go for the facets to get their texture ratio
 	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
-		prg->SetProgress(0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
+		prg.SetProgress(0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
 		file->JumpSection("facet");
 		// Check idx
 		int idx = file->ReadInt();
@@ -2266,7 +2266,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 	//read texture values
 	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
-		prg->SetProgress(0.5 + 0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
+		prg.SetProgress(0.5 + 0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
 		if (!IsZero(xdims[i])) { //has texture
 			InterfaceFacet *f = GetFacet(i);
 
@@ -2391,14 +2391,14 @@ void MolflowGeometry::ImportDesorption_SYN(
 /**
 * \brief To analyze desorption data from a SYN file
 * \param file name of the input file
-* \param progressDlg GLProgress_GUI dialog (TODO: but is it ever used?)
+* \param prg GLProgress_GUI dialog (TODO: but is it ever used?)
 * \param nbNewFacet number of facets in the file
 * \param nbTextured number of textured facets in the file
 * \param nbDifferent number that is only set to 0 but never used (TODO: check usage)
 * \param prg GLProgress_GUI window where visualising of the analysation progress is shown
 */
-void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_GUI *progressDlg, size_t *nbNewFacet,
-	size_t *nbTextured, size_t *nbDifferent, GLProgress_GUI *prg) {
+void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_Abstract& prg, size_t *nbNewFacet,
+	size_t *nbTextured, size_t *nbDifferent) {
 	//init
 	*nbTextured = 0;
 	*nbNewFacet = 0;
@@ -2466,7 +2466,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_GUI *progressD
 
 	//now go for the facets to get their texture ratio, etc.
 	for (size_t i = 0; i < *nbNewFacet && i < GetNbFacet(); i++) {
-		prg->SetProgress((double)i / (double)Min(*nbNewFacet, GetNbFacet()));
+		prg.SetProgress((double)i / (double)Min(*nbNewFacet, GetNbFacet()));
 		file->JumpSection("facet");
 		// Check idx
 		int idx = file->ReadInt();
@@ -2500,7 +2500,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_GUI *progressD
 * \param prg GLProgress_GUI window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress_GUI *prg, bool saveSelected) { //scheduled to be removed
+void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
@@ -2515,10 +2515,10 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
     }
     xml_node geomNode = rootNode.append_child("Geometry");
 
-	prg->SetMessage("Writing vertices...");
+	prg.SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
 	for (int i = 0; i < sh.nbVertex; i++) {
-		prg->SetProgress(0.166*((double)i / (double)sh.nbVertex));
+		prg.SetProgress(0.166*((double)i / (double)sh.nbVertex));
 		xml_node v = geomNode.child("Vertices").append_child("Vertex");
 		v.append_attribute("id") = i;
 		v.append_attribute("x") = vertices3[i].x;
@@ -2526,11 +2526,11 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		v.append_attribute("z") = vertices3[i].z;
 	}
 
-	prg->SetMessage("Writing facets...");
+	prg.SetMessage("Writing facets...");
 	geomNode.append_child("Facets");
 	geomNode.child("Facets").append_attribute("nb") = sh.nbFacet;
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
-		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
+		prg.SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
 			xml_node f = geomNode.child("Facets").append_child("Facet");
 			f.append_attribute("id") = k++;
@@ -2538,7 +2538,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		}
 	}
 
-	prg->SetMessage("Writing model details...");
+	prg.SetMessage("Writing model details...");
 	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
 
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
@@ -2717,7 +2717,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_GUI *progressDlg, bool saveSelected) { //scheduled to be removed
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
     xml_node rootNode;
     if(mApp->useOldXMLFormat){
         rootNode = saveDoc;
@@ -2726,7 +2726,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
         rootNode = saveDoc.child("SimulationEnvironment");
     }
     xml_node resultNode = rootNode.append_child("MolflowResults");
-	progressDlg->SetTitle("Saving simulation results...");
+	prg.SetMessage("Saving simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
@@ -2734,8 +2734,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 
 		std::ostringstream msg;
 		msg << "Saving moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
-		progressDlg->SetMessage(msg.str(), false);
-		progressDlg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
+		prg.SetMessage(msg.str(), false);
+		prg.SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
@@ -3059,9 +3059,9 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 * \brief To load geometry data from a XML file
 * \param loadXML xml input file
 * \param work thread worker handling the task
-* \param progressDlg GLProgress_GUI window where visualising of the import progress is shown
+* \param prg GLProgress_GUI window where visualising of the import progress is shown
 */
-void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg) { //scheduled to be removed
+void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg) { //scheduled to be removed
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -3347,10 +3347,10 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 * \brief To load geometry data from a XML file and insert into an existing structure
 * \param loadXML xml input file
 * \param work thread worker handling the task
-* \param progressDlg GLProgress_GUI window where visualising of the insert progress is shown
+* \param prg GLProgress_GUI window where visualising of the insert progress is shown
 * \param newStr if a new super structure is to be used
 */
-void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_GUI *progressDlg, bool newStr) {
+void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -3557,11 +3557,11 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	//isLoaded = true; //InitializeGeometry() sets to true
 
 	// Update mesh for newly inserted facets
-	progressDlg->SetMessage("Building mesh...");
+	prg.SetMessage("Building mesh...");
 	for (size_t i = sh.nbFacet - nbNewFacets; i < sh.nbFacet; i++) {
 		double p = (double)(sh.nbFacet-i) / (double)nbNewFacets;
 
-		progressDlg->SetProgress(p);
+		prg.SetProgress(p);
 		InterfaceFacet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 			char errMsg[512];
@@ -3586,10 +3586,10 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param loadXML xml input file
 * \param results current simulation results
 * \param work thread worker handling the task
-* \param progressDlg GLProgress_GUI window where visualising of the load progress is shown
+* \param prg GLProgress_GUI window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress_GUI* progressDlg) { //scheduled to be removed
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress_Abstract& prg) { //scheduled to be removed
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 
 	xml_node resultNode = loadXML.child("MolflowResults");
@@ -3597,12 +3597,12 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
 	size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
 	size_t m = 0;
-	progressDlg->SetTitle("Reading simulation results...");
+	prg.SetMessage("Reading simulation results...");
 	for (xml_node newMoment : momentsNode.children("Moment")) {
 		std::ostringstream msg;
 		msg << "Loading moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
-		progressDlg->SetMessage(msg.str(), false);
-		progressDlg->SetProgress((double)m / (double)nbMoments);
+		prg.SetMessage(msg.str(), false);
+		prg.SetProgress((double)m / (double)nbMoments);
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
 			xml_node hitsNode = globalNode.child("Hits");

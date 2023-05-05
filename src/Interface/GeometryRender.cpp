@@ -57,8 +57,8 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 	int nbMoments = (int)mApp->worker.moments.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 
-	GLProgress_GUI *prg = new GLProgress_GUI("Building texture", "Frame update");
-	prg->SetBounds(5, 28, 300, 90);
+	auto prg = GLProgress_GUI("Building texture", "Frame update");
+	prg.SetBounds(5, 28, 300, 90);
 	int startTime = SDL_GetTicks();
 
 	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
@@ -96,10 +96,10 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		int time = SDL_GetTicks();
-		if (!prg->IsVisible() && ((time - startTime) > 500)) {
-			prg->SetVisible(true);
+		if (!prg.IsVisible() && ((time - startTime) > 500)) {
+			prg.SetVisible(true);
 		}
-		prg->SetProgress((double)i / (double)sh.nbFacet);
+		prg.SetProgress((double)i / (double)sh.nbFacet);
 		InterfaceFacet *f = facets[i];
 
 		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0;
@@ -152,7 +152,5 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 			}
 		}
 	}
-
-	SAFE_DELETE(prg);
 }
 

@@ -66,8 +66,6 @@ private:
 	size_t sumAngleMapSize;
 	int desPanelFullHeight, angleMapPanelFullHeight;
 
-	GLProgress_GUI* progressDlg;
-
 	//Designer generated code below
 	GLTitledPanel	*aPanel;
 	GLTextField	*lengthText;

@@ -1104,9 +1104,8 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	}
 
 	if (!mApp->AskToReset(worker)) return false;
-	progressDlg = new GLProgress_GUI("Applying mesh settings", "Please wait");
-	progressDlg->SetVisible(true);
-	progressDlg->SetProgress(0.0);
+	auto prg = GLProgress_GUI("Applying mesh settings", "Please wait");
+	prg.SetVisible(true);
 	int count = 0;
 	for (auto& sel : selectedFacets) {
 		InterfaceFacet *f = geom->GetFacet(sel);
@@ -1148,19 +1147,15 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		}
 		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			SAFE_DELETE(progressDlg);
 			return false;
 		}
 		catch (...) {
 			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			SAFE_DELETE(progressDlg);
 			return false;
 		}
 		nbPerformed++;
-		progressDlg->SetProgress((double)nbPerformed / (double)selectedFacets.size());
+		prg.SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
-
-	SAFE_DELETE(progressDlg);
 
 	// Update state in case of change
 	UpdateSquaredCells(aspectRatioBtn->GetState());
@@ -1503,9 +1498,8 @@ bool FacetAdvParams::Apply() {
 	}
 	
 	if (!mApp->AskToReset(worker)) return false;
-	progressDlg = new GLProgress_GUI("Applying facet parameters", "Please wait");
-	progressDlg->SetVisible(true);
-	progressDlg->SetProgress(0.0);
+	auto prg = GLProgress_GUI("Applying facet parameters", "Please wait");
+	prg.SetVisible(true);
 	int count = 0;
 	for (auto& sel:selectedFacets) {
 		InterfaceFacet *f = geom->GetFacet(sel);
@@ -1591,14 +1585,10 @@ bool FacetAdvParams::Apply() {
 		}
 		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(false);
-			SAFE_DELETE(progressDlg);
 			return false;
 		}
 		catch (...) {
 			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(false);
-			SAFE_DELETE(progressDlg);
 			return false;
 		}
 		*/
@@ -1606,11 +1596,9 @@ bool FacetAdvParams::Apply() {
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;
-		progressDlg->SetProgress((double)nbPerformed / (double)selectedFacets.size());
+		prg.SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
 	if (structChanged) geom->BuildGLList(); //Re-render facets
-
-	SAFE_DELETE(progressDlg);
 
 	return ApplyTexture(); //Finally, apply textures
 }
@@ -1633,7 +1621,6 @@ void FacetAdvParams::ApplyDrawSettings() {
 			if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 
 			nbPerformed += 1.0;
-			progressDlg->SetProgress(nbPerformed / nbSelected);
 		}
 
 	}
@@ -1770,14 +1757,8 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 	case MSG_BUTTON:
 		if (src == quickApply) {
 
-			progressDlg = new GLProgress_GUI("Applying view settings", "Please wait");
-			progressDlg->SetVisible(true);
-			progressDlg->SetProgress(0.5);
-
+			auto prg = GLProgress_GUI("Applying view settings", "Please wait");
 			ApplyDrawSettings();
-
-			SAFE_DELETE(progressDlg);
-
 		}
 		
 		else if (src==SojournInfoButton) {

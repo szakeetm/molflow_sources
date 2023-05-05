@@ -116,7 +116,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
     for (size_t i = 0; i < model->vertices3.size(); i++) {
-        //prg->SetProgress(0.166*((double)i / (double)model->vertices3.size()));
+        //prg.SetProgress(0.166*((double)i / (double)model->vertices3.size()));
         xml_node v = geomNode.child("Vertices").append_child("Vertex");
         v.append_attribute("id") = i;
         v.append_attribute("x") = model->vertices3[i].x;
@@ -131,7 +131,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     if (selection.empty()) {
         geomNode.child("Facets").append_attribute("nb") = model->facets.size();
         for (size_t i = 0; i < model->facets.size(); i++) {
-            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //prg.SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
             //if (!saveSelected || model->facets[i]->selected) {
             reportNewWriteStatus("Writing facets...", (double)i / (double)model->facets.size());
             xml_node f = geomNode.child("Facets").append_child("Facet");
@@ -144,7 +144,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     {
         geomNode.child("Facets").append_attribute("nb") =selection.size();
         for (size_t i = 0; i < selection.size();i++) {
-            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //prg.SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
             //if (!saveSelected || model->facets[i]->selected) {
             reportNewWriteStatus("Writing facets...", (double)i / (double)selection.size());
             xml_node f = geomNode.child("Facets").append_child("Facet");

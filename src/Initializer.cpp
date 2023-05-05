@@ -311,7 +311,7 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 
     // 2. Create simulation dataports
     try {
-        //progressDlg->SetMessage("Creating Logger...");
+        //prg.SetMessage("Creating Logger...");
         /*size_t logDpSize = 0;
         if (model->otfParams.enableLogging) {
             logDpSize = sizeof(size_t) + model->otfParams.logLimit * sizeof(ParticleLoggerItem);
@@ -338,8 +338,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
                              GlobalSimuState *globState) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
-    GLProgress_CLI loader_progress;
-    loader_progress.SetMessage(fmt::format("Loading geometry from file {}\n", fileName));
+    GLProgress_CLI prg(fmt::format("Loading geometry from file {}\n", fileName));
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -347,7 +346,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Geometry
     // Settings
     // Previous results
-    if (loader.LoadGeometry(fileName, model, &loader_progress)) {
+    if (loader.LoadGeometry(fileName, model, prg)) {
         Log::console_error("Load error.\n");
         return 1;
     }
@@ -389,10 +388,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
                 
                 if (std::filesystem::exists(autosaveFileName)) {
                     Log::console_msg_master(2, "Found autosave file {}, loading simulation state...\n");
-                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, &loader_progress);
+                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, prg);
                 }
             } else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, &loader_progress);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, prg);
             }
 
             // Update Angle map status
@@ -411,7 +410,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
         Log::console_error("[Warning] {}\n", e.what());
     }
 
-    loader_progress.SetMessage("Geometry loaded.");
+    prg.SetMessage("Geometry loaded.");
 
     return 0;
 }

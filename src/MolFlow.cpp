@@ -1241,14 +1241,14 @@ void MolFlow::ImportDesorption_DES() {
 void MolFlow::SaveFile() {
 	if (!worker.fullFileName.empty()) {
 
-		auto *progressDlg2 = new GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
-		progressDlg2->SetVisible(true);
-		progressDlg2->SetProgress(0.5);
+		auto prg = GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
+		prg.SetVisible(true);
+		prg.SetProgress(0.5);
 		
 		//GLWindowManager::Repaint();
 
 		try {
-			worker.SaveGeometry(worker.fullFileName, progressDlg2, false);
+			worker.SaveGeometry(worker.fullFileName, prg, false);
 			ResetAutoSaveTimer();
 		}
 		catch(const std::exception &e) {
@@ -1256,7 +1256,6 @@ void MolFlow::SaveFile() {
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
-		SAFE_DELETE(progressDlg2);
 		changedSinceSave = false;
 
 	}
@@ -1288,9 +1287,8 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		return;
 	}
 
-	auto *progressDlg2 = new GLProgress_GUI("Preparing to load file...", "Please wait");
-	progressDlg2->SetVisible(true);
-	progressDlg2->SetProgress(0.0);
+	auto prg = GLProgress_GUI("Preparing to load file...", "Please wait");
+	prg.SetVisible(true);
 	//GLWindowManager::Repaint();
 
 	fileShortName = FileUtils::GetFilename(filePath);
@@ -1326,7 +1324,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		UpdateCurrentDir(filePath.c_str());
 
 		// Check non simple polygon
-		progressDlg2->SetMessage("Checking for non simple polygons...");
+		prg.SetMessage("Checking for non simple polygons...");
 
 		geom->CheckCollinear();
 		//geom->CheckNonSimple();
@@ -1374,7 +1372,6 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		RemoveRecent(filePath.c_str());
 
 	}
-	SAFE_DELETE(progressDlg2);
 	changedSinceSave = false;
 }
 
@@ -1391,13 +1388,11 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
     }
 
 
-	auto *progressDlg2 = new GLProgress_GUI("Preparing to load file...", "Please wait");
-	progressDlg2->SetVisible(true);
-	progressDlg2->SetProgress(0.0);
+	auto prg = GLProgress_GUI("Preparing to load file...", "Please wait");
+	prg.SetVisible(true);
 	//GLWindowManager::Repaint();
 
 	if (filePath.empty()) {
-		SAFE_DELETE(progressDlg2);
 		return;
 	}
 	
@@ -1471,7 +1466,6 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		RemoveRecent(filePath.c_str());
 
 	}
-	SAFE_DELETE(progressDlg2);
 	changedSinceSave = true;
 }
 
