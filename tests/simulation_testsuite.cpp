@@ -473,7 +473,7 @@ namespace {
             EXPECT_EQ(0, diff_loc);
 
             if (diff_glob > 0)
-                fmt::print(stderr, "[Warning] {} global differences found\n", diff_global);
+                fmt::print(stderr, "[Warning] {} global differences found\n", diff_glob);
             if (diff_loc > 0)
                 fmt::print(stderr, "[Warning] {} local differences found\n", diff_loc);
             if (diff_fine > 0)
