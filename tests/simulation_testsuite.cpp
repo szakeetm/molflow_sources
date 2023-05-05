@@ -425,11 +425,11 @@ namespace {
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
             if ((diff_glob != 0 || diff_loc != 0)) {
-                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[run{}] Diff {} global, {} local, {} fine\n", runNb, diff_glob, diff_loc, diff_fine);
                 nCorrect = 0;
-            } else if (diff_glob == 0 && diff_loc == 0) {
+            } else {
                 nCorrect++;
-                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{}\n", runNb, nCorrect);
             }
         }
 
@@ -456,26 +456,28 @@ namespace {
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
-                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[run{}] Diff {} global, {} local, {} fine\n", runNb, diff_glob, diff_loc, diff_fine);
                 nCorrect = 0;
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1) {
                 nCorrect++;
-                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{}\n", runNb, nCorrect);
 
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak) {
                 nCorrect++;
-                Log::console_msg(1, "[{}] Correct run #{} -- Done\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{} -- Done\n", runNb, nCorrect);
             }
 
             EXPECT_EQ(0, diff_glob);
             EXPECT_EQ(0, diff_loc);
 
+            if (diff_glob > 0)
+                fmt::print(stderr, "[Warning] {} global differences found\n", diff_global);
             if (diff_loc > 0)
                 fmt::print(stderr, "[Warning] {} local differences found\n", diff_loc);
             if (diff_fine > 0)
-                fmt::print(stderr, "[Warning] {} differences on fine counters found\n", diff_fine);
+                fmt::print(stderr, "[Warning] {} differences of fine counters found\n", diff_fine);
             break;
         }
 
@@ -578,10 +580,10 @@ namespace {
 
             if (diff_glob <= 0)
                 fmt::print(stdout, "[{}][Info] No global differences found.\n", runNb);
-            else if (diff_loc <= 0)
+            if (diff_loc <= 0)
                 fmt::print(stdout, "[{}][Info] No local differences found.\n", runNb);
-            else if (diff_fine <= 0)
-                fmt::print(stdout, "[{}][Info] No differences on fine counters found.\n", runNb);
+            if (diff_fine <= 0)
+                fmt::print(stdout, "[{}][Info] No differences of fine counters found.\n", runNb);
         }
         if ((double) nbSuccess / nRuns < 0.66) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);

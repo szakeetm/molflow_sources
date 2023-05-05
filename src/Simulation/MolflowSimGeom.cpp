@@ -1143,7 +1143,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     }
 
     if(i >= 32) {
-        Log::console_error("[Warning] List of differences too long: Total = {}\n", globalErrNb + facetErrNb + fineErrNb);
+        Log::console_error("[Warning] List of differences too long: {} glob, {} loc, {} fine\n", globalErrNb, facetErrNb, fineErrNb);
     }
 
     return std::make_tuple(globalErrNb, facetErrNb, fineErrNb);

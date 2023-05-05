@@ -67,6 +67,8 @@
         "chrono": "cpp",
         "format": "cpp",
         "xstring": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "algorithm": "cpp",
+        "forward_list": "cpp"
     }
 }
