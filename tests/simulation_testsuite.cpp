@@ -429,7 +429,7 @@ namespace {
                 nCorrect = 0;
             } else {
                 nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{}\n", runNb, nCorrect);
+                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences)\n", runNb, nCorrect, diff_fine);
             }
         }
 

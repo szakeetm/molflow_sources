@@ -1135,7 +1135,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             Log::console_error("{}\n", cmp_string);
         }
     }
-    {
+    if (Settings::verbosity >=4){
         std::istringstream compStreamFine(cmpFileFine);
         for (; i < 32 && std::getline(compStreamFine, cmp_string, '\n'); ++i) {
             Log::console_msg_master(4, "{}\n", cmp_string);
@@ -1143,7 +1143,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     }
 
     if(i >= 32) {
-        Log::console_error("[Warning] List of differences too long: {} glob, {} loc, {} fine\n", globalErrNb, facetErrNb, fineErrNb);
+        Log::console_error("[Warning] List of differences too long to print: {} glob, {} loc, {} fine\n", globalErrNb, facetErrNb, fineErrNb);
     }
 
     return std::make_tuple(globalErrNb, facetErrNb, fineErrNb);
