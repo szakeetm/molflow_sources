@@ -3371,14 +3371,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
     catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
-
-	/*
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, vertices3, (wp.nbVertex)*sizeof(InterfaceVertex));
-	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertex));
-	SAFE_FREE(vertices3);
-	vertices3 = tmp_vertices3;
-	*/
+	
 	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices
