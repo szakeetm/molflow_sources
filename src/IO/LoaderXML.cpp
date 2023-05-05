@@ -293,8 +293,9 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
         size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
         size_t m = 0;
         for (xml_node newMoment: momentsNode.children("Moment")) {
-            progress->SetMessage(fmt::format("Loading global results [moment {}]...",m));
+            
             if (m == 0) { //read global results
+                progress->SetMessage(fmt::format("Loading global results...",m));
                 xml_node globalNode = newMoment.child("Global");
                 xml_node hitsNode = globalNode.child("Hits");
                 globState->globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
@@ -359,7 +360,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             } //end global node
 
-            progress->SetMessage(fmt::format("Loading histograms [moment {}]...", m));
+            progress->SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
             bool hasHistogram =
                     model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
@@ -436,7 +437,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             }
 
-            progress->SetMessage(fmt::format("Loading facet results [moment {}]...", m));
+            progress->SetMessage(fmt::format("Loading facet results [moment {}]...", m),false);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();

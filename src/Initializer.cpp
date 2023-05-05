@@ -411,7 +411,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
         Log::console_error("[Warning] {}\n", e.what());
     }
 
-    Log::console_footer(1, "Geometry loaded.\n");
+    loader_progress.SetMessage("Geometry loaded.");
 
     return 0;
 }
