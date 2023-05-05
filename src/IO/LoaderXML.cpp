@@ -37,7 +37,7 @@ using namespace FlowIO;
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& progress) {
+int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) {
     if (!model->m.try_lock()) {
         return 1;
     }
@@ -55,7 +55,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
 
     xml_node geomNode = rootNode.child("Geometry");
 
-    progress.SetMessage("Loading vertices...");
+    prg.SetMessage("Loading vertices...");
     //Vertices
     model->sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
@@ -105,7 +105,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->tdParams.parameters.insert(model->tdParams.parameters.end(),uInput.parameters.begin(),uInput.parameters.end());
     }
 
-    progress.SetMessage("Loading facets...");
+    prg.SetMessage("Loading facets...",false);
     //Facets , load for now via temp pointers and convert to vector afterwards
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
     //SubprocessFac** loadFacets = (SubprocessFac **)malloc(model->sh.nbFacet * sizeof(SubprocessFac *));
@@ -131,7 +131,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 */
         idx++;
-        progress.SetProgress((double)idx/(double)model->sh.nbFacet);
+        prg.SetProgress((double)idx/(double)model->sh.nbFacet);
     }
 
     model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
@@ -143,7 +143,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         model->wp.enableDecay = model->wp.halfLife < 1e100;
     }
 
-    progress.SetMessage("Loading physics parameters...");
+    prg.SetMessage("Loading physics parameters...",false);
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
     model->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
     // Default initialization
@@ -162,7 +162,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
         uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
     }
-    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, &uInput.userMoments, progress)){
+    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, &uInput.userMoments, prg)){
         model->m.unlock();
         return 1;
     }
@@ -202,7 +202,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
     }
 
-    progress.SetMessage("Loading histograms...");
+    prg.SetMessage("Loading histograms...",false);
     xml_node globalHistNode = simuParamNode.child("Global_histograms");
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");
@@ -723,21 +723,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
             m++;
         } //end moment
 
-        /*xml_node minMaxNode = resultNode.child("TextureMinMax");
-        globState->globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
-        globState->globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
-        globState->globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
-        globState->globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
-        globState->globalHits.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
-        globState->globalHits.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
-        globState->globalHits.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
-        globState->globalHits.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
-        globState->globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
-        globState->globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
-        globState->globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
-        globState->globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
-
-        //TODO: globState->globalHits. = this->angleMapCache;
+        prg.SetMessage("File load complete.",false);
     }
     catch (const std::exception &e) {
         globState->tMutex.unlock();
