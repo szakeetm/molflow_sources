@@ -723,7 +723,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
             m++;
         } //end moment
 
-        prg.SetMessage("File load complete.",false);
+        prg.SetMessage("File load complete.\n",false);
     }
     catch (const std::exception &e) {
         globState->tMutex.unlock();

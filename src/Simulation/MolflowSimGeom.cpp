@@ -601,7 +601,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         double absRatio = lhsGlobHit.globalHits.globalHits.nbAbsEquiv / static_cast<double>(lhsGlobHit.globalHits.globalHits.nbDesorbed);
         double absRatio_rhs = rhsGlobHit.globalHits.globalHits.nbAbsEquiv / static_cast<double>(rhsGlobHit.globalHits.globalHits.nbDesorbed);
         if (!IsEqual(absRatio, absRatio_rhs, globThreshold)) {
-            cmpFile += fmt::format("[Global][absRatio abs/des] has large difference: {} vs {} --> "
+            cmpFile += fmt::format("[Global][absRatio abs/des] has large difference: {} vs {}\n"
                                    "{}abs / {}des vs {}abs / {}des\n",
                                    absRatio, absRatio_rhs,
                                 lhsGlobHit.globalHits.globalHits.nbAbsEquiv,lhsGlobHit.globalHits.globalHits.nbDesorbed,
@@ -773,7 +773,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 double hitRatio_rhs = facetCounter_rhs.hits.nbHitEquiv * scale_rhs;
                 if (!IsEqual(hitRatio, hitRatio_rhs, locThreshold)) {
                     cmpFile += fmt::format("[Facet][{}][facet_hits / global_hits][moment{}] has large difference: "
-                                           "{} vs {} --> "
+                                           "{} vs {}\n"
                                            "{}fh / {}gh vs {}fh / {}gh\n",
                                            facetId, m,
                                            hitRatio,hitRatio_rhs,
@@ -821,7 +821,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 double absRatio_rhs = facetCounter_rhs.hits.nbAbsEquiv / static_cast<double>(facetCounter_rhs.hits.nbMCHit);
                 if (!IsEqual(absRatio, absRatio_rhs, locThreshold)) {
                     cmpFile += fmt::format("[Facet][{}][abs/hits ratio][moment{}] has large difference: "
-                                           "{} vs {} --> "
+                                           "{} vs {}\n"
                                            "{}fa / {}fh vs {}fa / {}fh\n",
                                            facetId, m,
                                            absRatio, absRatio_rhs,

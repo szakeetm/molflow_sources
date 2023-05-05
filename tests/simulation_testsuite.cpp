@@ -585,8 +585,8 @@ namespace {
             if (diff_fine <= 0)
                 fmt::print(stdout, "[{}][Info] No differences of fine counters found.\n", runNb);
         }
-        if ((double) nbSuccess / nRuns < 0.66) {
-            EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
+        if ((double) nbSuccess / (double) nRuns < 0.66) {
+            EXPECT_FALSE((double) nbSuccess / (double) nRuns < 0.66);
             fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed\n"
                             "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
