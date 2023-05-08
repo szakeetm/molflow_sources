@@ -402,7 +402,7 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 * \param prg GLProgress_GUI (TODO: which is never used)
 * \param newStr newStructure if a super structure will be used or not
 */
-void MolflowGeometry::InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool newStr) {
+void MolflowGeometry::InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool newStr) {
 
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
@@ -421,7 +421,7 @@ void MolflowGeometry::InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool
 * \param strIdx struct ID
 * \param newStruct if a super structure will be used or not
 */
-void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStruct) {
+void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStruct) {
 
 	UnselectAll();
 
@@ -706,7 +706,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState &globStat
 * \param results results from the simulation
 * \param version version of the GEO description
 */
-void MolflowGeometry::LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version) {
+void MolflowGeometry::LoadProfileGEO(FileReader& file, GlobalSimuState &globState, int version) {
 
 	file->ReadKeyword("profiles"); file->ReadKeyword("{");
 	// Profiles
@@ -748,7 +748,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, GlobalSimuState &globStat
 * \param version version of the GEO description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -1076,7 +1076,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress_Abstract& prg, int *v
 * \param version version of the SYN description
 * \param worker thread worker that executes the task
 */
-void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker) {
+void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -1348,7 +1348,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress_Abstract& prg, int *v
 * \param results simulation results describing the texture
 * \param version version of the GEO description
 */
-bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version) {
+bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version) {
 
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
@@ -2094,7 +2094,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 }
 
 /* Commenting out as deprecated
-void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
+void MolflowGeometry::ImportDesorption_DES(FileReader& file) {
 
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
@@ -2164,7 +2164,7 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 * \param prg GLProgress_GUI window where visualising of the import progress is shown
 */
 void MolflowGeometry::ImportDesorption_SYN(
-	FileReader *file, const size_t source, const double time,
+	FileReader& file, const size_t source, const double time,
 	const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress_Abstract& prg) {
@@ -2397,7 +2397,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 * \param nbDifferent number that is only set to 0 but never used (TODO: check usage)
 * \param prg GLProgress_GUI window where visualising of the analysation progress is shown
 */
-void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress_Abstract& prg, size_t *nbNewFacet,
+void MolflowGeometry::AnalyzeSYNfile(FileReader& file, GLProgress_Abstract& prg, size_t *nbNewFacet,
 	size_t *nbTextured, size_t *nbDifferent) {
 	//init
 	*nbTextured = 0;

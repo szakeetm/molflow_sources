@@ -369,7 +369,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 * \param fileName name of the conversion file
 */
 void ImportDesorption::LoadConvFile(const char* fileName) {
-	FileReader *f = NULL;
+	FileReader& f = NULL;
 	try {
 		f=new FileReader(fileName);
 		convDistr=std::vector<std::pair<double,double>>();

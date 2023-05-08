@@ -550,7 +550,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         throw std::runtime_error("LoadGeometry(): No file extension, can't determine type");
 
     // Read a file
-    FileReader *f = nullptr;
+    FileReader& f = nullptr;
     auto prg = GLProgress_GUI("Reading file...", "Please wait");
     prg.SetVisible(true);
 
@@ -1122,7 +1122,7 @@ bool Worker::SimModelToInterfaceGeom() {
 * \param f input file handle
 * \param version version of the GEO data description
 */
-void Worker::LoadTexturesGEO(FileReader *f, int version) {
+void Worker::LoadTexturesGEO(FileReader& f, int version) {
     auto prg = GLProgress_GUI("Loading textures", "Please wait");
     try {
         bool buffer_old = simManager.GetLockedHitBuffer();

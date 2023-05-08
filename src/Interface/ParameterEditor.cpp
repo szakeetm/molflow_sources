@@ -370,7 +370,7 @@ void ParameterEditor::LoadCSV() {
 
 	std::vector<std::vector<std::string>> table;
 	try {
-		FileReader *f = new FileReader(fn);
+		FileReader& f = new FileReader(fn);
 		table = f->ImportCSV_string();
         SAFE_DELETE(f);
 	}

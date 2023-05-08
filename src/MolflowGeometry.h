@@ -42,19 +42,19 @@ public:
 	MolflowGeometry();
 
 	// Load
-	void LoadGEO(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker);
-	void LoadSYN(FileReader *file, GLProgress_Abstract& prg, int *version, Worker *worker);
-	bool LoadTexturesGEO(FileReader *file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version);
-	//void ImportDesorption_DES(FileReader *file); //Deprecated
-	void ImportDesorption_SYN(FileReader *synFile, const size_t source, const double time,
+	void LoadGEO(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker);
+	void LoadSYN(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker);
+	bool LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version);
+	//void ImportDesorption_DES(FileReader& file); //Deprecated
+	void ImportDesorption_SYN(FileReader& synFile, const size_t source, const double time,
 		const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
 		GLProgress_Abstract& prg);
-	void AnalyzeSYNfile(FileReader *f, GLProgress_Abstract& prg, size_t *nbNewFacet,
+	void AnalyzeSYNfile(FileReader& f, GLProgress_Abstract& prg, size_t *nbNewFacet,
 		size_t *nbTextured, size_t *nbDifferent);
 
 	// Insert
-	void InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool newStr);
+	void InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool newStr);
 
 	// Save
 	void SaveTXT(FileWriter& file, GlobalSimuState &globState, bool saveSelected);
@@ -73,7 +73,7 @@ public:
 	// Geometry
     void     BuildPipe(double L, double R, double s, int step);
     void     BuildPrisma(double L, double R, double angle, double s, int step);
-	void     LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version);
+	void     LoadProfileGEO(FileReader& file, GlobalSimuState &globState, int version);
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
@@ -103,7 +103,7 @@ public:
 
 private:
 
-	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
+	void InsertSYNGeom(FileReader& file, size_t strIdx = 0, bool newStruct = false);
 	void SaveProfileGEO(FileWriter& file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };

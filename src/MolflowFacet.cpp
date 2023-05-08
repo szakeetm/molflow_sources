@@ -42,7 +42,7 @@ extern std::vector<int> colorMap;
 * \param version version of the geometry description
 * \param nbVertex number of facets contained in the geometry
 */
-void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (int i = 0; i < sh.nbIndex; i++) {
@@ -369,7 +369,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 * \param version version of the syn description
 * \param nbVertex number of facets contained in the geometry
 */
-void InterfaceFacet::LoadSYN_facet(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (size_t i = 0; i < sh.nbIndex; i++) {
@@ -479,7 +479,7 @@ void InterfaceFacet::LoadSYN_facet(FileReader *file, int version, size_t nbVerte
 * \brief Function for loading the geometry data of single facets from a TXT file
 * \param file filename of the TXT file
 */
-void InterfaceFacet::LoadTXT(FileReader *file) {
+void InterfaceFacet::LoadTXT(FileReader& file) {
 
 	// Opacity parameters descripton (TXT format)
 	// -4    => Pressure profile (1 sided)
