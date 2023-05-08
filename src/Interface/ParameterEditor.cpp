@@ -236,7 +236,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 					Plot();
 				}
 				RebuildList(); //Show parsed and sorted values
-				work->Reload(); //Mark for re-sync with workers
+				work->MarkToReload(); //Mark for re-sync with workers
 			}
 		} else if (src == deleteButton) {
 			if (selectorCombo->GetSelectedValue() == "New...") return; //Delete button shouldn't have been enabled

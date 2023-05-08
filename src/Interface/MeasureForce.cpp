@@ -146,7 +146,7 @@ void MeasureForce::ProcessMessage(GLComponent* src, int message) {
 				if (enabled) {
 					work->model->wp.torqueRefPoint = Vector3d(x0, y0, z0);
 				}
-				work->Reload();
+				work->MarkToReload();
 				mApp->changedSinceSave = true;
 				return;
 			}

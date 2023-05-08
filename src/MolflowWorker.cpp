@@ -534,7 +534,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 	geom->ImportDesorption(f,dpHit);
 	SAFE_DELETE(f);
 	changedSinceSave=true;
-	Reload();
+	MarkToReload();
 	}*/
 
 /**
@@ -608,7 +608,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->InsertTXT(f, prg, newStr);
                 SAFE_DELETE(f);
-                Reload();
+                MarkToReload();
             }
         }
 
@@ -657,7 +657,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     mApp->changedSinceSave = true;
                     geom->InsertSTL(f, prg, scaleFactor, newStr);
                     SAFE_DELETE(f);
-                    Reload();
+                    MarkToReload();
                 }
             }
         }
@@ -710,7 +710,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
 
             prg.SetMessage("Reloading worker with new geometry...");
-            Reload();
+            MarkToReload();
             if (!insert) fullFileName = fileName;
         }
 
@@ -765,7 +765,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             } else { //insert
                 mApp->changedSinceSave = true;
                 geom->InsertGEO(f, prg, newStr);
-                Reload();
+                MarkToReload();
             }
             SAFE_DELETE(f);
         }
@@ -1059,7 +1059,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 mApp->changedSinceSave = true;
                 ResetWorkerStats();
 
-                Reload();
+                MarkToReload();
             }
         }
         catch (const std::exception &e) {
@@ -1626,7 +1626,7 @@ void Worker::ImportDesorption_DES(const char *fileName) {
 	geom->ImportDesorption_DES(f);
 	SAFE_DELETE(f);
 	mApp->changedSinceSave = true;
-	Reload();
+	MarkToReload();
 }
 */
 

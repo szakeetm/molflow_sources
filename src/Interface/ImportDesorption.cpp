@@ -339,7 +339,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			work->CalcTotalOutgassing();
 			mApp->UpdateFacetParams(false);
 			// Send to sub process
-			work->Reload();
+			work->MarkToReload();
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 		} else if (src==convInfoButton) {
 			GLMessageBox::Display("A conversion file should contain several lines for interpolation\n"

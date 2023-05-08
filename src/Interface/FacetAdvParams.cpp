@@ -1799,7 +1799,7 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 		}
 		else if (src == remeshButton) {
 			ApplyTexture(true);
-			worker->Reload();
+			worker->MarkToReload();
 		}
 		
 		break;

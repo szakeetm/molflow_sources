@@ -196,7 +196,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 				work->model->wp.useMaxwellDistribution = useMaxwellToggle->GetState();
 				work->model->wp.calcConstantFlow = calcConstantFlow->GetState();
 
-				work->Reload();
+				work->MarkToReload();
 				if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
 				if (mApp->timewisePlotter) {
 					mApp->timewisePlotter->Reset();

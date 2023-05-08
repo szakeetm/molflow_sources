@@ -112,7 +112,7 @@ void TestCube::ProcessMessage(GLComponent *src,int message) {
 
 				geom->MoveSelectedFacets(dX,dY,dZ,src==copyButton,work);
 				//theApp->UpdateModelParams();
-				work->Reload(); 
+				work->MarkToReload(); 
 
 				theApp->UpdateFacetlistSelected();	
 				mApp->UpdateViewers();

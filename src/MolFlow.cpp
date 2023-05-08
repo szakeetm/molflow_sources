@@ -791,7 +791,7 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	// Mark "needsReload" to sync changes with workers on next simulation start
-	worker.Reload();
+	worker.MarkToReload();
 
 	worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
@@ -1151,7 +1151,7 @@ void MolFlow::ImportAngleMaps(){
 			}
 			AskToReset(&worker);
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
-			worker.Reload();
+			worker.MarkToReload();
 		}
 		catch(const std::exception &e) {
 				char errMsg[512];
@@ -1649,7 +1649,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 					if (vertexCoordinates) vertexCoordinates->Update();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 					// Send to sub process
-					worker.Reload();
+					worker.MarkToReload();
 				}
 			}
 			break;
@@ -1737,7 +1737,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (vertexCoordinates) vertexCoordinates->Update();
 						// Send to sub process
-						worker.Reload();
+						worker.MarkToReload();
 					}
 				}
 
@@ -1975,7 +1975,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	UpdateStructMenu();
 	// Send to sub process
-	worker.Reload();
+	worker.MarkToReload();
 
 	//UpdatePlotters();
 
@@ -2044,7 +2044,7 @@ void MolFlow::EmptyGeometry() {
 
 	UpdateStructMenu();
 	// Send to sub process
-	worker.Reload();
+	worker.MarkToReload();
 
 	//UpdatePlotters();
 

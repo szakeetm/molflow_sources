@@ -326,7 +326,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 					break;
 				}
 
-				work->Reload(); 
+				work->MarkToReload(); 
 				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();
