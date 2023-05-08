@@ -370,8 +370,8 @@ void ParameterEditor::LoadCSV() {
 
 	std::vector<std::vector<std::string>> table;
 	try {
-		auto f = FileReader(fn);
-		table = f.ImportCSV_string();
+		auto file = FileReader(fn);
+		table = file.ImportCSV_string();
         SAFE_DELETE(f);
 	}
 	catch (const std::exception &e) {
@@ -396,10 +396,10 @@ void ParameterEditor::LoadCSV() {
 	}
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	for (auto& row :table) {
-			std::string val1, val2;
-			if (row.size()>=1) val1 = row[0];
-			if (row.size()>=2) val2 = row[1];
-			if (val1!="" || val2!="") userValues.push_back(std::make_pair(val1, val2)); //commit pair if not empty
+		std::string val1, val2;
+		if (row.size()>=1) val1 = row[0];
+		if (row.size()>=2) val2 = row[1];
+		if (val1!="" || val2!="") userValues.push_back(std::make_pair(val1, val2)); //commit pair if not empty
 	}
 	RebuildList();
 }
