@@ -216,7 +216,7 @@ void PressureEvolution::refreshChart() {
     if(views.empty()) return;
 
 	// Lock during update
-	bool buffer_old = worker->GetHits();
+	bool buffer_old = worker->ReloadIfNeeded();
 	if (!buffer_old) return;
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 

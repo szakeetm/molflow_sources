@@ -240,7 +240,7 @@ void TexturePlotter::UpdateTable() {
 
 		case 1: {// MC Hits
 
-			bool buffer_old = worker->GetHits(); //Locks and returns handle
+			bool buffer_old = worker->ReloadIfNeeded(); //Locks and returns handle
 			if (!buffer_old) return;
 
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
@@ -265,7 +265,7 @@ void TexturePlotter::UpdateTable() {
 		case 2: {// Impingement rate
 
 			// Lock during update
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 				
 				size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
@@ -289,7 +289,7 @@ void TexturePlotter::UpdateTable() {
 		case 3: {// Particle density [1/m3]
 
 					 // Lock during update
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
@@ -317,7 +317,7 @@ void TexturePlotter::UpdateTable() {
 		case 4: {// Gas density [kg/m3]
 
 			// Lock during update
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
@@ -344,7 +344,7 @@ void TexturePlotter::UpdateTable() {
 		case 5: {// Pressure
 
 					 // Lock during update
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 				
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
@@ -373,7 +373,7 @@ void TexturePlotter::UpdateTable() {
 		case 6: {// Average gas velocity [m/s]
 
 					// Lock during update
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 				
 				size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
@@ -395,7 +395,7 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 7: {// Gas velocity vector
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 			size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
@@ -425,7 +425,7 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 8: {// Nb of velocity vectors
-			bool buffer_old = worker->GetHits();
+			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 			size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;

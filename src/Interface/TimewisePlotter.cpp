@@ -246,7 +246,7 @@ void TimewisePlotter::refreshViews() {
     if(!nbView) return;
 
 	// Lock during update
-	bool buffer_old = worker->GetHits();
+	bool buffer_old = worker->ReloadIfNeeded();
 	if (!buffer_old) return;
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
