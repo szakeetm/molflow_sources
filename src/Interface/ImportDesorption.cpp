@@ -374,8 +374,8 @@ void ImportDesorption::LoadConvFile(const char* fileName) {
 		f=new FileReader(fileName);
 		convDistr=std::vector<std::pair<double,double>>();
 		while (!f->IsEof()) {
-			double x=f->ReadDouble();
-			double y=f->ReadDouble();
+			double x=file.ReadDouble();
+			double y=file.ReadDouble();
 			convDistr.push_back(std::make_pair(x,y));
 		}
 		if (!(convDistr.size()>0)) throw Error("Couldn't load any points");

@@ -2082,168 +2082,168 @@ void MolFlow::LoadConfig() {
 		auto f = FileReader("molflow.cfg");
 		MolflowGeometry *geom = worker.GetMolflowGeometry();
 
-		f.ReadKeyword("showRules"); f.ReadKeyword(":");
+		file.ReadKeyword("showRules"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showRule = f.ReadInt();
-		f.ReadKeyword("showNormals"); f.ReadKeyword(":");
+			view->showRule = file.ReadInt();
+		file.ReadKeyword("showNormals"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showNormal = f.ReadInt();
-		f.ReadKeyword("showUV"); f.ReadKeyword(":");
+			view->showNormal = file.ReadInt();
+		file.ReadKeyword("showUV"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showUV = f.ReadInt();
-		f.ReadKeyword("showLines"); f.ReadKeyword(":");
+			view->showUV = file.ReadInt();
+		file.ReadKeyword("showLines"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showLine = f.ReadInt();
-		f.ReadKeyword("showLeaks"); f.ReadKeyword(":");
+			view->showLine = file.ReadInt();
+		file.ReadKeyword("showLeaks"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showLeak = f.ReadInt();
-		f.ReadKeyword("showHits"); f.ReadKeyword(":");
+			view->showLeak = file.ReadInt();
+		file.ReadKeyword("showHits"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showHit = f.ReadInt();
-		f.ReadKeyword("showVolume"); f.ReadKeyword(":");
+			view->showHit = file.ReadInt();
+		file.ReadKeyword("showVolume"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showVolume = f.ReadInt();
-		f.ReadKeyword("showTexture"); f.ReadKeyword(":");
+			view->showVolume = file.ReadInt();
+		file.ReadKeyword("showTexture"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showTexture = f.ReadInt();
-        f.ReadKeyword("showFacetId"); f.ReadKeyword(":");
+			view->showTexture = file.ReadInt();
+        file.ReadKeyword("showFacetId"); file.ReadKeyword(":");
         for (auto & view : viewer)
-            view->showFacetId = f.ReadInt();
-		f.ReadKeyword("showFilter"); f.ReadKeyword(":");
+            view->showFacetId = file.ReadInt();
+		file.ReadKeyword("showFilter"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showFilter = f.ReadInt();
-		f.ReadKeyword("showIndices"); f.ReadKeyword(":");
+			view->showFilter = file.ReadInt();
+		file.ReadKeyword("showIndices"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showIndex = f.ReadInt();
-		f.ReadKeyword("showVertices"); f.ReadKeyword(":");
+			view->showIndex = file.ReadInt();
+		file.ReadKeyword("showVertices"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showVertexId = f.ReadInt();
-		f.ReadKeyword("showMode"); f.ReadKeyword(":");
+			view->showVertexId = file.ReadInt();
+		file.ReadKeyword("showMode"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showBack = f.ReadInt();
-		f.ReadKeyword("showMesh"); f.ReadKeyword(":");
+			view->showBack = file.ReadInt();
+		file.ReadKeyword("showMesh"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showMesh = f.ReadInt();
-		f.ReadKeyword("showHidden"); f.ReadKeyword(":");
+			view->showMesh = file.ReadInt();
+		file.ReadKeyword("showHidden"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showHidden = f.ReadInt();
-		f.ReadKeyword("showHiddenVertex"); f.ReadKeyword(":");
+			view->showHidden = file.ReadInt();
+		file.ReadKeyword("showHiddenVertex"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showHiddenVertex = f.ReadInt();
-		f.ReadKeyword("showTimeOverlay"); f.ReadKeyword(":");
+			view->showHiddenVertex = file.ReadInt();
+		file.ReadKeyword("showTimeOverlay"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showTime = f.ReadInt();
-		f.ReadKeyword("texColormap"); f.ReadKeyword(":");
+			view->showTime = file.ReadInt();
+		file.ReadKeyword("texColormap"); file.ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			//viewer[i]->showColormap = 
-			f.ReadInt();
-		f.ReadKeyword("translation"); f.ReadKeyword(":");
+			file.ReadInt();
+		file.ReadKeyword("translation"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->transStep = f.ReadDouble();
-		f.ReadKeyword("dispNumLines"); f.ReadKeyword(":");
+			view->transStep = file.ReadDouble();
+		file.ReadKeyword("dispNumLines"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->dispNumHits = f.ReadSizeT();
-		f.ReadKeyword("dispNumLeaks"); f.ReadKeyword(":");
+			view->dispNumHits = file.ReadSizeT();
+		file.ReadKeyword("dispNumLeaks"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->dispNumLeaks = f.ReadSizeT();
-		f.ReadKeyword("dirShow"); f.ReadKeyword(":");
+			view->dispNumLeaks = file.ReadSizeT();
+		file.ReadKeyword("dirShow"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->showDir = f.ReadInt();
-		f.ReadKeyword("dirNorme"); f.ReadKeyword(":");
-		geom->SetNormeRatio((float)f.ReadDouble());
-		f.ReadKeyword("dirAutoNormalize"); f.ReadKeyword(":");
-		geom->SetAutoNorme(f.ReadInt());
-		f.ReadKeyword("dirCenter"); f.ReadKeyword(":");
-		geom->SetCenterNorme(f.ReadInt());
-		f.ReadKeyword("angle"); f.ReadKeyword(":");
+			view->showDir = file.ReadInt();
+		file.ReadKeyword("dirNorme"); file.ReadKeyword(":");
+		geom->SetNormeRatio((float)file.ReadDouble());
+		file.ReadKeyword("dirAutoNormalize"); file.ReadKeyword(":");
+		geom->SetAutoNorme(file.ReadInt());
+		file.ReadKeyword("dirCenter"); file.ReadKeyword(":");
+		geom->SetCenterNorme(file.ReadInt());
+		file.ReadKeyword("angle"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->angleStep = f.ReadDouble();
-		f.ReadKeyword("autoScale"); f.ReadKeyword(":");
-		geom->texAutoScale = f.ReadInt();
-		f.ReadKeyword("autoScale_include_constant_flow"); f.ReadKeyword(":");
-		geom->texAutoScaleIncludeConstantFlow = (short)f.ReadInt();
+			view->angleStep = file.ReadDouble();
+		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
+		geom->texAutoScale = file.ReadInt();
+		file.ReadKeyword("autoScale_include_constant_flow"); file.ReadKeyword(":");
+		geom->texAutoScaleIncludeConstantFlow = (short)file.ReadInt();
 
-		f.ReadKeyword("textures_min_pressure_all"); f.ReadKeyword(":");
-		geom->texture_limits[0].autoscale.min.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_min_pressure_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[0].autoscale.min.moments_only = f.ReadDouble();
-		f.ReadKeyword("textures_max_pressure_all"); f.ReadKeyword(":");
-		geom->texture_limits[0].autoscale.max.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_max_pressure_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[0].autoscale.max.moments_only = f.ReadDouble();
+		file.ReadKeyword("textures_min_pressure_all"); file.ReadKeyword(":");
+		geom->texture_limits[0].autoscale.min.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_min_pressure_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[0].autoscale.min.moments_only = file.ReadDouble();
+		file.ReadKeyword("textures_max_pressure_all"); file.ReadKeyword(":");
+		geom->texture_limits[0].autoscale.max.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_max_pressure_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[0].autoscale.max.moments_only = file.ReadDouble();
 
-		f.ReadKeyword("textures_min_impingement_all"); f.ReadKeyword(":");
-		geom->texture_limits[1].autoscale.min.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_min_impingement_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[1].autoscale.min.moments_only = f.ReadDouble();
-		f.ReadKeyword("textures_max_impingement_all"); f.ReadKeyword(":");
-		geom->texture_limits[1].autoscale.max.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_max_impingement_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[1].autoscale.max.moments_only = f.ReadDouble();
+		file.ReadKeyword("textures_min_impingement_all"); file.ReadKeyword(":");
+		geom->texture_limits[1].autoscale.min.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_min_impingement_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[1].autoscale.min.moments_only = file.ReadDouble();
+		file.ReadKeyword("textures_max_impingement_all"); file.ReadKeyword(":");
+		geom->texture_limits[1].autoscale.max.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_max_impingement_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[1].autoscale.max.moments_only = file.ReadDouble();
 
-		f.ReadKeyword("textures_min_density_all"); f.ReadKeyword(":");
-		geom->texture_limits[2].autoscale.min.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_min_density_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[2].autoscale.min.moments_only = f.ReadDouble();
-		f.ReadKeyword("textures_max_density_all"); f.ReadKeyword(":");
-		geom->texture_limits[2].autoscale.max.steady_state = f.ReadDouble();
-		f.ReadKeyword("textures_max_density_moments_only"); f.ReadKeyword(":");
-		geom->texture_limits[2].autoscale.max.moments_only = f.ReadDouble();
+		file.ReadKeyword("textures_min_density_all"); file.ReadKeyword(":");
+		geom->texture_limits[2].autoscale.min.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_min_density_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[2].autoscale.min.moments_only = file.ReadDouble();
+		file.ReadKeyword("textures_max_density_all"); file.ReadKeyword(":");
+		geom->texture_limits[2].autoscale.max.steady_state = file.ReadDouble();
+		file.ReadKeyword("textures_max_density_moments_only"); file.ReadKeyword(":");
+		geom->texture_limits[2].autoscale.max.moments_only = file.ReadDouble();
 
-		f.ReadKeyword("processNum"); f.ReadKeyword(":");
-		nbProc = f.ReadSizeT();
+		file.ReadKeyword("processNum"); file.ReadKeyword(":");
+		nbProc = file.ReadSizeT();
 #if defined(_DEBUG)
 		nbProc = 1;
 #endif
 		if (nbProc <= 0) nbProc = 1;
-		f.ReadKeyword("recents"); f.ReadKeyword(":"); f.ReadKeyword("{");
-		w = f.ReadString();
+		file.ReadKeyword("recents"); file.ReadKeyword(":"); file.ReadKeyword("{");
+		w = file.ReadString();
 		while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
 			recentsList.push_back(strdup(w));
-			w = f.ReadString();
+			w = file.ReadString();
 		}
-		f.ReadKeyword("autonorme"); f.ReadKeyword(":");
-		geom->SetAutoNorme(f.ReadInt());
-		f.ReadKeyword("centernorme"); f.ReadKeyword(":");
-		geom->SetCenterNorme(f.ReadInt());
-		f.ReadKeyword("normeratio"); f.ReadKeyword(":");
-		geom->SetNormeRatio((float)(f.ReadDouble()));
-		f.ReadKeyword("autoSaveFrequency"); f.ReadKeyword(":");
-		autoSaveFrequency = f.ReadDouble();
-		f.ReadKeyword("autoSaveSimuOnly"); f.ReadKeyword(":");
-		autoSaveSimuOnly = f.ReadInt();
-		f.ReadKeyword("checkForUpdates"); f.ReadKeyword(":");
-		/*checkForUpdates =*/ f.ReadInt(); //Old checkforupdates
-		f.ReadKeyword("autoUpdateFormulas"); f.ReadKeyword(":");
-		autoUpdateFormulas = f.ReadInt();
-		f.ReadKeyword("compressSavedFiles"); f.ReadKeyword(":");
-		compressSavedFiles = f.ReadInt();
-		f.ReadKeyword("gasMass"); f.ReadKeyword(":");
-		worker.model->wp.gasMass = f.ReadDouble();
-		f.ReadKeyword("expandShortcutPanel"); f.ReadKeyword(":");
-		bool isOpen = f.ReadInt();
+		file.ReadKeyword("autonorme"); file.ReadKeyword(":");
+		geom->SetAutoNorme(file.ReadInt());
+		file.ReadKeyword("centernorme"); file.ReadKeyword(":");
+		geom->SetCenterNorme(file.ReadInt());
+		file.ReadKeyword("normeratio"); file.ReadKeyword(":");
+		geom->SetNormeRatio((float)(file.ReadDouble()));
+		file.ReadKeyword("autoSaveFrequency"); file.ReadKeyword(":");
+		autoSaveFrequency = file.ReadDouble();
+		file.ReadKeyword("autoSaveSimuOnly"); file.ReadKeyword(":");
+		autoSaveSimuOnly = file.ReadInt();
+		file.ReadKeyword("checkForUpdates"); file.ReadKeyword(":");
+		/*checkForUpdates =*/ file.ReadInt(); //Old checkforupdates
+		file.ReadKeyword("autoUpdateFormulas"); file.ReadKeyword(":");
+		autoUpdateFormulas = file.ReadInt();
+		file.ReadKeyword("compressSavedFiles"); file.ReadKeyword(":");
+		compressSavedFiles = file.ReadInt();
+		file.ReadKeyword("gasMass"); file.ReadKeyword(":");
+		worker.model->wp.gasMass = file.ReadDouble();
+		file.ReadKeyword("expandShortcutPanel"); file.ReadKeyword(":");
+		bool isOpen = file.ReadInt();
 		if (isOpen) shortcutPanel->Open();
 		else shortcutPanel->Close();
-		f.ReadKeyword("hideLot"); f.ReadKeyword(":");
+		file.ReadKeyword("hideLot"); file.ReadKeyword(":");
 		for (auto & view : viewer)
-			view->hideLot = f.ReadInt();
-		f.ReadKeyword("lowFluxMode"); f.ReadKeyword(":");
-		worker.model->otfParams.lowFluxMode = f.ReadInt();
-		f.ReadKeyword("lowFluxCutoff"); f.ReadKeyword(":");
-		worker.model->otfParams.lowFluxCutoff = f.ReadDouble();
-		f.ReadKeyword("textureLogScale"); f.ReadKeyword(":");
-		geom->texLogScale = f.ReadInt();
-		f.ReadKeyword("leftHandedView"); f.ReadKeyword(":");
-		leftHandedView = f.ReadInt();
-		f.ReadKeyword("highlightNonplanarFacets"); f.ReadKeyword(":");
-		highlightNonplanarFacets = f.ReadInt();
-        f.ReadKeyword("highlightSelection"); f.ReadKeyword(":");
-        highlightSelection = f.ReadInt();
-        f.ReadKeyword("useOldXMLFormat"); f.ReadKeyword(":");
-        useOldXMLFormat = f.ReadInt();
-		f.ReadKeyword("showTP"); f.ReadKeyword(":");
+			view->hideLot = file.ReadInt();
+		file.ReadKeyword("lowFluxMode"); file.ReadKeyword(":");
+		worker.model->otfParams.lowFluxMode = file.ReadInt();
+		file.ReadKeyword("lowFluxCutoff"); file.ReadKeyword(":");
+		worker.model->otfParams.lowFluxCutoff = file.ReadDouble();
+		file.ReadKeyword("textureLogScale"); file.ReadKeyword(":");
+		geom->texLogScale = file.ReadInt();
+		file.ReadKeyword("leftHandedView"); file.ReadKeyword(":");
+		leftHandedView = file.ReadInt();
+		file.ReadKeyword("highlightNonplanarFacets"); file.ReadKeyword(":");
+		highlightNonplanarFacets = file.ReadInt();
+        file.ReadKeyword("highlightSelection"); file.ReadKeyword(":");
+        highlightSelection = file.ReadInt();
+        file.ReadKeyword("useOldXMLFormat"); file.ReadKeyword(":");
+        useOldXMLFormat = file.ReadInt();
+		file.ReadKeyword("showTP"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->showTP = f.ReadInt();
+			view->showTP = file.ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2256,20 +2256,20 @@ void MolFlow::LoadConfig() {
 
 
 #define WRITEI(name,var) {             \
-	f.Write(name);                      \
-	f.Write(":");                       \
+	file.Write(name);                      \
+	file.Write(":");                       \
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
-	f.Write(viewer[i]->var," ");   \
-	f.Write("\n");                      \
+	file.Write(viewer[i]->var," ");   \
+	file.Write("\n");                      \
 }
 
 
 #define WRITED(name,var) {             \
-	f.Write(name);                      \
-	f.Write(":");                       \
+	file.Write(name);                      \
+	file.Write(":");                       \
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
-	f.Write(viewer[i]->var," ");\
-	f.Write("\n");                      \
+	file.Write(viewer[i]->var," ");\
+	file.Write("\n");                      \
 }
 
 
@@ -2299,80 +2299,80 @@ void MolFlow::SaveConfig() {
 		WRITEI("showHiddenVertex", showHiddenVertex);
 		WRITEI("showTimeOverlay", showTime);
 		//WRITEI("texColormap", showColormap);
-		f.Write("texColormap:1 1 1 1\n");
+		file.Write("texColormap:1 1 1 1\n");
 		WRITED("translation", transStep);
 		WRITEI("dispNumLines", dispNumHits);
 		WRITEI("dispNumLeaks", dispNumLeaks);
 		WRITEI("dirShow", showDir);
-		f.Write("dirNorme:"); f.Write(geom->GetNormeRatio(), "\n");
-		f.Write("dirAutoNormalize:"); f.Write(geom->GetAutoNorme(), "\n");
-		f.Write("dirCenter:"); f.Write(geom->GetCenterNorme(), "\n");
+		file.Write("dirNorme:"); file.Write(geom->GetNormeRatio(), "\n");
+		file.Write("dirAutoNormalize:"); file.Write(geom->GetAutoNorme(), "\n");
+		file.Write("dirCenter:"); file.Write(geom->GetCenterNorme(), "\n");
 
 		WRITED("angle", angleStep);
-		f.Write("autoScale:"); f.Write(geom->texAutoScale, "\n");
-		f.Write("autoScale_include_constant_flow:"); f.Write(geom->texAutoScaleIncludeConstantFlow, "\n");
+		file.Write("autoScale:"); file.Write(geom->texAutoScale, "\n");
+		file.Write("autoScale_include_constant_flow:"); file.Write(geom->texAutoScaleIncludeConstantFlow, "\n");
 
-		f.Write("textures_min_pressure_all:");
-		f.Write(geom->texture_limits[0].autoscale.min.steady_state, "\n");
-		f.Write("textures_min_pressure_moments_only:");
-		f.Write(geom->texture_limits[0].autoscale.min.moments_only, "\n");
-		f.Write("textures_max_pressure_all:");
-		f.Write(geom->texture_limits[0].autoscale.max.steady_state, "\n");
-		f.Write("textures_max_pressure_moments_only:");
-		f.Write(geom->texture_limits[0].autoscale.max.moments_only, "\n");
+		file.Write("textures_min_pressure_all:");
+		file.Write(geom->texture_limits[0].autoscale.min.steady_state, "\n");
+		file.Write("textures_min_pressure_moments_only:");
+		file.Write(geom->texture_limits[0].autoscale.min.moments_only, "\n");
+		file.Write("textures_max_pressure_all:");
+		file.Write(geom->texture_limits[0].autoscale.max.steady_state, "\n");
+		file.Write("textures_max_pressure_moments_only:");
+		file.Write(geom->texture_limits[0].autoscale.max.moments_only, "\n");
 
-		f.Write("textures_min_impingement_all:");
-		f.Write(geom->texture_limits[1].autoscale.min.steady_state, "\n");
+		file.Write("textures_min_impingement_all:");
+		file.Write(geom->texture_limits[1].autoscale.min.steady_state, "\n");
 
-		f.Write("textures_min_impingement_moments_only:");
-		f.Write(geom->texture_limits[1].autoscale.min.moments_only, "\n");
-		f.Write("textures_max_impingement_all:");
-		f.Write(geom->texture_limits[1].autoscale.max.steady_state, "\n");
-		f.Write("textures_max_impingement_moments_only:");
-		f.Write(geom->texture_limits[1].autoscale.max.moments_only, "\n");
+		file.Write("textures_min_impingement_moments_only:");
+		file.Write(geom->texture_limits[1].autoscale.min.moments_only, "\n");
+		file.Write("textures_max_impingement_all:");
+		file.Write(geom->texture_limits[1].autoscale.max.steady_state, "\n");
+		file.Write("textures_max_impingement_moments_only:");
+		file.Write(geom->texture_limits[1].autoscale.max.moments_only, "\n");
 
-		f.Write("textures_min_density_all:");
-		f.Write(geom->texture_limits[2].autoscale.min.steady_state, "\n");
-		f.Write("textures_min_density_moments_only:");
-		f.Write(geom->texture_limits[2].autoscale.min.moments_only, "\n");
-		f.Write("textures_max_density_all:");
-		f.Write(geom->texture_limits[2].autoscale.max.steady_state, "\n");
-		f.Write("textures_max_density_moments_only:");
-		f.Write(geom->texture_limits[2].autoscale.max.moments_only, "\n");
+		file.Write("textures_min_density_all:");
+		file.Write(geom->texture_limits[2].autoscale.min.steady_state, "\n");
+		file.Write("textures_min_density_moments_only:");
+		file.Write(geom->texture_limits[2].autoscale.min.moments_only, "\n");
+		file.Write("textures_max_density_all:");
+		file.Write(geom->texture_limits[2].autoscale.max.steady_state, "\n");
+		file.Write("textures_max_density_moments_only:");
+		file.Write(geom->texture_limits[2].autoscale.max.moments_only, "\n");
 
 #if defined(_DEBUG)
-		f.Write("processNum:");f.Write(numCPU, "\n");
+		file.Write("processNum:");file.Write(numCPU, "\n");
 #else
-		f.Write("processNum:"); f.Write(worker.GetProcNumber(), "\n");
+		file.Write("processNum:"); file.Write(worker.GetProcNumber(), "\n");
 #endif
-		f.Write("recents:{\n");
+		file.Write("recents:{\n");
 		for(auto& recent : recentsList){
-			f.Write("\"");
-			f.Write(recent);
-			f.Write("\"\n");
+			file.Write("\"");
+			file.Write(recent);
+			file.Write("\"\n");
 		}
-		f.Write("}\n");
+		file.Write("}\n");
 
-		f.Write("autonorme:"); f.Write(geom->GetAutoNorme(), "\n");
-		f.Write("centernorme:"); f.Write(geom->GetCenterNorme(), "\n");
-		f.Write("normeratio:"); f.Write((double)(geom->GetNormeRatio()), "\n");
+		file.Write("autonorme:"); file.Write(geom->GetAutoNorme(), "\n");
+		file.Write("centernorme:"); file.Write(geom->GetCenterNorme(), "\n");
+		file.Write("normeratio:"); file.Write((double)(geom->GetNormeRatio()), "\n");
 		
-		f.Write("autoSaveFrequency:"); f.Write(autoSaveFrequency, "\n");
-		f.Write("autoSaveSimuOnly:"); f.Write(autoSaveSimuOnly, "\n");
-		f.Write("checkForUpdates:"); f.Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
-		f.Write("autoUpdateFormulas:"); f.Write(autoUpdateFormulas, "\n");
-		f.Write("compressSavedFiles:"); f.Write(compressSavedFiles, "\n");
-		f.Write("gasMass:"); f.Write(worker.model->wp.gasMass, "\n");
-		f.Write("expandShortcutPanel:"); f.Write(!shortcutPanel->IsClosed(), "\n");
+		file.Write("autoSaveFrequency:"); file.Write(autoSaveFrequency, "\n");
+		file.Write("autoSaveSimuOnly:"); file.Write(autoSaveSimuOnly, "\n");
+		file.Write("checkForUpdates:"); file.Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
+		file.Write("autoUpdateFormulas:"); file.Write(autoUpdateFormulas, "\n");
+		file.Write("compressSavedFiles:"); file.Write(compressSavedFiles, "\n");
+		file.Write("gasMass:"); file.Write(worker.model->wp.gasMass, "\n");
+		file.Write("expandShortcutPanel:"); file.Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		f.Write("lowFluxMode:"); f.Write(worker.model->otfParams.lowFluxMode, "\n");
-		f.Write("lowFluxCutoff:"); f.Write(worker.model->otfParams.lowFluxCutoff, "\n");
-		f.Write("textureLogScale:"); f.Write(geom->texLogScale, "\n");
-		f.Write("leftHandedView:"); f.Write(leftHandedView, "\n");
-        f.Write("highlightNonplanarFacets:"); f.Write(highlightNonplanarFacets, "\n");
-		f.Write("highlightSelection:"); f.Write(highlightSelection, "\n");
-        f.Write("useOldXMLFormat:"); f.Write(useOldXMLFormat, "\n");
+		file.Write("lowFluxMode:"); file.Write(worker.model->otfParams.lowFluxMode, "\n");
+		file.Write("lowFluxCutoff:"); file.Write(worker.model->otfParams.lowFluxCutoff, "\n");
+		file.Write("textureLogScale:"); file.Write(geom->texLogScale, "\n");
+		file.Write("leftHandedView:"); file.Write(leftHandedView, "\n");
+        file.Write("highlightNonplanarFacets:"); file.Write(highlightNonplanarFacets, "\n");
+		file.Write("highlightSelection:"); file.Write(highlightSelection, "\n");
+        file.Write("useOldXMLFormat:"); file.Write(useOldXMLFormat, "\n");
 		WRITEI("showTP", showTP);
     }
 	catch(const std::exception& e) {
