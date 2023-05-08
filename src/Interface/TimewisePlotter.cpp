@@ -357,11 +357,7 @@ void TimewisePlotter::refreshViews() {
 
 			}
 			v->CommitChange();
-
 	}
-
-	worker->ReleaseHits();
-
 }
 
 /**

@@ -276,8 +276,6 @@ void PressureEvolution::refreshChart() {
 		}
 		v->CommitChange();
 	}
-
-	worker->ReleaseHits();
 }
 
 /**

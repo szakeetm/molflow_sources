@@ -588,7 +588,7 @@ void InterfaceFacet::LoadTXT(FileReader *file) {
 * \brief Function for saving the geometry data of single facets into a TXT file
 * \param file filename of the TXT file
 */
-void InterfaceFacet::SaveTXT(FileWriter *file) {
+void InterfaceFacet::SaveTXT(FileWriter& file) {
 
 	//Sticking or link target
 	if (!sh.superDest) //Not a link, just write sticking
@@ -638,7 +638,7 @@ void InterfaceFacet::SaveTXT(FileWriter *file) {
 * \param file filename of the GEO file
 * \param idx index of the facet
 */
-void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
+void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 
 	char tmp[256];
 

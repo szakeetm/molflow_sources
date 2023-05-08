@@ -57,10 +57,10 @@ public:
 	void InsertSYN(FileReader *file, GLProgress_Abstract& prg, bool newStr);
 
 	// Save
-	void SaveTXT(FileWriter *file, GlobalSimuState &globState, bool saveSelected);
+	void SaveTXT(FileWriter& file, GlobalSimuState &globState, bool saveSelected);
 	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected);
 	void ExportProfiles(FILE *file, int isTXT, Worker *worker);
-	void SaveGEO(FileWriter *file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
+	void SaveGEO(FileWriter& file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
 	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected);
@@ -104,6 +104,6 @@ public:
 private:
 
 	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
-	void SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
+	void SaveProfileGEO(FileWriter& file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };

@@ -492,9 +492,7 @@ void ProfilePlotter::refreshViews() {
 
 			}
 		}
-
 	}
-	worker->ReleaseHits();
 }
 
 /**

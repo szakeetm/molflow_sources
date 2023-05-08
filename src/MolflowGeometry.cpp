@@ -658,7 +658,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 * \param crashSave prevents profile from being saved?
 * TODO: Function doesn't seem to cancel properly
 */
-void MolflowGeometry::SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super, bool saveSelected, bool crashSave) {
+void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState &globState, int super, bool saveSelected, bool crashSave) {
 
 	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
 	file->Write("profiles {\n");
@@ -1498,7 +1498,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress_Abstract& prg
 * \param saveSelected if a selection is to be saved
 * \param crashSave if crash save is enabled
 */
-void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
+void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
 							  bool saveSelected, bool crashSave) {
 
 	prg.SetMessage("Counting hits...");
@@ -1770,7 +1770,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress_Abstract& prg, Global
 * \param results simulation results describing the texture
 * \param saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool saveSelected) {
+void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState &globState, bool saveSelected) {
 
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
