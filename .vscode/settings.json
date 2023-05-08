@@ -69,6 +69,21 @@
         "xstring": "cpp",
         "future": "cpp",
         "algorithm": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "__std_stream": "cpp",
+        "any": "cpp",
+        "complex": "cpp",
+        "condition_variable": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "regex": "cpp",
+        "string_view": "cpp",
+        "valarray": "cpp",
+        "__nullptr": "cpp",
+        "__string": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "numeric": "cpp",
+        "random": "cpp"
     }
 }

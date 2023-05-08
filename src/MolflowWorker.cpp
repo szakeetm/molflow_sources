@@ -524,19 +524,6 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-
-
-/*void Worker::ImportDesorption(const char *fileName) {
-	//if (needsReload) RealReload();
-
-	// Read a file
-	FileReader *f=new FileReader(fileName);
-	geom->ImportDesorption(f,dpHit);
-	SAFE_DELETE(f);
-	changedSinceSave=true;
-	MarkToReload();
-	}*/
-
 /**
 * \brief Function for loading of the geometry
 * \param fileName input file name
@@ -594,11 +581,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             if (insert) mApp->changedSinceSave = true;
 
-            f = new FileReader(fileName);
+            auto f = FileReader(fileName);
 
             if (!insert) {
                 geom->LoadTXT(f, prg, this);
-                SAFE_DELETE(f);
                 //RealReload();
                 fullFileName = fileName;
                 RealReload();
@@ -607,14 +593,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             } else { //insert
 
                 geom->InsertTXT(f, prg, newStr);
-                SAFE_DELETE(f);
                 MarkToReload();
             }
         }
 
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            SAFE_DELETE(f);
             throw;
         }
 
@@ -647,16 +631,14 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 prg.SetMessage("Resetting worker...");
                 prg.SetVisible(true);
                 prg.SetMessage("Reading geometry...");
-                f = new FileReader(fileName);
+                auto f = FileReader(fileName);
                 if (!insert) {
                     geom->LoadSTL(f, prg, scaleFactor);
-                    SAFE_DELETE(f);
                     fullFileName = fileName;
                     mApp->DisplayCollapseDialog();
                 } else { //insert
                     mApp->changedSinceSave = true;
                     geom->InsertSTL(f, prg, scaleFactor, newStr);
-                    SAFE_DELETE(f);
                     MarkToReload();
                 }
             }
@@ -671,10 +653,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else if (ext == "str" || ext == "STR") {
         if (insert) throw std::runtime_error("STR file inserting is not supported.");
         try {
-            f = new FileReader(fileName);
+            auto f = FileReader(fileName);
             prg.SetVisible(true);
             geom->LoadSTR(f, prg);
-            SAFE_DELETE(f);
             //RealReload();
 
             fullFileName = fileName;
@@ -682,7 +663,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
         catch (const std::exception &e) {
             geom->Clear();
-            SAFE_DELETE(f);
             throw;
         }
 
@@ -690,23 +670,20 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         int version;
         prg.SetVisible(true);
         try {
+            std::unique_pointer<FileReader> f;
             if (ext == "syn7z") {
                 //decompress file
                 prg.SetMessage("Decompressing file...");
-                f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+                f.reset(ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
             } else {
-                f = new FileReader(fileName);  //original file opened
+                f.reset(new FileReader(fileName));  //original file opened
             }
 
             if (!insert) {
-                prg.SetMessage("Resetting worker...");
-
-                geom->LoadSYN(f, prg, &version, this);
-                SAFE_DELETE(f);
+                geom->LoadSYN(*f, prg, &version, this);
                 model->otfParams.desorptionLimit = 0;
             } else { //insert
-                geom->InsertSYN(f, prg, newStr);
-                SAFE_DELETE(f);
+                geom->InsertSYN(*f, prg, newStr);
             }
 
             prg.SetMessage("Reloading worker with new geometry...");
@@ -727,18 +704,18 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         int version;
         prg.SetVisible(true);
         try {
+            std::unique_pointer<FileReader> f;
             if (ext == "geo7z") {
                 //decompress file
                 prg.SetMessage("Decompressing file...");
-                f = ExtractFrom7zAndOpen(fileName, "Geometry.geo");
+                f.reset(ExtractFrom7zAndOpen(fileName, "Geometry.geo"));
             } else { //not geo7z
-                f = new FileReader(fileName); //geo file, open it directly
+                f.reset(new FileReader(fileName)); //geo file, open it directly
             }
-            if (insert) mApp->changedSinceSave = true;
 
             if (!insert) {
 
-                geom->LoadGEO(f, prg, &version, this);
+                geom->LoadGEO(*f, prg, &version, this);
                 // Add moments only after user Moments are completely initialized
                 if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, prg)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
@@ -764,16 +741,13 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 fullFileName = fileName;
             } else { //insert
                 mApp->changedSinceSave = true;
-                geom->InsertGEO(f, prg, newStr);
+                geom->InsertGEO(*f, prg, newStr);
                 MarkToReload();
             }
-            SAFE_DELETE(f);
         }
 
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            SAFE_DELETE(f);
-            //if (isGEO7Z) remove(tmp2);
             throw;
         }
 
@@ -1071,17 +1045,15 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         if (insert) throw std::runtime_error("ASE file inserting is not supported.");
         try {
             ResetWorkerStats();
-            f = new FileReader(fileName);
+            auto f = FileReader(fileName);
             prg.SetVisible(true);
             geom->LoadASE(f, prg);
-            SAFE_DELETE(f);
             //RealReload();
             fullFileName = fileName;
 
         }
         catch (const std::exception &e) {
             geom->Clear();
-            SAFE_DELETE(f);
             throw;
         }
     } else {
@@ -1618,18 +1590,6 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
     }
 }
 
-/* //Commenting out as deprecated
-void Worker::ImportDesorption_DES(const char *fileName) {
-	//if (needsReload) RealReload();
-	// Read a file
-	FileReader *f = new FileReader(fileName);
-	geom->ImportDesorption_DES(f);
-	SAFE_DELETE(f);
-	mApp->changedSinceSave = true;
-	MarkToReload();
-}
-*/
-
 /**
 * \brief Importing desorption data from a SYN file
 * \param fileName name of the input file
@@ -1652,21 +1612,20 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t source, con
 
     // Read a file
 
-    FileReader *f = nullptr;
+    std::unique_pointer<FileReader> f;
 
     bool isSYN7Z = (iequals(ext, "syn7z"));
     bool isSYN = (iequals(ext, "syn"));
 
     if (isSYN || isSYN7Z) {
         if (isSYN7Z) {
-            f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+            f.reset(ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
         } else {
-            f = new FileReader(fileName);  //original file opened
+            f.reset(new FileReader(fileName));  //original file opened
         }
 
-        geom->ImportDesorption_SYN(f, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
+        geom->ImportDesorption_SYN(*f, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
         CalcTotalOutgassing();
-        SAFE_DELETE(f);
     }
 }
 
@@ -1686,32 +1645,22 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
         throw std::runtime_error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
 
     // Read a file
-    FileReader *f = nullptr;
+    std::unique_pointer<FileReader> f;
 
     auto prg = GLProgress_GUI("Analyzing SYN file...", "Please wait");
     prg.SetVisible(true);
 
     if (isSYN || isSYN7Z) {
         prg.SetVisible(true);
-        try {
-            if (isSYN7Z) {
-                //decompress file
-                prg.SetMessage("Decompressing file...");
-                f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
-            } else {
-                f = new FileReader(fileName);  //original file opened
-            }
-
-            geom->AnalyzeSYNfile(f, prg, nbFacet, nbTextured, nbDifferent);
-
-            SAFE_DELETE(f);
-
+        if (isSYN7Z) {
+            //decompress file
+            prg.SetMessage("Decompressing file...");
+            f.reset(ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
+            geom->AnalyzeSYNfile(*f, prg, nbFacet, nbTextured, nbDifferent);
+        } else {
+            f.reset(FileReader(fileName));  //original file opened
+            geom->AnalyzeSYNfile(*f, prg, nbFacet, nbTextured, nbDifferent);
         }
-        catch (const std::exception &e) {
-            SAFE_DELETE(f);
-            throw;
-        }
-
     }
 }
 
