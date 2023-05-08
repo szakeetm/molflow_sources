@@ -48,8 +48,8 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
             std::vector<std::vector<std::string>> table;
             try {
 
-                FileReader f(csvPath);
-                table = f.ImportCSV_string();
+                FileReader file(csvPath);
+                table = file.ImportCSV_string();
             }
             catch(const std::exception &e) {
                 ++res;

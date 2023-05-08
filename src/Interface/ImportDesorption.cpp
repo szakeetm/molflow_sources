@@ -369,22 +369,16 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 * \param fileName name of the conversion file
 */
 void ImportDesorption::LoadConvFile(const char* fileName) {
-	FileReader& f = NULL;
 	try {
-		f=new FileReader(fileName);
+		auto file= FileReader(fileName);
 		convDistr=std::vector<std::pair<double,double>>();
-		while (!f->IsEof()) {
+		while (!file->IsEof()) {
 			double x=file.ReadDouble();
 			double y=file.ReadDouble();
 			convDistr.push_back(std::make_pair(x,y));
 		}
 		if (!(convDistr.size()>0)) throw Error("Couldn't load any points");
-		//conversionDistr=new Distribution2D(nbPoints);
-		
-		f->SeekStart(); //restart from the beginning
-		SAFE_DELETE(f);
 	}  catch (const std::exception &e) {
-		SAFE_DELETE(f);
 		char errMsg[512];
 		sprintf(errMsg,"%s\nFile:%s",e.what(),fileName);
 		GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);

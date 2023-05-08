@@ -88,7 +88,7 @@ static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
 */
 
 //NativeFileDialog compatible file filters
-char fileLoadFilters[] = "txt,xml,zip,geo,syn,str,stl,ase,geo7z,syn7z";
+char fileLoadFilters[] = "txt,xml,zip,geo,syn,str,stl,geo7z,syn7z";
 char fileInsertFilters[] = "txt,xml,zip,geo,syn,stl,geo7z,syn7z";
 char fileSaveFilters[] = "zip,xml,txt,geo,stl,geo7z";
 char fileSelFilters[] = "sel";
@@ -1146,8 +1146,8 @@ void MolFlow::ImportAngleMaps(){
 	for (size_t i = 0; i < fileNames.size();i++) {
 		try {
 			{
-				auto f = FileReader(fileNames[i]);
-				std::vector<std::vector<std::string>> table = f.ImportCSV_string();
+				auto file = FileReader(fileNames[i]);
+				std::vector<std::vector<std::string>> table = file.ImportCSV_string();
 			}
 			AskToReset(&worker);
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
@@ -2079,7 +2079,7 @@ void MolFlow::LoadConfig() {
 
 	try {
 
-		auto f = FileReader("molflow.cfg");
+		auto file = FileReader("molflow.cfg");
 		MolflowGeometry *geom = worker.GetMolflowGeometry();
 
 		file.ReadKeyword("showRules"); file.ReadKeyword(":");
