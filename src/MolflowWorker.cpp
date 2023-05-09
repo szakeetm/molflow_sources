@@ -631,7 +631,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         }
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            SAFE_DELETE(f);
             throw;
 
         }
@@ -679,10 +678,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-
-            SAFE_DELETE(f);
-            //if (isSYN7Z) remove(tmp2);
-
             throw;
         }
 

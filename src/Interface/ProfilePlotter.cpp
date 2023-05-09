@@ -285,29 +285,25 @@ void ProfilePlotter::Update(float appTime, bool force) {
 */
 void ProfilePlotter::plot() {
 
-	GLParser *parser = new GLParser();
-	parser->SetExpression(formulaText->GetText().c_str());
-	if (!parser->Parse()) {
-		GLMessageBox::Display(parser->GetErrorMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-		SAFE_DELETE(parser);
+	GLParser parser;
+	parser.SetExpression(formulaText->GetText().c_str());
+	if (!parser.Parse()) {
+		GLMessageBox::Display(parser.GetErrorMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 
-	int nbVar = parser->GetNbVariable();
+	int nbVar = parser.GetNbVariable();
 	if (nbVar == 0) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		SAFE_DELETE(parser);
 		return;
 	}
 	if (nbVar > 1) {
 		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		SAFE_DELETE(parser);
 		return;
 	}
-	VLIST *var = parser->GetVariableAt(0);
+	VLIST *var = parser.GetVariableAt(0);
 	if (!iequals(var->name, "x")) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		SAFE_DELETE(parser);
 		return;
 	}
 
@@ -346,12 +342,10 @@ void ProfilePlotter::plot() {
 		double x = (double)i;
 		double y;
 		var->value = x;
-		parser->Evaluate(&y);
+		parser.Evaluate(&y);
 		v->Add(x, y, false);
 	}
 	v->CommitChange();
-
-	delete parser;
 
 }
 

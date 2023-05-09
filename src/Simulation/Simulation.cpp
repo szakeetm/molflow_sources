@@ -11,16 +11,6 @@
 #include <RayTracing/BVH.h>
 #endif
 
-/*SuperStructure::SuperStructure()
-{
-	aabbTree = NULL;
-}
-
-SuperStructure::~SuperStructure()
-{
-	SAFE_DELETE(aabbTree);
-}*/
-
 Simulation::Simulation() : tMutex()
 {
 	totalDesorbed = 0;

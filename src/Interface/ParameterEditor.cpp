@@ -372,7 +372,6 @@ void ParameterEditor::LoadCSV() {
 	try {
 		auto file = FileReader(fn);
 		table = file.ImportCSV_string();
-        SAFE_DELETE(f);
 	}
 	catch (const std::exception &e) {
 		char errMsg[512];

@@ -167,10 +167,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
     } else if (src==editButton) {
 		if( mApp->momentsEditor==nullptr ) mApp->momentsEditor = new MomentsEditor(work);
 		mApp->momentsEditor->Refresh();
-		//momentsEditor->Display(work,momentsEditor->GetSelectedIndex());
 		mApp->momentsEditor->SetVisible(true);
-		//momentsEditor->DoModal();
-		//SAFE_DELETE(momentsEditor);
 		
 	}
     break;
