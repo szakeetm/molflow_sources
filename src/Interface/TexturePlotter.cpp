@@ -38,11 +38,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 #if defined(MOLFLOW)
-extern MolFlow *mApp;
+extern MolFlow* mApp;
 #endif
 
 #if defined(SYNRAD)
-extern SynRad*mApp;
+extern SynRad* mApp;
 #endif
 
 std::string fileFilters = "txt";
