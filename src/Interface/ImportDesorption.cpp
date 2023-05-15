@@ -372,7 +372,7 @@ void ImportDesorption::LoadConvFile(const char* fileName) {
 	try {
 		auto file= FileReader(fileName);
 		convDistr=std::vector<std::pair<double,double>>();
-		while (!file->IsEof()) {
+		while (!file.IsEof()) {
 			double x=file.ReadDouble();
 			double y=file.ReadDouble();
 			convDistr.push_back(std::make_pair(x,y));

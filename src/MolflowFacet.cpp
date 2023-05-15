@@ -44,29 +44,29 @@ extern std::vector<int> colorMap;
 */
 void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 
-	file->ReadKeyword("indices"); file->ReadKeyword(":");
+	file.ReadKeyword("indices"); file.ReadKeyword(":");
 	for (int i = 0; i < sh.nbIndex; i++) {
-		indices[i] = file->ReadInt() - 1;
+		indices[i] = file.ReadInt() - 1;
 		if (indices[i] >= nbVertex)
-			throw Error(file->MakeError("Facet index out of bounds"));
+			throw Error(file.MakeError("Facet index out of bounds"));
 	}
 
-	file->ReadKeyword("sticking"); file->ReadKeyword(":");
-	sh.sticking = file->ReadDouble();
-	file->ReadKeyword("opacity"); file->ReadKeyword(":");
-	sh.opacity = file->ReadDouble();
-	file->ReadKeyword("desorbType"); file->ReadKeyword(":");
-	sh.desorbType = file->ReadInt();
+	file.ReadKeyword("sticking"); file.ReadKeyword(":");
+	sh.sticking = file.ReadDouble();
+	file.ReadKeyword("opacity"); file.ReadKeyword(":");
+	sh.opacity = file.ReadDouble();
+	file.ReadKeyword("desorbType"); file.ReadKeyword(":");
+	sh.desorbType = file.ReadInt();
 	if (version >= 9) {
-		file->ReadKeyword("desorbTypeN"); file->ReadKeyword(":");
-		sh.desorbTypeN = file->ReadDouble();
+		file.ReadKeyword("desorbTypeN"); file.ReadKeyword(":");
+		sh.desorbTypeN = file.ReadDouble();
 	}
 	else {
 		ConvertOldDesorbType();
 	}
-	file->ReadKeyword("reflectType"); file->ReadKeyword(":");
+	file.ReadKeyword("reflectType"); file.ReadKeyword(":");
 	//Convert old model
-	int oldReflType = file->ReadInt();
+	int oldReflType = file.ReadInt();
 	if (oldReflType == REFLECTION_DIFFUSE) {
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
@@ -81,81 +81,81 @@ void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 		sh.reflection.cosineExponent = 0.0; //Cos^0 = uniform
 	}
 
-	file->ReadKeyword("profileType"); file->ReadKeyword(":");
-	sh.profileType = file->ReadInt();
+	file.ReadKeyword("profileType"); file.ReadKeyword(":");
+	sh.profileType = file.ReadInt();
 
-	file->ReadKeyword("superDest"); file->ReadKeyword(":");
-	sh.superDest = file->ReadInt();
-	file->ReadKeyword("superIdx"); file->ReadKeyword(":");
-	sh.superIdx = file->ReadInt();
-	file->ReadKeyword("is2sided"); file->ReadKeyword(":");
-	sh.is2sided = file->ReadInt();
+	file.ReadKeyword("superDest"); file.ReadKeyword(":");
+	sh.superDest = file.ReadInt();
+	file.ReadKeyword("superIdx"); file.ReadKeyword(":");
+	sh.superIdx = file.ReadInt();
+	file.ReadKeyword("is2sided"); file.ReadKeyword(":");
+	sh.is2sided = file.ReadInt();
 	if (version < 8) {
-		file->ReadKeyword("area"); file->ReadKeyword(":");
-		sh.area = file->ReadDouble();
+		file.ReadKeyword("area"); file.ReadKeyword(":");
+		sh.area = file.ReadDouble();
 	}
-	file->ReadKeyword("mesh"); file->ReadKeyword(":");
-	hasMesh = file->ReadInt();
+	file.ReadKeyword("mesh"); file.ReadKeyword(":");
+	hasMesh = file.ReadInt();
 	if (version >= 7) {
-		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.outgassing = file->ReadDouble()*MBARLS_TO_PAM3S; //mbar*l/s -> Pa*m3/s
+		file.ReadKeyword("outgassing"); file.ReadKeyword(":");
+		sh.outgassing = file.ReadDouble() * MBARLS_TO_PAM3S; //mbar*l/s -> Pa*m3/s
 
 	}
-	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidth_precise = file->ReadDouble();
+	file.ReadKeyword("texDimX"); file.ReadKeyword(":");
+	sh.texWidth_precise = file.ReadDouble();
 
-	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeight_precise = file->ReadDouble();
+	file.ReadKeyword("texDimY"); file.ReadKeyword(":");
+	sh.texHeight_precise = file.ReadDouble();
 
-	file->ReadKeyword("countDes"); file->ReadKeyword(":");
-	sh.countDes = file->ReadInt();
-	file->ReadKeyword("countAbs"); file->ReadKeyword(":");
-	sh.countAbs = file->ReadInt();
+	file.ReadKeyword("countDes"); file.ReadKeyword(":");
+	sh.countDes = file.ReadInt();
+	file.ReadKeyword("countAbs"); file.ReadKeyword(":");
+	sh.countAbs = file.ReadInt();
 
-	file->ReadKeyword("countRefl"); file->ReadKeyword(":");
-	sh.countRefl = file->ReadInt();
+	file.ReadKeyword("countRefl"); file.ReadKeyword(":");
+	sh.countRefl = file.ReadInt();
 
-	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
-	sh.countTrans = file->ReadInt();
+	file.ReadKeyword("countTrans"); file.ReadKeyword(":");
+	sh.countTrans = file.ReadInt();
 
-	file->ReadKeyword("acMode"); file->ReadKeyword(":");
-	sh.countACD = file->ReadInt();
-	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	facetHitCache.nbAbsEquiv = file->ReadDouble();
+	file.ReadKeyword("acMode"); file.ReadKeyword(":");
+	sh.countACD = file.ReadInt();
+	file.ReadKeyword("nbAbs"); file.ReadKeyword(":");
+	facetHitCache.nbAbsEquiv = file.ReadDouble();
 
-	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-	facetHitCache.nbDesorbed = file->ReadSizeT();
+	file.ReadKeyword("nbDes"); file.ReadKeyword(":");
+	facetHitCache.nbDesorbed = file.ReadSizeT();
 
-	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
+	file.ReadKeyword("nbHit"); file.ReadKeyword(":");
 
-	facetHitCache.nbMCHit = file->ReadSizeT();
+	facetHitCache.nbMCHit = file.ReadSizeT();
 	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
 	if (version >= 2) {
 		// Added in GEO version 2
-		file->ReadKeyword("temperature"); file->ReadKeyword(":");
-		sh.temperature = file->ReadDouble();
-		file->ReadKeyword("countDirection"); file->ReadKeyword(":");
-		sh.countDirection = file->ReadInt();
+		file.ReadKeyword("temperature"); file.ReadKeyword(":");
+		sh.temperature = file.ReadDouble();
+		file.ReadKeyword("countDirection"); file.ReadKeyword(":");
+		sh.countDirection = file.ReadInt();
 
 	}
 	if (version >= 4) {
 		// Added in GEO version 4
-		file->ReadKeyword("textureVisible"); file->ReadKeyword(":");
-		textureVisible = file->ReadInt();
-		file->ReadKeyword("volumeVisible"); file->ReadKeyword(":");
-		volumeVisible = file->ReadInt();
+		file.ReadKeyword("textureVisible"); file.ReadKeyword(":");
+		textureVisible = file.ReadInt();
+		file.ReadKeyword("volumeVisible"); file.ReadKeyword(":");
+		volumeVisible = file.ReadInt();
 	}
 
 	if (version >= 5) {
 		// Added in GEO version 5
-		file->ReadKeyword("teleportDest"); file->ReadKeyword(":");
-		sh.teleportDest = file->ReadInt();
+		file.ReadKeyword("teleportDest"); file.ReadKeyword(":");
+		sh.teleportDest = file.ReadInt();
 	}
 
 	if (version >= 13) {
 		// Added in GEO version 13
-		file->ReadKeyword("accomodationFactor"); file->ReadKeyword(":");
-		sh.accomodationFactor = file->ReadDouble();
+		file.ReadKeyword("accomodationFactor"); file.ReadKeyword(":");
+		sh.accomodationFactor = file.ReadDouble();
 	}
 
 	UpdateFlags();
@@ -227,7 +227,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 				sh.reflection.cosineExponent = 0.0;
 			}
 		}
-		
+
 		if (reflNode.attribute("enableSojournTime")) {
 			sh.enableSojournTime = reflNode.attribute("enableSojournTime").as_bool();
 			if (!reflNode.attribute("sojournFreq")) {//Backward compatibility with ver. before 2.6.25
@@ -277,18 +277,18 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 			}
 			ogMap.totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
-            ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
+			ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
 			double sum = 0.0;
 
 			std::stringstream outgText;
 			outgText << outgNode.child_value("map");
-			std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
+			std::vector<double>(ogMap.outgassingMapWidth * ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
 
 			for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
 				for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
-					outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
-					sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
+					outgText >> ogMap.outgassingMap[iy * ogMap.outgassingMapWidth + ix];
+					sum += ogMap.outgassingMap[iy * ogMap.outgassingMapWidth + ix];
 				}
 			}
 			if (!ignoreSumMismatch && !IsEqual(sum, sh.totalOutgassing)) {
@@ -296,7 +296,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 				msg << "Facet " << facetId + 1 << ":\n";
 				msg << "The total dynamic outgassing (" << 10.0 * sh.totalOutgassing << " mbar.l/s)\n";
 				msg << "doesn't match the sum of the dynamic outgassing cells (" << 10.0 * sum << " mbar.l/s).";
-				if (1 == GLMessageBox::Display(msg.str(), "Dynamic outgassing mismatch", { "OK","Ignore rest" },GLDLG_ICONINFO))
+				if (1 == GLMessageBox::Display(msg.str(), "Dynamic outgassing mismatch", { "OK","Ignore rest" }, GLDLG_ICONINFO))
 					ignoreSumMismatch = true;
 			}
 		}
@@ -313,18 +313,18 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
 
-            try {
-                angleMapCache.resize(sh.anglemapParams.GetMapSize());
-            }
-            catch(...) {
-                std::stringstream err;
-                err << "Not enough memory for incident angle map on facet ";
-                throw Error(err.str().c_str());
-            }
+			try {
+				angleMapCache.resize(sh.anglemapParams.GetMapSize());
+			}
+			catch (...) {
+				std::stringstream err;
+				err << "Not enough memory for incident angle map on facet ";
+				throw Error(err.str().c_str());
+			}
 
 			for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 				for (size_t ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
-					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
+					angleText >> angleMapCache[iy * sh.anglemapParams.phiWidth + ix];
 				}
 			}
 		}
@@ -340,24 +340,24 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
 		xml_node nbBounceNode = facetHistNode.child("Bounces");
 		if (nbBounceNode) {
-			sh.facetHistogramParams.recordBounce=true;
-			sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
-			sh.facetHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+			sh.facetHistogramParams.recordBounce = true;
+			sh.facetHistogramParams.nbBounceBinsize = nbBounceNode.attribute("binSize").as_ullong();
+			sh.facetHistogramParams.nbBounceMax = nbBounceNode.attribute("max").as_ullong();
 		}
 		xml_node distanceNode = facetHistNode.child("Distance");
 		if (distanceNode) {
-			sh.facetHistogramParams.recordDistance=true;
-			sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
-			sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+			sh.facetHistogramParams.recordDistance = true;
+			sh.facetHistogramParams.distanceBinsize = distanceNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.distanceMax = distanceNode.attribute("max").as_double();
 		}
-		#ifdef MOLFLOW
+#ifdef MOLFLOW
 		xml_node timeNode = facetHistNode.child("Time");
 		if (timeNode) {
-			sh.facetHistogramParams.recordTime=true;
-			sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
-			sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
+			sh.facetHistogramParams.recordTime = true;
+			sh.facetHistogramParams.timeBinsize = timeNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.timeMax = timeNode.attribute("max").as_double();
 		}
-		#endif
+#endif
 	}
 
 	UpdateFlags();
@@ -371,105 +371,105 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 */
 void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, size_t nbVertex) {
 
-	file->ReadKeyword("indices"); file->ReadKeyword(":");
+	file.ReadKeyword("indices"); file.ReadKeyword(":");
 	for (size_t i = 0; i < sh.nbIndex; i++) {
-		indices[i] = file->ReadInt() - 1;
+		indices[i] = file.ReadInt() - 1;
 		if (indices[i] >= nbVertex) {
-			throw Error(file->MakeError("Facet index out of bounds"));
+			throw Error(file.MakeError("Facet index out of bounds"));
 		}
 	}
 
 	if (version >= 9) { //new reflection model
-		file->ReadKeyword("reflectType"); file->ReadKeyword(":");
+		file.ReadKeyword("reflectType"); file.ReadKeyword(":");
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
-		int reflType = file->ReadInt(); //Discard Synrad diffuse
-		file->ReadKeyword("sticking"); file->ReadKeyword(":");
-		sh.sticking = 0; file->ReadDouble(); //Discard Synrad sticking
+		int reflType = file.ReadInt(); //Discard Synrad diffuse
+		file.ReadKeyword("sticking"); file.ReadKeyword(":");
+		sh.sticking = 0; file.ReadDouble(); //Discard Synrad sticking
 
 		if (reflType >= 2) { //Material reflection: update index from the material's name
-			file->ReadKeyword("materialName"); file->ReadKeyword(":"); file->ReadWord();
+			file.ReadKeyword("materialName"); file.ReadKeyword(":"); file.ReadWord();
 		}
-		file->ReadKeyword("doScattering"); file->ReadKeyword(":");
-		file->ReadInt();
-		file->ReadKeyword("rmsRoughness"); file->ReadKeyword(":");
-		file->ReadDouble();
-		file->ReadKeyword("autoCorrLength"); file->ReadKeyword(":");
-		file->ReadDouble();
-		file->ReadKeyword("opacity"); file->ReadKeyword(":");
-		sh.opacity = file->ReadDouble();
+		file.ReadKeyword("doScattering"); file.ReadKeyword(":");
+		file.ReadInt();
+		file.ReadKeyword("rmsRoughness"); file.ReadKeyword(":");
+		file.ReadDouble();
+		file.ReadKeyword("autoCorrLength"); file.ReadKeyword(":");
+		file.ReadDouble();
+		file.ReadKeyword("opacity"); file.ReadKeyword(":");
+		sh.opacity = file.ReadDouble();
 	}
 	else { //legacy reflection model
-		file->ReadKeyword("sticking"); file->ReadKeyword(":");
-		sh.sticking = 0; file->ReadDouble(); //Discard Synrad sticking
+		file.ReadKeyword("sticking"); file.ReadKeyword(":");
+		sh.sticking = 0; file.ReadDouble(); //Discard Synrad sticking
 		if (version >= 4) {
-			file->ReadKeyword("roughness"); file->ReadKeyword(":");
-			file->ReadDouble(); //roughness
+			file.ReadKeyword("roughness"); file.ReadKeyword(":");
+			file.ReadDouble(); //roughness
 		}
-		file->ReadKeyword("opacity"); file->ReadKeyword(":");
-		sh.opacity = file->ReadDouble();
-		file->ReadKeyword("reflectType"); file->ReadKeyword(":");
+		file.ReadKeyword("opacity"); file.ReadKeyword(":");
+		sh.opacity = file.ReadDouble();
+		file.ReadKeyword("reflectType"); file.ReadKeyword(":");
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
-		file->ReadInt(); //Discard Synrad diffuse
+		file.ReadInt(); //Discard Synrad diffuse
 	}
 
-	file->ReadKeyword("profileType"); file->ReadKeyword(":");
-	sh.profileType = 0; file->ReadInt(); //Discard Synrad profile
-	file->ReadKeyword("hasSpectrum"); file->ReadKeyword(":");
-	file->ReadInt();
-	file->ReadKeyword("superDest"); file->ReadKeyword(":");
-	sh.superDest = file->ReadInt();
-	file->ReadKeyword("superIdx"); file->ReadKeyword(":");
-	sh.superIdx = file->ReadInt();
-	file->ReadKeyword("is2sided"); file->ReadKeyword(":");
-	sh.is2sided = file->ReadInt();
-	file->ReadKeyword("mesh"); file->ReadKeyword(":");
-	hasMesh = false; file->ReadInt(); //Discard synrad texture
-	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidth_precise = 0.0; file->ReadDouble();
-	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeight_precise = 0.0; file->ReadDouble();
+	file.ReadKeyword("profileType"); file.ReadKeyword(":");
+	sh.profileType = 0; file.ReadInt(); //Discard Synrad profile
+	file.ReadKeyword("hasSpectrum"); file.ReadKeyword(":");
+	file.ReadInt();
+	file.ReadKeyword("superDest"); file.ReadKeyword(":");
+	sh.superDest = file.ReadInt();
+	file.ReadKeyword("superIdx"); file.ReadKeyword(":");
+	sh.superIdx = file.ReadInt();
+	file.ReadKeyword("is2sided"); file.ReadKeyword(":");
+	sh.is2sided = file.ReadInt();
+	file.ReadKeyword("mesh"); file.ReadKeyword(":");
+	hasMesh = false; file.ReadInt(); //Discard synrad texture
+	file.ReadKeyword("texDimX"); file.ReadKeyword(":");
+	sh.texWidth_precise = 0.0; file.ReadDouble();
+	file.ReadKeyword("texDimY"); file.ReadKeyword(":");
+	sh.texHeight_precise = 0.0; file.ReadDouble();
 	if (version < 3) {
-		file->ReadKeyword("countDes"); file->ReadKeyword(":");
-		file->ReadInt();
+		file.ReadKeyword("countDes"); file.ReadKeyword(":");
+		file.ReadInt();
 	}
-	file->ReadKeyword("countAbs"); file->ReadKeyword(":");
-	sh.countAbs = false; file->ReadInt();
-	file->ReadKeyword("countRefl"); file->ReadKeyword(":");
-	sh.countRefl = false; file->ReadInt();
-	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
-	sh.countTrans = false; file->ReadInt();
-	if (version >= 10) file->ReadKeyword("nbAbsEquiv");
-	else file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
+	file.ReadKeyword("countAbs"); file.ReadKeyword(":");
+	sh.countAbs = false; file.ReadInt();
+	file.ReadKeyword("countRefl"); file.ReadKeyword(":");
+	sh.countRefl = false; file.ReadInt();
+	file.ReadKeyword("countTrans"); file.ReadKeyword(":");
+	sh.countTrans = false; file.ReadInt();
+	if (version >= 10) file.ReadKeyword("nbAbsEquiv");
+	else file.ReadKeyword("nbAbs"); file.ReadKeyword(":");
 	facetHitCache.nbAbsEquiv = 0;
-	file->ReadSizeT();
+	file.ReadSizeT();
 	if (version < 3) {
-		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
+		file.ReadKeyword("nbDes"); file.ReadKeyword(":");
 		facetHitCache.nbDesorbed = 0;
-		file->ReadSizeT();
+		file.ReadSizeT();
 	}
-	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
-	file->ReadSizeT();
+	file.ReadKeyword("nbHit"); file.ReadKeyword(":");
+	file.ReadSizeT();
 	if (version >= 10) {
-		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
-		file->ReadSizeT();
+		file.ReadKeyword("nbHitEquiv"); file.ReadKeyword(":");
+		file.ReadSizeT();
 	}
 	facetHitCache.nbMCHit = 0; facetHitCache.nbHitEquiv = 0.0;
 	if (version >= 3) {
-		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
-		file->ReadDouble();
-		file->ReadKeyword("powerAbs"); file->ReadKeyword(":");
-		file->ReadDouble();
+		file.ReadKeyword("fluxAbs"); file.ReadKeyword(":");
+		file.ReadDouble();
+		file.ReadKeyword("powerAbs"); file.ReadKeyword(":");
+		file.ReadDouble();
 	}
-	file->ReadKeyword("countDirection"); file->ReadKeyword(":");
-	sh.countDirection = false; file->ReadInt();
-	file->ReadKeyword("textureVisible"); file->ReadKeyword(":");
-	textureVisible = file->ReadInt();
-	file->ReadKeyword("volumeVisible"); file->ReadKeyword(":");
-	volumeVisible = file->ReadInt();
-	file->ReadKeyword("teleportDest"); file->ReadKeyword(":");
-	sh.teleportDest = file->ReadInt();
+	file.ReadKeyword("countDirection"); file.ReadKeyword(":");
+	sh.countDirection = false; file.ReadInt();
+	file.ReadKeyword("textureVisible"); file.ReadKeyword(":");
+	textureVisible = file.ReadInt();
+	file.ReadKeyword("volumeVisible"); file.ReadKeyword(":");
+	volumeVisible = file.ReadInt();
+	file.ReadKeyword("teleportDest"); file.ReadKeyword(":");
+	sh.teleportDest = file.ReadInt();
 
 	UpdateFlags();
 
@@ -492,10 +492,10 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 	// Read facet parameters from TXT format
 
 	//Sticking or link target
-	sh.sticking = file->ReadDouble(); //sticking, or superdest id if opacity==0.0
+	sh.sticking = file.ReadDouble(); //sticking, or superdest id if opacity==0.0
 
 	//Opacity and 2-sidedness
-	double o = file->ReadDouble();
+	double o = file.ReadDouble();
 
 	// Convert opacity
 	sh.profileType = PROFILE_NONE;
@@ -531,17 +531,17 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 	}
 
 	//Area
-	/*wp.area =*/ file->ReadDouble(); //Unused in modern Molflow
+	/*wp.area =*/ file.ReadDouble(); //Unused in modern Molflow
 
 	//Counters
-	facetHitCache.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.nbDesorbed = (size_t)(file.ReadDouble() + 0.5);
+	facetHitCache.nbMCHit = (size_t)(file.ReadDouble() + 0.5);
 	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
-	facetHitCache.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.nbAbsEquiv = (double)(size_t)(file.ReadDouble() + 0.5);
 
 
 	//Desorption type
-	double des = file->ReadDouble();
+	double des = file.ReadDouble();
 	if (IsEqual(-1.0, des)) { //Not desorbing
 		sh.desorbType = DES_NONE;
 		sh.outgassing = 0.0;
@@ -553,13 +553,14 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 	else if (IsEqual(1.0, des)) {
 		sh.desorbType = DES_UNIFORM;
 		sh.outgassing = .1; //default
-	} else if (des>=2.0) {
+	}
+	else if (des >= 2.0) {
 		sh.desorbType = DES_COSINE_N; // cos^n
 		sh.desorbTypeN = des - 1.0;
 		sh.outgassing = .1; //default
 	}
 
-	int reflectType = (int)(file->ReadDouble() + 0.5);
+	int reflectType = (int)(file.ReadDouble() + 0.5);
 
 	// Convert reflectType
 	switch (reflectType) {
@@ -578,7 +579,7 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 		break;
 	}
 
-	file->ReadDouble(); // Unused
+	file.ReadDouble(); // Unused
 
 	UpdateFlags();
 
@@ -592,45 +593,45 @@ void InterfaceFacet::SaveTXT(FileWriter& file) {
 
 	//Sticking or link target
 	if (!sh.superDest) //Not a link, just write sticking
-		file->Write(sh.sticking, "\n");
+		file.Write(sh.sticking, "\n");
 	else { //old link format: opacity==0.0, sticking==destination id, starting from 1
-		file->Write((double)sh.superDest, "\n");
+		file.Write((double)sh.superDest, "\n");
 		sh.opacity = 0.0;
 	}
 
 	//Opacity and 2-sidedness
 	if (sh.is2sided)
-		file->Write(sh.opacity + 1.0, "\n"); //[1,2]
+		file.Write(sh.opacity + 1.0, "\n"); //[1,2]
 	else
-		file->Write(sh.opacity, "\n"); //[0,1]
+		file.Write(sh.opacity, "\n"); //[0,1]
 
 	//Area
-	file->Write(sh.area, "\n"); //Unused in modern Molflow
+	file.Write(sh.area, "\n"); //Unused in modern Molflow
 
 	//Counters
-	file->Write((double)facetHitCache.nbDesorbed, "\n"); //nbDes
-	file->Write(facetHitCache.nbHitEquiv, "\n"); //nbMCHit
-	file->Write(facetHitCache.nbAbsEquiv, "\n"); //nbAbsEquiv
+	file.Write((double)facetHitCache.nbDesorbed, "\n"); //nbDes
+	file.Write(facetHitCache.nbHitEquiv, "\n"); //nbMCHit
+	file.Write(facetHitCache.nbAbsEquiv, "\n"); //nbAbsEquiv
 
 	//Desorption type
 	if (sh.desorbType == DES_COSINE)
-		file->Write(0.0, "\n"); //Cosine
+		file.Write(0.0, "\n"); //Cosine
 	else if (sh.desorbType == DES_UNIFORM)
-		file->Write(1.0, "\n"); //Uniform
+		file.Write(1.0, "\n"); //Uniform
 	else if (sh.desorbType == DES_COSINE_N && sh.desorbTypeN >= 2.0)
-		file->Write(sh.desorbTypeN + 1.0);
-	else file->Write(-1.0, "\n"); //No desorption or not supported exponent (<2.0)
+		file.Write(sh.desorbTypeN + 1.0);
+	else file.Write(-1.0, "\n"); //No desorption or not supported exponent (<2.0)
 
 	if (sh.reflection.diffusePart > 0.99) {
-		file->Write((double)REFLECTION_DIFFUSE, "\n");
+		file.Write((double)REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write((double)REFLECTION_SPECULAR, "\n");
-	} 
+		file.Write((double)REFLECTION_SPECULAR, "\n");
+	}
 	else
-		file->Write((double)REFLECTION_UNIFORM, "\n");
+		file.Write((double)REFLECTION_UNIFORM, "\n");
 
-	file->Write(0.0, "\n"); // Unused
+	file.Write(0.0, "\n"); // Unused
 }
 
 /**
@@ -643,79 +644,79 @@ void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 	char tmp[256];
 
 	sprintf(tmp, "facet %d {\n", idx + 1);
-	file->Write(tmp);
-	file->Write("  nbIndex:"); file->Write(sh.nbIndex, "\n");
-	file->Write("  indices:\n");
+	file.Write(tmp);
+	file.Write("  nbIndex:"); file.Write(sh.nbIndex, "\n");
+	file.Write("  indices:\n");
 	for (int i = 0; i < sh.nbIndex; i++) {
-		file->Write("    ");
-		file->Write(indices[i] + 1, "\n");
+		file.Write("    ");
+		file.Write(indices[i] + 1, "\n");
 	}
-	//file->Write("\n");
-	file->Write("  sticking:"); file->Write(sh.sticking, "\n");
-	file->Write("  opacity:"); file->Write(sh.opacity, "\n");
-	file->Write("  desorbType:"); file->Write(sh.desorbType, "\n");
-	file->Write("  desorbTypeN:"); file->Write(sh.desorbTypeN, "\n");
-	file->Write("  reflectType:"); 
+	//file.Write("\n");
+	file.Write("  sticking:"); file.Write(sh.sticking, "\n");
+	file.Write("  opacity:"); file.Write(sh.opacity, "\n");
+	file.Write("  desorbType:"); file.Write(sh.desorbType, "\n");
+	file.Write("  desorbTypeN:"); file.Write(sh.desorbTypeN, "\n");
+	file.Write("  reflectType:");
 	//Convert to old reflection type
 	if (sh.reflection.diffusePart > 0.99) {
-		file->Write(REFLECTION_DIFFUSE, "\n");
+		file.Write(REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write(REFLECTION_SPECULAR, "\n");
+		file.Write(REFLECTION_SPECULAR, "\n");
 	}
 	else
-		file->Write(REFLECTION_UNIFORM, "\n");
-	
-	file->Write("  profileType:"); file->Write(sh.profileType, "\n");
+		file.Write(REFLECTION_UNIFORM, "\n");
 
-	file->Write("  superDest:"); file->Write(sh.superDest, "\n");
-	file->Write("  superIdx:"); file->Write(sh.superIdx, "\n");
-	file->Write("  is2sided:"); file->Write(sh.is2sided, "\n");
-	file->Write("  mesh:"); file->Write((!cellPropertiesIds.empty()), "\n");
+	file.Write("  profileType:"); file.Write(sh.profileType, "\n");
 
-	file->Write("  outgassing:"); file->Write(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
-	file->Write("  texDimX:"); file->Write(sh.texWidth_precise, "\n");
-	file->Write("  texDimY:"); file->Write(sh.texHeight_precise, "\n");
+	file.Write("  superDest:"); file.Write(sh.superDest, "\n");
+	file.Write("  superIdx:"); file.Write(sh.superIdx, "\n");
+	file.Write("  is2sided:"); file.Write(sh.is2sided, "\n");
+	file.Write("  mesh:"); file.Write((!cellPropertiesIds.empty()), "\n");
 
-	file->Write("  countDes:"); file->Write(sh.countDes, "\n");
-	file->Write("  countAbs:"); file->Write(sh.countAbs, "\n");
-	file->Write("  countRefl:"); file->Write(sh.countRefl, "\n");
-	file->Write("  countTrans:"); file->Write(sh.countTrans, "\n");
-	file->Write("  acMode:"); file->Write(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->Write((size_t)facetHitCache.nbAbsEquiv, "\n");
-	file->Write("  nbDes:"); file->Write(facetHitCache.nbDesorbed, "\n");
-	file->Write("  nbHit:"); file->Write((size_t)facetHitCache.nbMCHit, "\n");
+	file.Write("  outgassing:"); file.Write(sh.outgassing * 10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
+	file.Write("  texDimX:"); file.Write(sh.texWidth_precise, "\n");
+	file.Write("  texDimY:"); file.Write(sh.texHeight_precise, "\n");
+
+	file.Write("  countDes:"); file.Write(sh.countDes, "\n");
+	file.Write("  countAbs:"); file.Write(sh.countAbs, "\n");
+	file.Write("  countRefl:"); file.Write(sh.countRefl, "\n");
+	file.Write("  countTrans:"); file.Write(sh.countTrans, "\n");
+	file.Write("  acMode:"); file.Write(sh.countACD, "\n");
+	file.Write("  nbAbs:"); file.Write((size_t)facetHitCache.nbAbsEquiv, "\n");
+	file.Write("  nbDes:"); file.Write(facetHitCache.nbDesorbed, "\n");
+	file.Write("  nbHit:"); file.Write((size_t)facetHitCache.nbMCHit, "\n");
 
 	// Version 2
-	file->Write("  temperature:"); file->Write(sh.temperature, "\n");
-	file->Write("  countDirection:"); file->Write(sh.countDirection, "\n");
+	file.Write("  temperature:"); file.Write(sh.temperature, "\n");
+	file.Write("  countDirection:"); file.Write(sh.countDirection, "\n");
 
 	// Version 4
-	file->Write("  textureVisible:"); file->Write(textureVisible, "\n");
-	file->Write("  volumeVisible:"); file->Write(volumeVisible, "\n");
+	file.Write("  textureVisible:"); file.Write(textureVisible, "\n");
+	file.Write("  volumeVisible:"); file.Write(volumeVisible, "\n");
 
 	// Version 5
-	file->Write("  teleportDest:"); file->Write(sh.teleportDest, "\n");
+	file.Write("  teleportDest:"); file.Write(sh.teleportDest, "\n");
 
 	// Version 13
-	file->Write("  accomodationFactor:"); file->Write(sh.accomodationFactor, "\n");
+	file.Write("  accomodationFactor:"); file.Write(sh.accomodationFactor, "\n");
 
-	file->Write("}\n");
+	file.Write("}\n");
 }
 
 /**
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-size_t InterfaceFacet::GetGeometrySize()  { //for loader dataport
+size_t InterfaceFacet::GetGeometrySize() { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(size_t)) //indices
 		+ (sh.nbIndex * sizeof(Vector2d));
 
 	// Size of the 'element area' array passed to the geometry buffer
-	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
-	if (sh.useOutgassingFile ) s += sizeof(double)*ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
+	if (sh.isTextured) s += sizeof(double) * sh.texWidth * sh.texHeight; //incbuff
+	if (sh.useOutgassingFile) s += sizeof(double) * ogMap.outgassingMapWidth * ogMap.outgassingMapHeight;
 	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
@@ -726,13 +727,13 @@ size_t InterfaceFacet::GetGeometrySize()  { //for loader dataport
 * \param nbMoments amount of moments
 * \return calculated size of the facet hits
 */
-size_t InterfaceFacet::GetHitsSize(size_t nbMoments)  { //for hits dataport
+size_t InterfaceFacet::GetHitsSize(size_t nbMoments) { //for hits dataport
 
-	return   (1 + nbMoments)*(
+	return   (1 + nbMoments) * (
 		sizeof(FacetHitBuffer) +
-		+(sh.isTextured ? (sh.texWidth*sh.texHeight * sizeof(TextureCell)) : 0)
+		+(sh.isTextured ? (sh.texWidth * sh.texHeight * sizeof(TextureCell)) : 0)
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
-		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
+		+ (sh.countDirection ? (sh.texWidth * sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ sh.facetHistogramParams.GetDataSize()
 		) + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 
@@ -743,15 +744,15 @@ size_t InterfaceFacet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSize(size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSize(size_t nbMoments) {
 	//Values
-	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+	size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
 	size_t sizePerMeshElement = sizeof(CellProperties);
 	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-	return sh.texWidth*sh.texHeight*sizePerCell + meshvectorsize*sizePerMeshElement;
+	return sh.texWidth * sh.texHeight * sizePerCell + meshvectorsize * sizePerMeshElement;
 }
 
 /**
@@ -759,16 +760,16 @@ size_t InterfaceFacet::GetTexRamSize(size_t nbMoments)  {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments) {
 
-    //Values
-    size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-    if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
-    //Mesh
-    sizePerCell += sizeof(int); //CellPropertiesIds
-    size_t sizePerMeshElement = sizeof(CellProperties);
-    sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-    return width*height*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+	//Values
+	size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
+	//Mesh
+	sizePerCell += sizeof(int); //CellPropertiesIds
+	size_t sizePerMeshElement = sizeof(CellProperties);
+	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+	return width * height * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 
 }
 
@@ -781,23 +782,23 @@ size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool us
 size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
-	double width = nU*ratio;
-	double height = nV*ratio;
+	double width = nU * ratio;
+	double height = nV * ratio;
 
-	bool dimOK = (width*height > 0.0000001);
+	bool dimOK = (width * height > 0.0000001);
 
 	if (dimOK) {
 		int iWidth = (int)ceil(width);
 		int iHeight = (int)ceil(height);
 
 		//Values
-		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-		if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
 		size_t sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-		return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
 	else {
 		return 0;
@@ -811,30 +812,30 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
-    double nU = sh.U.Norme();
-    double nV = sh.V.Norme();
-    double width = nU*ratioU;
-    double height = nV*ratioV;
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments) {
+	double nU = sh.U.Norme();
+	double nV = sh.V.Norme();
+	double width = nU * ratioU;
+	double height = nV * ratioV;
 
-    bool dimOK = (width*height > 0.0000001);
+	bool dimOK = (width * height > 0.0000001);
 
-    if (dimOK) {
-        int iWidth = (int)ceil(width);
-        int iHeight = (int)ceil(height);
+	if (dimOK) {
+		int iWidth = (int)ceil(width);
+		int iHeight = (int)ceil(height);
 
-        //Values
-        size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-        if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
-        //Mesh
-        sizePerCell += sizeof(int); //CellPropertiesIds
-        size_t sizePerMeshElement = sizeof(CellProperties);
-        sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-        return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
-    }
-    else {
-        return 0;
-    }
+		//Values
+		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
+		//Mesh
+		sizePerCell += sizeof(int); //CellPropertiesIds
+		size_t sizePerMeshElement = sizeof(CellProperties);
+		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+	}
+	else {
+		return 0;
+	}
 }
 
 /**
@@ -846,7 +847,7 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_
 * \param scaleF scaling factor
 * \return smoothing factor
 */
-double InterfaceFacet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
+double InterfaceFacet::GetSmooth(int i, int j, TextureCell* texBuffer, int textureMode, double scaleF) {
 
 	double W = 0.0;
 	double sum = 0.0;
@@ -881,19 +882,19 @@ double InterfaceFacet::GetSmooth(int i, int j, TextureCell *texBuffer, int textu
 * \param sum pointer to an existing sum counter
 * \param totalWeight pointer to an existing counter for the total weight
 */
-void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight, TextureCell *texBuffer, const int textureMode, const double scaleF, double *sum, double *totalWeight) {
-												
-	if( i>=0 && i<sh.texWidth && j>=0 && j<sh.texHeight ) {								
-		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
-		if( GetMeshArea(add)>0.0 ) {											
-			if (textureMode==0)													
-				*sum += weight*(texBuffer[add].countEquiv*scaleF);					
-			else if (textureMode==1)											
-				*sum += weight*(texBuffer[add].sum_1_per_ort_velocity*scaleF);   
-			else if (textureMode==2)											
-				*sum += weight*(texBuffer[add].sum_v_ort_per_area*scaleF);       
-			*totalWeight+=weight;															
-		}																		
+void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight, TextureCell* texBuffer, const int textureMode, const double scaleF, double* sum, double* totalWeight) {
+
+	if (i >= 0 && i < sh.texWidth && j >= 0 && j < sh.texHeight) {
+		size_t add = (size_t)i + (size_t)j * sh.texWidth;
+		if (GetMeshArea(add) > 0.0) {
+			if (textureMode == 0)
+				*sum += weight * (texBuffer[add].countEquiv * scaleF);
+			else if (textureMode == 1)
+				*sum += weight * (texBuffer[add].sum_1_per_ort_velocity * scaleF);
+			else if (textureMode == 2)
+				*sum += weight * (texBuffer[add].sum_v_ort_per_area * scaleF);
+			*totalWeight += weight;
+		}
 	}
 }
 
@@ -908,10 +909,10 @@ void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight,
 * \param max max value for color scaling
 * \param useColorMap if a 16bit high color map should be used (rainbow)
 */
-void InterfaceFacet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureMode, double min, double max, bool useColorMap,
-                                  double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
-	size_t size = sh.texWidth*sh.texHeight;
-	size_t tSize = texDimW*texDimH;
+void InterfaceFacet::BuildTexture(const std::vector<TextureCell>& texBuffer, int textureMode, double min, double max, bool useColorMap,
+	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
+	size_t size = sh.texWidth * sh.texHeight;
+	size_t tSize = texDimW * texDimH;
 	if (size == 0 || tSize == 0) return;
 
 	double scaleFactor = 1.0;
@@ -919,127 +920,127 @@ void InterfaceFacet::BuildTexture(const std::vector<TextureCell> &texBuffer, int
 
 	glBindTexture(GL_TEXTURE_2D, glTex);
 
-		
-		// 16 Bit rainbow colormap
-		
 
-		// Scale
-		if (min < max) {
+	// 16 Bit rainbow colormap
+
+
+	// Scale
+	if (min < max) {
+		if (doLog) {
+			if (min < 1e-20) min = 1e-20;
+			scaleFactor = (useColorMap ? 65534.0 : 255.0) / (log10(max) - log10(min)); // -1 for saturation color
+		}
+		else {
+
+			scaleFactor = (useColorMap ? 65534.0 : 255.0) / (max - min); // -1 for saturation color
+		}
+	}
+	else {
+		doLog = false;
+		min = 0;
+	}
+
+	unsigned char* buff8;
+	int* buff32;
+
+	if (useColorMap) {
+		buff32 = (int*)calloc(tSize, sizeof(int)); //Color
+		if (!buff32) throw Error("Cannot allocate memory for texture buffer");
+	}
+	else {
+		buff8 = (unsigned char*)calloc(tSize, sizeof(unsigned char)); //Greyscale
+		if (!buff8) throw Error("Cannot allocate memory for texture buffer");
+	}
+
+	for (size_t j = 0; j < sh.texHeight; j++) {
+		for (size_t i = 0; i < sh.texWidth; i++) {
+			size_t idx = i + j * sh.texWidth;
+			double physicalValue;
+			switch (textureMode) {
+			case 0: //pressure
+				physicalValue = texBuffer[idx].sum_v_ort_per_area * dCoeff1;
+				break;
+			case 1: //impingement rate
+				physicalValue = texBuffer[idx].countEquiv / this->GetMeshArea(idx, true) * dCoeff2;
+				break;
+			case 2: //particle density
+				physicalValue = DensityCorrection() * texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true) * dCoeff3;
+				break;
+			}
 			if (doLog) {
-				if (min < 1e-20) min = 1e-20;
-				scaleFactor = (useColorMap ? 65534.0 : 255.0) / (log10(max) - log10(min)); // -1 for saturation color
+				val = (int)((log10(physicalValue) - log10(min)) * scaleFactor + 0.5);
 			}
 			else {
 
-				scaleFactor = (useColorMap ? 65534.0 : 255.0) / (max - min); // -1 for saturation color
+				val = (int)((physicalValue - min) * scaleFactor + 0.5);
+			}
+			Saturate(val, 0, useColorMap ? 65535 : 255);
+			if (useColorMap) {
+				buff32[(i + 1) + (j + 1) * texDimW] = colorMap[val];
+				if (IsEqual(texBuffer[idx].countEquiv, 0.0)) buff32[(i + 1) + (j + 1) * texDimW] = (unsigned long)(65535 + 256 + 1); //show unset value as white
+			}
+			else {
+				buff8[(i + 1) + (j + 1) * texDimW] = val;
 			}
 		}
-		else {
-			doLog = false;
-			min = 0;
-		}
+	}
 
-		unsigned char *buff8;
-		int *buff32;
+	/*
+	// Perform edge smoothing (only with mesh)
+	if( mesh ) {
+	for(int j=-1;j<=wp.texHeight;j++) {
+	for(int i=-1;i<=wp.texWidth;i++) {
+	bool doSmooth = (i<0) || (i>=wp.texWidth) ||
+	(j<0) || (j>=wp.texHeight) ||
+	mesh[i+j*wp.texWidth].area==0.0f;
+	if( doSmooth ) {
+	if( doLog ) {
+	val = (int)((log10(GetSmooth(i,j,texBuffer,dCoeff))-log10(min))*scaleFactor+0.5f);
+	} else {
+	val = (int)((GetSmooth(i,j,texBuffer,dCoeff)-min)*scaleFactor+0.5f);
+	}
+	Saturate(val,0,65535);
+	buff32[(i+1) + (j+1)*texDimW] = colorMap[val];
+	}
+	}
+	}
+	}
+	*/
 
-		if (useColorMap) {
-			buff32 = (int *)calloc(tSize, sizeof(int)); //Color
-			if (!buff32) throw Error("Cannot allocate memory for texture buffer");
-		}
-		else {
-			buff8 = (unsigned char *)calloc(tSize, sizeof(unsigned char)); //Greyscale
-			if (!buff8) throw Error("Cannot allocate memory for texture buffer");
-		}
-
-		for (size_t j = 0; j < sh.texHeight; j++) {
-			for (size_t i = 0; i < sh.texWidth; i++) {
-				size_t idx = i + j*sh.texWidth;
-				double physicalValue;
-				switch (textureMode) {
-				case 0: //pressure
-					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
-					break;
-				case 1: //impingement rate
-					physicalValue = texBuffer[idx].countEquiv / this->GetMeshArea(idx, true)*dCoeff2;
-					break;
-				case 2: //particle density
-					physicalValue = DensityCorrection() * texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
-					break;
-				}
-				if (doLog) {
-					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5);
-				}
-				else {
-
-					val = (int)((physicalValue - min)*scaleFactor + 0.5);
-				}
-				Saturate(val, 0, useColorMap ? 65535 : 255);
-				if (useColorMap) {
-					buff32[(i + 1) + (j + 1)*texDimW] = colorMap[val];
-					if (IsEqual(texBuffer[idx].countEquiv, 0.0)) buff32[(i + 1) + (j + 1)*texDimW] = (unsigned long)(65535 + 256 + 1); //show unset value as white
-				}
-				else {
-					buff8[(i + 1) + (j + 1)*texDimW] = val;
-				}
-			}
-		}
-
-		/*
-		// Perform edge smoothing (only with mesh)
-		if( mesh ) {
-		for(int j=-1;j<=wp.texHeight;j++) {
-		for(int i=-1;i<=wp.texWidth;i++) {
-		bool doSmooth = (i<0) || (i>=wp.texWidth) ||
-		(j<0) || (j>=wp.texHeight) ||
-		mesh[i+j*wp.texWidth].area==0.0f;
-		if( doSmooth ) {
-		if( doLog ) {
-		val = (int)((log10(GetSmooth(i,j,texBuffer,dCoeff))-log10(min))*scaleFactor+0.5f);
-		} else {
-		val = (int)((GetSmooth(i,j,texBuffer,dCoeff)-min)*scaleFactor+0.5f);
-		}
-		Saturate(val,0,65535);
-		buff32[(i+1) + (j+1)*texDimW] = colorMap[val];
-		}
-		}
-		}
-		}
-		*/
-
-		GLint width, height, format;
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-		if (format == (useColorMap ? GL_RGBA : GL_LUMINANCE) && width == texDimW && height == texDimH) {
-			//Update texture
-			glTexSubImage2D(
-				GL_TEXTURE_2D,       // Type
-				0,                   // No Mipmap
-				0,					// X offset
-				0,					// Y offset
-				(int)texDimW,             // Width
-				(int)texDimH,             // Height
-				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA
-				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
-			);
-		}
-		else {
-			//Rebuild texture
-			glTexImage2D(
-				GL_TEXTURE_2D,       // Type
-				0,                   // No Mipmap
-				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
-				(int)texDimW,             // Width
-				(int)texDimH,             // Height
-				0,                   // Border
-				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
-				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
-			);
-		}
-		free(useColorMap ? (void*)buff32 : (void*)buff8);
-		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
+	GLint width, height, format;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+	if (format == (useColorMap ? GL_RGBA : GL_LUMINANCE) && width == texDimW && height == texDimH) {
+		//Update texture
+		glTexSubImage2D(
+			GL_TEXTURE_2D,       // Type
+			0,                   // No Mipmap
+			0,					// X offset
+			0,					// Y offset
+			(int)texDimW,             // Width
+			(int)texDimH,             // Height
+			(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA
+			GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+			(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
+		);
+	}
+	else {
+		//Rebuild texture
+		glTexImage2D(
+			GL_TEXTURE_2D,       // Type
+			0,                   // No Mipmap
+			(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
+			(int)texDimW,             // Width
+			(int)texDimH,             // Height
+			0,                   // Border
+			(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
+			GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+			(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
+		);
+	}
+	free(useColorMap ? (void*)buff32 : (void*)buff8);
+	GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 
 }
 
@@ -1183,7 +1184,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		outgText << '\n'; //better readability in file
 		for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
 			for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
-				outgText << ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix] << '\t';
+				outgText << ogMap.outgassingMap[iy * ogMap.outgassingMapWidth + ix] << '\t';
 			}
 			outgText << '\n';
 		}
@@ -1202,7 +1203,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		angleText << '\n'; //better readability in file
 		for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 			for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
-				angleText << angleMapCache[iy*sh.anglemapParams.phiWidth + ix] << '\t';
+				angleText << angleMapCache[iy * sh.anglemapParams.phiWidth + ix] << '\t';
 			}
 			angleText << '\n';
 		}
@@ -1213,21 +1214,21 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	xml_node histNode = f.append_child("Histograms");
 	if (sh.facetHistogramParams.recordBounce) {
 		xml_node nbBounceNode = histNode.append_child("Bounces");
-		nbBounceNode.append_attribute("binSize")=sh.facetHistogramParams.nbBounceBinsize;
-		nbBounceNode.append_attribute("max")=sh.facetHistogramParams.nbBounceMax;
+		nbBounceNode.append_attribute("binSize") = sh.facetHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max") = sh.facetHistogramParams.nbBounceMax;
 	}
 	if (sh.facetHistogramParams.recordDistance) {
 		xml_node distanceNode = histNode.append_child("Distance");
-		distanceNode.append_attribute("binSize")=sh.facetHistogramParams.distanceBinsize;
-		distanceNode.append_attribute("max")=sh.facetHistogramParams.distanceMax;
+		distanceNode.append_attribute("binSize") = sh.facetHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max") = sh.facetHistogramParams.distanceMax;
 	}
-	#ifdef MOLFLOW
+#ifdef MOLFLOW
 	if (sh.facetHistogramParams.recordTime) {
 		xml_node timeNode = histNode.append_child("Time");
-		timeNode.append_attribute("binSize")=sh.facetHistogramParams.timeBinsize;
-		timeNode.append_attribute("max")=sh.facetHistogramParams.timeMax;
+		timeNode.append_attribute("binSize") = sh.facetHistogramParams.timeBinsize;
+		timeNode.append_attribute("max") = sh.facetHistogramParams.timeMax;
 	}
-	#endif
+#endif
 }
 
 
@@ -1257,9 +1258,9 @@ std::string InterfaceFacet::GetAngleMap(size_t formatId)
 	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
 		//First column: theta label (bin midpoint)
 		if (row < sh.anglemapParams.thetaLowerRes)
-			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit;
+			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes * sh.anglemapParams.thetaLimit;
 		else
-			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit);
+			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row - sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes * (PI / 2.0 - sh.anglemapParams.thetaLimit);
 		//Value
 		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
 			result << separator << angleMapCache[row * sh.anglemapParams.phiWidth + col];
@@ -1280,7 +1281,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 
 	if (table[0][0] == "" || beginsWith(table[0][0], "Theta")) { //asume there is a header
 		//looking at header values, try to determine theta resolution and limit
-		phiWidth = table[0].size()-1; //row width minus first header column
+		phiWidth = table[0].size() - 1; //row width minus first header column
 		size_t spacingTypes = 1;
 		double currentSpacing;
 		double previousVal;
@@ -1290,25 +1291,25 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				val = std::stod(table[i][0], &sz); //convert to double
 			}
 			catch (...) {
-					std::stringstream err;
-					err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
-					throw Error(err.str().c_str());
+				std::stringstream err;
+				err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
+				throw Error(err.str().c_str());
 			}
 			if (sz != table[i][0].size()) {
 				std::stringstream err;
-				err << "Can't convert row " << i+1 << " first cell to a double\nCell content: " << table[i][0];
+				err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
 				throw Error(err.str().c_str());
 			}
-			if (i == 1) currentSpacing = val*2.0;
+			if (i == 1) currentSpacing = val * 2.0;
 			else if (!IsEqual(currentSpacing, val - previousVal, 1E-3)) {
 				spacingTypes++;
 				if (spacingTypes > 2) {
 					std::stringstream err;
-					err << "Row  " << i+1 << ": more than two types of theta difference\nCell content: " << table[i][0];
+					err << "Row  " << i + 1 << ": more than two types of theta difference\nCell content: " << table[i][0];
 					throw Error(err.str().c_str());
 				}
 				//Just switched to next range
-				thetaLowerRes = i-1; //subtract header
+				thetaLowerRes = i - 1; //subtract header
 				thetaLimit = ((double)(i - 1)) * currentSpacing;
 				currentSpacing = 2.0 * (val - thetaLimit);
 			}
@@ -1328,8 +1329,8 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				thetaHigherRes = 0;
 			}
 			else { //no lower values then fills from thetaLimit to PI/2
-				currentSpacing = 2.0*(PI / 2 - previousVal);
-				thetaLimit = PI / 2 - (table.size() - 1)*currentSpacing;
+				currentSpacing = 2.0 * (PI / 2 - previousVal);
+				thetaLimit = PI / 2 - (table.size() - 1) * currentSpacing;
 				thetaLowerRes = 0;
 				thetaHigherRes = table.size() - 1;
 			}
@@ -1338,30 +1339,30 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 
 		//Fill table
 
-        //Initialize angle map and Set values to zero
-        try {
-            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes),0);
-        }
-        catch(...) {
-            std::stringstream err;
-            err << "Not enough memory for incident angle map on facet ";
-            throw Error(err.str().c_str());
-        }
+		//Initialize angle map and Set values to zero
+		try {
+			angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
+		}
+		catch (...) {
+			std::stringstream err;
+			err << "Not enough memory for incident angle map on facet ";
+			throw Error(err.str().c_str());
+		}
 
 		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
-					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy+1][ix+1], &cellSize); //convert to double
+					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy + 1][ix + 1], &cellSize); //convert to double
 				}
 				catch (...) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str().c_str());
 				}
-				if (cellSize != table[iy+1][ix+1].size()) {
+				if (cellSize != table[iy + 1][ix + 1].size()) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1371,24 +1372,24 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 		thetaLowerRes = table.size();
 		thetaHigherRes = 0;
 		phiWidth = table[0].size(); //row width
-		thetaLimit = PI/2.0;
+		thetaLimit = PI / 2.0;
 
 
-        //Fill table
-        try {
-            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
-        }
-        catch(...) {
-            std::stringstream err;
-            err << "Not enough memory for incident angle map on facet ";
-            throw Error(err.str().c_str());
-        }
+		//Fill table
+		try {
+			angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
+		}
+		catch (...) {
+			std::stringstream err;
+			err << "Not enough memory for incident angle map on facet ";
+			throw Error(err.str().c_str());
+		}
 
 		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
-					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
+					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
 				}
 				catch (...) {
 					std::stringstream err;
@@ -1397,7 +1398,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				}
 				if (cellSize != table[iy][ix].size()) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy+1 << " col " << ix+1 << " to an integer\nCell content: " << table[iy][ix];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1438,55 +1439,55 @@ double InterfaceFacet::DensityCorrection() {
 */
 void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
-		//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
-		//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
-        size_t mapSize = sh.anglemapParams.GetMapSize();
-        std::vector<size_t> angleMapVector(mapSize);
-        memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
-        std::vector<double> textIncVector;
+	//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
+	//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
+	size_t mapSize = sh.anglemapParams.GetMapSize();
+	std::vector<size_t> angleMapVector(mapSize);
+	memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
+	std::vector<double> textIncVector;
 
-		// Add surface elements area (reciprocal)
-		if (sh.isTextured) {
-			textIncVector.resize(sh.texHeight*sh.texWidth);
-			if (!cellPropertiesIds.empty()) {
-				size_t add = 0;
-				for (size_t j = 0; j < sh.texHeight; j++) {
-					for (size_t i = 0; i < sh.texWidth; i++) {
-						double area = GetMeshArea(add, true);
+	// Add surface elements area (reciprocal)
+	if (sh.isTextured) {
+		textIncVector.resize(sh.texHeight * sh.texWidth);
+		if (!cellPropertiesIds.empty()) {
+			size_t add = 0;
+			for (size_t j = 0; j < sh.texHeight; j++) {
+				for (size_t i = 0; i < sh.texWidth; i++) {
+					double area = GetMeshArea(add, true);
 
-						if (area > 0.0) {
-							// Use the sign bit to store isFull flag
-							textIncVector[add] = 1.0 / area;
-						}
-						else {
-							textIncVector[add] = 0.0;
-						}
-						add++;
+					if (area > 0.0) {
+						// Use the sign bit to store isFull flag
+						textIncVector[add] = 1.0 / area;
 					}
-				}
-			}
-			else {
-				const double area = (sh.texWidth_precise * sh.texHeight_precise)/(sh.U.Norme() * sh.V.Norme());
-                const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
-				size_t add = 0;
-				for (int j = 0; j < sh.texHeight; j++) {
-					for (int i = 0; i < sh.texWidth; i++) {
-                        textIncVector[add] = incrementVal;
-                        ++add;
+					else {
+						textIncVector[add] = 0.0;
 					}
+					add++;
 				}
 			}
 		}
+		else {
+			const double area = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
+			const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
+			size_t add = 0;
+			for (int j = 0; j < sh.texHeight; j++) {
+				for (int i = 0; i < sh.texWidth; i++) {
+					textIncVector[add] = incrementVal;
+					++add;
+				}
+			}
+		}
+	}
 
-		outputarchive(
-			CEREAL_NVP(sh), //Contains anglemapParams
-			CEREAL_NVP(indices),
-			CEREAL_NVP(vertices2)
+	outputarchive(
+		CEREAL_NVP(sh), //Contains anglemapParams
+		CEREAL_NVP(indices),
+		CEREAL_NVP(vertices2)
 #if defined(MOLFLOW)
-                , CEREAL_NVP(ogMap.outgassingMap)
-                , CEREAL_NVP(angleMapVector)
-                , CEREAL_NVP(textIncVector)
+		, CEREAL_NVP(ogMap.outgassingMap)
+		, CEREAL_NVP(angleMapVector)
+		, CEREAL_NVP(textIncVector)
 #endif
-		);
-	
+	);
+
 }

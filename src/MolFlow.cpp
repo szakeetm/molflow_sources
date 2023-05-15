@@ -141,7 +141,7 @@ Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number),
 )";
 int formulaSyntaxHeight = 500;
 
-MolFlow *mApp;
+MolFlow* mApp;
 
 //Menu elements, Molflow specific:
 //#define MENU_FILE_IMPORTDES_DES 140
@@ -195,23 +195,23 @@ int main(int argc, char* argv[])
 #endif
 
 	if (!mApp->Create(1024, 800, false)) {
-		char *logs = GLToolkit::GetLogs();
+		char* logs = GLToolkit::GetLogs();
 #ifdef _WIN32
 		if (logs) MessageBox(nullptr, logs, "Molflow [Fatal error]", MB_OK);
 #else
 		if (logs) {
 			Log::console_error("Molflow [Fatal error]\n");
-            Log::console_error("{}", logs);
+			Log::console_error("{}", logs);
 		}
 #endif
 		SAFE_FREE(logs);
 		delete mApp;
 		return -1;
-    }
+	}
 	try {
 		mApp->Run();
 	}
-	catch(const std::exception &e) {
+	catch (const std::exception& e) {
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -233,22 +233,22 @@ MolFlow::MolFlow()
 	formulaEditor = nullptr;
 	globalSettings = nullptr;
 	profilePlotter = nullptr;
-    texturePlotter = nullptr;
+	texturePlotter = nullptr;
 
 	//Molflow only:
 	movement = nullptr;
 	measureForces = nullptr;
 	timewisePlotter = nullptr;
 	pressureEvolution = nullptr;
-    outgassingMapWindow = nullptr;
+	outgassingMapWindow = nullptr;
 	momentsEditor = nullptr;
 	parameterEditor = nullptr;
 	importDesorption = nullptr;
 	timeSettings = nullptr;
 
 	useOldXMLFormat = false;
-	FormulaEvaluator* eval = new FormulaEvaluator_MF(&worker,(MolflowGeometry*)worker.GetGeometry(),&selections);
-    formula_ptr = std::make_shared<Formulas>(eval);
+	FormulaEvaluator* eval = new FormulaEvaluator_MF(&worker, (MolflowGeometry*)worker.GetGeometry(), &selections);
+	formula_ptr = std::make_shared<Formulas>(eval);
 }
 
 // Name: OneTimeSceneInit()
@@ -288,7 +288,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Velocity vector (m/s)", MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD);
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("# of velocity vectors", MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD);
 
-	menu->GetSubMenu("File")->Add("Import desorption from SYN file",MENU_FILE_IMPORTDES_SYN);
+	menu->GetSubMenu("File")->Add("Import desorption from SYN file", MENU_FILE_IMPORTDES_SYN);
 	//menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("SYN file", );
 	//menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("DES file (deprecated)", MENU_FILE_IMPORTDES_DES);
 
@@ -335,10 +335,10 @@ int MolFlow::OneTimeSceneInit()
 	/*globalSettingsBtn = new GLButton(0, "<< Sim");
 	simuPanel->Add(globalSettingsBtn);
 */
-	/*
-	statusSimu = new GLButton(0,"...");
-	simuPanel->Add(statusSimu);
-	*/
+/*
+statusSimu = new GLButton(0,"...");
+simuPanel->Add(statusSimu);
+*/
 
 	inputPanel = new GLTitledPanel("Particles in");
 	facetPanel->Add(inputPanel);
@@ -394,7 +394,7 @@ int MolFlow::OneTimeSceneInit()
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetProfileCombo = new GLCombo(0);
-	size_t nbRecModes=(size_t)ProfileRecordModes::NUMITEMS;
+	size_t nbRecModes = (size_t)ProfileRecordModes::NUMITEMS;
 	facetProfileCombo->SetSize(nbRecModes);
 	for (size_t i = 0; i < nbRecModes; i++) {
 		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first.c_str()); //long description
@@ -417,9 +417,9 @@ int MolFlow::OneTimeSceneInit()
 
 	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-    Parameter::LoadParameterCatalog(worker.parameters);
+	Parameter::LoadParameterCatalog(worker.parameters);
 	OneTimeSceneInit_shared_post();
-	
+
 	return GL_OK;
 }
 
@@ -445,7 +445,7 @@ void MolFlow::PlaceComponents() {
 
 	togglePanel->SetCompBounds(showVolume, 5, 64, 60, 18);
 	togglePanel->SetCompBounds(showTexture, 70, 64, 60, 18);
-    togglePanel->SetCompBounds(showFacetId, 135, 64, 60, 18);
+	togglePanel->SetCompBounds(showFacetId, 135, 64, 60, 18);
 
 	togglePanel->SetCompBounds(viewerMoreButton, 5, 86, 55, 18);
 	togglePanel->SetCompBounds(showIndex, 70, 86, 60, 18);
@@ -532,8 +532,8 @@ void MolFlow::PlaceComponents() {
 
 	sy += (simuPanel->GetHeight() + 5);
 
-	
-	int lg = m_screenHeight -23 /*- (nbFormula * 25)*/;
+
+	int lg = m_screenHeight - 23 /*- (nbFormula * 25)*/;
 
 	facetList->SetBounds(sx, sy, 202, lg - sy);
 
@@ -583,7 +583,7 @@ void MolFlow::ClearFacetParams() {
 
 void MolFlow::ApplyFacetParams() {
 
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	size_t nbFacet = geom->GetNbFacet();
 
 	// Sticking
@@ -591,7 +591,7 @@ void MolFlow::ApplyFacetParams() {
 	bool stickingNotNumber;
 	bool doSticking = false;
 	if (facetSticking->GetNumber(&sticking)) {
-		if (sticking<0.0 || sticking>1.0) {
+		if (sticking < 0.0 || sticking>1.0) {
 			GLMessageBox::Display("Sticking must be in the range [0,1]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
@@ -614,7 +614,7 @@ void MolFlow::ApplyFacetParams() {
 	bool doOpacity = false;
 	bool opacityNotNumber;
 	if (facetOpacity->GetNumber(&opacity)) {
-		if (opacity<0.0 || opacity>1.0) {
+		if (opacity < 0.0 || opacity>1.0) {
 			GLMessageBox::Display("Opacity must be in the range [0,1]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
@@ -676,7 +676,7 @@ void MolFlow::ApplyFacetParams() {
 	bool doFlowA = false;
 	//Calculate outgassing
 
-	if (facetFIAreaLabel->GetState() && facetFlowArea->GetText()!= "..."
+	if (facetFIAreaLabel->GetState() && facetFlowArea->GetText() != "..."
 		&& facetDesType->GetSelectedIndex() != 0 && facetDesType->GetSelectedValue() != "..." && facetFlowArea->IsEditable()) { //We want outgassing per area
 		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if (flowA <= 0.0) {
@@ -720,12 +720,12 @@ void MolFlow::ApplyFacetParams() {
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
-    if(desorbType == DES_ANGLEMAP && facetAdvParams->IsAngleMapRecording()){
-        char errMsg[512];
-        sprintf(errMsg, "Angle map can't be used for DESORPTION and RECORDING\n");
-        GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-        return;
-    }
+	if (desorbType == DES_ANGLEMAP && facetAdvParams->IsAngleMapRecording()) {
+		char errMsg[512];
+		sprintf(errMsg, "Angle map can't be used for DESORPTION and RECORDING\n");
+		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
 
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
@@ -735,58 +735,58 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	if (!AskToReset()) return;
-	
+
 	changedSinceSave = true;
 
 	// Update facets (local)
 	for (int i = 0; i < nbFacet; i++) {
-		InterfaceFacet *f = geom->GetFacet(i);
-		if (f.selected) {
+		InterfaceFacet* f = geom->GetFacet(i);
+		if (f->selected) {
 			if (doSticking) {
 				if (!stickingNotNumber) {
-					f.sh.sticking = sticking;
-					f.userSticking = "";
+					f->sh.sticking = sticking;
+					f->userSticking = "";
 				}
 				else {
-					f.userSticking = facetSticking->GetText();
+					f->userSticking = facetSticking->GetText();
 				}
 			}
 
 			if (doOpacity) {
 				if (!opacityNotNumber) {
-					f.sh.opacity = opacity;
-					f.userOpacity = "";
+					f->sh.opacity = opacity;
+					f->userOpacity = "";
 				}
 				else {
-					f.userOpacity = facetOpacity->GetText();
+					f->userOpacity = facetOpacity->GetText();
 				}
 			}
-			if (doTemperature) f.sh.temperature = temperature;
+			if (doTemperature) f->sh.temperature = temperature;
 			if (doFlow) {
 				if (!outgassingNotNumber) {
-					f.sh.outgassing = outgassing*MBARLS_TO_PAM3S; //0.1: mbar*l/s -> Pa*m3/s
-					f.userOutgassing = "";
+					f->sh.outgassing = outgassing * MBARLS_TO_PAM3S; //0.1: mbar*l/s -> Pa*m3/s
+					f->userOutgassing = "";
 				}
 				else {
-					f.userOutgassing = facetFlow->GetText();
+					f->userOutgassing = facetFlow->GetText();
 				}
 			}
-			if (doFlowA/* && !useMapA*/) f.sh.outgassing = flowA*f.GetArea()*MBARLS_TO_PAM3S;
+			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA * f->GetArea() * MBARLS_TO_PAM3S;
 			if (desorbType >= 0) {
-				if (desorbType == 0) f.sh.outgassing = 0.0;
-				if (desorbType != 3) f.sh.desorbTypeN = 0.0;
-				f.sh.desorbType = desorbType;
-				if (doDesorbTypeN) f.sh.desorbTypeN = desorbTypeN;
+				if (desorbType == 0) f->sh.outgassing = 0.0;
+				if (desorbType != 3) f->sh.desorbTypeN = 0.0;
+				f->sh.desorbType = desorbType;
+				if (doDesorbTypeN) f->sh.desorbTypeN = desorbTypeN;
 			}
 
 			if (rType >= 0) {
-				f.sh.profileType = rType;
-				//f.wp.isProfile = (rType!=PROFILE_NONE); //included below by f.UpdateFlags();
+				f->sh.profileType = rType;
+				//f->wp.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
 			}
-			if (is2Sided >= 0) f.sh.is2sided = is2Sided;
+			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
-			f.sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f.sh.temperature / 0.001 / worker.model->wp.gasMass);
-			f.UpdateFlags();
+			f->sh.maxSpeed = 4.0 * sqrt(2.0 * 8.31 * f->sh.temperature / 0.001 / worker.model->wp.gasMass);
+			f->UpdateFlags();
 		}
 	}
 
@@ -809,17 +809,17 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	char tmp[256];
 
 	// Update params
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	// Get list of selected facet
 	std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
 	size_t nbSel = selectedFacets.size();
 
 	if (nbSel > 0) {
 
-		InterfaceFacet *f0;
-		InterfaceFacet *f;
+		InterfaceFacet* f0;
+		InterfaceFacet* f;
 
-		
+
 
 		f0 = geom->GetFacet(selectedFacets[0]);
 
@@ -836,18 +836,18 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		bool recordE = true;
 		bool is2sidedE = true;
 
-		for (size_t sel = 1; sel < selectedFacets.size();sel++) {
+		for (size_t sel = 1; sel < selectedFacets.size(); sel++) {
 			f = geom->GetFacet(selectedFacets[sel]);
-			double fArea = f.GetArea();
-			stickingE = stickingE && (f0->userSticking == f.userSticking) && IsEqual(f0->sh.sticking, f.sh.sticking);
-			opacityE = opacityE && (f0->userOpacity == f.userOpacity) && IsEqual(f0->sh.opacity, f.sh.opacity);
-			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f.sh.temperature);
-			flowE = flowE && f0->userOutgassing == f.userOutgassing && IsEqual(f0->sh.outgassing, f.sh.outgassing);
-			flowAreaE = flowAreaE && IsEqual(f0->sh.outgassing / f0Area, f.sh.outgassing / fArea);
-			is2sidedE = is2sidedE && (f0->sh.is2sided == f.sh.is2sided);
-			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f.sh.desorbType);
-			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN, f.sh.desorbTypeN);
-			recordE = recordE && (f0->sh.profileType == f.sh.profileType);  //profiles
+			double fArea = f->GetArea();
+			stickingE = stickingE && (f0->userSticking == f->userSticking) && IsEqual(f0->sh.sticking, f->sh.sticking);
+			opacityE = opacityE && (f0->userOpacity == f->userOpacity) && IsEqual(f0->sh.opacity, f->sh.opacity);
+			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
+			flowE = flowE && f0->userOutgassing == f->userOutgassing && IsEqual(f0->sh.outgassing, f->sh.outgassing);
+			flowAreaE = flowAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea);
+			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
+			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
+			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN, f->sh.desorbTypeN);
+			recordE = recordE && (f0->sh.profileType == f->sh.profileType);  //profiles
 			sumArea += fArea;
 		}
 
@@ -902,11 +902,11 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 				facetFlow->SetEditable(true);
 				if (flowE) {
 					if (f0->userOutgassing.length() == 0)
-						facetFlow->SetText(f0->sh.outgassing*10.00); //10: Pa*m3/sec -> mbar*l/s
+						facetFlow->SetText(f0->sh.outgassing * 10.00); //10: Pa*m3/sec -> mbar*l/s
 					else facetFlow->SetText(f0->userOutgassing);
 				}
 				else facetFlow->SetText("...");
-				if (flowAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area*10.00); else facetFlowArea->SetText("...");
+				if (flowAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area * 10.00); else facetFlowArea->SetText("...");
 				if (f0->sh.desorbType == 3) {
 					facetDesTypeN->SetEditable(true);
 					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
@@ -981,8 +981,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 
 int MolFlow::FrameMove()
 {
-    bool runningState = worker.IsRunning();
-    double elapsedTime = worker.simuTimer.Elapsed();
+	bool runningState = worker.IsRunning();
+	double elapsedTime = worker.simuTimer.Elapsed();
 	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureScaling) textureScaling->Update();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
@@ -996,32 +996,32 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-	    double current_avg = hps.avg();
-        if(!runningState)
-            current_avg = hps_runtotal.avg();
-        else
-            current_avg = (current_avg != 0.0) ? current_avg : hps.last();
+		double current_avg = hps.avg();
+		if (!runningState)
+			current_avg = hps_runtotal.avg();
+		else
+			current_avg = (current_avg != 0.0) ? current_avg : hps.last();
 
-        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
-                Util::formatPs(current_avg, "hit"));
-        hitNumber->SetText(tmp);
+		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
+			Util::formatPs(current_avg, "hit"));
+		hitNumber->SetText(tmp);
 
-        current_avg = dps.avg();
-        if(!runningState) current_avg = dps_runtotal.avg();
-        else current_avg = (current_avg != 0.0) ? current_avg : dps.last();
+		current_avg = dps.avg();
+		if (!runningState) current_avg = dps_runtotal.avg();
+		else current_avg = (current_avg != 0.0) ? current_avg : dps.last();
 
-        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"),
-                Util::formatPs(current_avg, "des"));
-        desNumber->SetText(tmp);
+		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"),
+			Util::formatPs(current_avg, "des"));
+		desNumber->SetText(tmp);
 	}
 
-    //sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
+	//sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
 
 
 	// Save previous state to react to changes
-    prevRunningState = runningState;
+	prevRunningState = runningState;
 
-    return GL_OK;
+	return GL_OK;
 }
 
 // Name: RestoreDeviceObjects()
@@ -1086,7 +1086,7 @@ int MolFlow::InvalidateDeviceObjects()
 
 void MolFlow::ExportProfiles() {
 
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	if (geom->GetNbSelectedFacets() == 0) {
 		GLMessageBox::Display("Empty selection", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
@@ -1098,7 +1098,7 @@ void MolFlow::ExportProfiles() {
 		try {
 			worker.ExportProfiles(saveFile.c_str());
 		}
-		catch(const std::exception &e) {
+		catch (const std::exception& e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1115,12 +1115,12 @@ void MolFlow::ExportAngleMaps() {
 			auto retVal = worker.ExportAngleMaps(profFile, false);
 			if (!retVal) return; //user cancel or error
 			std::vector<std::string> exportList = *retVal; //vector of fileNames, might be empty
-            if (exportList.empty()) {
-                GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
-                return;
-            }
+			if (exportList.empty()) {
+				GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+			}
 		}
-		catch(const std::exception &e) {
+		catch (const std::exception& e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1129,7 +1129,7 @@ void MolFlow::ExportAngleMaps() {
 	}
 }
 
-void MolFlow::ImportAngleMaps(){
+void MolFlow::ImportAngleMaps() {
 	std::vector<size_t> selFacets = worker.GetGeometry()->GetSelectedFacets();
 	if (selFacets.empty()) {
 		GLMessageBox::Display("Select at least one facet to import angle map to", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1143,33 +1143,31 @@ void MolFlow::ImportAngleMaps(){
 		GLMessageBox::Display("Select the same number of facets and files to import", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	for (size_t i = 0; i < fileNames.size();i++) {
+	for (size_t i = 0; i < fileNames.size(); i++) {
 		try {
-			{
-				auto file = FileReader(fileNames[i]);
-				std::vector<std::vector<std::string>> table = file.ImportCSV_string();
-			}
+			auto file = FileReader(fileNames[i]);
+			std::vector<std::vector<std::string>> table = file.ImportCSV_string();
 			AskToReset(&worker);
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
 			worker.MarkToReload();
 		}
-		catch(const std::exception &e) {
-				char errMsg[512];
-				sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
-				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
+		catch (const std::exception& e) {
+			char errMsg[512];
+			sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
+			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
 		}
 	}
 }
 
 void MolFlow::CopyAngleMapToClipboard()
 {
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	size_t angleMapFacetIndex;
 	bool found = false;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 		InterfaceFacet* f = geom->GetFacet(i);
-		if (f.selected && !f.angleMapCache.empty()) {
+		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -1189,31 +1187,29 @@ void MolFlow::CopyAngleMapToClipboard()
 		return;
 	}*/
 
-		try {
-			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
-			if (map.length() > (10 * 1024 * 1024)) {
-				if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
-					return;
-			}
-
-			GLToolkit::CopyTextToClipboard(map);
-
+	try {
+		std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
+		if (map.length() > (10 * 1024 * 1024)) {
+			if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
+				return;
 		}
-		catch(const std::exception &e) {
-			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-		}
+
+		GLToolkit::CopyTextToClipboard(map);
+
+	}
+	catch (const std::exception& e) {
+		GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+	}
 }
 
 void MolFlow::ClearAngleMapsOnSelection() {
-	//if (AskToReset()) {
-		Geometry *geom = worker.GetGeometry();
-		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
-			InterfaceFacet* f = geom->GetFacet(i);
-			if (f.selected && !f.angleMapCache.empty()) {
-				f.angleMapCache.clear();
-			}
+	Geometry* geom = worker.GetGeometry();
+	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
+		InterfaceFacet* f = geom->GetFacet(i);
+		if (f->selected && !f->angleMapCache.empty()) {
+			f->angleMapCache.clear();
 		}
-	//}
+	}
 }
 
 /*
@@ -1244,14 +1240,14 @@ void MolFlow::SaveFile() {
 		auto prg = GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
 		prg.SetVisible(true);
 		prg.SetProgress(0.5);
-		
+
 		//GLWindowManager::Repaint();
 
 		try {
 			worker.SaveGeometry(worker.fullFileName, prg, false);
 			ResetAutoSaveTimer();
 		}
-		catch(const std::exception &e) {
+		catch (const std::exception& e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1262,22 +1258,22 @@ void MolFlow::SaveFile() {
 	else SaveFileAs();
 }
 
-void MolFlow::LoadFile(const std::string &fileName) {
+void MolFlow::LoadFile(const std::string& fileName) {
 
 	std::string fileShortName, filePath;
 
 	if (fileName.empty()) {
-        filePath = NFD_OpenFile_Cpp(fileLoadFilters, "");
+		filePath = NFD_OpenFile_Cpp(fileLoadFilters, "");
 	}
-	else{
-        filePath = fileName;
+	else {
+		filePath = fileName;
 	}
 
 	if (filePath.empty()) return; //User closed Open... dialog
 
 	if (!FileUtils::Exist(filePath)) {
 		auto answer = GLMessageBox::Display(
-			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?",filePath),
+			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?", filePath),
 			"No such file",
 			{ "Yes","No" },
 			GLDLG_ICONERROR);
@@ -1302,11 +1298,11 @@ void MolFlow::LoadFile(const std::string &fileName) {
 
 		worker.LoadGeometry(filePath);
 
-		Geometry *geom = worker.GetGeometry();
+		Geometry* geom = worker.GetGeometry();
 
-		
+
 		// Default initialisation
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->SetWorker(&worker);
 
 		//UpdateModelParams();
@@ -1349,8 +1345,8 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
-        if (convergencePlotter) convergencePlotter->Refresh();
-        if (texturePlotter) texturePlotter->Update(0.0,true);
+		if (convergencePlotter) convergencePlotter->Refresh();
+		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
@@ -1363,7 +1359,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(const std::exception &e) {
+	catch (const std::exception& e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1374,17 +1370,17 @@ void MolFlow::LoadFile(const std::string &fileName) {
 	changedSinceSave = false;
 }
 
-void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
-	
+void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
+
 
 	std::string fileShortName, filePath;
 
 	if (fileName.empty()) {
-        filePath = NFD_OpenFile_Cpp(fileInsertFilters, "");
+		filePath = NFD_OpenFile_Cpp(fileInsertFilters, "");
 	}
-	else{
-        filePath = fileName;
-    }
+	else {
+		filePath = fileName;
+	}
 
 
 	auto prg = GLProgress_GUI("Preparing to load file...", "Please wait");
@@ -1394,7 +1390,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 	if (filePath.empty()) {
 		return;
 	}
-	
+
 	if (!AskToReset()) return;
 	ResetSimulation(false);
 
@@ -1405,14 +1401,14 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		//worker.InsertGeometry(newStr, fullName);
 		worker.LoadGeometry(filePath, true, newStr);
 
-		Geometry *geom = worker.GetGeometry();
+		Geometry* geom = worker.GetGeometry();
 		worker.PrepareToRun();
 		worker.CalcTotalOutgassing();
 
 		//Increase BB
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->SetWorker(&worker);
-		
+
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
 
@@ -1447,7 +1443,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		*/
 		RefreshPlotterCombos();
 		//UpdatePlotters();
-		
+
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1455,7 +1451,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(const std::exception &e) {
+	catch (const std::exception& e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1479,7 +1475,7 @@ void MolFlow::ClearParameters() {
 }
 
 void MolFlow::StartStopSimulation() {
-	
+
 	if (worker.globalHitCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
@@ -1488,10 +1484,10 @@ void MolFlow::StartStopSimulation() {
 		if (!ok) return;
 	}
 
-    worker.StartStop(m_fTime);
+	worker.StartStop(m_fTime);
 	if (!worker.IsRunning()) { //Force update on simulation stop
-        formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.nbDesorbed);
-        UpdatePlotters();
+		formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.nbDesorbed);
+		UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
@@ -1500,12 +1496,12 @@ void MolFlow::StartStopSimulation() {
 	// Frame rate measurement
 	// reset on start only
 	lastMeasTime = m_fTime;
-	if(worker.IsRunning()) {
-	    hps.clear();
-        dps.clear();
-        hps_runtotal.clear();
-        dps_runtotal.clear();
-    }
+	if (worker.IsRunning()) {
+		hps.clear();
+		dps.clear();
+		hps_runtotal.clear();
+		dps_runtotal.clear();
+	}
 	lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
 	lastNbDes = worker.globalHitCache.globalHits.nbDesorbed;
 
@@ -1517,12 +1513,12 @@ void MolFlow::StartStopSimulation() {
 // Name: EventProc()
 // Desc: Message proc function to handle key and mouse input
 
-void MolFlow::ProcessMessage(GLComponent *src, int message)
+void MolFlow::ProcessMessage(GLComponent* src, int message)
 {
 
 	if (ProcessMessage_shared(src, message)) return; //Already processed by common interface
 
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	switch (message) {
 
 		//MENU --------------------------------------------------------------------
@@ -1538,11 +1534,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
-		/* //Deprecated
-		case MENU_FILE_IMPORTDES_DES:
-			ImportDesorption_DES();
-			break;
-		*/
+			/* //Deprecated
+			case MENU_FILE_IMPORTDES_DES:
+				ImportDesorption_DES();
+				break;
+			*/
 
 		case MENU_FILE_EXPORTTEXTURE_AREA:
 			ExportTextures(0, 0); break;
@@ -1615,7 +1611,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (!profilePlotter) profilePlotter = new ProfilePlotter();
 			profilePlotter->Display(&worker);
 			break;
-        case MENU_TOOLS_TEXPLOTTER:
+		case MENU_TOOLS_TEXPLOTTER:
 			if (!texturePlotter) texturePlotter = new TexturePlotter();
 			texturePlotter->Display(&worker);
 			break;
@@ -1657,7 +1653,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTSTICK:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->sh.sticking_paramId!=-1 || (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsTXTLinkFacet()))
+				if (geom->GetFacet(i)->sh.sticking_paramId != -1 || (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsTXTLinkFacet()))
 					geom->SelectFacet(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(true);
@@ -1666,8 +1662,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTREFL:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++) {
-				InterfaceFacet *f = geom->GetFacet(i);
-				if (f.sh.desorbType == DES_NONE && f.sh.sticking == 0.0 && f.sh.opacity > 0.0)
+				InterfaceFacet* f = geom->GetFacet(i);
+				if (f->sh.desorbType == DES_NONE && f->sh.sticking == 0.0 && f->sh.opacity > 0.0)
 					geom->SelectFacet(i);
 			}
 			geom->UpdateSelection();
@@ -1773,7 +1769,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			double area;
 			facetFlowArea->GetNumber(&flowPerArea);
 			facetArea->GetNumber(&area);
-			facetFlow->SetText(flowPerArea*area);
+			facetFlow->SetText(flowPerArea * area);
 			facetApplyBtn->SetEnabled(true);
 			facetFIAreaLabel->SetState(true);
 			facetFILabel->SetState(false);
@@ -1790,7 +1786,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 
 	case MSG_TEXT:
 		if (src == facetSticking || src == facetDesTypeN || src == facetOpacity || src == facetTemperature
-		|| src == facetPumping || src == facetFlow || src == facetFlowArea) {
+			|| src == facetPumping || src == facetFlow || src == facetFlowArea) {
 			ApplyFacetParams();
 		}
 		break;
@@ -1903,16 +1899,16 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			ProcessFormulaButtons(src);
 		}*/
 		break;
-	    default:
-            //GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
-            return;
+	default:
+		//GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
 	}
 }
 
 void MolFlow::BuildPipe(double ratio, int steps) {
 
 	char tmp[256];
-	MolflowGeometry *geom = worker.GetMolflowGeometry();
+	MolflowGeometry* geom = worker.GetMolflowGeometry();
 
 	double R = 1.0;
 	double L = ratio * R;
@@ -1921,7 +1917,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	else {
 		sprintf(tmp, "100");
 		//sprintf(title,"Pipe L/R = %g",L/R);
-		char *nbFacets = GLInputBox::GetInput(tmp, "Number of facet", "Build Pipe");
+		char* nbFacets = GLInputBox::GetInput(tmp, "Number of facet", "Build Pipe");
 		if (!nbFacets) return;
 		if ((sscanf(nbFacets, "%d", &step) <= 0) || (step < 3)) {
 			GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1934,29 +1930,29 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	try {
 		geom->BuildPipe(L, R, 0, step);
-        worker.needsReload = true;
+		worker.needsReload = true;
 
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.model->wp = WorkerParams(); //reset to default
 		worker.ResetMoments();
-        ResetSimulation(false);
-    }
-	catch(const std::exception &e) {
-		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		ResetSimulation(false);
+	}
+	catch (const std::exception& e) {
+		GLMessageBox::Display((char*)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
-        ResetSimulation(false);
-        return;
+		ResetSimulation(false);
+		return;
 	}
 	//worker.globState.globalHits.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetCurrentFileName("");
 	nbDesStart = 0;
 	nbHitStart = 0;
-	
-	for (auto & view : viewer)
-        view->SetWorker(&worker);
-	
+
+	for (auto& view : viewer)
+		view->SetWorker(&worker);
+
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
 	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
@@ -2004,7 +2000,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 void MolFlow::EmptyGeometry() {
 
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 	ResetSimulation(false);
 
 	try {
@@ -2014,7 +2010,7 @@ void MolFlow::EmptyGeometry() {
 		worker.model->wp = WorkerParams(); //reset to default
 		worker.ResetMoments();
 	}
-	catch(const std::exception &e) {
+	catch (const std::exception& e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
@@ -2023,8 +2019,8 @@ void MolFlow::EmptyGeometry() {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto & view : viewer)
-        view->SetWorker(&worker);
+	for (auto& view : viewer)
+		view->SetWorker(&worker);
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
@@ -2062,12 +2058,12 @@ void MolFlow::EmptyGeometry() {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
-	
+
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
-	
+
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
@@ -2080,74 +2076,74 @@ void MolFlow::LoadConfig() {
 	try {
 
 		auto file = FileReader("molflow.cfg");
-		MolflowGeometry *geom = worker.GetMolflowGeometry();
+		MolflowGeometry* geom = worker.GetMolflowGeometry();
 
 		file.ReadKeyword("showRules"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showRule = file.ReadInt();
 		file.ReadKeyword("showNormals"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showNormal = file.ReadInt();
 		file.ReadKeyword("showUV"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showUV = file.ReadInt();
 		file.ReadKeyword("showLines"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showLine = file.ReadInt();
 		file.ReadKeyword("showLeaks"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showLeak = file.ReadInt();
 		file.ReadKeyword("showHits"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showHit = file.ReadInt();
 		file.ReadKeyword("showVolume"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showVolume = file.ReadInt();
 		file.ReadKeyword("showTexture"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showTexture = file.ReadInt();
-        file.ReadKeyword("showFacetId"); file.ReadKeyword(":");
-        for (auto & view : viewer)
-            view->showFacetId = file.ReadInt();
+		file.ReadKeyword("showFacetId"); file.ReadKeyword(":");
+		for (auto& view : viewer)
+			view->showFacetId = file.ReadInt();
 		file.ReadKeyword("showFilter"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showFilter = file.ReadInt();
 		file.ReadKeyword("showIndices"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showIndex = file.ReadInt();
 		file.ReadKeyword("showVertices"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showVertexId = file.ReadInt();
 		file.ReadKeyword("showMode"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showBack = file.ReadInt();
 		file.ReadKeyword("showMesh"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showMesh = file.ReadInt();
 		file.ReadKeyword("showHidden"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showHidden = file.ReadInt();
 		file.ReadKeyword("showHiddenVertex"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showHiddenVertex = file.ReadInt();
 		file.ReadKeyword("showTimeOverlay"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showTime = file.ReadInt();
 		file.ReadKeyword("texColormap"); file.ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			//viewer[i]->showColormap = 
 			file.ReadInt();
 		file.ReadKeyword("translation"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->transStep = file.ReadDouble();
 		file.ReadKeyword("dispNumLines"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->dispNumHits = file.ReadSizeT();
 		file.ReadKeyword("dispNumLeaks"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->dispNumLeaks = file.ReadSizeT();
 		file.ReadKeyword("dirShow"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->showDir = file.ReadInt();
 		file.ReadKeyword("dirNorme"); file.ReadKeyword(":");
 		geom->SetNormeRatio((float)file.ReadDouble());
@@ -2156,7 +2152,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("dirCenter"); file.ReadKeyword(":");
 		geom->SetCenterNorme(file.ReadInt());
 		file.ReadKeyword("angle"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->angleStep = file.ReadDouble();
 		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
 		geom->texAutoScale = file.ReadInt();
@@ -2197,10 +2193,10 @@ void MolFlow::LoadConfig() {
 #endif
 		if (nbProc <= 0) nbProc = 1;
 		file.ReadKeyword("recents"); file.ReadKeyword(":"); file.ReadKeyword("{");
-		w = file.ReadString();
-		while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
-			recentsList.push_back(strdup(w));
-			w = file.ReadString();
+		std::string path = file.ReadString();
+		while (path != "}" && recentsList.size() < MAX_RECENT) {
+			recentsList.push_back(path);
+			path = file.ReadString();
 		}
 		file.ReadKeyword("autonorme"); file.ReadKeyword(":");
 		geom->SetAutoNorme(file.ReadInt());
@@ -2225,7 +2221,7 @@ void MolFlow::LoadConfig() {
 		if (isOpen) shortcutPanel->Open();
 		else shortcutPanel->Close();
 		file.ReadKeyword("hideLot"); file.ReadKeyword(":");
-		for (auto & view : viewer)
+		for (auto& view : viewer)
 			view->hideLot = file.ReadInt();
 		file.ReadKeyword("lowFluxMode"); file.ReadKeyword(":");
 		worker.model->otfParams.lowFluxMode = file.ReadInt();
@@ -2237,10 +2233,10 @@ void MolFlow::LoadConfig() {
 		leftHandedView = file.ReadInt();
 		file.ReadKeyword("highlightNonplanarFacets"); file.ReadKeyword(":");
 		highlightNonplanarFacets = file.ReadInt();
-        file.ReadKeyword("highlightSelection"); file.ReadKeyword(":");
-        highlightSelection = file.ReadInt();
-        file.ReadKeyword("useOldXMLFormat"); file.ReadKeyword(":");
-        useOldXMLFormat = file.ReadInt();
+		file.ReadKeyword("highlightSelection"); file.ReadKeyword(":");
+		highlightSelection = file.ReadInt();
+		file.ReadKeyword("useOldXMLFormat"); file.ReadKeyword(":");
+		useOldXMLFormat = file.ReadInt();
 		file.ReadKeyword("showTP"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showTP = file.ReadInt();
@@ -2277,8 +2273,8 @@ void MolFlow::SaveConfig() {
 
 	try {
 
-		f = FileWriter("molflow.cfg");
-		MolflowGeometry *geom = worker.GetMolflowGeometry();
+		auto file = FileWriter("molflow.cfg");
+		MolflowGeometry* geom = worker.GetMolflowGeometry();
 
 		// Save flags
 		WRITEI("showRules", showRule);
@@ -2289,8 +2285,8 @@ void MolFlow::SaveConfig() {
 		WRITEI("showHits", showHit);
 		WRITEI("showVolume", showVolume);
 		WRITEI("showTexture", showTexture);
-        WRITEI("showFacetId", showFacetId);
-        WRITEI("showFilter", showFilter);
+		WRITEI("showFacetId", showFacetId);
+		WRITEI("showFilter", showFilter);
 		WRITEI("showIndices", showIndex);
 		WRITEI("showVertices", showVertexId);
 		WRITEI("showMode", showBack);
@@ -2341,12 +2337,12 @@ void MolFlow::SaveConfig() {
 		file.Write(geom->texture_limits[2].autoscale.max.moments_only, "\n");
 
 #if defined(_DEBUG)
-		file.Write("processNum:");file.Write(numCPU, "\n");
+		file.Write("processNum:"); file.Write(numCPU, "\n");
 #else
 		file.Write("processNum:"); file.Write(worker.GetProcNumber(), "\n");
 #endif
 		file.Write("recents:{\n");
-		for(auto& recent : recentsList){
+		for (auto& recent : recentsList) {
 			file.Write("\"");
 			file.Write(recent);
 			file.Write("\"\n");
@@ -2356,7 +2352,7 @@ void MolFlow::SaveConfig() {
 		file.Write("autonorme:"); file.Write(geom->GetAutoNorme(), "\n");
 		file.Write("centernorme:"); file.Write(geom->GetCenterNorme(), "\n");
 		file.Write("normeratio:"); file.Write((double)(geom->GetNormeRatio()), "\n");
-		
+
 		file.Write("autoSaveFrequency:"); file.Write(autoSaveFrequency, "\n");
 		file.Write("autoSaveSimuOnly:"); file.Write(autoSaveSimuOnly, "\n");
 		file.Write("checkForUpdates:"); file.Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
@@ -2370,12 +2366,12 @@ void MolFlow::SaveConfig() {
 		file.Write("lowFluxCutoff:"); file.Write(worker.model->otfParams.lowFluxCutoff, "\n");
 		file.Write("textureLogScale:"); file.Write(geom->texLogScale, "\n");
 		file.Write("leftHandedView:"); file.Write(leftHandedView, "\n");
-        file.Write("highlightNonplanarFacets:"); file.Write(highlightNonplanarFacets, "\n");
+		file.Write("highlightNonplanarFacets:"); file.Write(highlightNonplanarFacets, "\n");
 		file.Write("highlightSelection:"); file.Write(highlightSelection, "\n");
-        file.Write("useOldXMLFormat:"); file.Write(useOldXMLFormat, "\n");
+		file.Write("useOldXMLFormat:"); file.Write(useOldXMLFormat, "\n");
 		WRITEI("showTP", showTP);
-    }
-	catch(const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		GLMessageBox::Display(e.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 }
@@ -2392,7 +2388,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.model->wp.gasMass*0.001));
+	outgassing = 1 * sticking * area / 10.0 / 4.0 * sqrt(8.0 * 8.31 * temperature / PI / (worker.model->wp.gasMass * 0.001));
 	facetPumping->SetText(outgassing);
 }
 
@@ -2408,11 +2404,11 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.model->wp.gasMass*0.001)));
+	sticking = std::abs(outgassing / (area / 10.0) * 4.0 * sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI * (worker.model->wp.gasMass * 0.001)));
 	facetSticking->SetText(sticking);
 }
 
-void MolFlow::CrashHandler(const std::exception &e) {
+void MolFlow::CrashHandler(const std::exception& e) {
 	char tmp[1024];
 	sprintf(tmp, "Well, that's embarrassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e.what());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
@@ -2422,14 +2418,14 @@ void MolFlow::CrashHandler(const std::exception &e) {
 		else
 			GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
-	catch(const std::exception& e) {
-        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", e.what());
-        GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
+	catch (const std::exception& e) {
+		sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", e.what());
+		GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
 
 void MolFlow::UpdatePlotters() {
-    const bool forceUpdate = true; //worker.IsRunning();
+	const bool forceUpdate = true; //worker.IsRunning();
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, forceUpdate);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, forceUpdate);
 	if (profilePlotter) profilePlotter->Update(m_fTime, forceUpdate);
@@ -2444,12 +2440,12 @@ void MolFlow::RefreshPlotterCombos() {
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (histogramPlotter) histogramPlotter->Refresh();
-    if (convergencePlotter) convergencePlotter->Refresh();
+	if (convergencePlotter) convergencePlotter->Refresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {
 	char tmp[256];
-	Geometry *geom = worker.GetGeometry();
+	Geometry* geom = worker.GetGeometry();
 
 	try {
 		// Facet list
@@ -2484,24 +2480,24 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, geom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
-                    throw std::runtime_error(errMsg);
+					throw std::runtime_error(errMsg);
 				}
-				InterfaceFacet *f = geom->GetFacet(facetId);
+				InterfaceFacet* f = geom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);
 				facetList->SetValueAt(0, i, tmp);
 
-                facetList->SetColumnLabel(1, "Hits");
-                sprintf(tmp, "%zd", f.facetHitCache.nbMCHit);
-                facetList->SetValueAt(1, i, tmp);
-                sprintf(tmp, "%zd", f.facetHitCache.nbDesorbed);
-                facetList->SetValueAt(2, i, tmp);
-                sprintf(tmp, "%g", f.facetHitCache.nbAbsEquiv);
-                facetList->SetValueAt(3, i, tmp);
+				facetList->SetColumnLabel(1, "Hits");
+				sprintf(tmp, "%zd", f->facetHitCache.nbMCHit);
+				facetList->SetValueAt(1, i, tmp);
+				sprintf(tmp, "%zd", f->facetHitCache.nbDesorbed);
+				facetList->SetValueAt(2, i, tmp);
+				sprintf(tmp, "%g", f->facetHitCache.nbAbsEquiv);
+				facetList->SetValueAt(3, i, tmp);
 			}
 
 		}
 	}
-	catch(const std::exception &e) {
+	catch (const std::exception& e) {
 		char errMsg[512];
 		sprintf(errMsg, "%s\nError while updating facet hits", e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
