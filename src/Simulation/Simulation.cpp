@@ -221,7 +221,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     timer.Start();
     loadStatus="Clearing previous simulation";
     ClearSimulation();
-    loadStatus="Loading simulation";
+    loadStatus="Constructing thread-local result counters";
     
     auto* simModel = (MolflowSimulationModel*) model.get();
 
@@ -244,6 +244,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     ReinitializeParticleLog();
 
     // Build ADS
+    loadStatus = "Building ray-tracing structure";
     RebuildAccelStructure();
 
     // Initialise simulation

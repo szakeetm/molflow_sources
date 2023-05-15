@@ -56,20 +56,9 @@ public:
     int ReinitializeParticleLog() override;
     MFSim::ParticleTracer * GetParticleTracer(size_t i) override;
     void SetNParticle(size_t n, bool fixedSeed) override;
-
-	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
-
-	// Geometry
-
-	//double stepPerSec=0.0;  // Avg number of step per sec
-	//bool loadOK;        // Load OK flag
-	//bool lastHitUpdateOK;  // Last hit update timeout
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
-
-    // Particle coordinates (MC)//std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
-    //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
-    std::vector<MFSim::ParticleTracer> particleTracers;
+    std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters
     mutable std::timed_mutex tMutex;
 
 };

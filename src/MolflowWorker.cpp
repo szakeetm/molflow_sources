@@ -237,16 +237,16 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					}
 					else if (!(isXML || isXMLzip)) {
 						toOpen = fileName; //Txt, stl, geo, etc...
-					}
-					auto file = FileWriter(toOpen);//We first write a GEO file, then compress it to GEO7Z later
-					if (isTXT) {
-						geom->SaveTXT(file, globState, saveSelected);
-					}
-					else if (isGEO || isGEO7Z) {
-						geom->SaveGEO(file, prg, globState, this, saveSelected, crashSave);
-					}
-					else if (isSTL) {
-						geom->SaveSTL(file, prg);
+						auto file = FileWriter(toOpen);//We first write a GEO file, then compress it to GEO7Z later
+						if (isTXT) {
+							geom->SaveTXT(file, globState, saveSelected);
+						}
+						else if (isGEO || isGEO7Z) {
+							geom->SaveGEO(file, prg, globState, this, saveSelected, crashSave);
+						}
+						else if (isSTL) {
+							geom->SaveSTL(file, prg);
+						}
 					}
 					else if (isXML || isXMLzip) {
 						auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
@@ -975,13 +975,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						FlowIO::LoaderInterfaceXML::LoadConvergenceValues(parseFileName, &mApp->formula_ptr->convergenceValues, prg);
 
 					}
-					//FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
-					simManager.simulationChanged = true;
-					/*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-						std::string errString = "Failed to send geometry to sub process:\n";
-						errString.append(GetErrorDetails());
-						throw std::runtime_error(errString);
-					}*/
+					simManager.simulationChanged = true; //mark for loading
 
 
 					CalculateTextureLimits(); // Load texture limits on init
@@ -1403,7 +1397,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 		}
 
 		try {
-			prg.SetMessage("Do preliminary calculations...");
 			PrepareToRun();
 		}
 		catch (const std::exception& e) {
@@ -1456,12 +1449,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	}
 
 	// Send and Load geometry on simulation side
-	simManager.simulationChanged = true;
-	/*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-		std::string errString = "Failed to send geometry to sub process:\n";
-		errString.append(GetErrorDetails());
-		throw std::runtime_error(errString);
-	}*/
+	simManager.simulationChanged = true; //mark for loading by threads
 
 	prg.SetMessage("Finishing reload...");
 	needsReload = false;
