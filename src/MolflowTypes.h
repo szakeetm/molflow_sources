@@ -86,18 +86,18 @@ class IntegratedDesorption : public Distribution2D {
 
 struct OutgassingMap {
     OutgassingMap() = default;
-    size_t   outgassingMapWidth; //rounded up outgassing file map width
-    size_t   outgassingMapHeight; //rounded up outgassing file map height
-    double outgassingMapWidth_precise; //actual outgassing file map width
-    double outgassingMapHeight_precise; //actual outgassing file map height
-    double outgassingFileRatioU; //desorption file's sample/unit ratio in U direction
-    double outgassingFileRatioV; //desorption file's sample/unit ratio in V direction
+    size_t   outgassingMapWidth=0; //rounded up outgassing file map width
+    size_t   outgassingMapHeight=0; //rounded up outgassing file map height
+    double outgassingMapWidth_precise=0.0; //actual outgassing file map width
+    double outgassingMapHeight_precise=0.0; //actual outgassing file map height
+    double outgassingFileRatioU=0.0; //desorption file's sample/unit ratio in U direction
+    double outgassingFileRatioV=0.0; //desorption file's sample/unit ratio in V direction
     std::vector<double>   outgassingMap_cdf; // Cumulative outgassing map when desorption is based on imported file
     std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
 
     // Analytic properties
-    double totalDose;
-    double totalFlux;
+    double totalDose=0.0;
+    double totalFlux=0.0;
 };
 
 // Density/Hit field stuff

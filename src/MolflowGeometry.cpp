@@ -2270,12 +2270,6 @@ void MolflowGeometry::ImportDesorption_SYN(
 		if (!IsZero(xdims[i])) { //has texture
 			InterfaceFacet* f = GetFacet(i);
 
-			if (f->selected) {
-				f->hasOutgassingFile = true;
-				f->sh.useOutgassingFile = true; //turn on file usage by default
-				f->sh.desorbType = DES_COSINE; //auto-set to cosine
-			}
-			//SelectFacet(f);
 			file.ReadKeyword("texture_facet");
 			// Check idx
 			int idx = file.ReadInt();
@@ -2289,10 +2283,13 @@ void MolflowGeometry::ImportDesorption_SYN(
 			file.ReadKeyword("{");
 
 			size_t ix, iy;
-			f->ogMap.outgassingMapWidth = (size_t)ceil(xdims[i] * 0.9999999);
-			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
+				f->hasOutgassingFile = true;
+				f->sh.useOutgassingFile = true; //turn on file usage by default
+				f->sh.desorbType = DES_COSINE; //auto-set to cosine
+				f->ogMap.outgassingMapWidth = (size_t)ceil(xdims[i] * 0.9999999);
+				f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Norme();
 				f->ogMap.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
 				try {
