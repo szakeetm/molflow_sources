@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.9.10 beta
+## v2.9.10 beta (2023-05-15)
 
 ### Feature
 
