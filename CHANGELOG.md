@@ -4,12 +4,27 @@
 
 ### Feature
 
+- Parallelized many slow parts of the code:
+    - Facet meshing
+    - Facet and vertex search on screen (when selecting)
+    - OpenGL geometry building (geometry initialization)
+    - Temporary counters creation for subprocesses (load, reset)
+- Speedup: only reload simulation to threads if it changed (not on resume/reset)
 - Auto-updater can now execute post-install scripts
    - Gives executable permission to updates (Mac and Linux)
+- Removed: legacy .ASE file loader
 
 ### Interface
 
-- Don't allow 0K temperature
+- New unified progressbars for GUI and CLI (ready for file load, save coming soon)
+- Don't accept 0 Kelvin temperature
+- Deduplicate shared edges of selected facets (faster rendering)
+- Show progress message when exiting MolFlow to identify blocks
+
+### Bugfix
+
+- Fixed all facets rendering once per structure
+- Fixed Global Settings impossible to minimize
 
 ## v2.9.9 beta (2023-04-13)
 
