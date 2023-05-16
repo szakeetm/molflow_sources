@@ -40,21 +40,21 @@ void WriterXML::setWriteProgress(const size_t newProgress) {
     writeProgress = newProgress;
 }
 
-void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    Log::console_msg(2, "[{}] {} [{}%]", Util::getTimepointString(), statusString, writeProgress);
+void WriterXML::reportWriteStatus(const std::string &slaveStatus) const {
+    Log::console_msg(2, "[{}] {} [{}%]", Util::getTimepointString(), slaveStatus, writeProgress);
 }
 
-void WriterXML::reportNewWriteStatus(const std::string &statusString, double newProgress) {
+void WriterXML::reportNewWriteStatus(const std::string &slaveStatus, double newProgress) {
     size_t p = (size_t)(newProgress * 100.0 + 0.5);
     if (writeProgress != p) {
         setWriteProgress(p);
-        Log::console_msg(2, "\r[{}] {} [{}%]", Util::getTimepointString(), statusString, writeProgress);
+        Log::console_msg(2, "\r[{}] {} [{}%]", Util::getTimepointString(), slaveStatus, writeProgress);
     }
 }
 
-void WriterXML::finishWriteStatus(const std::string &statusString) {
+void WriterXML::finishWriteStatus(const std::string &slaveStatus) {
     setWriteProgress((size_t)100);
-    Log::console_msg(2, "\r[{}] {} [{}%]\n", Util::getTimepointString(), statusString, writeProgress);
+    Log::console_msg(2, "\r[{}] {} [{}%]\n", Util::getTimepointString(), slaveStatus, writeProgress);
 }
 
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {

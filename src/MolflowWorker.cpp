@@ -1385,7 +1385,6 @@ bool Worker::InterfaceGeomToSimModel() {
 * \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
 */
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
-	//if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
 	GLProgress_GUI prg("Performing preliminary calculations on geometry...",
 		"Passing Geometry to workers");
@@ -1445,7 +1444,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 	prg.SetMessage("Finishing reload...");
 	needsReload = false;
-	//}
 }
 
 /**
@@ -1501,14 +1499,12 @@ void Worker::Start() {
 		throw std::runtime_error("Desorption limit has already been reached.");
 
 	try {
-		//simManager.ForwardGlobalCounter(&globState, &particleLog); //Reload already did it
-
 		if (simManager.StartSimulation()) {
 			throw std::logic_error("Processes are already done!");
 		}
 	}
 	catch (const std::exception& e) {
-		throw Error(e.what());
+		throw Error(e.what()); //convert to runtime error
 	}
 }
 
