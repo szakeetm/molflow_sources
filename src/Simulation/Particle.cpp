@@ -45,9 +45,9 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
         return false;
     }
 
-    //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
+    //SetThreadStates(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
 
-    //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
+    //SetThreadStates(PROCESS_STARTING, "Updating MC hits...", false, true);
 
     // Global hits and leaks: adding local hits to shared memory
     {
@@ -103,8 +103,8 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
     globSimuState.stateChanged = true;
     globSimuState.tMutex.unlock();
 
-    //extern char *GetSimuStatus();
-    //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
+    //extern char *GetThreadStatuses();
+    //SetThreadStates(PROCESS_STARTING, GetThreadStatuses(), false, true);
 
     //#if defined(DEBUG)
     timer.Stop();

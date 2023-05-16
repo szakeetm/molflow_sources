@@ -1680,9 +1680,9 @@ void FacetAdvParams::UpdateSquaredCells(int aspectState) {
 void FacetAdvParams::UpdateToggle(GLComponent *src) {
 
 	/*if (src==boundaryBtn) {
-		recordACBtn->SetState(false);
+		recordACBtn->SetThreadStates(false);
 		} else if(src==enableBtn) {
-		//boundaryBtn->SetState(enableBtn->GetState());
+		//boundaryBtn->SetThreadStates(enableBtn->GetState());
 		} else */
     if(src == enableBtn) {
         UpdateSquaredCells(aspectRatioBtn->GetState());
@@ -1693,33 +1693,33 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
     }
     else if (src == recordDesBtn) {
 		enableBtn->SetState(true);
-		//boundaryBtn->SetState(true);
+		//boundaryBtn->SetThreadStates(true);
 		recordACBtn->SetState(false);
 	}
     else if (src == recordAbsBtn) {
 		enableBtn->SetState(true);
-		//boundaryBtn->SetState(true);
+		//boundaryBtn->SetThreadStates(true);
 		recordACBtn->SetState(false);
 	}
     else if (src == recordReflBtn) {
 		enableBtn->SetState(true);
-		//boundaryBtn->SetState(true);
+		//boundaryBtn->SetThreadStates(true);
 		recordACBtn->SetState(false);
 	}
     else if (src == recordTransBtn) {
 		enableBtn->SetState(true);
-		//boundaryBtn->SetState(true);
+		//boundaryBtn->SetThreadStates(true);
 		recordACBtn->SetState(false);
 	}
     else if (src == recordDirBtn) {
 		enableBtn->SetState(true);
-		//boundaryBtn->SetState(true);
+		//boundaryBtn->SetThreadStates(true);
 		recordACBtn->SetState(false);
 	}
     else if (src == recordACBtn) {
 		if (recordACBtn->GetState()) {
 			enableBtn->SetState(true);
-			//boundaryBtn->SetState(true);
+			//boundaryBtn->SetThreadStates(true);
 			recordDesBtn->SetState(false);
 			recordAbsBtn->SetState(false);
 			recordReflBtn->SetState(false);

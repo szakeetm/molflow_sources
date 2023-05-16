@@ -108,12 +108,12 @@ MomentsEditor::MomentsEditor(Worker *w) :GLWindow() {
 
 	useMaxwellToggle = new GLToggle(0, "Use Maxwell-B. speed distr.");
 	useMaxwellToggle->SetBounds(15, 300, wD - 25, 20);
-	//useMaxwellToggle->SetState(work->model->wp.useMaxwellDistribution);
+	//useMaxwellToggle->SetThreadStates(work->model->wp.useMaxwellDistribution);
 	Add(useMaxwellToggle);
 
 	calcConstantFlow = new GLToggle(0, "Calculate constant flow");
 	calcConstantFlow->SetBounds(15, 325, wD - 25, 20);
-	//useMaxwellToggle->SetState(work->model->wp.useMaxwellDistribution);
+	//useMaxwellToggle->SetThreadStates(work->model->wp.useMaxwellDistribution);
 	Add(calcConstantFlow);
 
 	/*GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");

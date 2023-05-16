@@ -243,7 +243,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
     /*prioToggle = new GLToggle(0, "Enable High Priority mode (can cause GUI lag)");
     prioToggle->SetBounds(170, hD - 74, 240, 19);
-    prioToggle->SetState(0);
+    prioToggle->SetThreadStates(0);
     panel3->Add(prioToggle);*/
 
 	auto *l1 = new GLLabel("Number of subprocesses:");

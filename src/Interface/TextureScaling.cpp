@@ -250,7 +250,7 @@ void TextureScaling::Update() {
         }*/
 		gradient->SetMinMax(minScale, maxScale);
 	}
-	//colormapBtn->SetState(viewers[0]->showColormap);
+	//colormapBtn->SetThreadStates(viewers[0]->showColormap);
 	colormapBtn->SetState(geom->texColormap);
 	gradient->SetType(geom->texColormap /*viewers[0]->showColormap*/?GRADIENT_COLOR:GRADIENT_BW );
 	modeCombo->SetSelectedIndex(geom->textureMode);
