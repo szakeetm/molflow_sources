@@ -191,22 +191,22 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 		}
 	}
 	else if (iequals(v->name, "SUMDES")) {
-		v->value = (double)worker->globalState.globalStats.globalHits.nbDesorbed;
+		v->value = (double)worker->globState.globalHits.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
-        v->value = worker->globalState.globalStats.globalHits.nbAbsEquiv;
+        v->value = worker->globState.globalHits.globalHits.nbAbsEquiv;
     }
     else if (iequals(v->name, "SUMMCHIT")) {
-        v->value = (double)worker->globalState.globalStats.globalHits.nbMCHit;
+        v->value = (double)worker->globState.globalHits.globalHits.nbMCHit;
     }
     else if (iequals(v->name, "SUMHIT")) {
-        v->value = worker->globalState.globalStats.globalHits.nbHitEquiv;
+        v->value = worker->globState.globalHits.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "MPP")) {
-        v->value = worker->globalState.globalStats.distTraveled_total / (double)worker->globalState.globalStats.globalHits.nbDesorbed;
+        v->value = worker->globState.globalHits.distTraveled_total / (double)worker->globState.globalHits.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "MFP")) {
-        v->value = worker->globalState.globalStats.distTraveledTotal_fullHitsOnly / worker->globalState.globalStats.globalHits.nbHitEquiv;
+        v->value = worker->globState.globalHits.distTraveledTotal_fullHitsOnly / worker->globState.globalHits.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;

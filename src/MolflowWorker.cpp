@@ -1049,6 +1049,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		*/
 	}
 
+	globalHitCache = globState.globalHits; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
 	if (insert) {
 		mApp->UpdateFacetlistSelected();
 		mApp->UpdateViewers();
@@ -1522,18 +1523,18 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-	if (globalState.globalStats.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
+	if (globalHitCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->wp.finalOutgassingRate / globalState.globalStats.globalHits.nbDesorbed;
+		return model->wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
 		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-			globalState.globalStats.globalHits.nbDesorbed;
+			globalHitCache.globalHits.nbDesorbed;
 	}
 }
 
