@@ -223,7 +223,7 @@ namespace {
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             SimulationManager simManager{0};
-            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
 
             /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
@@ -243,8 +243,8 @@ namespace {
                 Initializer::initFromFile(&simManager, model, &globState);
             }
 
-            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
+            size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
 
             EXPECT_NO_THROW(simManager.StartSimulation());
 
@@ -256,8 +256,8 @@ namespace {
             do {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
-                if (model->otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
+                if (modelPtr->otfParams.desorptionLimit != 0)
+                    endCondition = globState.globalStats.globalHits.nbDesorbed >= modelPtr->otfParams.desorptionLimit;
                 // Check for potential time end
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
@@ -269,11 +269,11 @@ namespace {
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
 
-            perfTimes.emplace_back((double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
+            perfTimes.emplace_back((double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
             EXPECT_EQ(0, oldHitsNb);
-            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
 
             Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
         };
@@ -364,7 +364,7 @@ namespace {
 
         SimulationManager simManager{0};
         simManager.interactiveMode = false;
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -381,16 +381,16 @@ namespace {
                 }
             }
             {
-                double timeExpect = std::log(model->facets.size());
+                double timeExpect = std::log(modelPtr->facets.size());
                 //timeExpect = timeExpect * timeExpect;
                 timeExpect = std::pow(timeExpect, 1.5);
-                if (!model->tdParams.moments.empty())
-                    timeExpect += std::pow(std::log(model->tdParams.moments.size()), 3.0);
+                if (!modelPtr->tdParams.moments.empty())
+                    timeExpect += std::pow(std::log(modelPtr->tdParams.moments.size()), 3.0);
 
                 timeExpect += std::max(0.0,
-                                       std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) -
+                                       std::pow(std::log(std::sqrt(modelPtr->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) -
                                        10.0);
-                timeExpect += std::max(0.0, 1.1 * std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
+                timeExpect += std::max(0.0, 1.1 * std::sqrt(std::exp(std::log(std::sqrt(modelPtr->size())))));
                 timeExpect *= 4.0;
                 Settings::simDuration = static_cast<uint64_t>(std::min(50.0 + timeExpect, 600.0));
             }
@@ -403,8 +403,8 @@ namespace {
         size_t oldDesNb = oldState.globalHits.globalHits.nbDesorbed;
         EXPECT_NE(0, oldDesNb);
         EXPECT_NE(0, oldHitsNb);
-        EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
-        EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+        EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
+        EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
 
         int stepSizeTime = (int) (Settings::simDuration * ((double) (1.0) / nRuns));
         Settings::simDuration = stepSizeTime;
@@ -419,8 +419,8 @@ namespace {
             // Stop and copy results
             simManager.StopSimulation();
 
-            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
@@ -433,7 +433,7 @@ namespace {
             }
         }
 
-        size_t desPerTimestep = globState.globalHits.globalHits.nbDesorbed;
+        size_t desPerTimestep = globState.globalStats.globalHits.nbDesorbed;
         for (size_t runNb = 1; runNb < nRuns; ++runNb) {
             // Modify argv with new duration
             /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
@@ -441,7 +441,7 @@ namespace {
             argv[4] = newDur_str;*/
 
             Initializer::initTimeLimit(model, stepSizeTime * 3);
-            size_t newDesLimit = globState.globalHits.globalHits.nbDesorbed + desPerTimestep;
+            size_t newDesLimit = globState.globalStats.globalHits.nbDesorbed + desPerTimestep;
             Settings::desLimit.clear();
             Settings::desLimit.emplace_back(newDesLimit);
             Initializer::initDesLimit(model, globState);
@@ -451,8 +451,8 @@ namespace {
             // Stop and copy results
             simManager.StopSimulation();
 
-            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
@@ -494,7 +494,7 @@ namespace {
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         simManager->interactiveMode = false;
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
@@ -513,8 +513,8 @@ namespace {
 
         // Keep oldstate from file for compari
         GlobalSimuState oldState = globState;
-        size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+        size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
+        size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
 
         // First check for valid initial states
         // - old state with results, new state without
@@ -546,18 +546,18 @@ namespace {
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
 
             EXPECT_NO_THROW(simManager->StartSimulation());
 
             // Stop and copy results
             simManager->StopSimulation();
 
-            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
 
-            if (globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed) {
+            if (globState.globalStats.globalHits.nbMCHit == globState.globalStats.globalHits.nbDesorbed) {
                 nbSuccess = nRuns;
                 fmt::print(stderr,
                         "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions\n",
@@ -639,7 +639,7 @@ namespace {
     TEST(InputOutput, DefaultInput) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
@@ -688,7 +688,7 @@ namespace {
     TEST(InputOutput, Outputpath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         // generate hash name for tmp working file
@@ -741,7 +741,7 @@ namespace {
     TEST(InputOutput, OutputpathAndFile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -795,7 +795,7 @@ namespace {
     TEST(InputOutput, Outputfile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -847,7 +847,7 @@ namespace {
     TEST(InputOutput, OutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
@@ -903,7 +903,7 @@ namespace {
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
