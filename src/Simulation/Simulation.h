@@ -54,7 +54,7 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    MFSim::ParticleTracer * GetParticleTracer(size_t i) override;
+    MFSim::ParticleTracer * GetParticleTracerPtr(size_t i) override;
     void SetNParticle(size_t n, bool fixedSeed) override;
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet

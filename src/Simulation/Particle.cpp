@@ -251,8 +251,8 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 
             //Prepare output values
 #if defined(USE_OLD_BVH)
-            auto[found, collidedFacet, d] = Intersect(*this, particleTracer.origin,
-                                                      particleTracer.direction, model->structures[particleTracer.structure].aabbTree.get());
+            auto[found, collidedFacet, d] = Intersect(*this, particleTracerPtr.origin,
+                                                      particleTracerPtr.direction, model->structures[particleTracerPtr.structure].aabbTree.get());
             //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
 #else
             transparentHitBuffer.clear();

@@ -239,10 +239,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						toOpen = fileName; //Txt, stl, geo, etc...
 						auto file = FileWriter(toOpen);//We first write a GEO file, then compress it to GEO7Z later
 						if (isTXT) {
-							geom->SaveTXT(file, interfaceGlobalState, saveSelected);
+							geom->SaveTXT(file, globalState, saveSelected);
 						}
 						else if (isGEO || isGEO7Z) {
-							geom->SaveGEO(file, prg, interfaceGlobalState, this, saveSelected, crashSave);
+							geom->SaveGEO(file, prg, globalState, this, saveSelected, crashSave);
 						}
 						else if (isSTL) {
 							geom->SaveSTL(file, prg);
@@ -278,8 +278,8 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 							bool success = false; //success: simulation state could be saved
 							if (!crashSave && !saveSelected) {
 								try {
-									//success = geom->SaveXML_simustate(saveDoc, this, interfaceGlobalState, prg, saveSelected);
-									success = writer.SaveSimulationState(saveDoc, mf_model, interfaceGlobalState);
+									//success = geom->SaveXML_simustate(saveDoc, this, globalState, prg, saveSelected);
+									success = writer.SaveSimulationState(saveDoc, mf_model, globalState);
 								}
 								catch (const std::exception& e) {
 									GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -570,7 +570,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
-				simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ForwardGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
 				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
 			}
 			else { //insert
@@ -713,9 +713,9 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				RealReload(); //for the loading of textures
 
 				if (version >= 8)
-					geom->LoadProfileGEO(*file, interfaceGlobalState, version);
+					geom->LoadProfileGEO(*file, globalState, version);
 
-				simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ForwardGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
 				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
 				SendAngleMaps();
 
@@ -943,12 +943,12 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					if (ext == "xml" || ext == "zip")
 						prg.SetMessage("Restoring simulation state...");
 
-					simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog);
+					simManager.ForwardGlobalCounter(&globalState, &particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
 						/*
 						auto future = std::async(std::launch::async, FlowIO::LoadSimulationState,
-												 parseFileName, mf_model, &interfaceGlobalState, load_progress);
+												 parseFileName, mf_model, &globalState, load_progress);
 						do {
 							prg.SetProgress(load_progress);
 							ProcessSleep(100);
@@ -962,7 +962,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						}
 						*/
 
-						FlowIO::LoaderXML::LoadSimulationState(parseFileName, mf_model, &interfaceGlobalState, prg);
+						FlowIO::LoaderXML::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
 
 						/*
 						future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
@@ -982,7 +982,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					// actually loads all caches
 					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
-					simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog);
+					simManager.ForwardGlobalCounter(&globalState, &particleLog);
 					SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendAngleMaps();
 
@@ -1089,7 +1089,7 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 	auto prg = GLProgress_GUI("Loading textures", "Please wait");
 	try {
 		prg.SetVisible(true);
-		geom->LoadTexturesGEO(f, prg, interfaceGlobalState, version);
+		geom->LoadTexturesGEO(f, prg, globalState, version);
 		RebuildTextures();
 	}
 	catch (const std::exception& e) {
@@ -1201,18 +1201,18 @@ int Worker::SendAngleMaps() {
 		angleMapCaches.push_back(f->angleMapCache);
 	}
 
-	if (interfaceGlobalState.facetStates.size() != angleMapCaches.size())
+	if (globalState.facetStates.size() != angleMapCaches.size())
 		return 1;
-	if (!interfaceGlobalState.tMutex.try_lock_for(std::chrono::seconds(10)))
+	if (!globalState.tMutex.try_lock_for(std::chrono::seconds(10)))
 		return 1;
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
 		auto* sFac = (MolflowSimFacet*)model->facets[i].get();
 		if (sFac->sh.anglemapParams.record)
-			interfaceGlobalState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+			globalState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
 		sFac->angleMap.pdf = angleMapCaches[i];
 	}
-	interfaceGlobalState.tMutex.unlock();
+	globalState.tMutex.unlock();
 	return 0;
 }
 
@@ -1465,9 +1465,9 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 */
 void Worker::ResetWorkerStats() {
 
-	interfaceGlobalState.Reset();
+	globalState.Reset();
 	particleLog.clear();
-	//memset(&interfaceGlobalState.globalStats, 0, sizeof(GlobalHitBuffer));
+	//memset(&globalState.globalStats, 0, sizeof(GlobalHitBuffer));
 
 
 }
@@ -1494,7 +1494,7 @@ void Worker::Start() {
 	if (model->wp.totalDesorbedMolecules <= 0.0)
 		throw std::runtime_error("Total outgassing is zero.");
 
-	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= interfaceGlobalState.globalStats.globalHits.nbDesorbed)
+	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globalState.globalStats.globalHits.nbDesorbed)
 		throw std::runtime_error("Desorption limit has already been reached.");
 
 	try {
@@ -1522,18 +1522,18 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-	if (interfaceGlobalState.globalStats.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
+	if (globalState.globalStats.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->wp.finalOutgassingRate / interfaceGlobalState.globalStats.globalHits.nbDesorbed;
+		return model->wp.finalOutgassingRate / globalState.globalStats.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
 		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-			interfaceGlobalState.globalStats.globalHits.nbDesorbed;
+			globalState.globalStats.globalHits.nbDesorbed;
 	}
 }
 

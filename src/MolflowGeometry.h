@@ -98,7 +98,7 @@ public:
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
-    bool InitOldStruct(MolflowSimulationModel *model);
+    bool InitOldStruct(MolflowSimulationModel* model);
     void InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) override;
 
 private:

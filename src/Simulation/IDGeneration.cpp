@@ -61,7 +61,7 @@ std::pair<int, std::vector<ID_p>> GenerateNewID(std::set<size_t>& desorptionPara
 * \param paramId parameter identifier
 * \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
 */
-std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulationModel *model) {
+std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulationModel* model) {
     std::vector<std::pair<double, double>> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
 
     //We need to slightly modify the original outgassing:

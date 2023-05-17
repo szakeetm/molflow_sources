@@ -74,7 +74,7 @@ namespace FlowIO {
     static const char *ynStr[] = {"No", "Yes"};
 
     double GetMoleculesPerTP(size_t moment, MolflowSimulationModel *model,
-                             GlobalSimuState *glob) {
+                             GlobalSimuState* globPtr) {
         if (glob->globalStats.globalHits.nbDesorbed == 0)
             return 0; // avoid division by 0
         if (moment == 0) {
@@ -169,8 +169,8 @@ namespace FlowIO {
  * \param mode which kind of value has to be evaluated and printed
  * \return char pointer taking a string with the count value(s)
  */
-    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob,
-                                        MolflowSimulationModel *model) {
+    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState* globPtr,
+                                        MolflowSimulationModel* model) {
         std::string ret;
 
         // Maybe validate globsimustate/model sanity (same nb facets etc) before
@@ -377,7 +377,7 @@ namespace FlowIO {
     std::string
     CSVExporter::GetLineForFacet(size_t idx,
                                  const std::vector<FDetail> &selectedValues,
-                                 GlobalSimuState *glob, MolflowSimulationModel *model) {
+                                 GlobalSimuState* globPtr, MolflowSimulationModel* model) {
         std::string buffer;
         for (auto &mode: selectedValues) {
             buffer.append(FormatCell(mode, idx, glob, model));
@@ -389,8 +389,8 @@ namespace FlowIO {
         return buffer;
     }
 
-    std::string CSVExporter::GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
-                                                MolflowSimulationModel *model) {
+    std::string CSVExporter::GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState* globPtr,
+                                                MolflowSimulationModel* model) {
         std::string buffer;
         buffer.append(GetHeader(selectedValues));
         for (int idx = 0; idx < model->facets.size(); ++idx) {
@@ -401,8 +401,8 @@ namespace FlowIO {
         return buffer;
     }
 
-    int CSVExporter::ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob,
-                                           MolflowSimulationModel *model) {
+    int CSVExporter::ExportAllFacetDetails(const std::string &fileName, GlobalSimuState* globPtr,
+                                           MolflowSimulationModel* model) {
 
 // Generate list of all modes
         std::vector<FDetail> selectedValues;
@@ -425,8 +425,8 @@ namespace FlowIO {
         return 0;
     }
 
-    int CSVExporter::ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob,
-                                                       MolflowSimulationModel *model) {
+    int CSVExporter::ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState* globPtr,
+                                                       MolflowSimulationModel* model) {
 
         // Generate list of all physical modes
         std::vector<FDetail> selectedValues;

@@ -167,7 +167,7 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
 
 /**
 * \brief Builds ADS given certain parameters
-* \param globState global simulation state for splitting techniques requiring statistical data
+* \param globStatePtr global simulation state for splitting techniques requiring statistical data
 * \param accel_type BVH or KD tree
 * \param split splitting technique corresponding to the selected AccelType
 * \param bvh_width for BVH, the amount of leaves per end node
@@ -227,11 +227,11 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
     for(auto& sFac : this->facets){
         if (sFac->sh.opacity_paramId == -1){ //constant sticking
             sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            //sFac->surf = simModel->GetSurface(sFac.get());
+            //sFac->surf = simModelPtr->GetSurface(sFac.get());
         }
         /*else {
-            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
+            auto* par = &simModelPtr->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = simModelPtr->GetParameterSurface(sFac->sh.opacity_paramId, par);
         }*/
         sFac->surf = GetSurface(sFac.get());
     }

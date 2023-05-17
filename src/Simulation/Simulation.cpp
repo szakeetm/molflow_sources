@@ -24,8 +24,8 @@ Simulation::Simulation() : tMutex()
 
     hasVolatile = false;
 
-    globState = nullptr;
-    globParticleLog = nullptr;
+    globStatePtr = nullptr;
+    globParticleLogPtr = nullptr;
 
     //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
@@ -46,8 +46,8 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
     hasVolatile =  o.hasVolatile;
 
-    globState = o.globState;
-    globParticleLog = o.globParticleLog;
+    globStatePtr = o.globStatePtr;
+    globParticleLogPtr = o.globParticleLogPtr;
 
 }
 
@@ -78,7 +78,7 @@ bool result = 0;
     return result;
 }
 
-MFSim::ParticleTracer * Simulation::GetParticleTracer(size_t i) {
+MFSim::ParticleTracer * Simulation::GetParticleTracerPtr(size_t i) {
     if(i < particleTracers.size())
         return &particleTracers.at(i);
     else
@@ -152,11 +152,11 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         errorsOnCheck++;
     }
 
-    if(!globState){
+    if(!globStatePtr){
         errLog.append("No global simulation state set\n");
         errorsOnCheck++;
     }
-    else if(!globState->initialized){
+    else if(!globStatePtr->initialized){
         errLog.append("Global simulation state not initialized\n");
         errorsOnCheck++;
     }
@@ -203,7 +203,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, AccelType::BVH, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globStatePtr, AccelType::BVH, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particleTracer : particleTracers)
@@ -223,7 +223,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     ClearSimulation();
     loadStatus="Constructing thread-local result counters";
     
-    auto* simModel = (MolflowSimulationModel*) model.get();
+    auto* simModelPtr = (MolflowSimulationModel*) model.get();
 
 #pragma omp parallel for
     // New GlobalSimuState structure for threads
@@ -234,7 +234,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
         tmpResults.Resize(model);
 
         // Init tmp vars per thread
-        particleTracer.tmpFacetVars.assign(simModel->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
@@ -254,13 +254,13 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     //loadOK = true;
     timer.Stop();
 
-    Log::console_msg_master(3, "  Load {} successful\n", simModel->sh.name);
-    Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
+    Log::console_msg_master(3, "  Load {} successful\n", simModelPtr->sh.name);
+    Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModelPtr->vertices3.size(), simModelPtr->sh.nbFacet);
 
-    Log::console_msg_master(3, "  Geom size: {} bytes\n", simModel->size());
-    Log::console_msg_master(3, "  Number of structure: {}\n", simModel->sh.nbSuper);
+    Log::console_msg_master(3, "  Geom size: {} bytes\n", simModelPtr->size());
+    Log::console_msg_master(3, "  Number of structure: {}\n", simModelPtr->sh.nbSuper);
     Log::console_msg_master(3, "  Global Hit: {} bytes\n", sizeof(GlobalHitBuffer));
-    Log::console_msg_master(3, "  Facet Hit : {} bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
+    Log::console_msg_master(3, "  Facet Hit : {} bytes\n", simModelPtr->sh.nbFacet * sizeof(FacetHitBuffer));
 /*        printf("  Texture   : %zd bytes\n", textTotalSize);
     printf("  Profile   : %zd bytes\n", profTotalSize);
     printf("  Direction : %zd bytes\n", dirTotalSize);*/
@@ -274,9 +274,9 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
 }
 
 size_t Simulation::GetHitsSize() {
-    MolflowSimulationModel* simModel = (MolflowSimulationModel*) model.get();
+    MolflowSimulationModel* simModelPtr = (MolflowSimulationModel*) model.get();
     return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
-           + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModel->tdParams.moments.size());
+           + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModelPtr->tdParams.moments.size());
 }
 
 

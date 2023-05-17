@@ -42,7 +42,7 @@ double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<d
 * \brief Updates particle direction and velocity if we are dealing with a moving facet (translated or rotated)
 */
 void
-Physics::TreatMovingFacet(MolflowSimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity) {
+Physics::TreatMovingFacet(MolflowSimulationModel* model, const Vector3d &position, Vector3d &direction, double &velocity) {
     Vector3d localVelocityToAdd;
     if (model->wp.motionType == 1) { //Translation
         localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector

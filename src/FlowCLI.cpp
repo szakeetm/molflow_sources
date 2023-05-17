@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
                     else {
                         pugi::xml_document newDoc;
                         writer.SaveGeometry(newDoc, model);
-                        //writer.SaveSimulationState(newDoc, model, globState);
+                        //writer.SaveSimulationState(newDoc, model, globStatePtr);
                         writer.SaveXMLToFile(newDoc, outFile);
                         //SettingsIO::workFile = outFile;
                     }
@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
-    MFMPI::mpi_receive_states(model, globState);
+    MFMPI::mpi_receive_states(model, globStatePtr);
     if(MFMPI::world_rank != 0){
         // Cleanup all files from nodes tmp path
         if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
