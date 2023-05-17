@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
-    MFMPI::mpi_receive_states(model, globStatePtr);
+    MFMPI::mpi_receive_states(model, globState);
     if(MFMPI::world_rank != 0){
         // Cleanup all files from nodes tmp path
         if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
