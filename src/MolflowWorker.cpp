@@ -981,7 +981,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					CalculateTextureLimits(); // Load texture limits on init
 
 					// actually loads all caches
-					RetrieveHistogramCache(); //So interface gets histogram data for disp.moment right after loadin
+					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
 					SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendAngleMaps();

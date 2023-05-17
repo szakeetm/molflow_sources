@@ -275,7 +275,6 @@ public:
     }
 
     bool initialized = false;
-    bool stateChanged = false;
 
     void clear();
 
