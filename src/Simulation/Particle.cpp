@@ -36,81 +36,51 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace MFSim;
 
 bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout) {
-    int i, j, x, y;
-
-    Chronometer timer;
-    timer.Start();
 
     if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
         return false;
     }
 
-    //SetThreadStates(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
+    //Global hits
+    globSimuState.globalHits.globalHits += tmpState.globalHits.globalHits;
+    globSimuState.globalHits.distTraveled_total += tmpState.globalHits.distTraveled_total;
+    globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
+    totalDesorbed += tmpState.globalHits.globalHits.nbDesorbed;
 
-    //SetThreadStates(PROCESS_STARTING, "Updating MC hits...", false, true);
+    //Leaks
+    for (size_t leakIndex = 0; leakIndex < tmpState.globalHits.leakCacheSize; leakIndex++)
+        globSimuState.globalHits.leakCache[(leakIndex + globSimuState.globalHits.lastLeakIndex) %
+                                            LEAKCACHESIZE] = tmpState.globalHits.leakCache[leakIndex];
+    globSimuState.globalHits.nbLeakTotal += tmpState.globalHits.nbLeakTotal;
+    globSimuState.globalHits.lastLeakIndex =
+            (globSimuState.globalHits.lastLeakIndex + tmpState.globalHits.leakCacheSize) % LEAKCACHESIZE;
+    globSimuState.globalHits.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalHits.leakCacheSize +
+                                                                tmpState.globalHits.leakCacheSize);
 
-    // Global hits and leaks: adding local hits to shared memory
-    {
-        globSimuState.globalHits.globalHits += tmpState.globalHits.globalHits;
-        globSimuState.globalHits.distTraveled_total += tmpState.globalHits.distTraveled_total;
-        globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
+    // HHit (Only prIdx 0)
+    if (particleTracerId == 0) {
+        for (size_t hitIndex = 0; hitIndex < tmpState.globalHits.hitCacheSize; hitIndex++)
+            globSimuState.globalHits.hitCache[(hitIndex + globSimuState.globalHits.lastHitIndex) %
+                                                HITCACHESIZE] = tmpState.globalHits.hitCache[hitIndex];
 
-        // Update too late
-        //totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
-        totalDesorbed += tmpState.globalHits.globalHits.nbDesorbed;
-        //tmpState.globalHits.globalHits.hit.nbDesorbed = 0;
-
-        /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
-        gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
-        gHits->globalHits.hit.nbAbsEquiv += tmpGlobalResult.globalHits.hit.nbAbsEquiv;
-        gHits->globalHits.hit.nbDesorbed += tmpGlobalResult.globalHits.hit.nbDesorbed;*/
-
-        //model->wp.sMode = MC_MODE;
-        //for(i=0;i<BOUNCEMAX;i++) globState.globalHits.wallHits[i] += wallHits[i];
-
-        // Leak
-        for (size_t leakIndex = 0; leakIndex < tmpState.globalHits.leakCacheSize; leakIndex++)
-            globSimuState.globalHits.leakCache[(leakIndex + globSimuState.globalHits.lastLeakIndex) %
-                                               LEAKCACHESIZE] = tmpState.globalHits.leakCache[leakIndex];
-        globSimuState.globalHits.nbLeakTotal += tmpState.globalHits.nbLeakTotal;
-        globSimuState.globalHits.lastLeakIndex =
-                (globSimuState.globalHits.lastLeakIndex + tmpState.globalHits.leakCacheSize) % LEAKCACHESIZE;
-        globSimuState.globalHits.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalHits.leakCacheSize +
-                                                                    tmpState.globalHits.leakCacheSize);
-
-        // HHit (Only prIdx 0)
-        if (particleTracerId == 0) {
-            for (size_t hitIndex = 0; hitIndex < tmpState.globalHits.hitCacheSize; hitIndex++)
-                globSimuState.globalHits.hitCache[(hitIndex + globSimuState.globalHits.lastHitIndex) %
-                                                  HITCACHESIZE] = tmpState.globalHits.hitCache[hitIndex];
-
-            if (tmpState.globalHits.hitCacheSize > 0) {
-                globSimuState.globalHits.lastHitIndex =
-                        (globSimuState.globalHits.lastHitIndex + tmpState.globalHits.hitCacheSize) % HITCACHESIZE;
-                globSimuState.globalHits.hitCache[globSimuState.globalHits.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-                globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
-                                                                          tmpState.globalHits.hitCacheSize);
-            }
+        if (tmpState.globalHits.hitCacheSize > 0) {
+            globSimuState.globalHits.lastHitIndex =
+                    (globSimuState.globalHits.lastHitIndex + tmpState.globalHits.hitCacheSize) % HITCACHESIZE;
+            globSimuState.globalHits.hitCache[globSimuState.globalHits.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+            globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
+                                                                        tmpState.globalHits.hitCacheSize);
         }
-
-        //Global histograms
-        globSimuState.globalHistograms += tmpState.globalHistograms;
-
-        // Facets
-        globSimuState.facetStates += tmpState.facetStates;
     }
+
+    //Global histograms
+    globSimuState.globalHistograms += tmpState.globalHistograms;
+
+    // Facets
+    globSimuState.facetStates += tmpState.facetStates;
+    
 
     globSimuState.stateChanged = true;
     globSimuState.tMutex.unlock();
-
-    //extern char *GetThreadStatuses();
-    //SetThreadStates(PROCESS_STARTING, GetThreadStatuses(), false, true);
-
-    //#if defined(DEBUG)
-    timer.Stop();
-
-    //printf("Update hits (glob): %lf s [%zu]\n", (t1 - t0) * 1.0, particleTracerId);
-    //#endif
 
     return true;
 }
@@ -242,13 +212,11 @@ void DeleteChain (HitChain** head_ref){
 */
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
+// Returns true if des limit reached or des error, false otherwise
 bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
     // Perform simulation steps
-    int returnVal = true;
-    //int allQuit = 0;
-
-//#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
+    bool limitReachedOrDesorptionError = false;
     {
         const int ompIndex = threadNum;//omp_get_thread_num();
 
@@ -256,8 +224,6 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
         size_t i;
 
 #if !defined(USE_OLD_BVH)
-        //std::vector<HitLink> hits;
-        //hits.reserve(4);
         ray.pay = nullptr;
         ray.tMax = 1.0e99;
         if(lastHitFacet)
@@ -265,8 +231,6 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
         else
             ray.lastIntersected = -1;
         ray.rng = &randomGenerator;
-
-        //particle.hits = &hits;
 #endif
         // start new particle when no previous hit facet was saved
         bool insertNewParticle = !lastHitFacet;
@@ -274,7 +238,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             if (insertNewParticle) {
                 // quit on desorp error or limit reached
                 if((model->otfParams.desorptionLimit > 0 && remainingDes==0) || !StartFromSource(ray)){
-                    returnVal = false; // desorp limit reached
+                    limitReachedOrDesorptionError = true; // desorp limit reached
                     break;
                 }
                 insertNewParticle = false;
@@ -297,50 +261,38 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             transparentHitBuffer.clear();
             bool found;
             SimulationFacet* collidedFacet;
-            double d;
-            {
-                //particle = Ray(position, particle.direction, nullptr, 1.0e99, this->particle.time);
-                //particle.hits = &hits;
-                //particle.rng = &randomGenerator;
-                ray.tMax = 1.0e99;
-                /*if(lastHitFacet)
-                    particle.lastIntersected = lastHitFacet->globalId;
-                else
-                    particle.lastIntersected = -1;*/
+			double d;
+			{
+				ray.tMax = 1.0e99;
 
-                found = model->accel.at(ray.structure)->Intersect(ray);
-                if(found){
+				found = model->accel.at(ray.structure)->Intersect(ray);
+				if (found) {
 
-                    // first pass
-                    std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
+					// first pass
+					std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
 
-                    for(auto& hit : ray.hits){
-                        if(ray.tMax <= hit.hit.colDistTranspPass) {
-                            continue;
-                        }
+					for (auto& hit : ray.transparentHits) {
+						if (ray.tMax <= hit.hit.colDistTranspPass) {
+							continue;
+						}
 
-                        if(!hit.hit.isHit) { // not hard hit
-                            //transparentHitBuffer.push_back(model->facets[hit.hitId].get());
-
-                            // Second pass for transparent hits
-                            auto tpFacet = model->facets[hit.hitId].get();
-                            if(model->wp.accel_type==1) { // account for duplicate hits on kdtree
-                                if (alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
-                                    tmpFacetVars[hit.hitId] = hit.hit;
-                                    RegisterTransparentPass(tpFacet);
-                                    alreadyHit.insert(tpFacet->globalId);
-                                }
-                            }
-                            else {
-                                tmpFacetVars[hit.hitId] = hit.hit;
-                                RegisterTransparentPass(tpFacet);
-                            }
-                        }
-                    }
-                }
-
-                ray.hits.clear();
-            }
+						// Second pass for transparent hits
+						auto tpFacet = model->facets[hit.hitId].get();
+						if (model->wp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
+							if (alreadyHit.count(tpFacet->globalId) == 0) {
+								tmpFacetVars[hit.hitId] = hit.hit;
+								RegisterTransparentPass(tpFacet);
+								alreadyHit.insert(tpFacet->globalId);
+							}
+						}
+						else { //BVH
+							tmpFacetVars[hit.hitId] = hit.hit;
+							RegisterTransparentPass(tpFacet);
+						}
+					}
+				}
+				ray.transparentHits.clear();
+			}
 
             // hard hit
             if(found){
@@ -349,50 +301,16 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                 tmpFacetVars[hit.hitId] = hit.hit;
                 d = hit.hit.colDistTranspPass;
             }
-            /*{
-                Ray tmpRay(position, particle.direction, nullptr, 1.0e99, this->particle.time);
-                if(lastHitFacet)
-                    tmpRay.lastIntersected = lastHitFacet->globalId;
-                else
-                    tmpRay.lastIntersected = -1;
-                tmpRay.rng = &randomGenerator;
 
-                HitChain* hitChain = new HitChain();
-                tmpRay.hitChain = hitChain;
-#if defined(USE_KDTREE)
-                found = model->kdtree[particle.structure].Intersect(tmpRay);
-#else
-                found = model->bvhs[particle.structure].Intersect(tmpRay);
-#endif
-                if(found){
-                    HitChain* currHit = hitChain;
-                    while(currHit){
-                        if(!currHit->hit->isHit) {
-                            transparentHitBuffer.push_back(model->facets[currHit->hitId].get());
-                        }
-                        else {
-                            collidedFacet = model->facets[currHit->hitId].get();
-                            d = currHit->hit->colDistTranspPass;
-                        }
-                        tmpFacetVars[currHit->hitId] = *currHit->hit;
-                        currHit = currHit->next;
-                    }
-                }
-
-                DeleteChain(&hitChain);
-            }*/
 #endif //use old bvh
 
             if (found) {
 
                 // Move particle to intersection point
-                ray.origin =
-                        ray.origin + d * ray.direction;
-                //distanceTraveled += d;
+                ray.origin = ray.origin + d * ray.direction;
 
                 const double lastParticleTime = ray.time; //memorize for partial hits
-                ray.time +=
-                        d / 100.0 / velocity; //conversion from cm to m
+                ray.time += d / 100.0 / velocity; //conversion from cm to m
 
                 if ((!model->wp.calcConstantFlow && (ray.time > model->wp.latestMoment))
                     || (model->wp.enableDecay &&
@@ -414,11 +332,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                         IncreaseDistanceCounters(d * oriRatio);
                         PerformTeleport(collidedFacet);
                     }
-                        /*else if ((GetOpacityAt(collidedFacet, particle.time) < 1.0) && (randomGenerator.rnd() > GetOpacityAt(collidedFacet, particle.time))) {
-                            //Transparent pass
-                            tmpState.globalHits.distTraveled_total += d;
-                            PerformTransparentPass(collidedFacet);
-                        }*/
+
                     else { //Not teleport
                         IncreaseDistanceCounters(d * oriRatio);
                         const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
@@ -466,12 +380,9 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                 ray.lastIntersected = -1;
             }
         }
-
-/*#pragma omp critical
-            ++allQuit;*/
     } // omp parallel
 
-    return returnVal;
+    return limitReachedOrDesorptionError;
 }
 
 void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {
@@ -1358,24 +1269,15 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-bool ParticleTracer::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
-    /*if(!globState) return false; // checked before simulation start */
+bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
 
     bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
-    /*totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
-    tmpState.globalHits.globalHits.hit.nbDesorbed = 0;*/
-
-    // only 1 , so no reduce necessary
+    
+    // only 1, so no reduce necessary
     if (particleLog) UpdateLog(particleLog, timeout);
 
     // At last delete tmpCache
     if(lastHitUpdateOK) tmpState.Reset();
-
-    //ResetTmpCounters();
-    // only reset buffers 1..N-1
-    // 0 = global buffer for reduce
-    /*for(auto & tmpGlobalResult : tmpGlobalResults)
-        tmpGlobalResult.Reset();*/
 
     return lastHitUpdateOK;
 }

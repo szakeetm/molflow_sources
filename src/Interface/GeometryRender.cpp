@@ -128,7 +128,6 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 			}
 
 			// Retrieve texture from shared memory (every seconds)
-			//TextureCell *hits_local = (TextureCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
 			f->BuildTexture(globState.facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}

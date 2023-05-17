@@ -32,15 +32,11 @@ ProfileSlice& ProfileSlice::operator+=(const ProfileSlice& rhs)
 	return *this;
 }
 
-/**
-* \brief Overloaded + operator summing up all parts of a ProfileSlice: lhs + rhs
-* \param rhs reference to a ProfileSlice right hand side
-* \return reference of the lhs ProfileSlice
-*/
-ProfileSlice& ProfileSlice::operator+(const ProfileSlice& rhs)
+ProfileSlice operator+(const ProfileSlice& lhs,const ProfileSlice& rhs)
 {
-	*this += rhs;
-	return *this;
+	ProfileSlice result(lhs);
+	result += rhs;
+	return result;
 }
 
 /**
@@ -61,8 +57,9 @@ TextureCell& TextureCell::operator+=(const TextureCell& rhs)
 * \param rhs reference to a TextureCell right hand side
 * \return reference of the lhs TextureCell
 */
-TextureCell& TextureCell::operator+(const TextureCell& rhs)
+TextureCell operator+(const TextureCell& lhs,const TextureCell& rhs)
 {
-	*this += rhs;
-	return *this;
+	TextureCell result(lhs);
+	result += rhs;
+	return result;
 }

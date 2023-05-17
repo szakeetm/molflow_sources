@@ -200,8 +200,7 @@ class FacetMomentSnapshot {
 public:
     FacetMomentSnapshot();
     FacetMomentSnapshot &operator+=(const FacetMomentSnapshot &rhs);
-
-    FacetMomentSnapshot &operator+(const FacetMomentSnapshot &rhs);
+   
 
     FacetHitBuffer hits;
     std::vector<ProfileSlice> profile;
@@ -220,6 +219,7 @@ public:
         );
     }
 };
+FacetMomentSnapshot operator+(const FacetMomentSnapshot &lhs,const FacetMomentSnapshot &rhs);
 
 /*!
  * @brief Object containing all simulation results of an individual facet
@@ -227,6 +227,7 @@ public:
 class FacetState {
 public:
     FacetState &operator+=(const FacetState &rhs);
+    
 
     std::vector<size_t> recordedAngleMapPdf; //Not time-dependent
     std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
@@ -238,6 +239,7 @@ public:
         );
     }
 };
+FacetState operator+(const FacetState& lhs,const FacetState& rhs);
 
 /*!
  * @brief Object containing all simulation results, global and per facet
@@ -245,7 +247,6 @@ public:
 class GlobalSimuState { //replaces old hits dataport
 public:
     GlobalSimuState &operator=(const GlobalSimuState &src);
-
     GlobalSimuState &operator+=(const GlobalSimuState &src);
 
     GlobalSimuState(GlobalSimuState &&rhs) noexcept: tMutex() {

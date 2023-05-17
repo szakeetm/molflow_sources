@@ -108,7 +108,7 @@ public:
 	double sum_v_ort=0.0;
 	double sum_1_per_ort_velocity=0.0;
 	ProfileSlice& operator+=(const ProfileSlice& rhs);
-	ProfileSlice& operator+(const ProfileSlice& rhs);
+	
     template<class Archive>
     void serialize(Archive & archive)
     {
@@ -119,6 +119,7 @@ public:
         );
     }
 };
+ProfileSlice operator+(const ProfileSlice& lhs,const ProfileSlice& rhs);
 
 class TextureCell {
 public:
@@ -126,7 +127,6 @@ public:
 	double sum_v_ort_per_area=0.0;
 	double sum_1_per_ort_velocity=0.0;
 	TextureCell& operator+=(const TextureCell& rhs);
-	TextureCell& operator+(const TextureCell& rhs);
     template<class Archive>
     void serialize(Archive & archive)
     {
@@ -137,6 +137,7 @@ public:
         );
     }
 };
+TextureCell operator+(const TextureCell& lhs,const TextureCell& rhs); //non-member function so std::plus can use it
 
 //Texture limit types
 typedef struct {

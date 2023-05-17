@@ -82,7 +82,7 @@ namespace MFSim {
 
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
-        bool UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
+        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
         bool UpdateLog(ParticleLog *globalLog, size_t timeout);
 
         void Reset();

@@ -524,7 +524,6 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
 * \brief zero-init for all structures
 */
 void GlobalSimuState::Reset() {
-    //LockMutex(mutex);
     tMutex.lock();
     for (auto& h : globalHistograms) {
         ZEROVECTOR(h.distanceHistogram);
@@ -545,7 +544,6 @@ void GlobalSimuState::Reset() {
         }
     }
     tMutex.unlock();
-    //ReleaseMutex(mutex);
 }
 
 /**
@@ -1148,11 +1146,16 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 * \return address of this (lhs)
 */
 FacetHistogramBuffer& FacetHistogramBuffer::operator+=(const FacetHistogramBuffer & rhs) {
-    // if (model.wp.globalHistogramParams.recordBounce)
     this->nbHitsHistogram += rhs.nbHitsHistogram;
     this->distanceHistogram += rhs.distanceHistogram;
     this->timeHistogram += rhs.timeHistogram;
     return *this;
+}
+
+FacetHistogramBuffer operator+(const FacetHistogramBuffer & lhs, const FacetHistogramBuffer & rhs) {
+    FacetHistogramBuffer result(lhs);
+    result += rhs;
+    return result;
 }
 
 FacetMomentSnapshot::FacetMomentSnapshot() : hits(), histogram(){
@@ -1173,14 +1176,10 @@ FacetMomentSnapshot& FacetMomentSnapshot::operator+=(const FacetMomentSnapshot &
     return *this;
 }
 
-/**
-* \brief + operator, simply calls implemented +=
-* \param rhs reference object on the right hand
-* \return address of this (lhs)
-*/
-FacetMomentSnapshot& FacetMomentSnapshot::operator+(const FacetMomentSnapshot & rhs) {
-    *this += rhs;
-    return *this;
+FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMomentSnapshot & rhs) {
+    FacetMomentSnapshot result(lhs);
+    result += rhs;
+    return result;
 }
 
 /**
@@ -1194,4 +1193,16 @@ FacetState& FacetState::operator+=(const FacetState & rhs) {
         this->recordedAngleMapPdf += rhs.recordedAngleMapPdf;
     this->momentResults += rhs.momentResults;
     return *this;
+}
+
+FacetState operator+(const FacetState& lhs, const FacetState& rhs) {
+    FacetState result(lhs);
+    result += rhs;
+    return result;
+}
+
+DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
+    DirectionCell result(lhs);
+    result += rhs;
+    return result;
 }
