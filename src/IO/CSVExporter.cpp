@@ -73,15 +73,15 @@ namespace FlowIO {
 
     static const char *ynStr[] = {"No", "Yes"};
 
-    double GetMoleculesPerTP(size_t moment, MolflowSimulationModel *model,
+    double GetMoleculesPerTP(size_t moment, MolflowSimulationModel *modelPtr,
                              GlobalSimuState* globPtr) {
-        if (glob->globalStats.globalHits.nbDesorbed == 0)
+        if (globPtr->globalStats.globalHits.nbDesorbed == 0)
             return 0; // avoid division by 0
         if (moment == 0) {
             // Constant flow
             // Each test particle represents a certain real molecule influx per second
-            return model->wp.finalOutgassingRate /
-                   (double) glob->globalStats.globalHits.nbDesorbed;
+            return modelPtr->wp.finalOutgassingRate /
+                   (double)globPtr->globalStats.globalHits.nbDesorbed;
         } else {
             // Time-dependent mode
             // Each test particle represents a certain absolute number of real
@@ -91,11 +91,11 @@ namespace FlowIO {
             // second. Hence we DIVIDE by the time window length, even if it's
             // uninuitional.
             auto timeWindow =
-                    model->tdParams.moments[moment - 1].second -
-                    model->tdParams.moments[moment - 1]
+                modelPtr->tdParams.moments[moment - 1].second -
+                modelPtr->tdParams.moments[moment - 1]
                             .first; // TODO: Can we get access to the time windows directly?
-            return (model->wp.totalDesorbedMolecules / timeWindow) /
-                   (double) glob->globalStats.globalHits.nbDesorbed;
+            return (modelPtr->wp.totalDesorbedMolecules / timeWindow) /
+                   (double)globPtr->globalStats.globalHits.nbDesorbed;
         }
     }
 
@@ -170,16 +170,16 @@ namespace FlowIO {
  * \return char pointer taking a string with the count value(s)
  */
     std::string CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState* globPtr,
-                                        MolflowSimulationModel* model) {
+                                        MolflowSimulationModel* modelPtr) {
         std::string ret;
 
         // Maybe validate globsimustate/model sanity (same nb facets etc) before
-        if (model->facets.size() <= idx || glob->facetStates.size() <= idx)
+        if (modelPtr->facets.size() <= idx || globPtr->facetStates.size() <= idx)
             return ret;
 
-        auto *facet = model->facets[idx].get();
+        auto *facet = modelPtr->facets[idx].get();
         auto moment = 0;
-        auto &fHit = glob->facetStates[idx].momentResults[moment].hits;
+        auto &fHit = globPtr->facetStates[idx].momentResults[moment].hits;
 
         switch (mode) {
             case FDetail::F_ID:
@@ -294,9 +294,7 @@ namespace FlowIO {
             case FDetail::F_IMPINGEMENT: // imp.rate
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(
-                                moment, model,
-                                glob); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
                 ret = fmt::format("{}", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
                 // 11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
                 break;
@@ -304,7 +302,7 @@ namespace FlowIO {
             case FDetail::F_DENSITY1P: // particle density
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(moment, model, glob) *
+                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
@@ -315,19 +313,19 @@ namespace FlowIO {
             case FDetail::F_DENSITYKGP: // gas density
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(moment, model, glob) *
+                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
                 ret = fmt::format("{}",
                         fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef *
-                        model->wp.gasMass / 1000.0 / 6E23);
+                        modelPtr->wp.gasMass / 1000.0 / 6E23);
                 break;
             }
             case FDetail::F_PRESSURE: // avg.pressure
             {
-                double dCoef = 1E4 * GetMoleculesPerTP(moment, model, glob) *
-                               (model->wp.gasMass / 1000 / 6E23) *
+                double dCoef = 1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
+                               (modelPtr->wp.gasMass / 1000 / 6E23) *
                                0.0100; // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
                 ret = fmt::format("{}", fHit.sum_v_ort * dCoef / GetArea(*facet));
@@ -380,7 +378,7 @@ namespace FlowIO {
                                  GlobalSimuState* globPtr, MolflowSimulationModel* model) {
         std::string buffer;
         for (auto &mode: selectedValues) {
-            buffer.append(FormatCell(mode, idx, glob, model));
+            buffer.append(FormatCell(mode, idx, globPtr, model));
             buffer.append(",");
         }
         if (!selectedValues.empty() && !buffer.empty())
@@ -394,7 +392,7 @@ namespace FlowIO {
         std::string buffer;
         buffer.append(GetHeader(selectedValues));
         for (int idx = 0; idx < model->facets.size(); ++idx) {
-            buffer.append(GetLineForFacet(idx, selectedValues, glob, model));
+            buffer.append(GetLineForFacet(idx, selectedValues, globPtr, model));
             buffer.append("\n");
         }
 
@@ -411,7 +409,7 @@ namespace FlowIO {
             selectedValues.push_back(entry.first);
         }
         std::sort(selectedValues.begin(), selectedValues.end());
-        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
+        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globPtr, model);
 
         try {
             std::ofstream ofs(fileName);
@@ -437,7 +435,7 @@ namespace FlowIO {
         selectedValues.push_back(FDetail::F_DENSITYKGP);
         selectedValues.push_back(FDetail::F_AVGSPEED);
 
-        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
+        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globPtr, model);
 
         try {
             std::ofstream ofs(fileName);
