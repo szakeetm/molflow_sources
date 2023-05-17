@@ -221,7 +221,7 @@ void PressureEvolution::refreshChart() {
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer& gHits = worker->interfaceGlobalState.globalHits;
+	GlobalHitBuffer& gHits = worker->interfaceGlobalState.globalStats;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
 	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);

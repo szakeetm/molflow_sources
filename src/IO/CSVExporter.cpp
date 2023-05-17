@@ -75,13 +75,13 @@ namespace FlowIO {
 
     double GetMoleculesPerTP(size_t moment, MolflowSimulationModel *model,
                              GlobalSimuState *glob) {
-        if (glob->globalHits.globalHits.nbDesorbed == 0)
+        if (glob->globalStats.globalHits.nbDesorbed == 0)
             return 0; // avoid division by 0
         if (moment == 0) {
             // Constant flow
             // Each test particle represents a certain real molecule influx per second
             return model->wp.finalOutgassingRate /
-                   (double) glob->globalHits.globalHits.nbDesorbed;
+                   (double) glob->globalStats.globalHits.nbDesorbed;
         } else {
             // Time-dependent mode
             // Each test particle represents a certain absolute number of real
@@ -95,7 +95,7 @@ namespace FlowIO {
                     model->tdParams.moments[moment - 1]
                             .first; // TODO: Can we get access to the time windows directly?
             return (model->wp.totalDesorbedMolecules / timeWindow) /
-                   (double) glob->globalHits.globalHits.nbDesorbed;
+                   (double) glob->globalStats.globalHits.nbDesorbed;
         }
     }
 

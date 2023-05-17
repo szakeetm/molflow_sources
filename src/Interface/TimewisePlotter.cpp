@@ -272,7 +272,7 @@ void TimewisePlotter::refreshViews() {
 		else momentIndex=m+1; //any other 'normal' moment*/
 		const std::vector<ProfileSlice>& profile = worker->interfaceGlobalState.facetStates[profCombo->GetUserValueAt(idx)].momentResults[v->userData1].profile;
 		//ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
-			if (worker->interfaceGlobalState.globalHits.globalHits.nbDesorbed > 0){
+			if (worker->interfaceGlobalState.globalStats.globalHits.nbDesorbed > 0){
 
 				if (displayMode == ProfileDisplayModes::Raw) {
 					for (int j = 0; j < PROFILE_SIZE; j++)

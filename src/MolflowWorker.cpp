@@ -570,7 +570,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
-				SendToHitBuffer(); //Global hit counters and hit/leak cache
+				simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog); //Global hit counters and hit/leak cache
 				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
 			}
 			else { //insert
@@ -715,7 +715,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				if (version >= 8)
 					geom->LoadProfileGEO(*file, interfaceGlobalState, version);
 
-				SendToHitBuffer(); //Global hit counters and hit/leak cache
+				simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog); //Global hit counters and hit/leak cache
 				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
 				SendAngleMaps();
 
@@ -982,7 +982,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					// actually loads all caches
 					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
-					SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+					simManager.ForwardGlobalCounter(&interfaceGlobalState, &particleLog);
 					SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendAngleMaps();
 
@@ -1154,9 +1154,9 @@ void Worker::Update(float appTime) {
 				SHGHITS *gHits = (SHGHITS *)buffer;
 
 				// Copy Global hits and leaks
-				nbMCHit = gHits->globalHits.hit.nbMCHit;
-				nbAbsEquiv = gHits->globalHits.hit.nbAbsEquiv;
-				nbDesorption = gHits->globalHits.hit.nbDesorbed;
+				nbMCHit = gHits->globalStats.hit.nbMCHit;
+				nbAbsEquiv = gHits->globalStats.hit.nbAbsEquiv;
+				nbDesorption = gHits->globalStats.hit.nbDesorbed;
 				distTraveled_total = gHits->distTraveled_total;
 				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
 
@@ -1467,7 +1467,7 @@ void Worker::ResetWorkerStats() {
 
 	interfaceGlobalState.Reset();
 	particleLog.clear();
-	//memset(&interfaceGlobalState.globalHits, 0, sizeof(GlobalHitBuffer));
+	//memset(&interfaceGlobalState.globalStats, 0, sizeof(GlobalHitBuffer));
 
 
 }
@@ -1494,7 +1494,7 @@ void Worker::Start() {
 	if (model->wp.totalDesorbedMolecules <= 0.0)
 		throw std::runtime_error("Total outgassing is zero.");
 
-	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= interfaceGlobalState.globalHits.globalHits.nbDesorbed)
+	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= interfaceGlobalState.globalStats.globalHits.nbDesorbed)
 		throw std::runtime_error("Desorption limit has already been reached.");
 
 	try {
@@ -1522,18 +1522,18 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-	if (interfaceGlobalState.globalHits.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
+	if (interfaceGlobalState.globalStats.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->wp.finalOutgassingRate / interfaceGlobalState.globalHits.globalHits.nbDesorbed;
+		return model->wp.finalOutgassingRate / interfaceGlobalState.globalStats.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
 		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-			interfaceGlobalState.globalHits.globalHits.nbDesorbed;
+			interfaceGlobalState.globalStats.globalHits.nbDesorbed;
 	}
 }
 

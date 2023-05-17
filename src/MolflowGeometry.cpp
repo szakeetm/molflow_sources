@@ -768,18 +768,18 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.globalHits.nbMCHit = file.ReadSizeT();
-	worker->interfaceGlobalState.globalHits.globalHits.nbHitEquiv = static_cast<double>(worker->interfaceGlobalState.globalHits.globalHits.nbMCHit);
+	worker->interfaceGlobalState.globalStats.globalHits.nbMCHit = file.ReadSizeT();
+	worker->interfaceGlobalState.globalStats.globalHits.nbHitEquiv = static_cast<double>(worker->interfaceGlobalState.globalStats.globalHits.nbMCHit);
 
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.globalHits.nbDesorbed = file.ReadSizeT();
+	worker->interfaceGlobalState.globalStats.globalHits.nbDesorbed = file.ReadSizeT();
 
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.nbLeakTotal = file.ReadSizeT();
+	worker->interfaceGlobalState.globalStats.nbLeakTotal = file.ReadSizeT();
 
 	if (*version >= 12) {
 		file.ReadKeyword("totalAbs"); file.ReadKeyword(":");
-		worker->interfaceGlobalState.globalHits.globalHits.nbAbsEquiv = (double)file.ReadSizeT();
+		worker->interfaceGlobalState.globalStats.globalHits.nbAbsEquiv = (double)file.ReadSizeT();
 		if (*version >= 15) {
 			file.ReadKeyword("totalDist_total");
 		}
@@ -787,16 +787,16 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			file.ReadKeyword("totalDist");
 		}
 		file.ReadKeyword(":");
-		worker->interfaceGlobalState.globalHits.distTraveled_total = file.ReadDouble();
+		worker->interfaceGlobalState.globalStats.distTraveled_total = file.ReadDouble();
 		if (*version >= 15) {
 			file.ReadKeyword("totalDist_fullHitsOnly"); file.ReadKeyword(":");
-			worker->interfaceGlobalState.globalHits.distTraveledTotal_fullHitsOnly = file.ReadDouble();
+			worker->interfaceGlobalState.globalStats.distTraveledTotal_fullHitsOnly = file.ReadDouble();
 		}
 	}
 	else {
-		worker->interfaceGlobalState.globalHits.globalHits.nbAbsEquiv = 0.0;
-		worker->interfaceGlobalState.globalHits.distTraveled_total = 0.0;
-		worker->interfaceGlobalState.globalHits.distTraveledTotal_fullHitsOnly = 0.0;
+		worker->interfaceGlobalState.globalStats.globalHits.nbAbsEquiv = 0.0;
+		worker->interfaceGlobalState.globalStats.distTraveled_total = 0.0;
+		worker->interfaceGlobalState.globalStats.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
 	worker->model->otfParams.desorptionLimit = file.ReadSizeT();
@@ -973,18 +973,18 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		// Read leaks
 		file.ReadKeyword("leaks"); file.ReadKeyword("{");
 		file.ReadKeyword("nbLeak"); file.ReadKeyword(":");
-		worker->interfaceGlobalState.globalHits.leakCacheSize = file.ReadInt();
-		for (int i = 0; i < worker->interfaceGlobalState.globalHits.leakCacheSize; i++) {
+		worker->interfaceGlobalState.globalStats.leakCacheSize = file.ReadInt();
+		for (int i = 0; i < worker->interfaceGlobalState.globalStats.leakCacheSize; i++) {
 			int idx = file.ReadInt();
 			if (idx != i) throw Error(file.MakeError("Wrong leak index !"));
 			if (i < LEAKCACHESIZE) {
-				worker->interfaceGlobalState.globalHits.leakCache[i].pos.x = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.leakCache[i].pos.y = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.leakCache[i].pos.z = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].pos.x = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].pos.y = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].pos.z = file.ReadDouble();
 
-				worker->interfaceGlobalState.globalHits.leakCache[i].dir.x = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.leakCache[i].dir.y = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.leakCache[i].dir.z = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].dir.x = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].dir.y = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.leakCache[i].dir.z = file.ReadDouble();
 			}
 			else { //Saved file has more leaks than we could load
 				for (int skipIndex = 0; skipIndex < 6; skipIndex++)
@@ -996,16 +996,16 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		// Read hit cache
 		file.ReadKeyword("hits"); file.ReadKeyword("{");
 		file.ReadKeyword("nbHHit"); file.ReadKeyword(":");
-		worker->interfaceGlobalState.globalHits.hitCacheSize = file.ReadInt();
-		for (int i = 0; i < worker->interfaceGlobalState.globalHits.hitCacheSize; i++) {
+		worker->interfaceGlobalState.globalStats.hitCacheSize = file.ReadInt();
+		for (int i = 0; i < worker->interfaceGlobalState.globalStats.hitCacheSize; i++) {
 			int idx = file.ReadInt();
 			if (idx != i) throw Error(file.MakeError("Wrong hit cache index !"));
 			if (i < HITCACHESIZE) {
-				worker->interfaceGlobalState.globalHits.hitCache[i].pos.x = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.hitCache[i].pos.y = file.ReadDouble();
-				worker->interfaceGlobalState.globalHits.hitCache[i].pos.z = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.hitCache[i].pos.x = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.hitCache[i].pos.y = file.ReadDouble();
+				worker->interfaceGlobalState.globalStats.hitCache[i].pos.z = file.ReadDouble();
 
-				worker->interfaceGlobalState.globalHits.hitCache[i].type = file.ReadInt();
+				worker->interfaceGlobalState.globalStats.hitCache[i].type = file.ReadInt();
 			}
 			else { //Saved file has more hits than we could load
 				for (int i = 0; i < 3; i++)
@@ -1108,22 +1108,22 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.globalHits.nbMCHit = 0;
-	worker->interfaceGlobalState.globalHits.globalHits.nbHitEquiv = 0.0;
+	worker->interfaceGlobalState.globalStats.globalHits.nbMCHit = 0;
+	worker->interfaceGlobalState.globalStats.globalHits.nbHitEquiv = 0.0;
 	file.ReadSizeT();
 	if (*version >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.globalHits.nbDesorbed = 0;
+	worker->interfaceGlobalState.globalStats.globalHits.nbDesorbed = 0;
 	file.ReadSizeT();
 	if (*version >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		/*loaded_no_scans = */file.ReadDouble();
 	}
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->interfaceGlobalState.globalHits.nbLeakTotal = 0; file.ReadSizeT();
+	worker->interfaceGlobalState.globalStats.nbLeakTotal = 0; file.ReadSizeT();
 	if (*version > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -1359,9 +1359,9 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 
 		// Globals
 
-		/*gHits->globalHits.hit.nbMCHit = loaded_nbMCHit;
-		gHits->globalHits.hit.nbDesorbed = loaded_nbDesorption;
-		gHits->globalHits.hit.nbAbsEquiv = loaded_nbAbsEquiv;
+		/*gHits->globalStats.hit.nbMCHit = loaded_nbMCHit;
+		gHits->globalStats.hit.nbDesorbed = loaded_nbDesorption;
+		gHits->globalStats.hit.nbAbsEquiv = loaded_nbAbsEquiv;
 		gHits->nbLeakTotal = loaded_nbLeak;
 		gHits->distTraveled_total = distTraveled_total;
 
@@ -1517,8 +1517,8 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	/*switch(gHits->mode) {
 
 	case MC_MODE:
-	if( gHits->globalHits.hit.nbDesorbed>0 ) {
-	dCoef = (float)totalOutgassing / (float)gHits->globalHits.hit.nbDesorbed / 8.31 * wp.gasMass / 100;
+	if( gHits->globalStats.hit.nbDesorbed>0 ) {
+	dCoef = (float)totalOutgassing / (float)gHits->globalStats.hit.nbDesorbed / 8.31 * wp.gasMass / 100;
 	texMinAutoscale = gHits->minHit * dCoef;
 	texMaxAutoscale = gHits->maxHit * dCoef;
 	} else {
@@ -1536,12 +1536,12 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 
 	prg.SetMessage("Writing geometry details...");
 	file.Write("version:"); file.Write(GEOVERSION, "\n");
-	file.Write("totalHit:"); file.Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbMCHit : 0, "\n");
-	file.Write("totalDes:"); file.Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbDesorbed : 0, "\n");
-	file.Write("totalLeak:"); file.Write((!crashSave && !saveSelected) ? globState.globalHits.nbLeakTotal : 0, "\n");
-	file.Write("totalAbs:"); file.Write((!crashSave && !saveSelected) ? (size_t)globState.globalHits.globalHits.nbAbsEquiv : 0, "\n");
-	file.Write("totalDist_total:"); file.Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveled_total : 0, "\n");
-	file.Write("totalDist_fullHitsOnly:"); file.Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveledTotal_fullHitsOnly : 0, "\n");
+	file.Write("totalHit:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.globalHits.nbMCHit : 0, "\n");
+	file.Write("totalDes:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.globalHits.nbDesorbed : 0, "\n");
+	file.Write("totalLeak:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.nbLeakTotal : 0, "\n");
+	file.Write("totalAbs:"); file.Write((!crashSave && !saveSelected) ? (size_t)globState.globalStats.globalHits.nbAbsEquiv : 0, "\n");
+	file.Write("totalDist_total:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.distTraveled_total : 0, "\n");
+	file.Write("totalDist_fullHitsOnly:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.distTraveledTotal_fullHitsOnly : 0, "\n");
 	file.Write("maxDes:"); file.Write((!crashSave && !saveSelected) ? worker->model->otfParams.desorptionLimit : 0, "\n");
 
 	auto selectedFacets = GetSelectedFacets();
@@ -1641,18 +1641,18 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	//leaks
 	prg.SetMessage("Writing leaks...");
 	file.Write("leaks {\n");
-	file.Write("  nbLeak:"); file.Write((!crashSave && !saveSelected) ? worker->interfaceGlobalState.globalHits.leakCacheSize : 0, "\n");
-	for (int i = 0; (i < worker->interfaceGlobalState.globalHits.leakCacheSize) && (!crashSave && !saveSelected); i++) {
+	file.Write("  nbLeak:"); file.Write((!crashSave && !saveSelected) ? worker->interfaceGlobalState.globalStats.leakCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->interfaceGlobalState.globalStats.leakCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file.Write("  ");
 		file.Write(i, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].pos.x, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].pos.y, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].pos.z, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].pos.x, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].pos.y, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].pos.z, " ");
 
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].dir.x, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].dir.y, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.leakCache[i].dir.z, "\n");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].dir.x, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].dir.y, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.leakCache[i].dir.z, "\n");
 	}
 
 	file.Write("}\n");
@@ -1661,16 +1661,16 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	prg.SetMessage("Writing hit cache...");
 
 	file.Write("hits {\n");
-	file.Write("  nbHHit:"); file.Write((!crashSave && !saveSelected) ? worker->interfaceGlobalState.globalHits.hitCacheSize : 0, "\n");
-	for (int i = 0; (i < worker->interfaceGlobalState.globalHits.hitCacheSize) && (!crashSave && !saveSelected); i++) {
+	file.Write("  nbHHit:"); file.Write((!crashSave && !saveSelected) ? worker->interfaceGlobalState.globalStats.hitCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->interfaceGlobalState.globalStats.hitCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file.Write("  ");
 		file.Write(i, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.hitCache[i].pos.x, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.hitCache[i].pos.y, " ");
-		file.Write(worker->interfaceGlobalState.globalHits.hitCache[i].pos.z, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.hitCache[i].pos.x, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.hitCache[i].pos.y, " ");
+		file.Write(worker->interfaceGlobalState.globalStats.hitCache[i].pos.z, " ");
 
-		file.Write(worker->interfaceGlobalState.globalHits.hitCache[i].type, "\n");
+		file.Write(worker->interfaceGlobalState.globalStats.hitCache[i].type, "\n");
 	}
 
 	file.Write("}\n");
@@ -1780,10 +1780,10 @@ void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState& globState, bool
 	// Globals
 
 	// Unused
-	file.Write(globState.globalHits.globalHits.nbMCHit, "\n");
-	file.Write(globState.globalHits.nbLeakTotal, "\n");
+	file.Write(globState.globalStats.globalHits.nbMCHit, "\n");
+	file.Write(globState.globalStats.nbLeakTotal, "\n");
 
-	file.Write(globState.globalHits.globalHits.nbDesorbed, "\n");
+	file.Write(globState.globalStats.globalHits.nbDesorbed, "\n");
 	file.Write(0, "\n"); //Desorption limit
 
 	file.Write(sh.nbVertex, "\n");
@@ -2051,7 +2051,7 @@ void MolflowGeometry::ExportProfiles(FILE* file, int isTXT, Worker* worker) {
 				if (f->sh.isProfile) {
 
 					double dCoef = 1.0;
-					//double nbDes = (shGHit->globalHits.hit.nbDesorbed > 0) ? (double)shGHit->globalHits.hit.nbDesorbed : 1.0;
+					//double nbDes = (shGHit->globalStats.hit.nbDesorbed > 0) ? (double)shGHit->globalStats.hit.nbDesorbed : 1.0;
 					size_t profOffset = PROFILE_SIZE * sizeof(ProfileSlice) * m;
 					const std::vector<ProfileSlice>& prof = worker->interfaceGlobalState.facetStates[i].momentResults[m].profile;
 					double scaleX, scaleY;
@@ -2749,38 +2749,38 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			xml_node globalNode = newMoment.append_child("Global");
 
 			xml_node hitsNode = globalNode.append_child("Hits");
-			hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.nbMCHit;
-			hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.nbHitEquiv;
-			hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.nbDesorbed;
-			hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.nbAbsEquiv;
-			hitsNode.append_attribute("totalDist_total") = globState.globalHits.distTraveled_total;
-			hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalHits.distTraveledTotal_fullHitsOnly;
-			hitsNode.append_attribute("totalLeak") = globState.globalHits.nbLeakTotal;
+			hitsNode.append_attribute("totalHit") = globState.globalStats.globalHits.nbMCHit;
+			hitsNode.append_attribute("totalHitEquiv") = globState.globalStats.globalHits.nbHitEquiv;
+			hitsNode.append_attribute("totalDes") = globState.globalStats.globalHits.nbDesorbed;
+			hitsNode.append_attribute("totalAbsEquiv") = globState.globalStats.globalHits.nbAbsEquiv;
+			hitsNode.append_attribute("totalDist_total") = globState.globalStats.distTraveled_total;
+			hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalStats.distTraveledTotal_fullHitsOnly;
+			hitsNode.append_attribute("totalLeak") = globState.globalStats.nbLeakTotal;
 			hitsNode.append_attribute("maxDesorption") = work->model->otfParams.desorptionLimit;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-			hitCacheNode.append_attribute("nb") = work->interfaceGlobalState.globalHits.hitCacheSize;
+			hitCacheNode.append_attribute("nb") = work->interfaceGlobalState.globalStats.hitCacheSize;
 
-			for (int i = 0; i < work->interfaceGlobalState.globalHits.hitCacheSize; i++) {
+			for (int i = 0; i < work->interfaceGlobalState.globalStats.hitCacheSize; i++) {
 				xml_node newHit = hitCacheNode.append_child("Hit");
 				newHit.append_attribute("id") = i;
-				newHit.append_attribute("posX") = work->interfaceGlobalState.globalHits.hitCache[i].pos.x;
-				newHit.append_attribute("posY") = work->interfaceGlobalState.globalHits.hitCache[i].pos.y;
-				newHit.append_attribute("posZ") = work->interfaceGlobalState.globalHits.hitCache[i].pos.z;
-				newHit.append_attribute("type") = work->interfaceGlobalState.globalHits.hitCache[i].type;
+				newHit.append_attribute("posX") = work->interfaceGlobalState.globalStats.hitCache[i].pos.x;
+				newHit.append_attribute("posY") = work->interfaceGlobalState.globalStats.hitCache[i].pos.y;
+				newHit.append_attribute("posZ") = work->interfaceGlobalState.globalStats.hitCache[i].pos.z;
+				newHit.append_attribute("type") = work->interfaceGlobalState.globalStats.hitCache[i].type;
 			}
 
 			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-			leakCacheNode.append_attribute("nb") = work->interfaceGlobalState.globalHits.leakCacheSize;
-			for (int i = 0; i < work->interfaceGlobalState.globalHits.leakCacheSize; i++) {
+			leakCacheNode.append_attribute("nb") = work->interfaceGlobalState.globalStats.leakCacheSize;
+			for (int i = 0; i < work->interfaceGlobalState.globalStats.leakCacheSize; i++) {
 				xml_node newLeak = leakCacheNode.append_child("Leak");
 				newLeak.append_attribute("id") = i;
-				newLeak.append_attribute("posX") = work->interfaceGlobalState.globalHits.leakCache[i].pos.x;
-				newLeak.append_attribute("posY") = work->interfaceGlobalState.globalHits.leakCache[i].pos.y;
-				newLeak.append_attribute("posZ") = work->interfaceGlobalState.globalHits.leakCache[i].pos.z;
-				newLeak.append_attribute("dirX") = work->interfaceGlobalState.globalHits.leakCache[i].dir.x;
-				newLeak.append_attribute("dirY") = work->interfaceGlobalState.globalHits.leakCache[i].dir.y;
-				newLeak.append_attribute("dirZ") = work->interfaceGlobalState.globalHits.leakCache[i].dir.z;
+				newLeak.append_attribute("posX") = work->interfaceGlobalState.globalStats.leakCache[i].pos.x;
+				newLeak.append_attribute("posY") = work->interfaceGlobalState.globalStats.leakCache[i].pos.y;
+				newLeak.append_attribute("posZ") = work->interfaceGlobalState.globalStats.leakCache[i].pos.z;
+				newLeak.append_attribute("dirX") = work->interfaceGlobalState.globalStats.leakCache[i].dir.x;
+				newLeak.append_attribute("dirY") = work->interfaceGlobalState.globalStats.leakCache[i].dir.y;
+				newLeak.append_attribute("dirZ") = work->interfaceGlobalState.globalStats.leakCache[i].dir.z;
 			}
 		} //end global node
 
@@ -3596,54 +3596,54 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState&
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
 			xml_node hitsNode = globalNode.child("Hits");
-			globState.globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+			globState.globalStats.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
 			if (hitsNode.attribute("totalHitEquiv")) {
-				globState.globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+				globState.globalStats.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				globState.globalHits.globalHits.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.nbMCHit);
+				globState.globalStats.globalHits.nbHitEquiv = static_cast<double>(globState.globalStats.globalHits.nbMCHit);
 			}
-			globState.globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+			globState.globalStats.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
 			if (hitsNode.attribute("totalAbsEquiv")) {
-				globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+				globState.globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+				globState.globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
 			}
 			if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
-				globState.globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
-				globState.globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+				globState.globalStats.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+				globState.globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
 			}
 			else
-				globState.globalHits.distTraveled_total = globState.globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
-			globState.globalHits.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+				globState.globalStats.distTraveled_total = globState.globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
+			globState.globalStats.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
 
-			globState.globalHits.hitCacheSize = 0;
+			globState.globalStats.hitCacheSize = 0;
 			xml_node hitCacheNode = globalNode.child("Hit_Cache");
 			for (xml_node newHit : hitCacheNode.children("Hit")) {
-				if (globState.globalHits.hitCacheSize < HITCACHESIZE) {
-					globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
-					globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
-					globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
-					globState.globalHits.hitCache[globState.globalHits.hitCacheSize].type = newHit.attribute("type").as_int();
-					globState.globalHits.hitCacheSize++;
+				if (globState.globalStats.hitCacheSize < HITCACHESIZE) {
+					globState.globalStats.hitCache[globState.globalStats.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
+					globState.globalStats.hitCache[globState.globalStats.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
+					globState.globalStats.hitCache[globState.globalStats.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
+					globState.globalStats.hitCache[globState.globalStats.hitCacheSize].type = newHit.attribute("type").as_int();
+					globState.globalStats.hitCacheSize++;
 				}
 			}
 
-			globState.globalHits.leakCacheSize = 0;
+			globState.globalStats.leakCacheSize = 0;
 			xml_node leakCacheNode = globalNode.child("Leak_Cache");
 			for (xml_node newLeak : leakCacheNode.children("Leak")) {
-				if (globState.globalHits.leakCacheSize < LEAKCACHESIZE) {
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
-					globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
-					globState.globalHits.leakCacheSize++;
+				if (globState.globalStats.leakCacheSize < LEAKCACHESIZE) {
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
+					globState.globalStats.leakCache[globState.globalStats.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
+					globState.globalStats.leakCacheSize++;
 				}
 			}
 		} //end global node
@@ -4022,7 +4022,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState&
 	*/
 
 	xml_node minMaxNode = resultNode.child("TextureMinMax");
-	/* //First write to worker->interfaceGlobalState.globalHits, then sync it to ghits(dphit) with SendToHitBuffer()
+	/* //First write to worker->interfaceGlobalState.globalStats, then sync it to ghits(dphit) with SendToHitBuffer()
 	gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
 	gHits->texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
 	gHits->texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();

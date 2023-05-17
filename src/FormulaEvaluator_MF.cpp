@@ -191,22 +191,22 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 		}
 	}
 	else if (iequals(v->name, "SUMDES")) {
-		v->value = (double)worker->interfaceGlobalState.globalHits.globalHits.nbDesorbed;
+		v->value = (double)worker->interfaceGlobalState.globalStats.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
-        v->value = worker->interfaceGlobalState.globalHits.globalHits.nbAbsEquiv;
+        v->value = worker->interfaceGlobalState.globalStats.globalHits.nbAbsEquiv;
     }
     else if (iequals(v->name, "SUMMCHIT")) {
-        v->value = (double)worker->interfaceGlobalState.globalHits.globalHits.nbMCHit;
+        v->value = (double)worker->interfaceGlobalState.globalStats.globalHits.nbMCHit;
     }
     else if (iequals(v->name, "SUMHIT")) {
-        v->value = worker->interfaceGlobalState.globalHits.globalHits.nbHitEquiv;
+        v->value = worker->interfaceGlobalState.globalStats.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "MPP")) {
-        v->value = worker->interfaceGlobalState.globalHits.distTraveled_total / (double)worker->interfaceGlobalState.globalHits.globalHits.nbDesorbed;
+        v->value = worker->interfaceGlobalState.globalStats.distTraveled_total / (double)worker->interfaceGlobalState.globalStats.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "MFP")) {
-        v->value = worker->interfaceGlobalState.globalHits.distTraveledTotal_fullHitsOnly / worker->interfaceGlobalState.globalHits.globalHits.nbHitEquiv;
+        v->value = worker->interfaceGlobalState.globalStats.distTraveledTotal_fullHitsOnly / worker->interfaceGlobalState.globalStats.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;

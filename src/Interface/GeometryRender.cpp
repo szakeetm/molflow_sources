@@ -69,7 +69,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 
 	if (renderRegularTexture) {
         {
-		    const GlobalHitBuffer& globHit = globState.globalHits;
+		    const GlobalHitBuffer& globHit = globState.globalStats;
 			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.nbDesorbed * mApp->worker.model->wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
 			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.nbDesorbed;
 			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.nbDesorbed;
@@ -138,8 +138,8 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 
 			/*
 			double iDesorbed = 0.0;
-			if (shGHit->globalHits.hit.nbDesorbed)
-			iDesorbed = 1.0 / (double)shGHit->globalHits.hit.nbDesorbed;
+			if (shGHit->globalStats.hit.nbDesorbed)
+			iDesorbed = 1.0 / (double)shGHit->globalStats.hit.nbDesorbed;
 			*/
 
 

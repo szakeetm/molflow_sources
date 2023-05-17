@@ -42,33 +42,33 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
     }
 
     //Global hits
-    globSimuState.globalHits.globalHits += tmpState.globalHits.globalHits;
-    globSimuState.globalHits.distTraveled_total += tmpState.globalHits.distTraveled_total;
-    globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
-    totalDesorbed += tmpState.globalHits.globalHits.nbDesorbed;
+    globSimuState.globalStats.globalHits += tmpState.globalStats.globalHits;
+    globSimuState.globalStats.distTraveled_total += tmpState.globalStats.distTraveled_total;
+    globSimuState.globalStats.distTraveledTotal_fullHitsOnly += tmpState.globalStats.distTraveledTotal_fullHitsOnly;
+    totalDesorbed += tmpState.globalStats.globalHits.nbDesorbed;
 
     //Leaks
-    for (size_t leakIndex = 0; leakIndex < tmpState.globalHits.leakCacheSize; leakIndex++)
-        globSimuState.globalHits.leakCache[(leakIndex + globSimuState.globalHits.lastLeakIndex) %
-                                            LEAKCACHESIZE] = tmpState.globalHits.leakCache[leakIndex];
-    globSimuState.globalHits.nbLeakTotal += tmpState.globalHits.nbLeakTotal;
-    globSimuState.globalHits.lastLeakIndex =
-            (globSimuState.globalHits.lastLeakIndex + tmpState.globalHits.leakCacheSize) % LEAKCACHESIZE;
-    globSimuState.globalHits.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalHits.leakCacheSize +
-                                                                tmpState.globalHits.leakCacheSize);
+    for (size_t leakIndex = 0; leakIndex < tmpState.globalStats.leakCacheSize; leakIndex++)
+        globSimuState.globalStats.leakCache[(leakIndex + globSimuState.globalStats.lastLeakIndex) %
+                                            LEAKCACHESIZE] = tmpState.globalStats.leakCache[leakIndex];
+    globSimuState.globalStats.nbLeakTotal += tmpState.globalStats.nbLeakTotal;
+    globSimuState.globalStats.lastLeakIndex =
+            (globSimuState.globalStats.lastLeakIndex + tmpState.globalStats.leakCacheSize) % LEAKCACHESIZE;
+    globSimuState.globalStats.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalStats.leakCacheSize +
+                                                                tmpState.globalStats.leakCacheSize);
 
     // HHit (Only prIdx 0)
     if (particleTracerId == 0) {
-        for (size_t hitIndex = 0; hitIndex < tmpState.globalHits.hitCacheSize; hitIndex++)
-            globSimuState.globalHits.hitCache[(hitIndex + globSimuState.globalHits.lastHitIndex) %
-                                                HITCACHESIZE] = tmpState.globalHits.hitCache[hitIndex];
+        for (size_t hitIndex = 0; hitIndex < tmpState.globalStats.hitCacheSize; hitIndex++)
+            globSimuState.globalStats.hitCache[(hitIndex + globSimuState.globalStats.lastHitIndex) %
+                                                HITCACHESIZE] = tmpState.globalStats.hitCache[hitIndex];
 
-        if (tmpState.globalHits.hitCacheSize > 0) {
-            globSimuState.globalHits.lastHitIndex =
-                    (globSimuState.globalHits.lastHitIndex + tmpState.globalHits.hitCacheSize) % HITCACHESIZE;
-            globSimuState.globalHits.hitCache[globSimuState.globalHits.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-            globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
-                                                                        tmpState.globalHits.hitCacheSize);
+        if (tmpState.globalStats.hitCacheSize > 0) {
+            globSimuState.globalStats.lastHitIndex =
+                    (globSimuState.globalStats.lastHitIndex + tmpState.globalStats.hitCacheSize) % HITCACHESIZE;
+            globSimuState.globalStats.hitCache[globSimuState.globalStats.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+            globSimuState.globalStats.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalStats.hitCacheSize +
+                                                                        tmpState.globalStats.hitCacheSize);
         }
     }
 
@@ -318,7 +318,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                                                        Min(model->wp.latestMoment - lastParticleTime,
                                                            expectedDecayMoment -
                                                                    lastParticleTime); //distance until the point in space where the particle decayed
-                    tmpState.globalHits.distTraveled_total += remainderFlightPath * oriRatio;
+                    tmpState.globalStats.distTraveled_total += remainderFlightPath * oriRatio;
                     if (particleTracerId == 0)RecordHit(HIT_LAST);
                     //distTraveledSinceUpdate += distanceTraveled;
                     insertNewParticle = true;
@@ -369,7 +369,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             } //end intersection found
             else {
                 // No intersection found: Leak
-                tmpState.globalHits.nbLeakTotal++;
+                tmpState.globalStats.nbLeakTotal++;
                 if (particleTracerId == 0)RecordLeakPos();
                 insertNewParticle = true;
                 ray.lastIntersected = -1;
@@ -383,8 +383,8 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 }
 
 void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {
-    tmpState.globalHits.distTraveled_total += distanceIncrement;
-    tmpState.globalHits.distTraveledTotal_fullHitsOnly += distanceIncrement;
+    tmpState.globalStats.distTraveled_total += distanceIncrement;
+    tmpState.globalStats.distTraveledTotal_fullHitsOnly += distanceIncrement;
     distanceTraveled += distanceIncrement;
 }
 
@@ -402,7 +402,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
     // Check end of simulation
     /*if (model->otfParams.desorptionLimit > 0) {
-        if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
+        if (tmpState.globalStats.globalStats.hit.nbDesorbed >=
             model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
@@ -634,7 +634,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     {
         totalDesorbed++;
     }*/
-    tmpState.globalHits.globalHits.nbDesorbed++;
+    tmpState.globalStats.globalHits.nbDesorbed++;
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
@@ -691,8 +691,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     bool revert = false;
-    tmpState.globalHits.globalHits.nbMCHit++; //global
-    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
+    tmpState.globalStats.globalHits.nbMCHit++; //global
+    tmpState.globalStats.globalHits.nbHitEquiv += oriRatio;
 
     // Handle super structure link facet. Can be
     if (iFacet->sh.superDest) {
@@ -876,9 +876,9 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 }*/
 
 void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
-    tmpState.globalHits.globalHits.nbMCHit++; //global
-    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
-    tmpState.globalHits.globalHits.nbAbsEquiv += oriRatio;
+    tmpState.globalStats.globalHits.nbMCHit++; //global
+    tmpState.globalStats.globalHits.nbHitEquiv += oriRatio;
+    tmpState.globalStats.globalHits.nbAbsEquiv += oriRatio;
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
@@ -1299,10 +1299,10 @@ bool ParticleTracer::UpdateLog(ParticleLog *globalLog, size_t timeout){
     return true;
 }
 void ParticleTracer::RecordHit(const int type) {
-    if (tmpState.globalHits.hitCacheSize < HITCACHESIZE) {
-        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].pos = ray.origin;
-        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
-        ++tmpState.globalHits.hitCacheSize;
+    if (tmpState.globalStats.hitCacheSize < HITCACHESIZE) {
+        tmpState.globalStats.hitCache[tmpState.globalStats.hitCacheSize].pos = ray.origin;
+        tmpState.globalStats.hitCache[tmpState.globalStats.hitCacheSize].type = type;
+        ++tmpState.globalStats.hitCacheSize;
     }
 }
 
@@ -1311,9 +1311,9 @@ void ParticleTracer::RecordLeakPos() {
     // Record leak for debugging
     RecordHit(HIT_REF);
     RecordHit(HIT_LAST);
-    if (tmpState.globalHits.leakCacheSize < LEAKCACHESIZE) {
-        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].pos = ray.origin;
-        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].dir = ray.direction;
-        ++tmpState.globalHits.leakCacheSize;
+    if (tmpState.globalStats.leakCacheSize < LEAKCACHESIZE) {
+        tmpState.globalStats.leakCache[tmpState.globalStats.leakCacheSize].pos = ray.origin;
+        tmpState.globalStats.leakCache[tmpState.globalStats.leakCacheSize].dir = ray.direction;
+        ++tmpState.globalStats.leakCacheSize;
     }
 }

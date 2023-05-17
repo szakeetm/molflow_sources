@@ -252,18 +252,18 @@ public:
     GlobalSimuState(GlobalSimuState &&rhs) noexcept: tMutex() {
         globalHistograms = std::move(rhs.globalHistograms);
         facetStates = std::move(rhs.facetStates);
-        globalHits = rhs.globalHits;
+        globalStats = rhs.globalStats;
         initialized = rhs.initialized;
     };
 
     GlobalSimuState(const GlobalSimuState &rhs) {
-        globalHits = rhs.globalHits;
+        globalStats = rhs.globalStats;
         globalHistograms = rhs.globalHistograms;
         facetStates = rhs.facetStates;
         initialized = rhs.initialized;
     };
 
-    GlobalSimuState() : globalHits(), tMutex() {
+    GlobalSimuState() : globalStats(), tMutex() {
 
     };
 
@@ -287,7 +287,7 @@ public:
             double locThreshold);
 
 #if defined(MOLFLOW)
-    GlobalHitBuffer globalHits;
+    GlobalHitBuffer globalStats;
     std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
     std::vector<FacetState> facetStates; //nbFacet
 #endif
@@ -295,7 +295,7 @@ public:
     template<class Archive>
     void serialize(Archive &archive) {
         archive(
-                CEREAL_NVP(globalHits),
+                CEREAL_NVP(globalStats),
                 CEREAL_NVP(globalHistograms),
                 CEREAL_NVP(facetStates)
         );

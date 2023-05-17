@@ -422,7 +422,7 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
 
     // Skip desorptions if limit was already reached
     if (!Settings::desLimit.empty()) {
-        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+        size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
         size_t listSize = Settings::desLimit.size();
         for (size_t l = 0; l < listSize; ++l) {
             model->otfParams.desorptionLimit = Settings::desLimit.front();

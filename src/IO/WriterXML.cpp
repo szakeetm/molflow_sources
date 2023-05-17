@@ -319,38 +319,38 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
             xml_node globalNode = newMoment.append_child("Global");
 
             xml_node hitsNode = globalNode.append_child("Hits");
-            hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.nbMCHit;
-            hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.nbHitEquiv;
-            hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.nbDesorbed;
-            hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.nbAbsEquiv;
-            hitsNode.append_attribute("totalDist_total") = globState.globalHits.distTraveled_total;
-            hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalHits.distTraveledTotal_fullHitsOnly;
-            hitsNode.append_attribute("totalLeak") = globState.globalHits.nbLeakTotal;
+            hitsNode.append_attribute("totalHit") = globState.globalStats.globalHits.nbMCHit;
+            hitsNode.append_attribute("totalHitEquiv") = globState.globalStats.globalHits.nbHitEquiv;
+            hitsNode.append_attribute("totalDes") = globState.globalStats.globalHits.nbDesorbed;
+            hitsNode.append_attribute("totalAbsEquiv") = globState.globalStats.globalHits.nbAbsEquiv;
+            hitsNode.append_attribute("totalDist_total") = globState.globalStats.distTraveled_total;
+            hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalStats.distTraveledTotal_fullHitsOnly;
+            hitsNode.append_attribute("totalLeak") = globState.globalStats.nbLeakTotal;
             hitsNode.append_attribute("maxDesorption") = model->otfParams.desorptionLimit;
 
             xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-            hitCacheNode.append_attribute("nb") = globState.globalHits.hitCacheSize;
+            hitCacheNode.append_attribute("nb") = globState.globalStats.hitCacheSize;
 
-            for (size_t i = 0; i < globState.globalHits.hitCacheSize; i++) {
+            for (size_t i = 0; i < globState.globalStats.hitCacheSize; i++) {
                 xml_node newHit = hitCacheNode.append_child("Hit");
                 newHit.append_attribute("id") = i;
-                newHit.append_attribute("posX") = globState.globalHits.hitCache[i].pos.x;
-                newHit.append_attribute("posY") = globState.globalHits.hitCache[i].pos.y;
-                newHit.append_attribute("posZ") = globState.globalHits.hitCache[i].pos.z;
-                newHit.append_attribute("type") = globState.globalHits.hitCache[i].type;
+                newHit.append_attribute("posX") = globState.globalStats.hitCache[i].pos.x;
+                newHit.append_attribute("posY") = globState.globalStats.hitCache[i].pos.y;
+                newHit.append_attribute("posZ") = globState.globalStats.hitCache[i].pos.z;
+                newHit.append_attribute("type") = globState.globalStats.hitCache[i].type;
             }
 
             xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-            leakCacheNode.append_attribute("nb") = globState.globalHits.leakCacheSize;
-            for (size_t i = 0; i < globState.globalHits.leakCacheSize; i++) {
+            leakCacheNode.append_attribute("nb") = globState.globalStats.leakCacheSize;
+            for (size_t i = 0; i < globState.globalStats.leakCacheSize; i++) {
                 xml_node newLeak = leakCacheNode.append_child("Leak");
                 newLeak.append_attribute("id") = i;
-                newLeak.append_attribute("posX") = globState.globalHits.leakCache[i].pos.x;
-                newLeak.append_attribute("posY") = globState.globalHits.leakCache[i].pos.y;
-                newLeak.append_attribute("posZ") = globState.globalHits.leakCache[i].pos.z;
-                newLeak.append_attribute("dirX") = globState.globalHits.leakCache[i].dir.x;
-                newLeak.append_attribute("dirY") = globState.globalHits.leakCache[i].dir.y;
-                newLeak.append_attribute("dirZ") = globState.globalHits.leakCache[i].dir.z;
+                newLeak.append_attribute("posX") = globState.globalStats.leakCache[i].pos.x;
+                newLeak.append_attribute("posY") = globState.globalStats.leakCache[i].pos.y;
+                newLeak.append_attribute("posZ") = globState.globalStats.leakCache[i].pos.z;
+                newLeak.append_attribute("dirX") = globState.globalStats.leakCache[i].dir.x;
+                newLeak.append_attribute("dirY") = globState.globalStats.leakCache[i].dir.y;
+                newLeak.append_attribute("dirZ") = globState.globalStats.leakCache[i].dir.z;
             }
         } //end global node
 

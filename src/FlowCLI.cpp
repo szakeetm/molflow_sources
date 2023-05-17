@@ -105,11 +105,11 @@ public:
 
         Log::console_msg(1,"{:<14.2f} {:<20} {:<20} {:<20.2f} {:<20} {:<20} {:<20.2f}\n",
                          elapsedTime,
-                         globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-                         (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
+                         globState.globalStats.globalHits.nbMCHit - oldHitsNb, globState.globalStats.globalHits.nbMCHit,
+                         (double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) /
                          (elapsedTime),
-                         globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
+                         globState.globalStats.globalHits.nbDesorbed - oldDesNb, globState.globalStats.globalHits.nbDesorbed,
+                         (double) (globState.globalStats.globalHits.nbDesorbed - oldDesNb) /
                          (elapsedTime));
     }
 };
@@ -168,8 +168,8 @@ int main(int argc, char** argv) {
         fmt::print(stderr, "Neither a time limit nor a desorption limit has been set!\n");
         return 44;
     }
-    size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-    size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+    size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
+    size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
     RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
@@ -178,9 +178,9 @@ int main(int argc, char** argv) {
     //simManager.ReloadHitBuffer();
     //simManager.IncreasePriority();
     if(Settings::simDuration > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalStats.globalHits.nbDesorbed);
     else if(model->otfParams.desorptionLimit > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalStats.globalHits.nbDesorbed);
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
 
         elapsedTime = simTimer.Elapsed();
         if(model->otfParams.desorptionLimit != 0)
-            endCondition = globState.globalHits.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
+            endCondition = globState.globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
 
         if(endCondition){
 
