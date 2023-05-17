@@ -243,8 +243,8 @@ namespace {
                 Initializer::initFromFile(&simManager, model, &globState);
             }
 
-            size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
+            size_t oldHitsNb = globState.globalStats.globalStats.nbMCHit;
+            size_t oldDesNb = globState.globalStats.globalStats.nbDesorbed;
 
             EXPECT_NO_THROW(simManager.StartSimulation());
 
@@ -257,7 +257,7 @@ namespace {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
                 if (modelPtr->otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalStats.globalHits.nbDesorbed >= modelPtr->otfParams.desorptionLimit;
+                    endCondition = globState.globalStats.globalStats.nbDesorbed >= modelPtr->otfParams.desorptionLimit;
                 // Check for potential time end
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
@@ -269,11 +269,11 @@ namespace {
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
 
-            perfTimes.emplace_back((double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
+            perfTimes.emplace_back((double) (globState.globalStats.globalStats.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
             EXPECT_EQ(0, oldHitsNb);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbMCHit);
 
             Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
         };
@@ -364,7 +364,7 @@ namespace {
 
         SimulationManager simManager{0};
         simManager.interactiveMode = false;
-        std::shared_ptr<MolflowSimulationModel> modelPtr = std::make_shared<MolflowSimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -399,12 +399,12 @@ namespace {
 
         GlobalSimuState oldState = globState;
         globState.Reset();
-        size_t oldHitsNb = oldState.globalHits.globalHits.nbMCHit;
-        size_t oldDesNb = oldState.globalHits.globalHits.nbDesorbed;
+        size_t oldHitsNb = oldState.globalStats.globalStats.nbMCHit;
+        size_t oldDesNb = oldState.globalStats.globalStats.nbDesorbed;
         EXPECT_NE(0, oldDesNb);
         EXPECT_NE(0, oldHitsNb);
-        EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
-        EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
+        EXPECT_EQ(0, globState.globalStats.globalStats.nbDesorbed);
+        EXPECT_EQ(0, globState.globalStats.globalStats.nbMCHit);
 
         int stepSizeTime = (int) (Settings::simDuration * ((double) (1.0) / nRuns));
         Settings::simDuration = stepSizeTime;
@@ -419,8 +419,8 @@ namespace {
             // Stop and copy results
             simManager.StopSimulation();
 
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbMCHit);
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
@@ -433,7 +433,7 @@ namespace {
             }
         }
 
-        size_t desPerTimestep = globState.globalStats.globalHits.nbDesorbed;
+        size_t desPerTimestep = globState.globalStats.globalStats.nbDesorbed;
         for (size_t runNb = 1; runNb < nRuns; ++runNb) {
             // Modify argv with new duration
             /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
@@ -441,7 +441,7 @@ namespace {
             argv[4] = newDur_str;*/
 
             Initializer::initTimeLimit(model, stepSizeTime * 3);
-            size_t newDesLimit = globState.globalStats.globalHits.nbDesorbed + desPerTimestep;
+            size_t newDesLimit = globState.globalStats.globalStats.nbDesorbed + desPerTimestep;
             Settings::desLimit.clear();
             Settings::desLimit.emplace_back(newDesLimit);
             Initializer::initDesLimit(model, globState);
@@ -451,8 +451,8 @@ namespace {
             // Stop and copy results
             simManager.StopSimulation();
 
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbMCHit);
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
@@ -513,8 +513,8 @@ namespace {
 
         // Keep oldstate from file for compari
         GlobalSimuState oldState = globState;
-        size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
-        size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
+        size_t oldHitsNb = globState.globalStats.globalStats.nbMCHit;
+        size_t oldDesNb = globState.globalStats.globalStats.nbDesorbed;
 
         // First check for valid initial states
         // - old state with results, new state without
@@ -546,18 +546,18 @@ namespace {
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
-            EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
+            EXPECT_EQ(0, globState.globalStats.globalStats.nbDesorbed);
+            EXPECT_EQ(0, globState.globalStats.globalStats.nbMCHit);
 
             EXPECT_NO_THROW(simManager->StartSimulation());
 
             // Stop and copy results
             simManager->StopSimulation();
 
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbDesorbed);
+            EXPECT_LT(0, globState.globalStats.globalStats.nbMCHit);
 
-            if (globState.globalStats.globalHits.nbMCHit == globState.globalStats.globalHits.nbDesorbed) {
+            if (globState.globalStats.globalStats.nbMCHit == globState.globalStats.globalStats.nbDesorbed) {
                 nbSuccess = nRuns;
                 fmt::print(stderr,
                         "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions\n",
