@@ -272,7 +272,7 @@ namespace FlowIO {
                 break;
             case FDetail::F_PLANARITY: {
                 // Facet planarity
-                Vector3d p0 = model->vertices3[facet->indices[0]];
+                Vector3d p0 = modelPtr->vertices3[facet->indices[0]];
                 double A = facet->sh.N.x;
                 double B = facet->sh.N.y;
                 double C = facet->sh.N.z;
@@ -281,7 +281,7 @@ namespace FlowIO {
                 double planarityError = 0.0;
                 for (size_t i = 3; i < facet->sh.nbIndex;
                      i++) { // First 3 vertices are by def on a plane
-                    const Vector3d &p = model->vertices3[facet->indices[i]];
+                    const Vector3d &p = modelPtr->vertices3[facet->indices[i]];
                     double d = A * p.x + B * p.y + C * p.z + D;
                     planarityError = std::max(abs(d), planarityError);
                 }
