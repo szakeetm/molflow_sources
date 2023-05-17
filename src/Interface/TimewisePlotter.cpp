@@ -246,8 +246,9 @@ void TimewisePlotter::refreshViews() {
     if(!nbView) return;
 
 	// Lock during update
-	worker->ReloadIfNeeded();
-	std::lock_guard<std::timed_mutex> lock(worker->globalState.tMutex);
+	if (!worker->ReloadIfNeeded()) return;
+	auto lock = GetHitLock(&worker->globalState, 10000);
+	if (!lock) return;
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 
@@ -272,7 +273,7 @@ void TimewisePlotter::refreshViews() {
 		else momentIndex=m+1; //any other 'normal' moment*/
 		const std::vector<ProfileSlice>& profile = worker->globalState.facetStates[profCombo->GetUserValueAt(idx)].momentResults[v->userData1].profile;
 		//ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
-			if (worker->globalHitCache.globalHits.nbDesorbed > 0){
+			if (worker->globalStatCache.globalHits.nbDesorbed > 0){
 
 				if (displayMode == ProfileDisplayModes::Raw) {
 					for (int j = 0; j < PROFILE_SIZE; j++)

@@ -468,13 +468,13 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState & src) {
 /**
 * \brief Clears simulation state
 */
-void GlobalSimuState::clear() {
-    tMutex.lock();
+void GlobalSimuState::Clear() {
+    auto lock = GetHitLock(this, 10000);
+    if (!lock) return;
     globalStats = GlobalHitBuffer();
     globalHistograms.clear();
     facetStates.clear();
     initialized = false;
-    tMutex.unlock();
 }
 
 /**
@@ -483,7 +483,8 @@ void GlobalSimuState::clear() {
 */
 void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
 
-    tMutex.lock();
+    auto lock = GetHitLock(this, 10000);
+    if (!lock) return;
     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
     size_t nbF = model->sh.nbFacet;
     size_t nbMoments = mf_model->tdParams.moments.size();
@@ -494,7 +495,6 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
             auto sFac = model->facets[i];
             if (sFac->globalId != i) {
                 fmt::print(stderr, "Facet ID mismatch! : {} vs {}\n", sFac->globalId, i);
-                tMutex.unlock();
                 exit(0);
             }
 
@@ -517,14 +517,14 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
     globalHistTemplate.Resize(model->wp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
     initialized = true;
-    tMutex.unlock();
 }
 
 /**
 * \brief zero-init for all structures
 */
 void GlobalSimuState::Reset() {
-    tMutex.lock();
+    auto lock = GetHitLock(this, 10000);
+    if (!lock) return;
     for (auto& h : globalHistograms) {
         ZEROVECTOR(h.distanceHistogram);
         ZEROVECTOR(h.nbHitsHistogram);
@@ -543,7 +543,6 @@ void GlobalSimuState::Reset() {
             memset(&(m.hits), 0, sizeof(m.hits));
         }
     }
-    tMutex.unlock();
 }
 
 /**
@@ -1205,4 +1204,18 @@ DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
     DirectionCell result(lhs);
     result += rhs;
     return result;
+}
+
+//Constructs a lock guard for timed mutex
+//Returns false if lock not successful
+//Otherwise returns the unique_lock that auto-unlocks the mutex when destroyed
+[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs)
+{
+    std::unique_lock<std::timed_mutex> lock(simStatePtr->tMutex, std::chrono::milliseconds(waitMs));
+    if (!lock.owns_lock()) {
+        return std::nullopt; //couldn't acquire lock, timed out
+    }
+    else {
+        return lock;
+    }
 }

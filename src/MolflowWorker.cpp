@@ -1049,7 +1049,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		*/
 	}
 
-	globalHitCache = globState.globalHits; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
+	globalStatCache = globalState.globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
 	if (insert) {
 		mApp->UpdateFacetlistSelected();
 		mApp->UpdateViewers();
@@ -1204,8 +1204,9 @@ int Worker::SendAngleMaps() {
 
 	if (globalState.facetStates.size() != angleMapCaches.size())
 		return 1;
-	if (!globalState.tMutex.try_lock_for(std::chrono::seconds(10)))
-		return 1;
+	auto lock = GetHitLock(&globalState, 10000);
+	if (!lock) return 1;
+
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
 		auto* sFac = (MolflowSimFacet*)model->facets[i].get();
 		if (sFac->sh.anglemapParams.record)
@@ -1213,7 +1214,6 @@ int Worker::SendAngleMaps() {
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
 		sFac->angleMap.pdf = angleMapCaches[i];
 	}
-	globalState.tMutex.unlock();
 	return 0;
 }
 
@@ -1523,18 +1523,18 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-	if (globalHitCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
+	if (globalStatCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
+		return model->wp.finalOutgassingRate / globalStatCache.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
 		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-			globalHitCache.globalHits.nbDesorbed;
+			globalStatCache.globalHits.nbDesorbed;
 	}
 }
 

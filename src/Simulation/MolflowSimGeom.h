@@ -276,7 +276,7 @@ public:
 
     bool initialized = false;
 
-    void clear();
+    void Clear();
 
     void Resize(std::shared_ptr<SimulationModel> model);
 
@@ -303,6 +303,9 @@ public:
 
     mutable std::timed_mutex tMutex;
 };
+
+
+[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs);
 
 /*!
  * @brief Particle Log structure containing all individual log entries

@@ -216,15 +216,14 @@ void PressureEvolution::refreshChart() {
     if(views.empty()) return;
 
 	// Lock during update
-	bool buffer_old = worker->ReloadIfNeeded();
-	std::unique_lock<std::timed_mutex> lock(worker->globalState.tMutex, std::chrono::seconds(10));
-	if (!lock.owns_lock()) {
-		return;
-	}
+	if (!worker->ReloadIfNeeded()) return;
+	auto lock = GetHitLock(&worker->globalState, 10000);
+	if (!lock) return;
+
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer& gHits = worker->globalHitCache;
+	GlobalHitBuffer& gHits = worker->globalStatCache;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
 	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);

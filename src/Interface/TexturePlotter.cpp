@@ -220,11 +220,9 @@ void TexturePlotter::UpdateTable() {
 		mapList->SetAllColumnAlign(ALIGN_CENTER);
 
 		int mode = viewCombo->GetSelectedIndex();
-		worker->ReloadIfNeeded();
-		std::unique_lock<std::timed_mutex> lock(worker->globalState.tMutex, std::chrono::seconds(10));
-		if (!lock.owns_lock()) {
-			return;
-		}
+		if (!worker->ReloadIfNeeded()) return;
+		auto lock = GetHitLock(&worker->globalState, 10000);
+		if (!lock) return;
 
 		switch (mode) {
 

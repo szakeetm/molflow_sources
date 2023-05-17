@@ -87,7 +87,7 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 */
 void GeometryViewer::DrawLinesAndHits() {
 
-    auto& hitCache = mApp->worker.globalHitCache;
+    auto& hitCache = mApp->worker.globalStatCache;
 	// Lines
 	if (showLine && hitCache.hitCacheSize) {
 

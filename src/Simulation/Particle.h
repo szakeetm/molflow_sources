@@ -48,7 +48,7 @@ namespace MFSim {
 
         bool StartFromSource();
 
-        bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
+        bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, size_t timeout_ms);
 
         void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
@@ -82,7 +82,7 @@ namespace MFSim {
 
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
-        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
+        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout_ms);
         bool UpdateLog(ParticleLog *globalLog, size_t timeout);
 
         void Reset();

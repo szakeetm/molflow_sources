@@ -283,9 +283,8 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
         if (!rootNode.child("MolflowResults"))
             return 1; //simu state not saved with file
 
-        if (!globState->tMutex.try_lock()) {
-            return 1;
-        }
+        auto lock = GetHitLock(globState, 10000);
+        if (!lock) return 1;
 
         xml_node resultNode = rootNode.child("MolflowResults");
         xml_node momentsNode = resultNode.child("Moments");
@@ -617,7 +616,6 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                             << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
                             << "In file: " << dirNode.attribute("width").as_int() << "x"
                             << dirNode.attribute("height").as_int();
-                        globState->tMutex.unlock();
                         throw Error(msg.str().c_str());
 
                     }
@@ -726,13 +724,9 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
         prg.SetMessage("File load complete.\n",false);
     }
     catch (const std::exception &e) {
-        globState->tMutex.unlock();
         Log::console_error("[LoaderXML] {}", e.what());
         throw;
-        return 1;
     }
-    globState->tMutex.unlock();
-
     return 0;
 }
 

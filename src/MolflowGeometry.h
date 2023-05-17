@@ -63,11 +63,11 @@ public:
 	void SaveGEO(FileWriter& file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
-	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected);
-	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_Abstract& prg, bool saveSelected);
-	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg);
+	//void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected);
+	//bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_Abstract& prg, bool saveSelected);
+	//void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr);
-	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress_Abstract& prg);
+	//bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress_Abstract& prg);
     bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
                               const std::string &fileName_out, double cmpThreshold) override;
 	// Geometry

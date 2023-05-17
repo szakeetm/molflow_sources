@@ -35,11 +35,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 using namespace MFSim;
 
-bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout) {
+bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, size_t timeout_ms) {
 
-    if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
-        return false;
-    }
+    auto lock = GetHitLock(&globSimuState, timeout_ms);
+    if (!lock) return false;
 
     //Global hits
     globSimuState.globalStats.globalHits += tmpState.globalStats.globalHits;
@@ -77,8 +76,6 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
 
     // Facets
     globSimuState.facetStates += tmpState.facetStates;
-    globSimuState.tMutex.unlock();
-
     return true;
 }
 
@@ -1266,12 +1263,12 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
+bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout_ms) {
 
-    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
+    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout_ms);
     
     // only 1, so no reduce necessary
-    if (particleLog) UpdateLog(particleLog, timeout);
+    if (particleLog) UpdateLog(particleLog, timeout_ms);
 
     // At last delete tmpCache
     if(lastHitUpdateOK) tmpState.Reset();
