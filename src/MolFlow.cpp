@@ -1002,7 +1002,7 @@ int MolFlow::FrameMove()
 		else
 			current_avg = (current_avg != 0.0) ? current_avg : hps.last();
 
-		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globState.globalHits.globalHits.nbMCHit, "hit"),
+		sprintf(tmp, "%s (%s)", Util::formatInt(worker.interfaceGlobalState.globalHits.globalHits.nbMCHit, "hit"),
 			Util::formatPs(current_avg, "hit"));
 		hitNumber->SetText(tmp);
 
@@ -1010,7 +1010,7 @@ int MolFlow::FrameMove()
 		if (!runningState) current_avg = dps_runtotal.avg();
 		else current_avg = (current_avg != 0.0) ? current_avg : dps.last();
 
-		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globState.globalHits.globalHits.nbDesorbed, "des"),
+		sprintf(tmp, "%s (%s)", Util::formatInt(worker.interfaceGlobalState.globalHits.globalHits.nbDesorbed, "des"),
 			Util::formatPs(current_avg, "des"));
 		desNumber->SetText(tmp);
 	}
@@ -1311,8 +1311,8 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		ClearFacetParams();
-		nbDesStart = worker.globState.globalHits.globalHits.nbDesorbed;
-		nbHitStart = worker.globState.globalHits.globalHits.nbMCHit;
+		nbDesStart = worker.interfaceGlobalState.globalHits.globalHits.nbDesorbed;
+		nbHitStart = worker.interfaceGlobalState.globalHits.globalHits.nbMCHit;
 		AddRecent(filePath);
 		geom->viewStruct = -1;
 
@@ -1416,8 +1416,8 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		//ClearFacetParams();
-		//nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
-		//nbHitStart = worker.globState.globalHits.globalHits.hit.nbMC;
+		//nbDesStart = worker.interfaceGlobalState.globalHits.globalHits.hit.nbDesorbed;
+		//nbHitStart = worker.interfaceGlobalState.globalHits.globalHits.hit.nbMC;
 		AddRecent(filePath);
 		geom->viewStruct = -1;
 
@@ -1476,7 +1476,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 
-	if (worker.globState.globalHits.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
+	if (worker.interfaceGlobalState.globalHits.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1486,7 +1486,7 @@ void MolFlow::StartStopSimulation() {
 
 	worker.StartStop(m_fTime);
 	if (!worker.IsRunning()) { //Force update on simulation stop
-		formula_ptr->UpdateFormulaValues(worker.globState.globalHits.globalHits.nbDesorbed);
+		formula_ptr->UpdateFormulaValues(worker.interfaceGlobalState.globalHits.globalHits.nbDesorbed);
 		UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
@@ -1502,8 +1502,8 @@ void MolFlow::StartStopSimulation() {
 		hps_runtotal.clear();
 		dps_runtotal.clear();
 	}
-	lastNbHit = worker.globState.globalHits.globalHits.nbMCHit;
-	lastNbDes = worker.globState.globalHits.globalHits.nbDesorbed;
+	lastNbHit = worker.interfaceGlobalState.globalHits.globalHits.nbMCHit;
+	lastNbDes = worker.interfaceGlobalState.globalHits.globalHits.nbDesorbed;
 
 	hps_runtotal.push(lastNbHit, lastMeasTime);
 	dps_runtotal.push(lastNbDes, lastMeasTime);
@@ -1944,7 +1944,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		ResetSimulation(false);
 		return;
 	}
-	//worker.globState.globalHits.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
+	//worker.interfaceGlobalState.globalHits.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetCurrentFileName("");
 	nbDesStart = 0;

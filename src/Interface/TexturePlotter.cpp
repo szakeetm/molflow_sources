@@ -244,7 +244,7 @@ void TexturePlotter::UpdateTable() {
 			if (!buffer_old) return;
 
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 			//TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
@@ -269,7 +269,7 @@ void TexturePlotter::UpdateTable() {
 			if (!buffer_old) return;
 				
 				size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-				const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+				const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 				double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 				for (size_t i = 0; i < w; i++) {
 					for (size_t j = 0; j < h; j++) {
@@ -292,7 +292,7 @@ void TexturePlotter::UpdateTable() {
 			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
 			double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 			double densityCorrection = selFacet->DensityCorrection();
@@ -320,7 +320,7 @@ void TexturePlotter::UpdateTable() {
 			bool buffer_old = worker->ReloadIfNeeded();
 			if (!buffer_old) return;
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
 			double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 			double densityCorrection = selFacet->DensityCorrection();
@@ -348,7 +348,7 @@ void TexturePlotter::UpdateTable() {
 			if (!buffer_old) return;
 				
 			size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
 			double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 
@@ -377,7 +377,7 @@ void TexturePlotter::UpdateTable() {
 			if (!buffer_old) return;
 				
 				size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-				const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+				const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
                 for (size_t i = 0; i < w; i++) {
 					for (size_t j = 0; j < h; j++) {
@@ -401,7 +401,7 @@ void TexturePlotter::UpdateTable() {
 			size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
 			size_t tSize = nbElem * sizeof(TextureCell);
 			size_t dSize = nbElem * sizeof(DirectionCell);
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
 					if (selFacet->sh.countDirection) {
@@ -431,7 +431,7 @@ void TexturePlotter::UpdateTable() {
 			size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
 			size_t tSize = nbElem * sizeof(TextureCell);
 			size_t dSize = nbElem * sizeof(DirectionCell);
-			const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
+			const auto& facetSnapshot = worker->interfaceGlobalState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
 				for (size_t i = 0; i < w; i++) {
 					for (size_t j = 0; j < h; j++) {
