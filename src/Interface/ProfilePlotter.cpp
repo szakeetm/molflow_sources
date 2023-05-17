@@ -358,7 +358,7 @@ void ProfilePlotter::refreshViews() {
 
 	// Lock during update
 	bool buffer_old = worker->ReloadIfNeeded();
-	if (!buffer_old) return;
+	std::lock_guard<std::timed_mutex> lock(worker->globalState.tMutex);
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 	Geometry *geom = worker->GetGeometry();

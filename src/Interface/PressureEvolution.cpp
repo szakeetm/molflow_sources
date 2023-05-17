@@ -217,7 +217,10 @@ void PressureEvolution::refreshChart() {
 
 	// Lock during update
 	bool buffer_old = worker->ReloadIfNeeded();
-	if (!buffer_old) return;
+	std::unique_lock<std::timed_mutex> lock(worker->globalState.tMutex, std::chrono::seconds(10));
+	if (!lock.owns_lock()) {
+		return;
+	}
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
 	Geometry *geom = worker->GetGeometry();

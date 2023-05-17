@@ -1505,34 +1505,13 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
-	//if (!crashSave && !saveSelected) AccessDataport(buffer);
-
-	// Globals
-	//BYTE *buffer;
-	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
+	std::unique_lock<std::timed_mutex> lock(globState.tMutex, std::chrono::seconds(10));
+	if (!lock.owns_lock()) {
+		return;
+	}
 
 	double dCoef = 1.0;
 	int ix, iy;
-
-	/*switch(gHits->mode) {
-
-	case MC_MODE:
-	if( gHits->globalStats.hit.nbDesorbed>0 ) {
-	dCoef = (float)totalOutgassing / (float)gHits->globalStats.hit.nbDesorbed / 8.31 * wp.gasMass / 100;
-	texMinAutoscale = gHits->minHit * dCoef;
-	texMaxAutoscale = gHits->maxHit * dCoef;
-	} else {
-	texMinAutoscale = gHits->minHit;
-	texMaxAutoscale = gHits->maxHit;
-	}
-	break;
-
-	case AC_MODE:
-	texMinAutoscale = gHits->minHit;
-	texMaxAutoscale = gHits->maxHit;
-	break;
-
-	}*/
 
 	prg.SetMessage("Writing geometry details...");
 	file.Write("version:"); file.Write(GEOVERSION, "\n");
@@ -1848,7 +1827,7 @@ void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState& globState, bool
 void
 MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuState& globState, bool saveSelected) {
 
-
+	std::lock_guard<std::timed_mutex> lock(globState.tMutex);
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
@@ -2716,6 +2695,11 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 */
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSimuState& globState, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
 	xml_node rootNode;
+	//Lock during writing
+	std::unique_lock<std::timed_mutex> lock(globState.tMutex, std::chrono::seconds(10));
+	if (!lock.owns_lock()) {
+		return false;
+	}
 	if (mApp->useOldXMLFormat) {
 		rootNode = saveDoc;
 	}
@@ -2788,7 +2772,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 		bool hasHistogram = work->model->wp.globalHistogramParams.recordBounce || work->model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
 		hasHistogram = hasHistogram || work->model->wp.globalHistogramParams.recordTime;
-#endif
+#endif										
 		if (hasHistogram) {
 			xml_node histNode = newMoment.append_child("Histograms");
 			//Retrieve histogram map from hits dp

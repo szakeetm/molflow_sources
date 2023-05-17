@@ -292,6 +292,10 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_pt
 // Append to open XML node
 bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
     //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
+    std::unique_lock<std::timed_mutex> lock(globState.tMutex, std::chrono::seconds(10));
+    if (!lock.owns_lock()) {
+        return false;
+    }
 
     xml_node rootNode = GetRootNode(saveDoc);
     rootNode.remove_child("MolflowResults"); // clear previous results to replace with new status

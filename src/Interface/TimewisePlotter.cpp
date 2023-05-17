@@ -246,8 +246,8 @@ void TimewisePlotter::refreshViews() {
     if(!nbView) return;
 
 	// Lock during update
-	bool buffer_old = worker->ReloadIfNeeded();
-	if (!buffer_old) return;
+	worker->ReloadIfNeeded();
+	std::lock_guard<std::timed_mutex> lock(worker->globalState.tMutex);
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 
