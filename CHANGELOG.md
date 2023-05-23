@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.8.12
+## v2.8.12 (2023-05-23)
 
 ###Feature
 - Immediate ZIP compression without intermediate XML
@@ -13,6 +13,7 @@
 ### Bugfix
 
 - Fixed convergence plotter interface elements becoming black rectangles
+- Fixed PSD import lin-lin extrapolation instead of log-log
 
 ## v2.8.11 (2023-02-09)
 
