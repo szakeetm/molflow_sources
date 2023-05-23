@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.9.11 beta (2023-05-23)
+
+### Feature
+
+- Faster geometry initialization (after load, move, scale etc.)
+
+### Bugfix
+
+- Restored loading of textures
+- Prevented some race conditions
+
 ## v2.9.10 beta (2023-05-15)
 
 ### Feature
