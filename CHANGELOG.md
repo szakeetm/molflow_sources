@@ -2,10 +2,10 @@
 
 ## v2.8.12 (2023-05-23)
 
-###Feature
+### Feature
 - Immediate ZIP compression without intermediate XML
 
-###Interface
+### Interface
 - Support for progressbars with wide/multiline status
 - Allow computer to use lock / screensaver while MolFlow is running
 - Don't allow 0K temperature
