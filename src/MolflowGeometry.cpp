@@ -1056,15 +1056,6 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		const double nU = f->sh.U.Norme();
-		const double nV = f->sh.V.Norme();
-
-		f->tRatioU = f->sh.texWidth_precise / nU;
-		f->tRatioV = f->sh.texHeight_precise / nV;
-
-		if (std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON) {
-			f->tRatioV = f->tRatioU;
-		}
 	}
 
 }
