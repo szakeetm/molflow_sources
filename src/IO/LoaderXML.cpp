@@ -554,9 +554,6 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
 
                 //Textures
-                int profSize = (sFac->sh.isProfile) ? ((int) PROFILE_SIZE * (int) sizeof(ProfileSlice) *
-                                                       (1 + (int) model->tdParams.moments.size())) : 0;
-
                 if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
                     xml_node textureNode = newFacetResult.child("Texture");
                     size_t texWidth_file = textureNode.attribute("width").as_llong();

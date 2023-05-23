@@ -920,15 +920,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						throw Error(errMsg);
 					}
 					geom->BuildFacetList(f);
-					const double nU = f->sh.U.Norme();
-					const double nV = f->sh.V.Norme();
-
-					f->tRatioU = f->sh.texWidth_precise / nU;
-					f->tRatioV = f->sh.texHeight_precise / nV;
-
-					if (std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON) {
-						f->tRatioV = f->tRatioU;
-					}
 
 				}
 				prg.SetMessage("Calculating OpenGL render data...");
