@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.9.12 beta (2023-06-01)
+
+### Bugfix
+
+- Hotfix for bug causing updater to crash. Update manually if updater fails.
+
 ## v2.9.11 beta (2023-05-23)
 
 ### Feature
