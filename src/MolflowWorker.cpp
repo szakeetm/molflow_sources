@@ -663,7 +663,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 			}
 			else {
-				file.reset(new FileReader(fileName));  //original file opened
+				file=std::make_unique<FileReader>(fileName);  //original file opened
 			}
 
 			if (!insert) {
@@ -696,7 +696,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.geo");
 			}
 			else { //not geo7z
-				file.reset(new FileReader(fileName)); //geo file, open it directly
+				file=std::make_unique<FileReader>(fileName); //geo file, open it directly
 			}
 
 			if (!insert) {
@@ -1561,7 +1561,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else {
-			file.reset(new FileReader(fileName));  //original file opened
+			file=std::make_unique<FileReader>(fileName);  //original file opened
 		}
 
 		geom->ImportDesorption_SYN(*file, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
@@ -1598,7 +1598,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else { //syn
-			file.reset(new FileReader(fileName));  //original file opened
+			file=std::make_unique<FileReader>(fileName);  //original file opened
 		}
 		geom->AnalyzeSYNfile(*file, prg, nbFacet, nbTextured, nbDifferent);
 	}
