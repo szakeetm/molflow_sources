@@ -127,7 +127,7 @@ FacetDetails::FacetDetails():GLWindow() {
   sPanel->SetClosable(true);
   Add(sPanel);
 
-  size_t index = 0;
+  int index = 0;
 
   show[index] = new GLToggle(index,"#");
   show[index]->SetState(true);  // Always visible (not displayed)
