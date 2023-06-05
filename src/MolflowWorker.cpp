@@ -656,11 +656,11 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		int version;
 		prg.SetVisible(true);
 		try {
-			std::unique_ptr<FileReader> file;
+			std::unique_ptr<FileReader> file = nullptr;
 			if (ext == "syn7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file.reset(FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 			}
 			else {
 				file.reset(new FileReader(fileName));  //original file opened
@@ -693,7 +693,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (ext == "geo7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file.reset(FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.geo"));
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.geo");
 			}
 			else { //not geo7z
 				file.reset(new FileReader(fileName)); //geo file, open it directly
@@ -1558,7 +1558,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 
 	if (isSYN || isSYN7Z) {
 		if (isSYN7Z) {
-			file.reset(FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else {
 			file.reset(new FileReader(fileName));  //original file opened
@@ -1595,7 +1595,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 		if (isSYN7Z) {
 			//decompress file
 			prg.SetMessage("Decompressing file...");
-			file.reset(FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn"));
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else { //syn
 			file.reset(new FileReader(fileName));  //original file opened
