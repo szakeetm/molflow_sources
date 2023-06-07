@@ -60,7 +60,7 @@ void initDefaultSettings() {
     SettingsIO::inputFile.clear();
     SettingsIO::outputFile.clear();
     SettingsIO::workPath.clear();
-    SettingsIO::inputPath.clear();
+    //SettingsIO::inputPath.clear();
     SettingsIO::outputPath.clear();
 }
 
