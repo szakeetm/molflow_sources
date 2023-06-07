@@ -460,7 +460,7 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
     }
 
     model->otfParams.timeLimit = time;
-    Settings::simDuration = time;
+    Settings::simDuration = static_cast<size_t>(time);
 
     model->m.unlock();
     return 0;

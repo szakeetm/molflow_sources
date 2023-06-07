@@ -339,7 +339,7 @@ int MomentsEditor::AddMoment(std::vector<Moment> newMoments) {
     /*if(Worker::CheckIntervalOverlap(moments, newMoments)){
         return -1; // error
     }*/
-    int nb = newMoments.size();
+    int nb = (int)newMoments.size();
     moments.insert(moments.end(),newMoments.begin(),newMoments.end());
     std::sort(moments.begin(),moments.end());
     return nb;

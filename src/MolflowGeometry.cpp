@@ -1709,7 +1709,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 					const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
 
 					//char tmp[256];
-					sprintf(tmp, "texture_facet %d {\n", k); //Starts from 1, not 0, first element is k=1
+					sprintf(tmp, "texture_facet %zd {\n", k); //Starts from 1, not 0, first element is k=1
 
 					file.Write(tmp);
 					file.Write("width:"); file.Write(f->sh.texWidth); file.Write(" height:"); file.Write(f->sh.texHeight); file.Write("\n");
@@ -1829,7 +1829,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 			InterfaceFacet* f = facets[fInd];
 
 			if (f->selected) {
-				if (grouping == 0) fprintf(file, "FACET%lu\n", fInd + 1u); //mode 10: special ANSYS export
+				if (grouping == 0) fprintf(file, "FACET%zu\n", fInd + 1u); //mode 10: special ANSYS export
 
 				if (!f->cellPropertiesIds.empty() || f->sh.countDirection) {
 

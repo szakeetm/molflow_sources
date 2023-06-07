@@ -24,7 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SimulationFacet.h"
 #include "MolflowTypes.h"
 
-struct Anglemap {
+class Anglemap {
 public:
     Anglemap(){
         theta_CDFsum_lower=theta_CDFsum_higher=0;
@@ -58,7 +58,8 @@ public:
     }
 };
 
-struct MolflowSimFacet : public SimulationFacet {
+class MolflowSimFacet : public SimulationFacet {
+public:
     MolflowSimFacet() : SimulationFacet() {};
     explicit MolflowSimFacet(size_t nbIndex) : SimulationFacet(nbIndex) {};
     MolflowSimFacet(const MolflowSimFacet &o);

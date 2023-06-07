@@ -1230,7 +1230,7 @@ bool FacetAdvParams::Apply() {
 			}
 			doSuperStruct = true;
 		}
-		catch (std::invalid_argument& err) {
+		catch (std::invalid_argument&) {
 			GLMessageBox::Display("Invalid superstructure number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}

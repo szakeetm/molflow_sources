@@ -989,7 +989,7 @@ int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vect
         convText << convVec.child_value();
         // get length of file:
         convText.seekg (0, std::stringstream::end);
-        int length = convText.tellg();
+        //int length = convText.tellg();
         convText.seekg (0, std::stringstream::beg);
         if(convText.peek() == '\n') {
             char nl;

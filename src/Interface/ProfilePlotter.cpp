@@ -292,7 +292,7 @@ void ProfilePlotter::plot() {
 		return;
 	}
 
-	int nbVar = formula.GetNbVariable();
+	size_t nbVar = formula.GetNbVariable();
 	if (nbVar == 0) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
