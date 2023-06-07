@@ -182,13 +182,13 @@ namespace FlowIO {
         }
 
         xml_node formulaNode = interfNode.append_child("Formulas");
-        formulaNode.append_attribute("nb") = (!saveSelected) * (mApp->formula_ptr->formulas_n.size());
+        formulaNode.append_attribute("nb") = (!saveSelected) * (mApp->formula_ptr->formulas.size());
         if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
-            for (size_t i = 0; i < mApp->formula_ptr->formulas_n.size(); i++) {
+            for (size_t i = 0; i < mApp->formula_ptr->formulas.size(); i++) {
                 xml_node newFormula = formulaNode.append_child("Formula");
                 newFormula.append_attribute("id") = i;
-                newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n[i].GetName().c_str();
-                newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n[i].GetExpression().c_str();
+                newFormula.append_attribute("name") = mApp->formula_ptr->formulas[i].GetName().c_str();
+                newFormula.append_attribute("expression") = mApp->formula_ptr->formulas[i].GetExpression().c_str();
             }
         }
 
@@ -234,7 +234,7 @@ namespace FlowIO {
                 convText << convVal.first << "\t" << convVal.second << "\n";
             }
             xml_node newFormulaNode = convNode.append_child("ConvData");
-            newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId].GetExpression().c_str();
+            newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas[formulaId].GetExpression().c_str();
             xml_node newConv = newFormulaNode.append_child(node_cdata);
             newConv.set_value(convText.str().c_str());
             formulaId++;
