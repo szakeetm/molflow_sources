@@ -32,35 +32,35 @@ FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* geom, std::
     selections = sel;
 }
 
-bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
+bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v) {
     bool ok = true;
     Geometry* geom = worker->GetGeometry();
     int nbFacet = geom->GetNbFacet();
     int idx;
 
 
-    if ((idx = GetVariable(v->name, "A")) > 0) {
+    if ((idx = GetFacetIndex(v->varName, "A")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
     }
-    else if ((idx = GetVariable(v->name, "D")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "D")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed;
     }
-    else if ((idx = GetVariable(v->name, "MCH")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "MCH")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbMCHit;
     }
-    else if ((idx = GetVariable(v->name, "H")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "H")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv;
     }
-    else if ((idx = GetVariable(v->name, "P")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "P")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
                            worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
     }
-    else if ((idx = GetVariable(v->name, "DEN")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
             InterfaceFacet *f = geom->GetFacet(idx - 1);
@@ -69,27 +69,27 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
                        worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
         }
     }
-    else if ((idx = GetVariable(v->name, "Z")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "Z")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv /
                            geom->GetFacet(idx - 1)->GetArea() *
                            worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
     }
-    else if ((idx = GetVariable(v->name, "V")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "V")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) /*v->value = 4.0*(double)(geom->GetFacet(idx - 1)->facetHitCache.nbMCHit + geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed) /
 			geom->GetFacet(idx - 1)->facetHitCache.sum_1_per_ort_velocity;*/
             v->value = (geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv + static_cast<double>(geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed)) / geom->GetFacet(idx - 1)->facetHitCache.sum_1_per_velocity;
     }
-    else if ((idx = GetVariable(v->name, "T")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "T")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.temperature;
     }
-    else if ((idx = GetVariable(v->name, "AR")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "AR")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
     }
-    else if ((idx = GetVariable(v->name, "Force")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "Force")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -97,7 +97,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             v->value = forceN;
         }
     }
-    else if ((idx = GetVariable(v->name, "ForceX")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "ForceX")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -105,7 +105,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             v->value = forceX;
         }
     }
-	else if ((idx = GetVariable(v->name, "ForceY")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "ForceY")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -113,7 +113,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 			v->value = forceY;
 		}
 	}
-	else if ((idx = GetVariable(v->name, "ForceZ")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "ForceZ")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -121,7 +121,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 			v->value = forceZ;
 		}
 	}
-    else if ((idx = GetVariable(v->name, "ForceSqr")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "ForceSqr")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -131,7 +131,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
         }
     }
-    else if ((idx = GetVariable(v->name, "ForceSqrX")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "ForceSqrX")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -140,7 +140,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
         }
     }
-	else if ((idx = GetVariable(v->name, "ForceSqrY")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "ForceSqrY")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -149,7 +149,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
 		}
 	}
-	else if ((idx = GetVariable(v->name, "ForceSqrZ")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "ForceSqrZ")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -158,7 +158,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (worker->displayedMoment!=0) v->value/=worker->moments[worker->displayedMoment - 1].second; //force2 divided by dt^2 to get N^2
 		}
 	}
-	else if ((idx = GetVariable(v->name, "Torque")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "Torque")) > 0) {
 	    ok = (idx > 0 && idx <= nbFacet);
 	    if (ok) {
 		    InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -166,7 +166,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 		    v->value = torqueN;
 	    }
 	}
-    else if ((idx = GetVariable(v->name, "TorqueX")) > 0) {
+    else if ((idx = GetFacetIndex(v->varName, "TorqueX")) > 0) {
     ok = (idx > 0 && idx <= nbFacet);
     if (ok) {
         InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -174,7 +174,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         v->value = torqueX;
     }
     }
-	else if ((idx = GetVariable(v->name, "TorqueY")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "TorqueY")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -182,7 +182,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 			v->value = torqueY;
 		}
 	}
-	else if ((idx = GetVariable(v->name, "TorqueZ")) > 0) {
+	else if ((idx = GetFacetIndex(v->varName, "TorqueZ")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = geom->GetFacet(idx - 1);
@@ -190,25 +190,25 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
 			v->value = torqueZ;
 		}
 	}
-	else if (iequals(v->name, "SUMDES")) {
+	else if (iequals(v->varName, "SUMDES")) {
         v->value = (double)worker->globalStatCache.globalHits.nbDesorbed;
     }
-    else if (iequals(v->name, "SUMABS")) {
+    else if (iequals(v->varName, "SUMABS")) {
         v->value = worker->globalStatCache.globalHits.nbAbsEquiv;
     }
-    else if (iequals(v->name, "SUMMCHIT")) {
+    else if (iequals(v->varName, "SUMMCHIT")) {
         v->value = (double)worker->globalStatCache.globalHits.nbMCHit;
     }
-    else if (iequals(v->name, "SUMHIT")) {
+    else if (iequals(v->varName, "SUMHIT")) {
         v->value = worker->globalStatCache.globalHits.nbHitEquiv;
     }
-    else if (iequals(v->name, "MPP")) {
+    else if (iequals(v->varName, "MPP")) {
         v->value = worker->globalStatCache.distTraveled_total / (double)worker->globalStatCache.globalHits.nbDesorbed;
     }
-    else if (iequals(v->name, "MFP")) {
+    else if (iequals(v->varName, "MFP")) {
         v->value = worker->globalStatCache.distTraveledTotal_fullHitsOnly / worker->globalStatCache.globalHits.nbHitEquiv;
     }
-    else if (iequals(v->name, "DESAR")) {
+    else if (iequals(v->varName, "DESAR")) {
         double sumArea = 0.0;
         for (size_t i2 = 0; i2 < geom->GetNbFacet(); i2++) {
             InterfaceFacet *f_tmp = geom->GetFacet(i2);
@@ -216,7 +216,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         }
         v->value = sumArea;
     }
-    else if (iequals(v->name, "ABSAR")) {
+    else if (iequals(v->varName, "ABSAR")) {
         double sumArea = 0.0;
 
         for (size_t i2 = 0; i2 < geom->GetNbFacet(); i2++) {
@@ -225,30 +225,30 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         }
         v->value = sumArea;
     }
-    else if (iequals(v->name, "QCONST")) {
+    else if (iequals(v->varName, "QCONST")) {
         v->value = worker->model->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
-    else if (iequals(v->name, "QCONST_N")) {
+    else if (iequals(v->varName, "QCONST_N")) {
         v->value = worker->model->wp.finalOutgassingRate;
     }
-    else if (iequals(v->name, "NTOT")) {
+    else if (iequals(v->varName, "NTOT")) {
         v->value = worker->model->wp.totalDesorbedMolecules;
     }
-    else if (iequals(v->name, "GASMASS")) {
+    else if (iequals(v->varName, "GASMASS")) {
         v->value = worker->model->wp.gasMass;
     }
-    else if (iequals(v->name, "KB")) {
+    else if (iequals(v->varName, "KB")) {
         v->value = 1.3806504e-23;
     }
-    else if (iequals(v->name, "R")) {
+    else if (iequals(v->varName, "R")) {
         v->value = 8.314472;
     }
-    else if (iequals(v->name, "Na")) {
+    else if (iequals(v->varName, "Na")) {
         v->value = 6.02214179e23;
     }
-    else if ((beginsWith(uppercase(v->name), "SUM(") || beginsWith(uppercase(v->name), "AVG(")) && endsWith(v->name, ")")) {
-        bool avgMode = (beginsWith(uppercase(v->name), "AVG(")); //else SUM mode
-        std::string inside = v->name; inside.erase(0, 4); inside.erase(inside.size() - 1, 1);
+    else if ((beginsWith(uppercase(v->varName), "SUM(") || beginsWith(uppercase(v->varName), "AVG(")) && endsWith(v->varName, ")")) {
+        bool avgMode = (beginsWith(uppercase(v->varName), "AVG(")); //else SUM mode
+        std::string inside = v->varName; inside.erase(0, 4); inside.erase(inside.size() - 1, 1);
         std::vector<std::string> tokens = SplitString(inside,',');
         if (!Contains({ 2,3 }, tokens.size()))
             return false;

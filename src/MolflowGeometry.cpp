@@ -183,7 +183,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	try {
 		facets.resize(sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 
@@ -304,7 +304,7 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 	try {
 		facets.resize(sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 
@@ -554,7 +554,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 	try {
 		facets.resize(nbNewFacets + sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 
@@ -933,7 +933,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	for (int i = 0; i < nbF; i++) { //parse formulas now that selection groups are loaded
-		mApp->AddFormula(loadFormulas[i][0].c_str(), loadFormulas[i][1].c_str());
+		mApp->formula_ptr->AddFormula(loadFormulas[i][0], loadFormulas[i][1]);
 	}
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
@@ -949,7 +949,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	try {
 		facets.resize(sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
@@ -1222,7 +1222,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	try {
 		facets.resize(sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 
@@ -1541,11 +1541,11 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 
 	file.Write("formulas {\n");
 	if (!saveSelected) {
-		for (auto& f : mApp->formula_ptr->formulas_n) {
+		for (auto& formula : mApp->formula_ptr->formulas_n) {
 			file.Write("  \"");
-			file.Write(f->GetName());
+			file.Write(formula.GetName());
 			file.Write("\" \"");
-			file.Write(f->GetExpression());
+			file.Write(formula.GetExpression());
 			file.Write("\"\n");
 		}
 	}
@@ -2559,8 +2559,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 		for (size_t i = 0; i < mApp->formula_ptr->formulas_n.size(); i++) {
 			xml_node newFormula = formulaNode.append_child("Formula");
 			newFormula.append_attribute("id") = i;
-			newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n.at(i)->GetName();
-			newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n.at(i)->GetExpression();
+			newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n[i].GetName();
+			newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n[i].GetExpression();
 		}
 	}
 
@@ -3064,7 +3064,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	try {
 		facets.resize(nbNewFacets + sh.nbFacet, nullptr);
 	}
-	catch (const std::exception& e) {
+	catch (const std::exception&) {
 		throw Error("Couldn't allocate memory for facets");
 	}
 
@@ -3211,11 +3211,10 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	if (isMolflowFile) {
 		xml_node formulaNode = interfNode.child("Formulas");
 		for (xml_node newFormula : formulaNode.children("Formula")) {
-			char tmpExpr[512];
-			strcpy(tmpExpr, newFormula.attribute("expression").as_string());
-			mApp->OffsetFormula(tmpExpr, (int)sh.nbFacet);
-			mApp->AddFormula(newFormula.attribute("name").as_string(),
-				tmpExpr);
+			std::string expr = newFormula.attribute("expression").as_string();
+			std::string name = newFormula.attribute("name").as_string();
+			mApp->OffsetFormula(expr, (int)sh.nbFacet);
+			mApp->formula_ptr->AddFormula(name, expr);
 		}
 	}
 
@@ -3308,12 +3307,9 @@ bool MolflowGeometry::InitOldStruct(MolflowSimulationModel* model) {
 
 void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
 	//General Facets
-	try {
-		Geometry::InitInterfaceFacets(sFacets, work);
-	}
-	catch (const std::exception& e) {
-		throw;
-	}
+	
+	Geometry::InitInterfaceFacets(sFacets, work);
+
 
 	// Init Molflow properties
 	size_t index = 0;

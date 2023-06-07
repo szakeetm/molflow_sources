@@ -85,7 +85,7 @@ namespace FlowIO {
         xml_node formulaNode = interfNode.child("Formulas");
         if(formulaNode) {
             for (xml_node newFormula : formulaNode.children("Formula")) {
-                mApp->AddFormula(newFormula.attribute("name").as_string(),
+                mApp->formula_ptr->AddFormula(newFormula.attribute("name").as_string(),
                                  newFormula.attribute("expression").as_string());
             }
         }
@@ -187,8 +187,8 @@ namespace FlowIO {
             for (size_t i = 0; i < mApp->formula_ptr->formulas_n.size(); i++) {
                 xml_node newFormula = formulaNode.append_child("Formula");
                 newFormula.append_attribute("id") = i;
-                newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n.at(i)->GetName();
-                newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n.at(i)->GetExpression();
+                newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n[i].GetName().c_str();
+                newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n[i].GetExpression().c_str();
             }
         }
 
@@ -234,7 +234,7 @@ namespace FlowIO {
                 convText << convVal.first << "\t" << convVal.second << "\n";
             }
             xml_node newFormulaNode = convNode.append_child("ConvData");
-            newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId]->GetExpression();
+            newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId].GetExpression().c_str();
             xml_node newConv = newFormulaNode.append_child(node_cdata);
             newConv.set_value(convText.str().c_str());
             formulaId++;

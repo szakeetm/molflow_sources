@@ -135,7 +135,7 @@ Mean Pumping Path: MPP (average path of molecules in the system before absorptio
 Mean Free Path:      MFP (average path of molecules between two wall hits)
 
 Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
-                     atan(), exp(), ln(), pow(x,y), log2(), log10(), inv(), sqrt(), abs()
+                     atan(), exp(), ln(), pow(x,y), log2(), log10(), sqrt(), abs()
 
 Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
 )";
@@ -225,29 +225,7 @@ MolFlow::MolFlow()
 {
 	mApp = this; //to refer to the app as extern variable
 
-	//Different Molflow implementation:
-	facetAdvParams = nullptr;
-	facetDetails = nullptr;
-	viewer3DSettings = nullptr;
-	textureScaling = nullptr;
-	formulaEditor = nullptr;
-	globalSettings = nullptr;
-	profilePlotter = nullptr;
-	texturePlotter = nullptr;
-
-	//Molflow only:
-	movement = nullptr;
-	measureForces = nullptr;
-	timewisePlotter = nullptr;
-	pressureEvolution = nullptr;
-	outgassingMapWindow = nullptr;
-	momentsEditor = nullptr;
-	parameterEditor = nullptr;
-	importDesorption = nullptr;
-	timeSettings = nullptr;
-
-	useOldXMLFormat = false;
-	FormulaEvaluator* eval = new FormulaEvaluator_MF(&worker, (MolflowGeometry*)worker.GetGeometry(), &selections);
+	auto eval = std::make_shared<FormulaEvaluator_MF>(&worker, (MolflowGeometry*)worker.GetGeometry(), &selections);
 	formula_ptr = std::make_shared<Formulas>(eval);
 }
 
@@ -1963,11 +1941,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearAllSelections();
 	ClearAllViews();
 
-	/*GLParser *f = new GLParser();
-	f.SetExpression("A2/SUMDES");
-	f.SetName("Trans. Prob.");
-	f.Parse();*/
-	AddFormula("Trans.prob.", "A2/SUMDES");
+	formula_ptr->AddFormula("Trans.prob.", "A2/SUMDES");
 
 	UpdateStructMenu();
 	// Send to sub process
@@ -2032,7 +2006,7 @@ void MolFlow::EmptyGeometry() {
 	ClearAllSelections();
 	ClearAllViews();
 
-	/*GLParser *f = new GLParser();
+	/*GLFormula *f = new GLFormula();
 	f.SetExpression("A2/SUMDES");
 	f.SetName("Trans. Prob.");
 	f.Parse();*/

@@ -565,7 +565,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 		}
 
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
 		}
@@ -613,7 +613,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 			}
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
 
@@ -631,7 +631,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			fullFileName = fileName;
 		}
 
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			geom->Clear();
 			throw;
 		}
@@ -664,7 +664,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (!insert) fullFileName = fileName;
 		}
 
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
 		}
@@ -715,7 +715,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 		}
 
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
 		}
@@ -989,7 +989,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				MarkToReload();
 			}
 		}
-		catch (const std::exception& e) {
+		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
 		}
@@ -1325,14 +1325,10 @@ bool Worker::InterfaceGeomToSimModel() {
 		}
 
 		//Some initialization
-		try {
-			if (!sFac.InitializeOnLoad(facIdx, mf_model->tdParams.moments.size()))
-				return false;
-		}
-		catch (const std::exception& err) {
-			//Log::console_error("Failed to initialize facet (F#%d)\n", facIdx + 1);
-			throw;
-		}
+		
+		if (!sFac.InitializeOnLoad(facIdx, mf_model->tdParams.moments.size()))
+			return false;
+
 
 		hasVolatile |= sFac.sh.isVolatile;
 

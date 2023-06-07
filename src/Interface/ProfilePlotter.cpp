@@ -285,14 +285,14 @@ void ProfilePlotter::Update(float appTime, bool force) {
 */
 void ProfilePlotter::plot() {
 
-	GLParser parser;
-	parser.SetExpression(formulaText->GetText().c_str());
-	if (!parser.Parse()) {
-		GLMessageBox::Display(parser.GetErrorMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+	GLFormula formula;
+	formula.SetExpression(formulaText->GetText().c_str());
+	if (!formula.Parse()) {
+		GLMessageBox::Display(formula.GetErrorMsg().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 
-	int nbVar = parser.GetNbVariable();
+	int nbVar = formula.GetNbVariable();
 	if (nbVar == 0) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
@@ -301,8 +301,8 @@ void ProfilePlotter::plot() {
 		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	VLIST *var = parser.GetVariableAt(0);
-	if (!iequals(var->name, "x")) {
+	auto varIterator = formula.GetVariableAt(0);
+	if (!iequals(varIterator->varName, "x")) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
@@ -341,8 +341,8 @@ void ProfilePlotter::plot() {
 	for (i = 0; i < 1000; i++) {
 		double x = (double)i;
 		double y;
-		var->value = x;
-		parser.Evaluate(&y);
+		varIterator->value = x;
+		formula.Evaluate(&y);
 		v->Add(x, y, false);
 	}
 	v->CommitChange();

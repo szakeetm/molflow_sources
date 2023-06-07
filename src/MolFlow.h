@@ -44,7 +44,6 @@ struct Error;
 class MolFlow : public Interface {
 public:
     MolFlow();
-    virtual ~MolFlow() = default;
 
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
@@ -104,23 +103,22 @@ public:
 	GLTitledPanel *outputPanel;
 
     //Dialog
-	ImportDesorption *importDesorption;
-	TimeSettings     *timeSettings;
-	Movement         *movement;
-	MeasureForce     *measureForces;
-    FacetAdvParams   *facetAdvParams;
-    FacetDetails     *facetDetails;
-    Viewer3DSettings *viewer3DSettings;
-    TextureScaling  *textureScaling;
-	GlobalSettings	 *globalSettings;
-    ProfilePlotter   *profilePlotter;
-    PressureEvolution *pressureEvolution;
-	TimewisePlotter  *timewisePlotter;
-    TexturePlotter   *texturePlotter;
-	OutgassingMapWindow    *outgassingMapWindow;
-	MomentsEditor    *momentsEditor;
-	ParameterEditor  *parameterEditor;
-	char *nbF;
+	ImportDesorption*		importDesorption = nullptr;
+	TimeSettings*			timeSettings = nullptr;
+	Movement*				movement = nullptr;
+	MeasureForce*			measureForces = nullptr;
+    FacetAdvParams*			facetAdvParams = nullptr;
+    FacetDetails*			facetDetails = nullptr;
+    Viewer3DSettings*		viewer3DSettings = nullptr;
+    TextureScaling*			textureScaling = nullptr;
+	GlobalSettings*			globalSettings = nullptr;
+    ProfilePlotter*			profilePlotter = nullptr;
+    PressureEvolution*		pressureEvolution = nullptr;
+	TimewisePlotter*		timewisePlotter = nullptr;
+    TexturePlotter*			texturePlotter = nullptr;
+	OutgassingMapWindow*	outgassingMapWindow = nullptr;
+	MomentsEditor			*momentsEditor = nullptr;
+	ParameterEditor			*parameterEditor = nullptr;
 
     // Testing
     //int     nbSt;
