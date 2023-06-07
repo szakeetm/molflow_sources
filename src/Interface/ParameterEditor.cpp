@@ -335,7 +335,7 @@ void ParameterEditor::UpdateCombo() {
 	selectorCombo->SetSize((int)work->parameters.size() + 1);
 	selectorCombo->SetValueAt(0, "New...");
 	for (size_t i = 0; i < work->parameters.size(); i++) {
-		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name.c_str());
+		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name);
 	}
 
 	if (selectorCombo->GetSelectedIndex() < 1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow()>1 ? 1 : 0); //Select first param, otherwise "New..."

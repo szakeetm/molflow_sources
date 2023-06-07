@@ -237,7 +237,7 @@ void PressureEvolution::refreshChart() {
 			auto& facetHits = worker->globalState.facetStates[v->userData1].momentResults;
 			
 			for (size_t i = 0; i < displayModes.size(); i++) {
-				yScaleCombo->SetValueAt(i, displayModes[i].c_str());
+				yScaleCombo->SetValueAt(i, displayModes[i]);
 			}
 
 			if (displayMode == "MC Hits") {

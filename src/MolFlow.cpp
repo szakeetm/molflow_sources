@@ -375,7 +375,7 @@ simuPanel->Add(statusSimu);
 	size_t nbRecModes = (size_t)ProfileRecordModes::NUMITEMS;
 	facetProfileCombo->SetSize(nbRecModes);
 	for (size_t i = 0; i < nbRecModes; i++) {
-		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first.c_str()); //long description
+		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first); //long description
 	}
 	facetPanel->Add(facetProfileCombo);
 

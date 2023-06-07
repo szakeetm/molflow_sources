@@ -106,7 +106,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 	size_t nbDisplayModes = (size_t)ProfileDisplayModes::NUMITEMS;
 	displayModeCombo->SetSize(nbDisplayModes);
 	for (size_t i = 0;i<nbDisplayModes;i++) {
-		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i].c_str());
+		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i]);
 	}
 	displayModeCombo->SetSelectedIndex(1);
 	Add(displayModeCombo);
@@ -227,7 +227,7 @@ void ProfilePlotter::Refresh() {
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
 			tmp << "F#" << (i + 1) << " " << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
-			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
+			profCombo->SetValueAt(nbProf, tmp.str(), (int)i);
 			nbProf++;
 		}
 	}
