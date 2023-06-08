@@ -342,8 +342,9 @@ void ProfilePlotter::plot() {
 		double x = (double)i;
 		double y;
 		varIterator->value = x;
-		formula.Evaluate(&y);
-		v->Add(x, y, false);
+		auto yres = formula.Evaluate();
+		if (!yres.has_value()) break;
+		v->Add(x, yres.value(), false);
 	}
 	v->CommitChange();
 
