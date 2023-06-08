@@ -30,7 +30,7 @@ class MolflowGeometry;
 class FormulaEvaluator_MF : public FormulaEvaluator {
 public:
     FormulaEvaluator_MF(Worker* w, MolflowGeometry* geom, std::vector<SelectionGroup>* sel);
-    bool EvaluateVariable(std::list<Variable>::iterator v) override;
+    bool EvaluateVariable(std::list<Variable>::iterator v, const std::vector <std::pair<std::string, std::optional<double>>>& previousFormulaValues) override;
 
     Worker* worker;
     MolflowGeometry* geometry;
