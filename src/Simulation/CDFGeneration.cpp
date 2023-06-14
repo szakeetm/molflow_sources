@@ -54,16 +54,13 @@ namespace CDFGeneration {
  * \return Previous
  * size of temperatures vector, which determines new ID
  */
-    std::pair<int, std::vector<CDF_p>>
+    std::pair<int, std::vector<IntegratedDesorptionEntry>>
     GenerateNewCDF(std::vector<double> &temperatureList, double temperature,
                    double gasMass) {
         size_t i = temperatureList.size();
         temperatureList.push_back(temperature);
-        /*temperatureList.insert(
-                std::lower_bound(temperatureList.begin(), temperatureList.end(),  temperature, [](double i, double j){ return (std::abs(i - j) < 1E-5);}),
-                temperature);*/
-        std::vector<CDF_p> cdf_v = Generate_CDF(temperature, gasMass, cdf_size);
-        return std::make_pair((int) i, cdf_v);
+        std::vector<IntegratedDesorptionEntry> cdf_vect = Generate_CDF(temperature, gasMass, cdf_size);
+        return std::make_pair((int) i, cdf_vetc);
     }
 
 /**
@@ -74,9 +71,9 @@ namespace CDFGeneration {
  * \return CFD as a Vector containing a pair of double values (x value =
  * speed_bin, y value = cumulated value)
  */
-    std::vector<std::pair<double, double>>
+    std::vector<IntegratedDesorptionEntry>
     Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size) {
-        std::vector<std::pair<double, double>> cdf;
+        std::vector<IntegratedDesorptionEntry> cdf;
         cdf.reserve(size);
         constexpr double Kb = 1.38E-23;
         constexpr double R = 8.3144621;
@@ -96,9 +93,10 @@ namespace CDFGeneration {
             double x = (double) i * binSize;
             double x_square_per_2_a_square =
                     std::pow(x, 2.0) / (2.0 * std::pow(a, 2.0));
-            cdf.emplace_back(
-                    std::make_pair(x, 1.0 - std::exp(-x_square_per_2_a_square) *
-                                            (x_square_per_2_a_square + 1.0)));
+            IntegratedDesorptionEntry entry;
+            entry.time=x;
+            entry.cumulativeDesValue = 1.0 - std::exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1.0);
+            cdf.emplace_back(entry);
         }
 
         return cdf;

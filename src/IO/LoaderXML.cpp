@@ -162,7 +162,10 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
         uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
     }
-    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, &uInput.userMoments, prg)){
+    try {
+        TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, uInput.userMoments, prg);
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
         model->m.unlock();
         return 1;
     }
@@ -616,9 +619,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                         throw Error(msg.str().c_str());
 
                     }
-                    /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
-                                                            + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
-                                                            + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
+                    
                     std::vector<DirectionCell> &dirs = globState->facetStates[facetId].momentResults[m].direction;
 
                     std::stringstream dirText, dirCountText;

@@ -28,8 +28,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 namespace IDGeneration {
     // ID
     int GetIDId(const std::set<size_t>& desorptionParameterIDs, int paramId);
-    std::pair<int, std::vector<ID_p>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model);
-    std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulationModel* model);
+    std::pair<int, std::vector<DesorptionEntry>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model);
+    std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulationModel* model);
 };
 
 

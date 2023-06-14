@@ -115,6 +115,10 @@ namespace MFSim {
         bool StartFromSource(Ray &ray);
 
         Vector3d nullVector; //so we don't have to allocate and destroy for dummy uses
+
+        private:
+        int LookupMomentIndex(const double time, const size_t startIndex);
+
     };
 }
 

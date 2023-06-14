@@ -90,11 +90,7 @@ namespace FlowIO {
             // if dt=0.1s, we have collected only 1/10th of what would happen during a
             // second. Hence we DIVIDE by the time window length, even if it's
             // uninuitional.
-            auto timeWindow =
-                modelPtr->tdParams.moments[moment - 1].second -
-                modelPtr->tdParams.moments[moment - 1]
-                            .first; // TODO: Can we get access to the time windows directly?
-            return (modelPtr->wp.totalDesorbedMolecules / timeWindow) /
+            return (modelPtr->wp.totalDesorbedMolecules / modelPtr->tdParams.moments[moment - 1].window) /
                    (double)globPtr->globalStats.globalHits.nbDesorbed;
         }
     }

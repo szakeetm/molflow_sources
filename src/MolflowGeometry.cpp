@@ -1527,9 +1527,9 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	file.Write(" nb:"); file.Write((int)worker->userMoments.size());
 	for (size_t u = 0; u < worker->userMoments.size(); u++) {
 		file.Write("\n \"");
-		file.Write(worker->userMoments[u].first.c_str());
+		file.Write(worker->userMoments[u].content.c_str());
 		file.Write("\" : ");
-		file.Write(worker->userMoments[u].second);
+		file.Write(worker->userMoments[u].window);
 	}
 	file.Write("\n}\n");
 
@@ -1823,7 +1823,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first, mApp->worker.moments[m - 1].second);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].time, mApp->worker.moments[m - 1].window);
 		// Facets
 		for (size_t fInd = 0; fInd < sh.nbFacet; fInd++) {
 			InterfaceFacet* f = facets[fInd];
@@ -2005,7 +2005,7 @@ void MolflowGeometry::ExportProfiles(FILE* file, int isTXT, Worker* worker) {
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first, mApp->worker.moments[m - 1].second);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].time, mApp->worker.moments[m - 1].window);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -3229,7 +3229,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	char tmpExpr[512];
 	strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
 	work->userMoments.push_back(tmpExpr);
-	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+	work->AddMoment(mApp->worker.ParseUserMoment(tmpExpr));
 
 	}
 	work->model->wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();

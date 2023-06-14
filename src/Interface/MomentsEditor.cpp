@@ -172,13 +172,13 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 			if (mApp->AskToReset()) {
 				std::vector<std::vector<Moment>> parsedMoments;
 				for (size_t u = 0; u != userMoments.size(); u++) {
-					parsedMoments.emplace_back(ParseMoment(userMoments[u].first, userMoments[u].second));
+					parsedMoments.emplace_back(ParseUserMoment(userMoments[u].content, userMoments[u].window));
 				}
 
-				auto overlapPair = TimeMoments::CheckIntervalOverlap(parsedMoments);
-				if(overlapPair.first != 0 || overlapPair.second != 0){
+				auto overlapPair = TimeMoments::HasIntervalOverlap(parsedMoments);
+				if(overlapPair.has_value()){
                     char tmp[128];
-                    if(overlapPair.second < 0)
+                    if(overlapPair->second < 0)
                         sprintf(tmp, "Interval length and time window would create overlap! Check line %d.", overlapPair.first+1);
                     else
                         sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
@@ -223,17 +223,17 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
             const char *momentEntry = momentsList->GetValueAt(1, row);
             const char *windowEntry = momentsList->GetValueAt(3, row);
             bool change = false;
-            if (strcmp(momentEntry, userMoments[row].first.c_str()) != 0) {
+            if (strcmp(momentEntry, userMoments[row].content.c_str()) != 0) {
 				if (momentEntry != nullptr){//update
-                    userMoments[row].first.assign(momentEntry);
+                    userMoments[row].content.assign(momentEntry);
 
                     // Try to use default window if unset
-                    if(userMoments[row].second < DBL_EPSILON){
+                    if(userMoments[row].window < DBL_EPSILON){
                         double window = 0.0;
                         if (!(windowSizeText->GetNumber(&window))) {
                             window = 0.0;
                         }
-                        userMoments[row].second = window;
+                        userMoments[row].window = window;
                         char tmp[10];
                         sprintf(tmp, "%g", window);
                         momentsList->SetValueAt(3, row, tmp);
@@ -245,9 +245,9 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 				RebuildList();
 				change = true;
 			}
-            else if (std::abs(std::strtod(windowEntry,nullptr) - userMoments[row].second) > DBL_EPSILON) {
+            else if (std::abs(std::strtod(windowEntry,nullptr) - userMoments[row].window) > DBL_EPSILON) {
                 if (windowEntry != nullptr){//update
-                    userMoments[row].second = std::strtod(windowEntry,nullptr);
+                    userMoments[row].window = std::strtod(windowEntry,nullptr);
                 }
                 else
                     userMoments.erase(userMoments.begin() + row); //erase
@@ -287,7 +287,7 @@ void MomentsEditor::RebuildList() {
     windowSizeText->GetNumber(&defaultTimeWindow);
 
     for (int u = 0; u < userMoments.size(); u++) {
-        if(userMoments[u].first.empty() && (userMoments[u].second == 0.0 || userMoments[u].second == defaultTimeWindow)){
+        if(userMoments[u].content.empty() && (userMoments[u].window == 0.0 || userMoments[u].window == defaultTimeWindow)){
             userMoments.erase(userMoments.begin()+u);
             --u;
             continue;
@@ -306,11 +306,11 @@ void MomentsEditor::RebuildList() {
 	for (u = 0; u < userMoments.size(); u++) {
 		sprintf(tmp, "%zd", u + 1);
 		momentsList->SetValueAt(0, u, tmp);
-		sprintf(tmp, "%s", userMoments[u].first.c_str());
+		sprintf(tmp, "%s", userMoments[u].content.c_str());
 		momentsList->SetValueAt(1, u, tmp);
-		sprintf(tmp, "%zd", (ParseMoment(userMoments[u].first, userMoments[u].second)).size());
+		sprintf(tmp, "%zd", (ParseUserMoment(userMoments[u].content, userMoments[u].window)).size());
 		momentsList->SetValueAt(2, u, tmp);
-        sprintf(tmp, "%g", userMoments[u].second);
+        sprintf(tmp, "%g", userMoments[u].window);
         momentsList->SetValueAt(3, u, tmp);
 	}
     //last line, possibility to enter new value
@@ -336,9 +336,7 @@ void MomentsEditor::Refresh() {
 * \return amount of new moments
 */
 int MomentsEditor::AddMoment(std::vector<Moment> newMoments) {
-    /*if(Worker::CheckIntervalOverlap(moments, newMoments)){
-        return -1; // error
-    }*/
+
     int nb = (int)newMoments.size();
     moments.insert(moments.end(),newMoments.begin(),newMoments.end());
     std::sort(moments.begin(),moments.end());
@@ -347,25 +345,30 @@ int MomentsEditor::AddMoment(std::vector<Moment> newMoments) {
 
 /**
 * \brief Parses a user input and returns a vector of time moments
-* \param userInput string of the form "%lf,%lf,%lf" for beginning, interval step, ending of the moment series
 * \return message Type of the source (button)
 */
-std::vector<Moment> MomentsEditor::ParseMoment(const std::string& userInput, double timeWindow) {
+std::vector<Moment> MomentsEditor::ParseUserMoment(const UserMoment& input) {
 	std::vector<Moment> parsedResult;
 	double begin, interval, end;
 
-	int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
+	int nb = sscanf(input.content.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
 	if (nb == 1 && (begin >= 0.0)) {
 		//One moment
-		parsedResult.emplace_back(begin,timeWindow);
-		//} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
+		Moment m;
+		m.time=begin;
+		m.window=input.timeWindow;
+		parsedResult.emplace_back(m);
 	}
 	else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
 		//Range
 		// First check for potential overlap due to interval<timeWindow
-		if(!(interval<timeWindow)){
-            for (double time = begin; time <= end; time += interval)
-                parsedResult.emplace_back(time, timeWindow);
+		if(!(interval<input.timeWindow)){
+            for (double time = begin; time <= end; time += interval){
+				Moment m;
+				m.time=time;
+				m.window=input.timeWindow;
+				parsedResult.emplace_back(m);	
+			}
         }
 	}
 	return parsedResult;

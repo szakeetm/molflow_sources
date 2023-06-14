@@ -70,7 +70,7 @@ private:
 
   int AddMoment(std::vector<Moment> newMoments); //Adds a time serie to moments and returns the number of elements
   void PasteClipboard();
-  std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow); //Parses a user input and returns a vector of time moments
+  std::vector<Moment> ParseUserMoment(const UserMoment& input); //Parses a user input and returns a vector of time moments
 
 };
 

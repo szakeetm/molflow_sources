@@ -124,7 +124,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     }
 
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
     // Count this hit as a transparent pass
@@ -644,7 +644,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -694,7 +694,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     // Handle super structure link facet. Can be
     if (iFacet->sh.superDest) {
         int momentIndex = -1;
-        if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+        if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
             lastMomentIndex = momentIndex - 1;
         }
 
@@ -724,7 +724,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     if (iFacet->sh.isVolatile) {
         if (iFacet->isReady) {
             int momentIndex = -1;
-            if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+            if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
                 lastMomentIndex = momentIndex - 1;
             }
 
@@ -758,7 +758,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -790,7 +790,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         ray.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
-        momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
+        momentIndex = LookupMomentIndex(ray.time, lastMomentIndex); //reflection might happen in another moment
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
@@ -878,7 +878,7 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
     tmpState.globalStats.globalHits.nbAbsEquiv += oriRatio;
 
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -960,32 +960,32 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
 }
 
 void
-ParticleTracer::RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
-                             double ortSpeedFactor) {
+ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHit, double velocity_factor,
+	double ortSpeedFactor) {
 
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
-    size_t add = tu + tv * (f->sh.texWidth);
-    double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
-                         std::abs(Dot(ray.direction,
-                                      f->sh.N)); //surface-orthogonal velocity component
+	size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
+	size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+	size_t add = tu + tv * (f->sh.texWidth);
+	double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
+		std::abs(Dot(ray.direction,
+			f->sh.N)); //surface-orthogonal velocity component
 
-    {
-        TextureCell &texture = tmpState.facetStates[f->globalId].momentResults[0].texture[add];
-        if (countHit) texture.countEquiv += oriRatio;
-        texture.sum_1_per_ort_velocity +=
-                oriRatio * velocity_factor / ortVelocity;
-        texture.sum_v_ort_per_area += oriRatio * ortSpeedFactor * ortVelocity *
-                                      f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
-    }
-    if (m > 0) {
-        TextureCell &texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
-        if (countHit) texture.countEquiv += oriRatio;
-        texture.sum_1_per_ort_velocity +=
-                oriRatio * velocity_factor / ortVelocity;
-        texture.sum_v_ort_per_area += oriRatio * ortSpeedFactor * ortVelocity *
-                                      f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
-    }
+
+	TextureCell& texture = tmpState.facetStates[f->globalId].momentResults[0].texture[add];
+	if (countHit) texture.countEquiv += oriRatio;
+	texture.sum_1_per_ort_velocity +=
+		oriRatio * velocity_factor / ortVelocity;
+	texture.sum_v_ort_per_area += oriRatio * ortSpeedFactor * ortVelocity *
+		f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+
+	if (m > 0) {
+		TextureCell& texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
+		if (countHit) texture.countEquiv += oriRatio;
+		texture.sum_1_per_ort_velocity +=
+			oriRatio * velocity_factor / ortVelocity;
+		texture.sum_v_ort_per_area += oriRatio * ortSpeedFactor * ortVelocity *
+			f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+	}
 }
 
 void ParticleTracer::RecordDirectionVector(const SimulationFacet *f, int m) {
@@ -1213,7 +1213,7 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time +
-                                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, model->tdParams.moments, lastMomentIndex)) > 0) {
+                                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -1313,4 +1313,26 @@ void ParticleTracer::RecordLeakPos() {
         tmpState.globalStats.leakCache[tmpState.globalStats.leakCacheSize].dir = ray.direction;
         ++tmpState.globalStats.leakCacheSize;
     }
+}
+
+/*!
+ * @brief Lookup the index of the interval related to a given key and a start position for accelerated lookup
+ * @param key specific moment
+ * @param intervals vector of time intervals
+ * @param startIndex offset to only look in a subset of intervals
+ * @return -1 if moment doesnt relate to an interval, else index of moment (+1 to account for [0]== steady state)
+ */
+int ParticleTracer::LookupMomentIndex(const double time, const size_t startIndex) {
+
+	if (model->intervalCache.empty()) return -1;
+	auto lowerBound = std::lower_bound(model->intervalCache.begin() + startIndex, model->intervalCache.end(), time, [](const Interval& a, double b) {
+		return a.startTime < b;
+		});
+	if (lowerBound != model->intervalCache.begin()) --lowerBound; //even model->intervalCache.end() can be a bound
+
+	if (lowerBound->startTime <= time && time < lowerBound->endTime) {
+		return static_cast<int>(std::distance(model->intervalCache.begin(), lowerBound) + 1); //+1 to offset for m=0: const.flow
+	}
+
+	return -1;
 }

@@ -301,27 +301,13 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 
     //InitializeGeometry();
-    model->InitialiseFacets();
+    model->InitializeFacets();
 
     initSimModel(model);
     if(model->PrepareToRun()){
         return 1;
     }
-
-    // 2. Create simulation dataports
-    try {
-        //prg.SetMessage("Creating Logger...");
-        /*size_t logDpSize = 0;
-        if (model->otfParams.enableLogging) {
-            logDpSize = sizeof(size_t) + model->otfParams.logLimit * sizeof(ParticleLoggerItem);
-        }
-        simManager->ReloadLogBuffer(logDpSize, true);*/
-
-        globStatePtr->Resize(model);
-    }
-    catch (const std::exception &e) {
-        Log::console_error("[Warning] {}\n", e.what());
-    }
+    globStatePtr->Resize(model);
 
     return 0;
 }
@@ -360,7 +346,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 
     //InitializeGeometry();
-    model->InitialiseFacets();
+    model->InitializeFacets();
 
     Log::console_msg_master(3, "Initializing geometry...\n");
     initSimModel(model);
@@ -512,16 +498,6 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
         return 1;
     }
 
-    std::vector<Moment> momentIntervals;
-    momentIntervals.reserve(model->tdParams.moments.size());
-    for (auto &moment : model->tdParams.moments) {
-        momentIntervals.emplace_back(
-                std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
-    }
-
-    model->tdParams.moments = momentIntervals;
-
-
     model->structures.resize(model->sh.nbSuper); //Create structures
 
     bool hasVolatile = false;
@@ -556,7 +532,7 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
 
         //Some initialization
         try {
-            if (!sFac->InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
+            if (!sFac->InitializeOnLoad(facIdx)) return false;
         }
         catch (const std::exception& err){
             Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());

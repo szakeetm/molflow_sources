@@ -110,7 +110,7 @@ Worker::Worker() : simManager(0) {
 	desorptionParameterIDs = std::set<size_t>();
 	moments = std::vector<Moment>();
 	userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
-	CDFs = std::vector<std::vector<CDF_p>>();
+	CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
 	IDs = std::vector<IntegratedDesorption>();
 	parameters = std::vector<Parameter>();
 	needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
@@ -688,8 +688,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				geom->LoadGEO(*file, prg, &version, this);
 				// Add moments only after user Moments are completely initialized
-				if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, prg)) {
-					GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+				try {
+					TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
+				} catch (std::exception& e) {
+					GLMessageBox::Display(e.what()", "Warning",
 						GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
@@ -859,26 +861,13 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				{
 					try {
-						TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, prg);
+						TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
 					}
 					catch (...) {
-						GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+						GLMessageBox::Display(e.what(), "Warning",
 							GLDLG_OK, GLDLG_ICONWARNING);
 						return;
 					}
-					/*
-					auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, load_progress);
-					do {
-						prg.SetProgress(load_progress);
-						ProcessSleep(100);
-					} while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-
-					if (future.get()) {
-						GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
-											  GLDLG_OK, GLDLG_ICONWARNING);
-						return;
-					}
-					*/
 				}
 
 
@@ -1211,35 +1200,13 @@ bool Worker::InterfaceGeomToSimModel() {
 	for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
 		mf_model->vertices3.emplace_back(*geom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
 	}
-	// Parse usermoments to regular moment intervals
-	//mf_model->tdParams.moments = this->moments;
-
 
 	mf_model->tdParams.CDFs.clear();
 	mf_model->tdParams.IDs.clear();
 
-	// we create it directly on the Sim side
-	//mf_model->tdParams.CDFs = this->CDFs;
-	//        mf_model->tdParams.IDs = this->IDs;
-	{
-		//mf_model->tdParams.IDs.clear();
-		// we create it directly on the Sim side
-		/*for (auto &id : this->IDs) {
-			mf_model->tdParams.IDs.push_back(id.GetValues());
-		}*/
-	}
-
 	mf_model->tdParams.parameters.clear();
 	for (auto& param : this->parameters)
 		mf_model->tdParams.parameters.emplace_back(param); //parameter->Distribution2D conversion
-
-	std::vector<Moment> momentIntervals;
-	momentIntervals.reserve(this->moments.size());
-	for (auto& moment : this->moments) {
-		momentIntervals.emplace_back(
-			std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
-	}
-	mf_model->tdParams.moments = momentIntervals;
 
 	mf_model->sh = *geom->GetGeomProperties();
 
@@ -1261,15 +1228,6 @@ bool Worker::InterfaceGeomToSimModel() {
 					facet->angleMapCache.clear();
 					facet->angleMapCache.resize(mapSize);
 					needsAngleMapStatusRefresh = true; //Mark that facet adv. parameters needs to be updated
-				}
-				else {
-					/*auto errString = fmt::format(
-							"[Facet #{}] Recorded Data Size is different from actual size: {} / {}\n",
-							facIdx + 1,
-							facet->angleMapCache.size(),
-							facet->sh.anglemapParams.GetRecordedMapSize());
-					fmt::print(stderr, errString);
-					throw std::runtime_error(errString);*/
 				}
 			}
 
@@ -1326,7 +1284,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 		//Some initialization
 		
-		if (!sFac.InitializeOnLoad(facIdx, mf_model->tdParams.moments.size()))
+		if (!sFac.InitializeOnLoad(facIdx))
 			return false;
 
 
@@ -1505,7 +1463,7 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
-		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
+		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].window) /
 			globalStatCache.globalHits.nbDesorbed;
 	}
 }
@@ -1607,7 +1565,7 @@ void Worker::PrepareToRun() {
 	//Reset Maxwell-Boltzmann precalculated distributions
 	temperatures = std::vector<double>();
 	desorptionParameterIDs = std::set<size_t>();
-	CDFs = std::vector<std::vector<CDF_p>>();
+	CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
 	IDs = std::vector<IntegratedDesorption>();
 
 	bool needsAngleMapStatusRefresh = false;

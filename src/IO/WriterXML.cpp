@@ -186,8 +186,8 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     for (size_t i = 0; i < uInput.userMoments.size(); i++) {
         xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
         newUserEntry.append_attribute("id") = i;
-        newUserEntry.append_attribute("content") = uInput.userMoments[i].first.c_str();
-        newUserEntry.append_attribute("window") = uInput.userMoments[i].second;
+        newUserEntry.append_attribute("content") = uInput.userMoments[i].content;
+        newUserEntry.append_attribute("window") = uInput.userMoments[i].window;
     }
 
     timeSettingsNode.append_attribute("timeWindow") = model->wp.timeWindowSize;
@@ -301,11 +301,10 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
     xml_node resultNode = rootNode.append_child("MolflowResults");
     xml_node momentsNode = resultNode.append_child("Moments");
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
-    size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
+    //size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
     reportWriteStatus("Writing simulation results...");
     for (size_t m = 0; m <= model->tdParams.moments.size(); m++) {
-        //setWriteProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         reportNewWriteStatus("Writing simulation results...", 0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         xml_node newMoment = momentsNode.append_child("Moment");
         newMoment.append_attribute("id") = m;
@@ -313,8 +312,8 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
             newMoment.append_attribute("time") = "Constant flow";
             newMoment.append_attribute("timeWindow") = 0;
         } else {
-            newMoment.append_attribute("time") = model->tdParams.moments[m - 1].first;
-            newMoment.append_attribute("timeWindow") = model->tdParams.moments[m - 1].second;
+            newMoment.append_attribute("time") = model->tdParams.moments[m - 1].time;
+            newMoment.append_attribute("timeWindow") = model->tdParams.moments[m - 1].window;
         }
 
         if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
@@ -474,8 +473,7 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
                 }
             }
 
-            size_t profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) *
-                                                     (1 + model->tdParams.moments.size())) : 0;
+            //size_t profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + model->tdParams.moments.size())) : 0;
             size_t height = sFac.sh.texHeight;
             size_t width = sFac.sh.texWidth;
 
@@ -513,7 +511,6 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
                 dirNode.append_attribute("width") = sFac.sh.texWidth;
                 dirNode.append_attribute("height") = sFac.sh.texHeight;
 
-                //DirectionCell *dirs = (DirectionCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + (1 + (int)model->tdParams.moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
                 const auto &dirs = globState.facetStates[sFac.globalId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;

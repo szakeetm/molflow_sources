@@ -390,7 +390,7 @@ void TimewisePlotter::addView(int facet) {
 			GLDataView *v = new GLDataView();
 			if (index<1 || (index) > worker->moments.size()) continue; //invalid moment
 			//sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
-			sprintf(tmp, "t=%gs", worker->moments[index - 1].first);
+			sprintf(tmp, "t=%gs", worker->moments[index - 1].time);
 			v->SetName(tmp);
 			v->userData1 = (int)index;
 			v->SetStyle(STYLE_DOT);

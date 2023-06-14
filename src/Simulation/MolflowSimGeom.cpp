@@ -288,12 +288,13 @@ int MolflowSimulationModel::PrepareToRun() {
     std::string errLog;
 
     //determine latest moment
-    
     if(!tdParams.moments.empty()) {
-        wp.latestMoment = (tdParams.moments.end()-1)->second;
+        wp.latestMoment = tdParams.moments.back().time+.5*tdParams.moments.back().window();
     } else {
         wp.latestMoment = wp.timeWindowSize * .5;
     }
+
+    CalcIntervalCache();
 
     std::set<size_t> desorptionParameterIDs;
     std::vector<double> temperatureList;
@@ -368,6 +369,14 @@ int MolflowSimulationModel::PrepareToRun() {
     return 0;
 }
 
+void MolflowSimulationModel::CalcIntervalCache() {
+    intervalCache.resize(tdParams.moments.size());
+    for (size_t i=0;i<tdParams.moments.size();i++) {
+        intervalCache[i].startTime=tdParams.moments[i].time - .5 * tdParams.moments[i].window;
+        intervalCache[i].endTime=tdParams.moments[i].time + .5 * tdParams.moments[i].window;
+    }
+}
+
 /**
 * \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
 */
@@ -435,6 +444,7 @@ size_t MolflowSimulationModel::size() {
     size_t modelSize = 0;
     modelSize += SimulationModel::size();
     modelSize += tdParams.GetMemSize();
+    modelSize += sizeof(Interval) * tdParams.moments.size();
     return modelSize;
 }
 

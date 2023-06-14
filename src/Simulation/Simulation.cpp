@@ -185,18 +185,6 @@ void Simulation::ClearSimulation() {
 
     }
     totalDesorbed = 0;
-    //ResetTmpCounters();
-    /*for(auto& tmpResults : tmpGlobalResults)
-        tmpResults.Reset();*/
-    //tmpParticleLog.clear();
-
-    /*this->model->structures.clear();
-    this->model->tdParams.CDFs.clear();
-    this->model->tdParams.IDs.clear();
-    this->model->tdParams.moments.clear();
-    this->model->tdParams.parameters.clear();
-    //this->temperatures.clear();
-    this->model->vertices3.clear();*/
 }
 
 int Simulation::RebuildAccelStructure() {

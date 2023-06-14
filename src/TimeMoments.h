@@ -24,17 +24,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <vector>
 #include "MolflowTypes.h"
 #include <Helper/GLProgress_abstract.hpp>
+#include <optional>
 
 class TimeMoments {
 public:
-    static int CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vector<Moment>& vecB);
-    static std::pair<int, int> CheckIntervalOverlap(const std::vector<std::vector<Moment>>& vecParsedMoments);
-    static std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow);
-    static int
-    ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vector<UserMoment> *userMoments,
+    static std::optional<std::pair<int, int>> HasIntervalOverlap(const std::vector<std::vector<Moment>>& vecParsedMoments);
+    static std::vector<Moment> ParseUserMoment(const UserMoment& input);
+    static void ParseAndCheckUserMoments(std::vector<Moment>& moments, const std::vector<UserMoment>& userMoments,
         GLProgress_Abstract& prg);
-
-    static int AddMoment(std::vector<Moment> *moments, std::vector<Moment> newMoments); //Adds a time serie to moments and returns the number of elements
 };
 
 

@@ -48,11 +48,11 @@ int GetIDId(const std::set<size_t> &desorptionParameterIDs, int paramId) {
 * \param paramId parameter ID
 * \return Previous size of IDs vector, which determines new id in the vector
 */
-std::pair<int, std::vector<ID_p>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
+std::pair<int, std::vector<DesorptionEntry>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
     size_t i = desorptionParameterIDs.size();
     desorptionParameterIDs.insert(paramId);
 
-    std::vector<ID_p> id_v = Generate_ID(paramId,model);
+    std::vector<DesorptionEntry> id_v = Generate_ID(paramId,model);
     return std::make_pair((int) i, id_v);
 }
 
@@ -61,14 +61,14 @@ std::pair<int, std::vector<ID_p>> GenerateNewID(std::set<size_t>& desorptionPara
 * \param paramId parameter identifier
 * \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
 */
-std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulationModel* model) {
-    std::vector<std::pair<double, double>> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
+std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulationModel* model) {
+    std::vector<IntegratedDesorptionEntry> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
 
     //We need to slightly modify the original outgassing:
     //Beginning: Add a point at t=0, with the first outgassing value (assuming constant outgassing from 0 to t1 - const. extrap.)
     //End: if latestMoment is after the last user-defined moment, copy last user value to latestMoment (constant extrapolation)
     //     if latestMoment is before, create a new point at latestMoment with interpolated outgassing value and throw away the rest (don't generate particles after latestMoment)
-    std::vector<std::pair<double, double>> myOutgassing; //modified parameter
+    std::vector<DesorptionEntry> myOutgassing; //modified parameter
 
     //First, let's check at which index is the latest moment
     size_t indexAfterLatestMoment;
@@ -86,9 +86,9 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulatio
 
 	//Construct integral from 0 to the simulation's latest moment
 	//First point: t=0, Q(0)=Q(t0)
-	ID.emplace_back(0.0, 0.0); //At t=0 no particles have desorbed yet
+	ID.emplace_back(IntegratedDesorptionEntry(0.0, 0.0)); //At t=0 no particles have desorbed yet
 	if (par.GetX(0) > 0.0) { //If the user starts later than t=0, copy first user value to t=0(const extrapolation)
-		myOutgassing.emplace_back(0.0, par.GetY(0));
+		myOutgassing.emplace_back(DesorptionEntry(0.0, par.GetY(0)));
 	} //else no action needed, since there is already a moment defined at t=0, will be copied to myOutgassing with the other user-def values
 
 
@@ -100,14 +100,14 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulatio
 		if (lastUserMomentBeforeLatestMoment) {
 			myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
 			myOutgassing.emplace_back(model->wp.latestMoment,
-				myOutgassing.back().second); //...and create last point equal to last outgassing (const extrapolation)
+				myOutgassing.back().desValue); //...and create last point equal to last outgassing (const extrapolation)
 		}
 		else {
 			if (indexAfterLatestMoment > 0) {
 				myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
 					valuesCopy.begin() + (int)indexAfterLatestMoment); //copy values that are before latestMoment
 			}
-			if (!IsEqual(myOutgassing.back().first, model->wp.latestMoment)) { //if interpolation is needed
+			if (!IsEqual(myOutgassing.back().time, model->wp.latestMoment)) { //if interpolation is needed
 				myOutgassing.emplace_back(model->wp.latestMoment,
 					InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
 						par.logYinterp)); //interpolate outgassing value to t=latestMoment
@@ -118,17 +118,17 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulatio
 
     //Intermediate moments, from first to t=latestMoment
     for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
-        if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
+        if (IsEqual(myOutgassing[i].desValue, myOutgassing[i - 1].desValue)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
-            ID.emplace_back(myOutgassing[i].first,
-                            ID.back().second +
-                            (myOutgassing[i].first - myOutgassing[i - 1].first) *
-                            myOutgassing[i].second * MBARLS_TO_PAM3S); //integral = y1*(x1-x0)
+            ID.emplace_back(myOutgassing[i].time,
+                            ID.back().cumulativeDesValue +
+                            (myOutgassing[i].time - myOutgassing[i - 1].time) *
+                            myOutgassing[i].desValue * MBARLS_TO_PAM3S); //integral = y1*(x1-x0)
         } else { //we need to split the user-defined section to 10 subsections, and integrate each
             //(terminology: section is between two consecutive user-defined time-value pairs)
             const int nbSteps = 10; //change here
-            double sectionStartTime = myOutgassing[i - 1].first;
-            double sectionEndTime = myOutgassing[i].first;
+            double sectionStartTime = myOutgassing[i - 1].time;
+            double sectionEndTime = myOutgassing[i].time;
             double sectionTimeInterval = sectionEndTime - sectionStartTime;
             double sectionDelta = 1.0 / nbSteps;
             double subsectionTimeInterval, subsectionLogTimeInterval;
@@ -146,8 +146,7 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulatio
             } else {
                 subsectionTimeInterval = sectionTimeInterval * sectionDelta;
             }
-            double previousSubsectionValue = myOutgassing[i -
-                                                          1].second; //Points to start of section, will be updated to point to start of subsections
+            double previousSubsectionValue = myOutgassing[i - 1].desValue; //Points to start of section, will be updated to point to start of subsections
             double previousSubsectionTime = sectionStartTime;
 
             double sectionFraction = sectionDelta;
@@ -208,7 +207,7 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulatio
                     }
                 }
 
-                ID.emplace_back(subSectionEndTime, ID.back().second + subsectionDesorbedGas * MBARLS_TO_PAM3S);
+                ID.emplace_back(subSectionEndTime, ID.back().cumulativeDesValue + subsectionDesorbedGas * MBARLS_TO_PAM3S);
 
                 //Cache end values for next iteration
                 previousSubsectionValue = subSectionEndValue;

@@ -68,14 +68,37 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MBAR_TO_PA 100 //Multiply by this to convert a value expressed in mbar to Pa
 
 typedef float ACFLOAT;
-typedef std::pair<std::string,double> UserMoment;
-typedef std::pair<double,double> Moment; //mid-time,window_size
-typedef std::pair<double,double> ID_p;
-typedef std::pair<double,double> CDF_p;
+struct UserMoment {
+	std::string content;
+	double timeWindow;
+};
+struct Moment {
+	double time;
+	double window;
+};
+struct Interval {
+	double startTime;
+	double endTime;
+};
+struct DesorptionEntry {
+	double time;
+	double desValue;
+	DesorptionEntry(double _time, double _desVal):time(_time),desValue(_desVal){};
+};
+struct IntegratedDesorptionEntry {
+	double time;
+	double cumulativeDesValue;
+	IntegratedDesorptionEntry(double _time, double _cumDesVal):time(_time),cumulativeDesValue(_cumDesVal){};
+};
+
+struct facetViewSetting {
+	bool textureVisible;
+	bool volumeVisible;
+};
 
 struct UserInput {
     std::vector<SelectionGroup> selections;
-    std::vector<std::tuple<bool, bool>> facetViewSettings;
+    std::vector<facetViewSetting> facetViewSettings;
     std::vector<UserMoment> userMoments;
     std::vector<Parameter> parameters;
 };

@@ -51,31 +51,28 @@ public:
     bool IsHardHit(const Ray &r) override;
 };
 
-struct TimeDependentParamters {
-    TimeDependentParamters() = default;
+struct TimeDependentParameters {
+    TimeDependentParameters() = default;
 
     std::vector<Distribution2D> parameters;
 
-    std::vector<std::vector<CDF_p>> CDFs; //cumulative distribution function for each temperature
-    std::vector<std::vector<ID_p>> IDs; //integrated distribution function for each time-dependent desorption type
-    std::vector<Moment> moments;             //moments when a time-dependent simulation state is recorded
-    /*std::vector<UserMoment> userMoments;    //user-defined text values for defining time moments (can be time or time series)
-    std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
-    std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-*/
+    std::vector<std::vector<IntegratedDesorptionEntry>> CDFs; //cumulative distribution function for each temperature
+    std::vector<std::vector<DesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
+    std::vector<Moment> moments;
+    
     size_t GetMemSize() {
         size_t sum = 0;
         for (auto &par : parameters) {
             sum += par.GetMemSize();
         }
-        sum += sizeof(std::vector<std::vector<CDF_p>>);
+        sum += sizeof(std::vector<std::vector<IntegratedDesorptionEntry>>);
         for (auto &vec : CDFs) {
-            sum += sizeof(std::vector<CDF_p>);
+            sum += sizeof(std::vector<IntegratedDesorptionEntry>);
             sum += sizeof(std::pair<double, double>) * vec.capacity();
         }
-        sum += sizeof(std::vector<std::vector<ID_p>>);
+        sum += sizeof(std::vector<std::vector<DesorptionEntry>>);
         for (auto &vec : IDs) {
-            sum += sizeof(std::vector<ID_p>);
+            sum += sizeof(std::vector<DesorptionEntry>);
             sum += sizeof(std::pair<double, double>) * vec.capacity();
         }
         sum += sizeof(std::vector<Moment>);
@@ -88,6 +85,7 @@ struct TimeDependentParamters {
 // Local simulation structure for Molflow specific simulations
 // Appends general SimulationModel by time dependent parameters
 class MolflowSimulationModel : public SimulationModel {
+  
 public:
     MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};
 
@@ -136,7 +134,7 @@ public:
     int BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
                             int maxPrimsInNode) override;
 
-    //int InitialiseFacets();
+    //int InitializeFacets();
 
     void CalcTotalOutgassing();
 
@@ -188,7 +186,9 @@ public:
     double GetOpacityAt(SimulationFacet *f, double time) const;
     double GetStickingAt(SimulationFacet *f, double time) const;
 
-    TimeDependentParamters tdParams;
+    TimeDependentParameters tdParams;
+    std::vector<Interval> intervalCache; //speedup to store moments as [start_time,end_time], calculated in PrepareToRun();
+    void CalcIntervalCache();
 
     void BuildPrisma(double L, double R, double angle, double s, int step);
 };
