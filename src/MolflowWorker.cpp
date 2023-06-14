@@ -184,7 +184,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 	bool isXMLzip = ext == "zip";
 	bool isSTL = ext == "stl";
 
-	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL) throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
+	if (!(isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL)) throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
 	
 #ifdef _WIN32
 	//Check (using native handle) if background compressor is still alive
