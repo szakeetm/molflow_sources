@@ -42,7 +42,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
  * \return true on hard hit
 */
 bool ParameterSurface::IsHardHit(const Ray &r) {
-    const double td_opacity = dist->InterpolateY(r.time, false);
+    const double td_opacity = dist->InterpY(r.time, false);
     if(td_opacity >= 1.0)
         return true;
     else
@@ -414,7 +414,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                     finalOutgassingRate_Pa_m3_sec += facet->sh.outgassing;
                 } else { //time-dependent outgassing
                     totalDesorbedMolecules +=
-                            tdParams.IDs[facet->sh.IDid].back().desValue / (1.38E-23 * facet->sh.temperature);
+                            tdParams.IDs[facet->sh.IDid].back().cumulativeDesValue / (1.38E-23 * facet->sh.temperature);
                     size_t lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = tdParams.parameters[facet->sh.outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=

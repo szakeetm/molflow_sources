@@ -101,7 +101,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 		memoryUsage += sizeof(size_t); //ID size
 		memoryUsage += 2 * sizeof(bool); //logX,logY interpolation flags
-		memoryUsage += i.GetSize() * 2 * sizeof(double);
+		memoryUsage += i.size() * sizeof(IntegratedDesorptionEntry);
 	}
 
 	//Parameters
@@ -113,7 +113,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 		memoryUsage += i.GetSize() * 2 * sizeof(double);
 	}
 	memoryUsage += sizeof(size_t); //number of temperatures
-	memoryUsage += sizeof(double) * (int)(work->temperatures).size(); //temperatures
+	//memoryUsage += sizeof(double) * (int)(work->temperatures).size(); //temperatures
 
 	//moments size already passed
 	memoryUsage += sizeof(double) * (int)(work->moments).size(); //moments
@@ -831,12 +831,10 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		int nb = file.ReadInt();
 
 		for (int i = 0; i < nb; i++) {
-			char tmpExpr[512];
-			double tmpWindow;
-			strcpy(tmpExpr, file.ReadString());
-			file.ReadKeyword(":");
-			tmpWindow = file.ReadDouble();
-			worker->userMoments.emplace_back(tmpExpr, tmpWindow);
+			UserMoment um;
+			um.content=file.ReadString();
+			um.timeWindow=file.ReadDouble();
+			worker->userMoments.emplace_back(um);
 		}
 		file.ReadKeyword("}");
 	}
@@ -846,10 +844,10 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		int nb = file.ReadInt();
 
 		for (int i = 0; i < nb; i++) {
-			char tmpExpr[512];
-			strcpy(tmpExpr, file.ReadString());
-			// Try to set a fixed time window later for GEO versions >= 11
-			worker->userMoments.emplace_back(tmpExpr, 0.0);
+			UserMoment um;
+			um.content= file.ReadString();
+			um.timeWindow=0.0; // Try to set a fixed time window later for GEO versions >= 11
+			worker->userMoments.emplace_back(um);
 		}
 		file.ReadKeyword("}");
 	}
@@ -865,7 +863,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 
 		if (*version < 16) { // use fixed time window for user moments
 			for (auto& uMoment : worker->userMoments) {
-				uMoment.second = worker->model->wp.timeWindowSize;
+				uMoment.timeWindow = worker->model->wp.timeWindowSize;
 			}
 		}
 		file.ReadKeyword("useMaxwellian"); file.ReadKeyword(":");
@@ -1440,8 +1438,8 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 							texHeight_file = f->sh.texHeight;
 						}
 
-						for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-							for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+						for (iy = 0; iy < (std::min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+							for (ix = 0; ix < (std::min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 								size_t index = iy * f->sh.texWidth + ix;
 								texture[index].countEquiv = static_cast<double>(file.ReadSizeT());
 								texture[index].sum_1_per_ort_velocity = file.ReadDouble();
@@ -1531,7 +1529,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 		file.Write("\n \"");
 		file.Write(worker->userMoments[u].content.c_str());
 		file.Write("\" : ");
-		file.Write(worker->userMoments[u].window);
+		file.Write(worker->userMoments[u].timeWindow);
 	}
 	file.Write("\n}\n");
 
@@ -2204,8 +2202,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 	ydims.reserve(nbNewFacet);
 
 	//now go for the facets to get their texture ratio
-	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
-		prg.SetProgress(0.5 * (double)i / (double)Min(nbNewFacet, GetNbFacet()));
+	for (size_t i = 0; i < std::min(nbNewFacet, GetNbFacet()); i++) {
+		prg.SetProgress(0.5 * (double)i / (double)std::min(nbNewFacet, GetNbFacet()));
 		file.JumpSection("facet");
 		// Check idx
 		int idx = file.ReadInt();
@@ -2236,8 +2234,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 	file.ReadDouble();
 
 	//read texture values
-	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
-		prg.SetProgress(0.5 + 0.5 * (double)i / (double)Min(nbNewFacet, GetNbFacet()));
+	for (size_t i = 0; i < std::min(nbNewFacet, GetNbFacet()); i++) {
+		prg.SetProgress(0.5 + 0.5 * (double)i / (double)std::min(nbNewFacet, GetNbFacet()));
 		if (!IsZero(xdims[i])) { //has texture
 			InterfaceFacet* f = GetFacet(i);
 
@@ -2283,8 +2281,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 				texHeight_file = f->ogMap.outgassingMapHeight;
 			}
 
-			for (iy = 0; iy < (Min(f->ogMap.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-				for (ix = 0; ix < (Min(f->ogMap.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+			for (iy = 0; iy < (std::min(f->ogMap.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+				for (ix = 0; ix < (std::min(f->ogMap.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 					size_t index = iy * f->ogMap.outgassingMapWidth + ix;
 					//Read original values
 					size_t MC = file.ReadSizeT();
@@ -2311,7 +2309,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 								else if (source == 2) outgassing = power * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
-								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
+								double moleculePerPhoton = eta0 * pow(std::max(1.0, dose / cutoffdose), alpha);
 								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
@@ -2434,7 +2432,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader& file, GLProgress_Abstract& prg,
 
 	//now go for the facets to get their texture ratio, etc.
 	for (size_t i = 0; i < *nbNewFacet && i < GetNbFacet(); i++) {
-		prg.SetProgress((double)i / (double)Min(*nbNewFacet, GetNbFacet()));
+		prg.SetProgress((double)i / (double)std::min(*nbNewFacet, GetNbFacet()));
 		file.JumpSection("facet");
 		// Check idx
 		int idx = file.ReadInt();

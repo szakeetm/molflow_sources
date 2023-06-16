@@ -57,7 +57,7 @@ namespace FlowIO {
         void
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
-        UserInput uInput;
+        GeometrySettings geometrySettings;
         size_t writeProgress{0};
 
         void reportWriteStatus(const std::string &slaveStatus) const;

@@ -749,8 +749,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		AngleMapThetaHiResE = AngleMapThetaHiResE && (f0->sh.anglemapParams.thetaHigherRes == f->sh.anglemapParams.thetaHigherRes);
 		AngleMapThetaLimitE = AngleMapThetaLimitE && IsEqual(f0->sh.anglemapParams.thetaLimit , f->sh.anglemapParams.thetaLimit);
 		hasAngleMapE = hasAngleMapE && (f0->angleMapCache.empty() == f->angleMapCache.empty());
-		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
-		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
+		TexVisibleE = TexVisibleE && f0->viewSettings.textureVisible == f->viewSettings.textureVisible;
+		VolVisibleE = VolVisibleE && f0->viewSettings.volumeVisible == f->viewSettings.volumeVisible;
         squaredCellsE = squaredCellsE & (std::abs(f->tRatioU - f->tRatioV) < 1E-8 ? 1u : 2u);
         ratioE = ratioE && std::abs(f0->tRatioU - f->tRatioU) < 1E-8;
         ratioVE = ratioVE && std::abs(f0->tRatioV - f->tRatioV) < 1E-8;
@@ -802,8 +802,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	recordACBtn->AllowMixedState(!CountACE); recordACBtn->SetState(CountACE ? f0->sh.countACD : 2);
 	recordDirBtn->AllowMixedState(!CountDirE); recordDirBtn->SetState(CountDirE ? f0->sh.countDirection : 2);
 	angleMapRecordCheckbox->AllowMixedState(!RecordAngleMapE); angleMapRecordCheckbox->SetState(RecordAngleMapE ? f0->sh.anglemapParams.record : 2);
-	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->textureVisible : 2);
-	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->volumeVisible : 2);
+	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->viewSettings.textureVisible : 2);
+	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->viewSettings.volumeVisible : 2);
 	facetMovingToggle->AllowMixedState(!isMovingE); facetMovingToggle->SetState(isMovingE ? f0->sh.isMoving : 2);
 	enableSojournTime->AllowMixedState(!hasSojournE); enableSojournTime->SetState(hasSojournE ? f0->sh.enableSojournTime : 2);
 
@@ -1063,7 +1063,7 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 	// Position dialog next to Facet parameters
 	int facetX, facetY, facetW, facetH;
 	mApp->facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
-	SetBounds(facetX - wD - 10, Min(facetY + 20, 115), wD, hD); //If below 115, the bottom can be out of screen
+	SetBounds(facetX - wD - 10, std::min(facetY + 20, 115), wD, hD); //If below 115, the bottom can be out of screen
 }
 
 /**
@@ -1593,8 +1593,8 @@ bool FacetAdvParams::Apply() {
 		}
 		*/
 		//if (angleMapRecordCheckbox->GetState() < 2) f->wp.anglemapParams.record = angleMapRecordCheckbox->GetState();
-		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
-		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
+		if (showTexture->GetState() < 2) f->viewSettings.textureVisible = showTexture->GetState();
+		if (showVolume->GetState() < 2) f->viewSettings.volumeVisible = showVolume->GetState();
 		nbPerformed++;
 		prg.SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
@@ -1617,8 +1617,8 @@ void FacetAdvParams::ApplyDrawSettings() {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->selected) {
 
-			if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
-			if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
+			if (showTexture->GetState() < 2) f->viewSettings.textureVisible = showTexture->GetState();
+			if (showVolume->GetState() < 2) f->viewSettings.volumeVisible = showVolume->GetState();
 
 			nbPerformed += 1.0;
 		}

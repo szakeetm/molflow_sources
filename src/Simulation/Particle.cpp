@@ -53,7 +53,7 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
     globSimuState.globalStats.nbLeakTotal += tmpState.globalStats.nbLeakTotal;
     globSimuState.globalStats.lastLeakIndex =
             (globSimuState.globalStats.lastLeakIndex + tmpState.globalStats.leakCacheSize) % LEAKCACHESIZE;
-    globSimuState.globalStats.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalStats.leakCacheSize +
+    globSimuState.globalStats.leakCacheSize = std::min(LEAKCACHESIZE, globSimuState.globalStats.leakCacheSize +
                                                                 tmpState.globalStats.leakCacheSize);
 
     // HHit (Only prIdx 0)
@@ -66,7 +66,7 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
             globSimuState.globalStats.lastHitIndex =
                     (globSimuState.globalStats.lastHitIndex + tmpState.globalStats.hitCacheSize) % HITCACHESIZE;
             globSimuState.globalStats.hitCache[globSimuState.globalStats.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-            globSimuState.globalStats.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalStats.hitCacheSize +
+            globSimuState.globalStats.hitCacheSize = std::min(HITCACHESIZE, globSimuState.globalStats.hitCacheSize +
                                                                         tmpState.globalStats.hitCacheSize);
         }
     }
@@ -312,7 +312,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                     //hit time over the measured period - we create a new particle
                     //OR particle has decayed
                     const double remainderFlightPath = velocity * 100.0 *
-                                                       Min(model->wp.latestMoment - lastParticleTime,
+                                                       std::min(model->wp.latestMoment - lastParticleTime,
                                                            expectedDecayMoment -
                                                                    lastParticleTime); //distance until the point in space where the particle decayed
                     tmpState.globalStats.distTraveled_total += remainderFlightPath * oriRatio;
@@ -435,7 +435,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                             }
                         }*/
                         double lookupValue = rndRemainder;
-                        int outgLowerIndex = my_lower_bound(lookupValue,
+                        int outgLowerIndex = lower_index(lookupValue,
                             mfFac->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
                         mapPositionH = (size_t) ((double) outgLowerIndex / (double)mfFac->ogMap.outgassingMapWidth);
@@ -923,35 +923,35 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
         if (moment < 0) return;
 
         if (globHistParams.recordBounce) {
-            binIndex = Min(nbBounces / globHistParams.nbBounceBinsize,
+            binIndex = std::min(nbBounces / globHistParams.nbBounceBinsize,
                            globHistParams.GetBounceHistogramSize() - 1);
             tmpGlobalHistograms[moment].nbHitsHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordDistance) {
-            binIndex = Min(static_cast<size_t>(distanceTraveled /
+            binIndex = std::min(static_cast<size_t>(distanceTraveled /
                                                globHistParams.distanceBinsize),
                            globHistParams.GetDistanceHistogramSize() - 1);
             tmpGlobalHistograms[moment].distanceHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordTime) {
-            binIndex = Min(static_cast<size_t>((ray.time - generationTime) /
+            binIndex = std::min(static_cast<size_t>((ray.time - generationTime) /
                                                globHistParams.timeBinsize),
                            globHistParams.GetTimeHistogramSize() - 1);
             tmpGlobalHistograms[moment].timeHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordBounce) {
-            binIndex = Min(nbBounces / facHistParams.nbBounceBinsize,
+            binIndex = std::min(nbBounces / facHistParams.nbBounceBinsize,
                            facHistParams.GetBounceHistogramSize() - 1);
             facetHistogram[moment].histogram.nbHitsHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordDistance) {
-            binIndex = Min(static_cast<size_t>(distanceTraveled /
+            binIndex = std::min(static_cast<size_t>(distanceTraveled /
                                                facHistParams.distanceBinsize),
                            facHistParams.GetDistanceHistogramSize() - 1);
             facetHistogram[moment].histogram.distanceHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordTime) {
-            binIndex = Min(static_cast<size_t>((ray.time - generationTime) /
+            binIndex = std::min(static_cast<size_t>((ray.time - generationTime) /
                                                facHistParams.timeBinsize),
                            facHistParams.GetTimeHistogramSize() - 1);
             facetHistogram[moment].histogram.timeHistogram[binIndex] += oriRatio;

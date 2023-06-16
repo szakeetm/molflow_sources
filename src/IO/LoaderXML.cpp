@@ -86,7 +86,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         if (isMolflowFile) {
             xml_node paramNode = simuParamNode.child("Parameters");
             for (xml_node newParameter : paramNode.children("Parameter")) {
-                Parameter& newPar = uInput.parameters.emplace_back();
+                Parameter& newPar = geometrySettings.parameters.emplace_back();
                 newPar.name = newParameter.attribute("name").as_string();
                 if (newParameter.attribute("logXinterp")) {
                     newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
@@ -102,7 +102,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
         //TODO: Load parameters from catalog explicitly?
         //work->InsertParametersBeforeCatalog(loadedParams);
-        model->tdParams.parameters.insert(model->tdParams.parameters.end(),uInput.parameters.begin(),uInput.parameters.end());
+        model->tdParams.parameters.insert(model->tdParams.parameters.end(),geometrySettings.parameters.begin(),geometrySettings.parameters.end());
     }
 
     prg.SetMessage("Loading facets...",false);
@@ -151,19 +151,20 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
     model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
-    //uInput.userMoments.clear();
+    //geometrySettings.userMoments.clear();
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-        double tmpWindow = 0.0;
-        std::string tmpExpr = newUserEntry.attribute("content").as_string();
-        tmpWindow = newUserEntry.attribute("window").as_double();
-        if(tmpWindow==0.0){
-            tmpWindow = model->wp.timeWindowSize;
+        UserMoment um;
+        um.content=newUserEntry.attribute("content").as_string();
+        um.timeWindow=newUserEntry.attribute("window").as_double();
+        if(um.timeWindow==0.0){
+            um.timeWindow = model->wp.timeWindowSize;
         }
-        uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
+        
+        geometrySettings.userMoments.emplace_back(um);
     }
     try {
-        TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, uInput.userMoments, prg);
+        TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, geometrySettings.userMoments, prg);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         model->m.unlock();
@@ -231,7 +232,6 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     }
 
     model->tdParams.IDs = this->IDs;
-    model->maxwell_CDF_1K = this->maxwell_CDF_1K;
     model->facets = std::move(loadFacets);
 
     model->m.unlock();
@@ -573,9 +573,9 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                     sum1perText << textureNode.child_value("sum_1_per_v");
                     sumvortText << textureNode.child_value("sum_v_ort");
 
-                    for (size_t iy = 0; iy < (Min(sFac->sh.texHeight,
+                    for (size_t iy = 0; iy < (std::min(sFac->sh.texHeight,
                                                   texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-                        for (size_t ix = 0; ix < (Min(sFac->sh.texWidth,
+                        for (size_t ix = 0; ix < (std::min(sFac->sh.texWidth,
                                                       texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
                             countText >> texture[iy * sFac->sh.texWidth + ix].countEquiv;
                             sum1perText >> texture[iy * sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
@@ -913,11 +913,11 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 
+    /*
     // Init by default as true
-    std::tuple<bool,bool> viewSettings; // texture, volume visible
-    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
-    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
-    uInput.facetViewSettings.emplace_back(textureVisible, volumeVisible);
+    facet->viewSettings.textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    facet->viewSettings.volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
+    */
 
     xml_node facetHistNode = facetNode.child("Histograms");
     if (facetHistNode) { // Molflow version before 2.8 didn't save histograms

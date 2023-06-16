@@ -97,20 +97,23 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
 	//Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
 	{
 		const auto& valuesCopy = par.GetValues();
-		if (lastUserMomentBeforeLatestMoment) {
-			myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
-			myOutgassing.emplace_back(model->wp.latestMoment,
-				myOutgassing.back().desValue); //...and create last point equal to last outgassing (const extrapolation)
+		if (lastUserMomentBeforeLatestMoment) {     
+            for (const auto& val : valuesCopy) { //copy all values...
+                myOutgassing.emplace_back(DesorptionEntry(val.first,val.second)); //convert pair of double (generic parameter) to DesorptionEntry
+            }
+			myOutgassing.emplace_back(DesorptionEntry(model->wp.latestMoment,
+				myOutgassing.back().desValue)); //...and create last point equal to last outgassing (const extrapolation)
 		}
 		else {
 			if (indexAfterLatestMoment > 0) {
-				myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
-					valuesCopy.begin() + (int)indexAfterLatestMoment); //copy values that are before latestMoment
+                for (size_t i = 0; i < indexAfterLatestMoment;i++) { //copy all values...
+                    myOutgassing.emplace_back(DesorptionEntry(valuesCopy[i].first, valuesCopy[i].second)); //convert pair of double (generic parameter) to DesorptionEntry
+                }
 			}
 			if (!IsEqual(myOutgassing.back().time, model->wp.latestMoment)) { //if interpolation is needed
-				myOutgassing.emplace_back(model->wp.latestMoment,
+				myOutgassing.emplace_back(DesorptionEntry(model->wp.latestMoment,
 					InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
-						par.logYinterp)); //interpolate outgassing value to t=latestMoment
+						par.logYinterp,true))); //interpolate outgassing value to t=latestMoment
 			}
 		}
 
@@ -120,10 +123,10 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
     for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
         if (IsEqual(myOutgassing[i].desValue, myOutgassing[i - 1].desValue)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
-            ID.emplace_back(myOutgassing[i].time,
+            ID.emplace_back(IntegratedDesorptionEntry(myOutgassing[i].time,
                             ID.back().cumulativeDesValue +
                             (myOutgassing[i].time - myOutgassing[i - 1].time) *
-                            myOutgassing[i].desValue * MBARLS_TO_PAM3S); //integral = y1*(x1-x0)
+                            myOutgassing[i].desValue * MBARLS_TO_PAM3S)); //integral = y1*(x1-x0)
         } else { //we need to split the user-defined section to 10 subsections, and integrate each
             //(terminology: section is between two consecutive user-defined time-value pairs)
             const int nbSteps = 10; //change here
@@ -161,7 +164,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
                     subSectionEndTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
                 }
                 double subSectionEndValue = InterpolateY(subSectionEndTime, myOutgassing, par.logXinterp,
-                                                         par.logYinterp);
+                                                         par.logYinterp,true);
                 double subsectionDesorbedGas; //desorbed gas in this subsection, in mbar*l/s, will be converted to Pa*m3/s when adding to ID
                 if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
@@ -207,7 +210,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
                     }
                 }
 
-                ID.emplace_back(subSectionEndTime, ID.back().cumulativeDesValue + subsectionDesorbedGas * MBARLS_TO_PAM3S);
+                ID.emplace_back(IntegratedDesorptionEntry(subSectionEndTime, ID.back().cumulativeDesValue + subsectionDesorbedGas * MBARLS_TO_PAM3S));
 
                 //Cache end values for next iteration
                 previousSubsectionValue = subSectionEndValue;

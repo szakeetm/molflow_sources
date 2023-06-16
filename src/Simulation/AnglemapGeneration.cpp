@@ -37,7 +37,7 @@ namespace AnglemapGeneration {
 
 		if (lookupValue < anglemap.thetaLowerRatio) { //theta in lower theta region
 
-			thetaLowerIndex = my_lower_bound(lookupValue,
+			thetaLowerIndex = lower_index(lookupValue,
 				anglemap.theta_CDF_lower); //returns midpoint index after where lookup value resides in ( -1 .. thetaLowerLimit-2 )
 
 			if (thetaLowerIndex == -1) { //theta in the first bin, below its midpoint
@@ -91,7 +91,7 @@ namespace AnglemapGeneration {
 		}
 		else { //theta in higher res region. For detailed comments, see lower part
 
-			thetaLowerIndex = anglemapParams.thetaLowerRes + my_lower_bound(lookupValue,
+			thetaLowerIndex = anglemapParams.thetaLowerRes + lower_index(lookupValue,
 				anglemap.theta_CDF_higher);
 
 			if (thetaLowerIndex == anglemapParams.thetaLowerRes - 1) { //theta in the first half of the higher res part (below recorded CDF at midpoint)
@@ -138,7 +138,7 @@ namespace AnglemapGeneration {
 	* \param thetaLowerIndex lower index of theta bin (line)
 	* \param thetaOvershoot what fraction of a bin are we over the midpoint of the line with thetaLowerIndex [0..1[ -> used to a weighing of the lower and higher theta lines
 	* \param anglemapParams parameters of the angle map
-	* \param angleMap the angle map itself, with precalculated quantities by InitializeAngleMap(). Cannot be passed as const since pass its memory addresses to my_lower_bound
+	* \param angleMap the angle map itself, with precalculated quantities by InitializeAngleMap(). Cannot be passed as const since pass its memory addresses to lower_index
 	* \param randomGenerator reference to the random number generator (Mersenne Twister)
 	* \return phi angle
 	*/
@@ -147,17 +147,17 @@ namespace AnglemapGeneration {
 		int phiLowerIndex;
 		//The lookupValue is looked up from first midpoint to "width+1"th midpoint. It will never be in the first half bin, but can go over width by half bin due to periodic BC
 		//In other words, the lookupValue of 0..1 is mapped to 0.5...width+0.5 of phi_CDFs
-		//Because of this, before calling my_lower_bound, we add the CDF value of the first bin's midpoint (first CDF element of actual line)
+		//Because of this, before calling lower_index, we add the CDF value of the first bin's midpoint (first CDF element of actual line)
 		double weigh; //0: take previous theta line (with index thetaLowerIndex), 1: take next theta line (index: thetaLowerIndex + 1), 0..1: interpolate in-between
 		if (thetaLowerIndex < (int)anglemapParams.thetaLowerRes) { //In lower part
 			if (thetaLowerIndex == -1) { //theta lower than first theta line midpoint, no weighing with next line
 				lookupValue += anglemap.phi_CDFs_lowerTheta[0]; //periodic BCs over -PI...PI, can be larger than 1. So add value of first midpoint
-				phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_lowerTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with 100% weight
+				phiLowerIndex = lower_index(lookupValue, &anglemap.phi_CDFs_lowerTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with 100% weight
 				weigh = thetaOvershoot; // [0.5,1[, will add thetaLowerIndex=-1 then 0.5 when evaluating thetaIndex -> thetaLowerIndex=[0, .5[
 			}
 			else if (thetaLowerIndex == ((int)anglemapParams.thetaLowerRes - 1)) { //theta above lower part's last bin midpoint, no weighing with previous line, neither with higher part first line (thetaStep is different between lower and higher parts)
 				lookupValue += anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth]; //(first element of last line) periodic BCs over -PI...PI, can be larger than 1, so add first half-bin midpoint
-				phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth], anglemapParams.phiWidth); //take the phi CDF belonging to last line with 100% weight
+				phiLowerIndex = lower_index(lookupValue, &anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth], anglemapParams.phiWidth); //take the phi CDF belonging to last line with 100% weight
 				weigh = thetaOvershoot; // [0 - 0.5[ above last theta bin midpoint, will add 0.5 when evaluating thetaIndex
 			}
 			else {
@@ -182,7 +182,7 @@ namespace AnglemapGeneration {
 				}
 				lookupValue += Weigh((double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth],
 					(double)anglemap.phi_CDFs_lowerTheta[(thetaLowerIndex + 1) * anglemapParams.phiWidth], weigh); //Shift lookup value by weighed average of first elements of CDF lines
-				phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
+				phiLowerIndex = weighed_lower_index_X(lookupValue, weigh,
 					&anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth],
 					&anglemap.phi_CDFs_lowerTheta[(thetaLowerIndex + 1) * anglemapParams.phiWidth],
 					anglemapParams.phiWidth);
@@ -191,12 +191,12 @@ namespace AnglemapGeneration {
 		else { //In higher part, for detailed comments see lower part
 			if (thetaLowerIndex == (int)anglemapParams.thetaLowerRes - 1) { //theta above thetaLimit but below first higher part theta bin midpoint
 				lookupValue += anglemap.phi_CDFs_higherTheta[0]; //periodic BCs over -PI...PI, can be larger than 1, shift lookupValue by first element
-				phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_higherTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with full weigh
+				phiLowerIndex = lower_index(lookupValue, &anglemap.phi_CDFs_higherTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with full weigh
 				weigh = thetaOvershoot; 
 			}
 			else if (thetaLowerIndex == ((anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 1)) { //last theta half section
 				lookupValue += anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes) * anglemapParams.phiWidth]; //(first element of last line) periodic BCs over -PI...PI, can be larger than 1
-				phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes) * anglemapParams.phiWidth], anglemapParams.phiWidth); //take entirely the phi ditro belonging to last line
+				phiLowerIndex = lower_index(lookupValue, &anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes) * anglemapParams.phiWidth], anglemapParams.phiWidth); //take entirely the phi ditro belonging to last line
 				weigh = thetaOvershoot; 
 			}
 			else {
@@ -218,7 +218,7 @@ namespace AnglemapGeneration {
 				}
 				lookupValue += Weigh((double)anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes) * anglemapParams.phiWidth],
 					(double)anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes + 1) * anglemapParams.phiWidth], weigh);
-				phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
+				phiLowerIndex = weighed_lower_index_X(lookupValue, weigh,
 					&anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes) * anglemapParams.phiWidth],
 					&anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes + 1) * anglemapParams.phiWidth],
 					anglemapParams.phiWidth);

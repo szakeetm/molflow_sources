@@ -105,28 +105,14 @@ extern SynRad* mApp;
 Worker::Worker() : simManager(0) {
 
 	model = std::make_shared<MolflowSimulationModel>();
-	//Molflow specific
-	temperatures = std::vector<double>();
-	desorptionParameterIDs = std::set<size_t>();
-	moments = std::vector<Moment>();
-	userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
-	//CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
-	IDs = std::vector<IntegratedDesorption>();
-	parameters = std::vector<Parameter>();
 	needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
 	abortRequested = false;
 	displayedMoment = 0; //By default, steady-state is displayed
-	fullFileName = "";
 
 	ResetWorkerStats();
 	geom = new MolflowGeometry();
 
 	simuTimer.ReInit();
-	//startTime = 0.0f;
-	//stopTime = 0.0f;
-	//simuTime = 0.0f;
-
-	fullFileName = "";
 }
 
 /**
@@ -255,18 +241,19 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					{ //Scope to store XML tree
 						xml_document saveDoc;
 						FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
-						this->uInput.facetViewSettings.clear();
+						this->geometrySettings.facetViewSettings.clear();
 						for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
 							auto facet = geom->GetFacet(facetId);
-							bool textureVisible = facet->textureVisible;
-							bool volumeVisible = facet->volumeVisible;
-							this->uInput.facetViewSettings.emplace_back(textureVisible, volumeVisible);
+							FacetViewSetting vs;
+							vs.textureVisible = facet->viewSettings.textureVisible;
+							vs.volumeVisible = facet->viewSettings.volumeVisible;
+							this->geometrySettings.facetViewSettings.emplace_back(vs);
 						}
-						this->uInput.userMoments = userMoments;
-						this->uInput.parameters = parameters;
-						this->uInput.selections = mApp->selections;
+						this->geometrySettings.userMoments = userMoments;
+						this->geometrySettings.parameters = parameters;
+						this->geometrySettings.selections = mApp->selections;
 
-						writer.uInput = this->uInput;
+						writer.geometrySettings = this->geometrySettings;
 
 						if (saveSelected)
 							writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
@@ -691,7 +678,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				try {
 					TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
 				} catch (std::exception& e) {
-					GLMessageBox::Display(e.what()", "Warning",
+					GLMessageBox::Display(e.what(), "Warning",
 						GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
@@ -830,9 +817,9 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				prg.SetMessage("Loading interface settings...");
 
 				xml_node interfNode = rootNode.child("Interface");
-				userMoments = loader.uInput.userMoments;
-				uInput = loader.uInput;
-				InsertParametersBeforeCatalog(loader.uInput.parameters);
+				userMoments = loader.geometrySettings.userMoments;
+				geometrySettings = loader.geometrySettings;
+				InsertParametersBeforeCatalog(loader.geometrySettings.parameters);
 
 				*geom->GetGeomProperties() = model->sh;
 
@@ -843,16 +830,16 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				// Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
 				FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
 
-				if (loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
+				if (loader.geometrySettings.facetViewSettings.size() == geom->GetNbFacet()) {
 					for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
 						auto facet = geom->GetFacet(facetId);
-						facet->textureVisible = std::get<0>(loader.uInput.facetViewSettings[facetId]);
-						facet->volumeVisible = std::get<1>(loader.uInput.facetViewSettings[facetId]);
+						facet->viewSettings.textureVisible = loader.geometrySettings.facetViewSettings[facetId].textureVisible;
+						facet->viewSettings.volumeVisible = loader.geometrySettings.facetViewSettings[facetId].volumeVisible;
 					}
 				}
 				else {
 					std::cerr << "Amount of view settings doesn't equal number of facets: "
-						<< loader.uInput.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
+						<< loader.geometrySettings.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
 						<< std::endl;
 				}
 
@@ -863,7 +850,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					try {
 						TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
 					}
-					catch (...) {
+					catch (std::exception& e) {
 						GLMessageBox::Display(e.what(), "Warning",
 							GLDLG_OK, GLDLG_ICONWARNING);
 						return;
@@ -872,7 +859,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 
 
-				this->uInput = loader.uInput;
+				this->geometrySettings = loader.geometrySettings;
 				// Init after load stage
 				//geom->InitializeMesh();
 				prg.SetMessage("Initializing geometry...");
@@ -1555,19 +1542,14 @@ void Worker::PrepareToRun() {
 
 	//determine latest moment
 	if (!moments.empty())
-		model->wp.latestMoment = (moments.end() - 1)->first + (moments.end() - 1)->second / 2.0;
+		model->wp.latestMoment = (moments.end() - 1)->time + (moments.end() - 1)->window / 2.0;
 	else {
 		model->wp.latestMoment = model->wp.timeWindowSize * .5;
 	}
 
 	Geometry* g = GetGeometry();
-
-	//Reset Maxwell-Boltzmann precalculated distributions
-	temperatures = std::vector<double>();
-	desorptionParameterIDs = std::set<size_t>();
-
-	//CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
-	IDs = std::vector<IntegratedDesorption>();
+	desorptionParameterIDs.clear();
+	IDs.clear();
 
 	bool needsAngleMapStatusRefresh = false;
 
@@ -1646,12 +1628,12 @@ int Worker::GenerateNewCDF(double temperature) {
 int Worker::GenerateNewID(size_t paramId) {
 	//This function is called if parameter with index paramId doesn't yet have a cumulative des. function
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-	auto [id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, mf_model.get());
+	auto [id_new, result] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, mf_model.get());
 	Parameter& par = parameters[paramId]; //we'll reference it a lot
-	IntegratedDesorption result;
-	result.logXinterp = par.logXinterp;
-	result.logYinterp = par.logYinterp;
-	result.SetValues(std::move(id_vec), false);
+	//std::vector<IntegratedDesorptionEntry> result;
+	//result.logXinterp = par.logXinterp;
+	//result.logYinterp = par.logYinterp;
+	//result.SetValues(std::move(id_vec), false);
 	IDs.emplace_back(std::move(result));
 
 	return (int)id_new;
@@ -1698,7 +1680,7 @@ void Worker::CalcTotalOutgassing() {
 					if (f->sh.IDid >= mf_model->tdParams.IDs.size())
 						throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}", f->sh.IDid, mf_model->tdParams.IDs.size(), i));
 
-					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().second;
+					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue;
 					mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
 					size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
 					double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);

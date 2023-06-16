@@ -75,9 +75,11 @@ struct UserMoment {
 struct Moment {
 	double time;
 	double window;
-	inline double GetElement(const bool first) {
+	/*
+	inline double GetElement(const bool first) const {
 		return first ? time : window;
 	}
+	*/
 };
 struct Interval {
 	double startTime;
@@ -87,7 +89,7 @@ struct DesorptionEntry {
 	double time;
 	double desValue;
 	DesorptionEntry(double _time, double _desVal):time(_time),desValue(_desVal){};
-	inline double GetElement(const bool first) {
+	inline double GetElement(const bool first) const {
 		return first ? time : desValue;
 	}
 };
@@ -95,7 +97,7 @@ struct IntegratedDesorptionEntry {
 	double time;
 	double cumulativeDesValue;
 	IntegratedDesorptionEntry(double _time, double _cumDesVal):time(_time),cumulativeDesValue(_cumDesVal){};
-	inline double GetElement(const bool first) {
+	inline double GetElement(const bool first) const {
 		return first ? time : cumulativeDesValue;
 	}
 };
@@ -103,26 +105,23 @@ struct IntegratedDesorptionEntry {
 struct IntegratedVelocityEntry {
 	double velocity; // m/s
 	double cumulativeProbability; //monotonous increase from 0 to 1
-	inline double GetElement(const bool first) {
+	inline double GetElement(const bool first) const {
 		return first ? velocity : cumulativeProbability;
 	}
 };
 
-struct facetViewSetting {
+struct FacetViewSetting {
 	bool textureVisible;
 	bool volumeVisible;
 };
 
-struct UserInput {
+struct GeometrySettings {
     std::vector<SelectionGroup> selections;
-    std::vector<facetViewSetting> facetViewSettings;
+    std::vector<FacetViewSetting> facetViewSettings;
     std::vector<UserMoment> userMoments;
     std::vector<Parameter> parameters;
 };
 
-class IntegratedDesorption : public Distribution2D {
-
-};
 
 struct OutgassingMap {
     OutgassingMap() = default;

@@ -59,7 +59,7 @@ namespace CDFGeneration {
                    double gasMass) {
         size_t i = temperatureList.size();
         temperatureList.push_back(temperature);
-        auto cdf_vect = Generate_CDF(temperature, gasMass, velocity_cdf_size);
+        auto cdf_vect = Generate_CDF(temperature, gasMass);
         return std::make_pair((int) i, cdf_vect);
     }
 

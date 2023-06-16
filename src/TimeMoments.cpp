@@ -14,7 +14,7 @@
  * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (singleMoment and b_j) overlap
  * return value is the offending index (on its own or with its pair)
  */
-std::optional<std::pair<int,int>> HasIntervalOverlap(const std::vector<std::vector<Moment>>& moments) {
+std::optional<std::pair<int,int>> TimeMoments::HasIntervalOverlap(const std::vector<std::vector<Moment>>& moments) {
     if(moments.empty())
         return std::nullopt;
 
@@ -61,14 +61,21 @@ std::vector<Moment> TimeMoments::ParseUserMoment(const UserMoment& input) {
     int nb = sscanf(input.content.c_str(), "%lf,%lf,%lf", &begin, &spacing, &end);
     if (nb == 1 && (begin >= 0.0)) {
         //One moment
-        parsedResult.emplace_back(begin,input.timeWindow);
+        Moment m;
+        m.time=begin;
+        m.window=input.timeWindow;
+        parsedResult.emplace_back(m);
     }
     else if (nb == 3 && (begin >= 0.0) && (end > begin) && (spacing < (end - begin))) {
         //Range
         // First check for potential overlap due to spacing<timeWindow
         if(!(spacing<input.timeWindow)){
-            for (double time = begin; time <= end; time += spacing)
-                parsedResult.emplace_back(time, input.timeWindow);
+            for (double time = begin; time <= end; time += spacing) {
+                Moment m;
+                m.time=time;
+                m.window=input.timeWindow;
+                parsedResult.emplace_back(m);
+            }
         }
     }
     return parsedResult;

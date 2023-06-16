@@ -96,7 +96,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glDisable(GL_CULL_FACE);
 		
 		size_t count = 0;
-		while (count < Min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
+		while (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
 
 			//Regular (green) line color
 			if (mApp->whiteBg) { //whitebg
@@ -112,13 +112,13 @@ void GeometryViewer::DrawLinesAndHits() {
 			}
 
 			glBegin(GL_LINE_STRIP);
-			while (count < Min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != HIT_ABS) { //While hits are consecutive
+			while (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != HIT_ABS) { //While hits are consecutive
 
 				//change color in case of teleport
 				if (hitCache.hitCache[count].type == HIT_TELEPORTSOURCE) {
 					glVertex3d(hitCache.hitCache[count].pos.x, hitCache.hitCache[count].pos.y, hitCache.hitCache[count].pos.z); //Draw regular line until TP source
 					glEnd(); //Finish regular line
-					if (showTP && (count+1)<Min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count+1].type == HIT_TELEPORTDEST) {
+					if (showTP && (count+1)<std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count+1].type == HIT_TELEPORTDEST) {
 						//Switch to orange dashed line
 						if (!mApp->whiteBg) {
 							glColor3f(1.0f, 0.7f, 0.2f);
@@ -167,7 +167,7 @@ void GeometryViewer::DrawLinesAndHits() {
 				}
 			}
 			//Treat absorption
-			if (count < Min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
+			if (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
 				glVertex3d(hitCache.hitCache[count].pos.x, hitCache.hitCache[count].pos.y, hitCache.hitCache[count].pos.z);
 				count++;
 			}
@@ -197,7 +197,7 @@ void GeometryViewer::DrawLinesAndHits() {
 			glColor3f(0.0f, 1.0f, 0.0f);
 		}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_REF)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -212,7 +212,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glColor3f(1.0f, 0.0f, 1.0f);
 		//}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_MOVING)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -222,7 +222,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(0.5f, 1.0f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_TRANS)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -238,7 +238,7 @@ void GeometryViewer::DrawLinesAndHits() {
 				glColor3f(1.0f, 0.0f, 1.0f);
 			}
 			glBegin(GL_POINTS);
-			for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+			for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, hitCache.hitCache[i].type))
 					glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 			glEnd();
@@ -248,7 +248,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_ABS)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -256,7 +256,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		// Des
 		glColor3f(0.3f, 0.3f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_DES)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();

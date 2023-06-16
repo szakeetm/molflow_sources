@@ -268,7 +268,10 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
                 }
 
 				//Add new line
-				userMoments.emplace_back(momentsList->GetValueAt(1, momentsList->GetNbRow() - 1), window);
+				UserMoment um;
+				um.content=momentsList->GetValueAt(1, momentsList->GetNbRow() - 1);
+				um.timeWindow=window;
+				userMoments.emplace_back(um);
                 RebuildList();
 			}
 		}
@@ -339,7 +342,9 @@ int MomentsEditor::AddMoment(std::vector<Moment> newMoments) {
 
     int nb = (int)newMoments.size();
     moments.insert(moments.end(),newMoments.begin(),newMoments.end());
-    std::sort(moments.begin(),moments.end());
+    	std::sort(moments.begin(), moments.end(), [](const Moment& a, const Moment& b) {
+		return a.time - .5 * a.window < b.time - .5 * b.window; // This will sort in ascending order based on the 'startTime' member
+		});
     return nb;
 }
 

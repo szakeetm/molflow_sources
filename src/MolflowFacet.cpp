@@ -141,9 +141,9 @@ void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 	if (version >= 4) {
 		// Added in GEO version 4
 		file.ReadKeyword("textureVisible"); file.ReadKeyword(":");
-		textureVisible = file.ReadInt();
+		viewSettings.textureVisible = file.ReadInt();
 		file.ReadKeyword("volumeVisible"); file.ReadKeyword(":");
-		volumeVisible = file.ReadInt();
+		viewSettings.volumeVisible = file.ReadInt();
 	}
 
 	if (version >= 5) {
@@ -333,8 +333,8 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 		}
 	} //else use default values at Facet() constructor
 
-	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool(true);
-	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool(true);
+	viewSettings.textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool(true);
+	viewSettings.volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool(true);
 
 	xml_node facetHistNode = f.child("Histograms");
 	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
@@ -465,9 +465,9 @@ void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, size_t nbVerte
 	file.ReadKeyword("countDirection"); file.ReadKeyword(":");
 	sh.countDirection = false; file.ReadInt();
 	file.ReadKeyword("textureVisible"); file.ReadKeyword(":");
-	textureVisible = file.ReadInt();
+	viewSettings.textureVisible = file.ReadInt();
 	file.ReadKeyword("volumeVisible"); file.ReadKeyword(":");
-	volumeVisible = file.ReadInt();
+	viewSettings.volumeVisible = file.ReadInt();
 	file.ReadKeyword("teleportDest"); file.ReadKeyword(":");
 	sh.teleportDest = file.ReadInt();
 
@@ -692,8 +692,8 @@ void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 	file.Write("  countDirection:"); file.Write(sh.countDirection, "\n");
 
 	// Version 4
-	file.Write("  textureVisible:"); file.Write(textureVisible, "\n");
-	file.Write("  volumeVisible:"); file.Write(volumeVisible, "\n");
+	file.Write("  textureVisible:"); file.Write(viewSettings.textureVisible, "\n");
+	file.Write("  volumeVisible:"); file.Write(viewSettings.volumeVisible, "\n");
 
 	// Version 5
 	file.Write("  teleportDest:"); file.Write(sh.teleportDest, "\n");
@@ -1160,8 +1160,8 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 
 	e = f.append_child("ViewSettings");
 
-	e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
-	e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
+	e.append_attribute("textureVisible") = (int)viewSettings.textureVisible; //backward compatibility: 0 or 1
+	e.append_attribute("volumeVisible") = (int)viewSettings.volumeVisible; //backward compatibility: 0 or 1
 
 	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
 	for (size_t i = 0; i < sh.nbIndex; i++) {

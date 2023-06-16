@@ -33,7 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 namespace FlowIO {
     class Loader {
     protected:
-        std::vector<std::vector<std::pair<double, double>>> IDs;         //integrated distribution function for each time-dependent desorption type
+        std::vector<std::vector<IntegratedDesorptionEntry>> IDs;         //integrated distribution function for each time-dependent desorption type
         //std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
     public:
         virtual int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) = 0;
@@ -50,7 +50,7 @@ namespace FlowIO {
                                        GlobalSimuState *globState, GLProgress_Abstract& prg);
         static int
         LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues, GLProgress_Abstract& prg);
-        UserInput uInput;
+        GeometrySettings geometrySettings;
     };
 }
 
