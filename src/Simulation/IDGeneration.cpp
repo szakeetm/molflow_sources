@@ -48,11 +48,11 @@ int GetIDId(const std::set<size_t> &desorptionParameterIDs, int paramId) {
 * \param paramId parameter ID
 * \return Previous size of IDs vector, which determines new id in the vector
 */
-std::pair<int, std::vector<DesorptionEntry>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
+std::pair<int, std::vector<IntegratedDesorptionEntry>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
     size_t i = desorptionParameterIDs.size();
     desorptionParameterIDs.insert(paramId);
 
-    std::vector<DesorptionEntry> id_v = Generate_ID(paramId,model);
+    auto id_v = Generate_ID(paramId,model);
     return std::make_pair((int) i, id_v);
 }
 

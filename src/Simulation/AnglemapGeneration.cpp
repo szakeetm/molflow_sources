@@ -77,10 +77,10 @@ namespace AnglemapGeneration {
 					double b = (double)anglemap.phi_pdfsums_lowerTheta[thetaLowerIndex] / (double)anglemap.theta_CDFsum_higher / thetaStep; //theta probability (pdf value) at lower line
 					double a = 0.5 * ((double)(anglemap.phi_pdfsums_lowerTheta[thetaLowerIndex + 1]) -
 						(double)anglemap.phi_pdfsums_lowerTheta[thetaLowerIndex]) /
-						(double)anglemap.theta_CDFsum_higher / Sqr(thetaStep); //pdf slope between lower and next line midpoints
+						(double)anglemap.theta_CDFsum_higher / Square(thetaStep); //pdf slope between lower and next line midpoints
 					double dy = lookupValue - c;
 
-					double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+					double dx = (-b + sqrt(Square(b) + 4 * a * dy)) /
 						(2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
 
 					thetaOvershoot = dx / thetaStep; //Fraction of bin over lower line midpoint
@@ -119,10 +119,10 @@ namespace AnglemapGeneration {
 						thetaStep; //pdf value at lower index
 					double a = 0.5 * ((double)(anglemap.phi_pdfsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1]) -
 						(double)anglemap.phi_pdfsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes]) /
-						(double)anglemap.theta_CDFsum_higher / Sqr(thetaStep); //pdf slope at lower index
+						(double)anglemap.theta_CDFsum_higher / Square(thetaStep); //pdf slope at lower index
 					double dy = lookupValue - c;
 
-					double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+					double dx = (-b + sqrt(Square(b) + 4 * a * dy)) /
 						(2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
 
 					thetaOvershoot = dx / thetaStep;
@@ -248,17 +248,17 @@ namespace AnglemapGeneration {
 				double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap); //CDF value at lower index midpoint
 				double b = GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index midpoint
 				double a = 0.5 * (GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) -
-					GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap)) / Sqr(phiStep); //pdf slope between lower and higher lines (and thus their midpoints)
+					GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap)) / Square(phiStep); //pdf slope between lower and higher lines (and thus their midpoints)
 				double dy = lookupValue - c;
 
-				double D = Sqr(b) + 4 * a * dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
+				double D = Square(b) + 4 * a * dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
 				if (D < 0) {
 					phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap))
 						/ (GetPhiCDFValue(thetaIndex, (int)IDX(phiLowerIndex + 1, anglemapParams.phiWidth), anglemapParams, anglemap)
 							- GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
 				}
 				else {
-					double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+					double dx = (-b + sqrt(Square(b) + 4 * a * dy)) /
 						(2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
 					phiOvershoot = dx / phiStep;
 				}

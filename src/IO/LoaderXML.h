@@ -34,7 +34,7 @@ namespace FlowIO {
     class Loader {
     protected:
         std::vector<std::vector<std::pair<double, double>>> IDs;         //integrated distribution function for each time-dependent desorption type
-        std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
+        //std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
     public:
         virtual int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) = 0;
     };

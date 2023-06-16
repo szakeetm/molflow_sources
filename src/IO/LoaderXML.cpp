@@ -231,7 +231,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     }
 
     model->tdParams.IDs = this->IDs;
-    model->tdParams.CDFs = this->CDFs;
+    model->maxwell_CDF_1K = this->maxwell_CDF_1K;
     model->facets = std::move(loadFacets);
 
     model->m.unlock();
@@ -474,7 +474,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                     } else {
                         //Backward compatibility
                         facetCounter->sum_1_per_velocity =
-                                4.0 * Sqr(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) /
+                                4.0 * Square(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) /
                                 facetCounter->sum_1_per_ort_velocity;
                     }
                     auto forcesNode = newFacetResult.child("Forces");

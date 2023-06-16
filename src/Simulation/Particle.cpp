@@ -452,7 +452,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             else { //constant or time-dependent outgassing
                 double facetOutgassing =
                         ((f->sh.outgassing_paramId >= 0)
-                         ? model->tdParams.IDs[f->sh.IDid].back().second
+                         ? model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue
                          : model->wp.latestMoment * f->sh.outgassing) / (1.38E-23 * f->sh.temperature);
                 found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                 sumA += facetOutgassing;
@@ -477,7 +477,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
-    if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
+    if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,lastHitFacet->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
                 145.469 * std::sqrt(src->sh.temperature / model->wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
@@ -650,7 +650,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
     if (model->wp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
-        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
 		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
@@ -764,7 +764,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     if (model->wp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
-        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
@@ -830,7 +830,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     if (model->wp.enableForceMeasurement) {
         Vector3d velocityVector = - 1.0 * velocity * ray.direction; //sum impulse unchanged
-        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
@@ -890,7 +890,7 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
     
     if (model->wp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
-        Vector3d velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
@@ -1056,7 +1056,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         } else if (f->sh.profileType == PROFILE_ORT_VELOCITY) {
             dot = std::abs(Dot(f->sh.N, ray.direction));  //cos(theta) as "dot" value
         } else { //Tangential
-            dot = std::sqrt(1 - Sqr(std::abs(Dot(f->sh.N, ray.direction))));  //tangential
+            dot = std::sqrt(1 - Square(std::abs(Dot(f->sh.N, ray.direction))));  //tangential
         }
         size_t pos = (size_t) (dot * velocity / f->sh.maxSpeed *
                                (double) PROFILE_SIZE); //"dot" default value is 1.0
@@ -1123,7 +1123,7 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
 void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
         if (model->wp.useMaxwellDistribution)
-            velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, collidedFacet->sh.CDFid, randomGenerator.rnd());
+            velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, lastHitFacet->sqrtTemp, randomGenerator.rnd());
         else
             velocity =
                     145.469 * std::sqrt(collidedFacet->sh.temperature / model->wp.gasMass);
@@ -1131,8 +1131,7 @@ void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
         if (model->wp.useMaxwellDistribution)
-            newSpeed2 = pow(Physics::GenerateRandomVelocity(model->tdParams.CDFs,collidedFacet->sh.CDFid,
-                                                   randomGenerator.rnd()), 2);
+            newSpeed2 = pow(Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, lastHitFacet->sqrtTemp, randomGenerator.rnd()), 2);
         else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model->wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution

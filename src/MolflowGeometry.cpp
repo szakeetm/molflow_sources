@@ -87,11 +87,13 @@ size_t MolflowGeometry::GetGeometrySize() {
 		memoryUsage += facets[i]->GetGeometrySize();
 
 	//CDFs
+	/*
 	memoryUsage += sizeof(size_t); //number of CDFs
 	for (auto& i : work->CDFs) {
 		memoryUsage += sizeof(size_t); //CDF size
 		memoryUsage += i.size() * 2 * sizeof(double);
 	}
+	*/
 
 	//IDs
 	memoryUsage += sizeof(size_t); //number of IDs

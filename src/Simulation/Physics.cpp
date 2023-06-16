@@ -21,17 +21,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Physics.h"
 #include "Helper/MathTools.h"
 
-double Physics::GenerateRandomVelocity(const std::vector<std::vector<std::pair<double, double>>>& CDFs, int CDFId, const double rndVal) {
-    //return FastLookupY(randomGenerator.rnd(),CDFs[CDFId],false);
-    //double r = randomGenerator.rnd();
-    double v = InterpolateX(rndVal, CDFs[CDFId], false, false, true); //Allow extrapolate
-    return v;
+double Physics::GenerateRandomVelocity(const std::vector<IntegratedVelocityEntry>& maxwell_CDF_1K, const double sqrt_temperature, const double rndVal) {
+    double v_1K = InterpolateX(rndVal, maxwell_CDF_1K, false, false, true); //Allow extrapolate
+    return sqrt_temperature*v_1K;
 }
 
-double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<double, double>>> &IDs,
+double Physics::GenerateDesorptionTime(const std::vector<std::vector<IntegratedDesorptionEntry>> &IDs,
                                        const SimulationFacet *src, double rndVal, double latestMoment) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(rndVal * IDs[src->sh.IDid].back().second, IDs[src->sh.IDid],
+        return InterpolateX(rndVal * IDs[src->sh.IDid].back().cumulativeDesValue, IDs[src->sh.IDid],
                             false, false, true); //allow extrapolate
     } else {
         return rndVal * latestMoment; //continous desorption between 0 and latestMoment

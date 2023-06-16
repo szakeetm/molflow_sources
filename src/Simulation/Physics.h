@@ -28,10 +28,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 class Physics {
 public:
     static double
-    GenerateDesorptionTime(const std::vector<std::vector<std::pair<double, double>>> &IDs,
+    GenerateDesorptionTime(const std::vector<std::vector<IntegratedDesorptionEntry>> &IDs,
                            const SimulationFacet *src, double rndVal, double latestMoment);
 
-    static double GenerateRandomVelocity(const std::vector<std::vector<std::pair<double, double>>>& CDFs, int CDFId, double rndVal);
+    static double GenerateRandomVelocity(const std::vector<IntegratedVelocityEntry>& maxwell_CDF_1K, const double sqrt_temperature, double rndVal);
 
     static void TreatMovingFacet(MolflowSimulationModel* model, const Vector3d &position, Vector3d &direction, double &velocity);
 };

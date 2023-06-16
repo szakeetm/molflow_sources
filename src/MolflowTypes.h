@@ -75,6 +75,9 @@ struct UserMoment {
 struct Moment {
 	double time;
 	double window;
+	inline double GetElement(const bool first) {
+		return first ? time : window;
+	}
 };
 struct Interval {
 	double startTime;
@@ -84,11 +87,25 @@ struct DesorptionEntry {
 	double time;
 	double desValue;
 	DesorptionEntry(double _time, double _desVal):time(_time),desValue(_desVal){};
+	inline double GetElement(const bool first) {
+		return first ? time : desValue;
+	}
 };
 struct IntegratedDesorptionEntry {
 	double time;
 	double cumulativeDesValue;
 	IntegratedDesorptionEntry(double _time, double _cumDesVal):time(_time),cumulativeDesValue(_cumDesVal){};
+	inline double GetElement(const bool first) {
+		return first ? time : cumulativeDesValue;
+	}
+};
+
+struct IntegratedVelocityEntry {
+	double velocity; // m/s
+	double cumulativeProbability; //monotonous increase from 0 to 1
+	inline double GetElement(const bool first) {
+		return first ? velocity : cumulativeProbability;
+	}
 };
 
 struct facetViewSetting {

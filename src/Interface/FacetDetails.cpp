@@ -423,7 +423,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
     }
     case 28: //Force^2 
     {
-        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
         if (worker->displayedMoment != 0) {
             force_sqr = 1.0 / worker->moments[worker->displayedMoment - 1].window * force_sqr; //force2 divided by dt^2 to get N^2 
         }

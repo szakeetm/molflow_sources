@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "CDFGeneration.h"
 #include <cmath>
 
-constexpr size_t cdf_size = 100; // points in a cumulative distribution function
+constexpr size_t velocity_cdf_size = 100; // points in a cumulative distribution function
 
 namespace CDFGeneration {
 /**
@@ -54,13 +54,13 @@ namespace CDFGeneration {
  * \return Previous
  * size of temperatures vector, which determines new ID
  */
-    std::pair<int, std::vector<IntegratedDesorptionEntry>>
+    std::pair<int, std::vector<IntegratedVelocityEntry>>
     GenerateNewCDF(std::vector<double> &temperatureList, double temperature,
                    double gasMass) {
         size_t i = temperatureList.size();
         temperatureList.push_back(temperature);
-        std::vector<IntegratedDesorptionEntry> cdf_vect = Generate_CDF(temperature, gasMass, cdf_size);
-        return std::make_pair((int) i, cdf_vetc);
+        auto cdf_vect = Generate_CDF(temperature, gasMass, velocity_cdf_size);
+        return std::make_pair((int) i, cdf_vect);
     }
 
 /**
@@ -71,10 +71,10 @@ namespace CDFGeneration {
  * \return CFD as a Vector containing a pair of double values (x value =
  * speed_bin, y value = cumulated value)
  */
-    std::vector<IntegratedDesorptionEntry>
-    Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size) {
-        std::vector<IntegratedDesorptionEntry> cdf;
-        cdf.reserve(size);
+    std::vector<IntegratedVelocityEntry>
+    Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol) {
+        std::vector<IntegratedVelocityEntry> cdf;
+        cdf.reserve(velocity_cdf_size);
         constexpr double Kb = 1.38E-23;
         constexpr double R = 8.3144621;
         const double a = std::sqrt(
@@ -87,15 +87,15 @@ namespace CDFGeneration {
                 std::sqrt(2.0 * R * gasTempKelvins / (gasMassGramsPerMol / 1000.0));
         double binSize =
                 4.0 * mostProbableSpeed /
-                (double) size; // distribution generated between 0 and 4*V_prob
+                (double) velocity_cdf_size; // distribution generated between 0 and 4*V_prob
 
-        for (size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < velocity_cdf_size; i++) {
             double x = (double) i * binSize;
             double x_square_per_2_a_square =
                     std::pow(x, 2.0) / (2.0 * std::pow(a, 2.0));
-            IntegratedDesorptionEntry entry;
-            entry.time=x;
-            entry.cumulativeDesValue = 1.0 - std::exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1.0);
+            IntegratedVelocityEntry entry;
+            entry.velocity=x;
+            entry.cumulativeProbability = 1.0 - std::exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1.0);
             cdf.emplace_back(entry);
         }
 

@@ -55,9 +55,7 @@ struct TimeDependentParameters {
     TimeDependentParameters() = default;
 
     std::vector<Distribution2D> parameters;
-
-    std::vector<std::vector<IntegratedDesorptionEntry>> CDFs; //cumulative distribution function for each temperature
-    std::vector<std::vector<DesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
+    std::vector<std::vector<IntegratedDesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
     std::vector<Moment> moments;
     
     size_t GetMemSize() {
@@ -65,17 +63,8 @@ struct TimeDependentParameters {
         for (auto &par : parameters) {
             sum += par.GetMemSize();
         }
-        sum += sizeof(std::vector<std::vector<IntegratedDesorptionEntry>>);
-        for (auto &vec : CDFs) {
-            sum += sizeof(std::vector<IntegratedDesorptionEntry>);
-            sum += sizeof(std::pair<double, double>) * vec.capacity();
-        }
-        sum += sizeof(std::vector<std::vector<DesorptionEntry>>);
-        for (auto &vec : IDs) {
-            sum += sizeof(std::vector<DesorptionEntry>);
-            sum += sizeof(std::pair<double, double>) * vec.capacity();
-        }
-        sum += sizeof(std::vector<Moment>);
+        auto nbId = this->IDs.size();
+        if (nbId > 0) sum += nbId * IDs[0].size() * sizeof(IntegratedDesorptionEntry);
         sum += sizeof(Moment) * moments.capacity();
 
         return sum;
@@ -188,6 +177,7 @@ public:
 
     TimeDependentParameters tdParams;
     std::vector<Interval> intervalCache; //speedup to store moments as [start_time,end_time], calculated in PrepareToRun();
+    std::vector<IntegratedVelocityEntry> maxwell_CDF_1K; //Integrated "surface" maxwell-boltzmann distribution at 1K. TODO: Make global
     void CalcIntervalCache();
 
     void BuildPrisma(double L, double R, double angle, double s, int step);

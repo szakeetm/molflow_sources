@@ -110,7 +110,7 @@ Worker::Worker() : simManager(0) {
 	desorptionParameterIDs = std::set<size_t>();
 	moments = std::vector<Moment>();
 	userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
-	CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
+	//CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
 	IDs = std::vector<IntegratedDesorption>();
 	parameters = std::vector<Parameter>();
 	needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
@@ -1201,7 +1201,7 @@ bool Worker::InterfaceGeomToSimModel() {
 		mf_model->vertices3.emplace_back(*geom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
 	}
 
-	mf_model->tdParams.CDFs.clear();
+	mf_model->maxwell_CDF_1K.clear();
 	mf_model->tdParams.IDs.clear();
 
 	mf_model->tdParams.parameters.clear();
@@ -1565,7 +1565,8 @@ void Worker::PrepareToRun() {
 	//Reset Maxwell-Boltzmann precalculated distributions
 	temperatures = std::vector<double>();
 	desorptionParameterIDs = std::set<size_t>();
-	CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
+
+	//CDFs = std::vector<std::vector<IntegratedDesorptionEntry>>();
 	IDs = std::vector<IntegratedDesorption>();
 
 	bool needsAngleMapStatusRefresh = false;
@@ -1616,26 +1617,26 @@ void Worker::PrepareToRun() {
 * \param temperature temperature for the CFD
 * \return ID of the CFD
 */
+/*
 int Worker::GetCDFId(double temperature) const {
 	return CDFGeneration::GetCDFId(temperatures, temperature);
 }
+*/
 
-/**
+/*
+
 * \brief Generate a new Commulative Distribution Function (CFD) for a particular temperature (bin)
 * \param temperature for the CFD
 * \return Previous size of temperatures vector, which determines new ID
-*/
+
 int Worker::GenerateNewCDF(double temperature) {
-	/*size_t i = temperatures.size();
-	temperatures.push_back(temperature);
-	CDFs.push_back(Generate_CDF(temperature, model->wp.gasMass, CDF_SIZE));
-	return (int) i;*/
 
 	auto [id_new, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatures, temperature, model->wp.gasMass);
 	CDFs.emplace_back(std::move(cdf_vec));
 
 	return (int)id_new;
 }
+*/
 
 /**
 * \brief Generate a new ID (integrated desorption) for desorption parameter for time-dependent simulations

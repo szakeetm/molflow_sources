@@ -60,6 +60,7 @@ bool MolflowSimFacet::InitializeOnLoad(const size_t id) {
         return false;
 
     InitializeTexture();
+    sqrtTemp = sqrt(sh.temperature);
 
     return true;
 }

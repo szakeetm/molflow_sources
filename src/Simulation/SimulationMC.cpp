@@ -38,7 +38,6 @@ double MolflowSimulationModel::GetStickingAt(SimulationFacet *f, double time) co
         auto &par = tdParams.parameters[f->sh.sticking_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
-    //else return model->tdParams.parameters[f->sh.sticking_paramId].InterpolateY(time, false);
 }
 
 double MolflowSimulationModel::GetOpacityAt(SimulationFacet *f, double time) const {
@@ -48,6 +47,5 @@ double MolflowSimulationModel::GetOpacityAt(SimulationFacet *f, double time) con
         auto &par = tdParams.parameters[f->sh.opacity_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
-    //else return this->tdParams.parameters[f->sh.opacity_paramId].InterpolateY(time, false);
 }
 

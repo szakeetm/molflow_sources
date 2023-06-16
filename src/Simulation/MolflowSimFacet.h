@@ -67,7 +67,7 @@ public:
     MolflowSimFacet &operator=(const MolflowSimFacet &o);
     MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
 
-    bool InitializeOnLoad(const size_t id, const size_t nbMoments);
+    bool InitializeOnLoad(const size_t id);
 
     bool InitializeLinkAndVolatile(const size_t  id) override;
 

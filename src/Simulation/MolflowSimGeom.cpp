@@ -289,12 +289,13 @@ int MolflowSimulationModel::PrepareToRun() {
 
     //determine latest moment
     if(!tdParams.moments.empty()) {
-        wp.latestMoment = tdParams.moments.back().time+.5*tdParams.moments.back().window();
+        wp.latestMoment = tdParams.moments.back().time + .5 * tdParams.moments.back().window;
     } else {
         wp.latestMoment = wp.timeWindowSize * .5;
     }
 
     CalcIntervalCache();
+    this->maxwell_CDF_1K = CDFGeneration::Generate_CDF(1.0, wp.gasMass);
 
     std::set<size_t> desorptionParameterIDs;
     std::vector<double> temperatureList;
@@ -322,7 +323,7 @@ int MolflowSimulationModel::PrepareToRun() {
         if (facet->sh.outgassing_paramId >= 0) { //if time-dependent desorption
             int id = IDGeneration::GetIDId(desorptionParameterIDs, facet->sh.outgassing_paramId);
             if (id >= 0)
-                facet->sh.IDid = id; //we've already generated an ID for this temperature
+                facet->sh.IDid = id; //we've already generated an ID for this parameter
             else {
                 auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet->sh.outgassing_paramId, this);
                 facet->sh.IDid = id_new;
@@ -330,6 +331,7 @@ int MolflowSimulationModel::PrepareToRun() {
             }
         }
 
+        /* //commented out: we generate a single one for 1K and multiply by sqrt(facet->sh.temperature)
         // Generate speed distribution functions
         int id = CDFGeneration::GetCDFId(temperatureList, facet->sh.temperature);
         if (id >= 0)
@@ -338,7 +340,9 @@ int MolflowSimulationModel::PrepareToRun() {
             auto[cdf_id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet->sh.temperature, wp.gasMass);
             facet->sh.CDFid = cdf_id;
             tdParams.CDFs.emplace_back(cdf_vec);
+            this->;
         }
+        */
         
         //Angle map
         if (facet->sh.desorbType == DES_ANGLEMAP) {
@@ -410,7 +414,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                     finalOutgassingRate_Pa_m3_sec += facet->sh.outgassing;
                 } else { //time-dependent outgassing
                     totalDesorbedMolecules +=
-                            tdParams.IDs[facet->sh.IDid].back().second / (1.38E-23 * facet->sh.temperature);
+                            tdParams.IDs[facet->sh.IDid].back().desValue / (1.38E-23 * facet->sh.temperature);
                     size_t lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = tdParams.parameters[facet->sh.outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
