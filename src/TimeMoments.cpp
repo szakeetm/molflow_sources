@@ -93,7 +93,7 @@ void TimeMoments::ParseAndCheckUserMoments(std::vector<Moment>& moments, const s
 	auto overlapPair = HasIntervalOverlap(parsedMoments);
 	if (overlapPair.has_value()) {
 		moments.clear();
-		throw std::exception("Overlap in time moments detected! Check in Moments Editor (GUI)!");
+		throw Error("Overlap in time moments detected! Check in Moments Editor (GUI)!");
 	}
 	int m = 0;
 	for (const auto& vec : parsedMoments) {
