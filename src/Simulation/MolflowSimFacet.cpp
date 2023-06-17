@@ -20,6 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "MolflowSimFacet.h"
 #include <fmt/core.h>
+#include <cmath> //sqrt
 
 MolflowSimFacet::MolflowSimFacet(const MolflowSimFacet& cpy)  : SimulationFacet(cpy) {
     *this = cpy;
