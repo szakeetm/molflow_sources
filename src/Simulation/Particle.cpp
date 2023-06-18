@@ -423,17 +423,6 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                         //look for exact position in map
                         double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
                                                                                           f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
-                        /*double sumB = 0.0;
-                        for (w = 0; w < f->sh.outgassingMapWidth && !foundInMap; w++) {
-                            for (h = 0; h < f->sh.outgassingMapHeight && !foundInMap; h++) {
-                                double cellOutgassing = f->outgassingMap[h*f->sh.outgassingMapWidth + w];
-                                if (cellOutgassing > 0.0) {
-                                    foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
-                                    if (foundInMap) mapPositionW = w; mapPositionH = h;
-                                    sumB += cellOutgassing;
-                                }
-                            }
-                        }*/
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = lower_index(lookupValue,
                             mfFac->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
