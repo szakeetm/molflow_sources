@@ -787,7 +787,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 
 			if (!insert) {
-				//geom->LoadXML_geom(rootNode, this, prg);
 
 				geom->Clear();
 				FlowIO::LoaderInterfaceXML loader;
@@ -800,30 +799,16 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
 						throw std::runtime_error(msg);
 					}
-					/*
-					auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
-											 parseFileName, mf_model, load_progress);
-					do {
-						prg.SetProgress(load_progress);
-						ProcessSleep(100);
-					} while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-
-					if (future.get()) {
-						prg.SetVisible(false);
-						throw std::runtime_error("There was an error loading this file, check console for details.");
-					}
-					*/
 				}
 				geom->InitOldStruct(mf_model.get());
-
-				//std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
-				//loader.LoadGeometry(parseFileName, model, load_progress);
-				//if (allowUpdateCheck) updateThread = std::thread(&AppUpdater::PerformUpdateCheck, (AppUpdater*)this, false); //Launch parallel update-checking thread
+				
 				prg.SetMessage("Loading interface settings...");
 
 				xml_node interfNode = rootNode.child("Interface");
 				userMoments = loader.geometrySettings.userMoments;
-				//geometrySettings = loader.geometrySettings;
+
+
+
 				InsertParametersBeforeCatalog(loader.geometrySettings.parameters);
 
 				*geom->GetGeomProperties() = model->sh;
@@ -850,7 +835,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				prg.SetMessage("Parsing user moments...");
 				// Add moments only after user Moments are completely initialized
-
+				// We call ParseAndCheck again (first loader called it), so we can display error if overlap was detected
 				{
 					try {
 						TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
@@ -862,11 +847,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					}
 				}
 
-
-
-				//this->geometrySettings = loader.geometrySettings;
-				// Init after load stage
-				//geom->InitializeMesh();
 				prg.SetMessage("Initializing geometry...");
 
 				geom->InitializeGeometry();
@@ -903,32 +883,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					simManager.ForwardGlobalCounter(&globalState, &particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
-						/*
-						auto future = std::async(std::launch::async, FlowIO::LoadSimulationState,
-												 parseFileName, mf_model, &globalState, load_progress);
-						do {
-							prg.SetProgress(load_progress);
-							ProcessSleep(100);
-						} while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-
-						try{
-							future.get(); //exception thrown if it was stored
-						}
-						catch (const std::exception &e){
-							throw;
-						}
-						*/
-
 						FlowIO::LoaderXML::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
-
-						/*
-						future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
-											parseFileName, &mApp->formula_ptr->convergenceValues, load_progress);
-						do {
-							prg.SetProgress(load_progress);
-							ProcessSleep(100);
-						} while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
-						*/
 						FlowIO::LoaderInterfaceXML::LoadConvergenceValues(parseFileName, &mApp->formula_ptr->convergenceValues, prg);
 
 					}
