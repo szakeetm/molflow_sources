@@ -82,35 +82,31 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     xml_node simuParamNode = rootNode.child("MolflowSimuSettings");
     bool isMolflowFile = (simuParamNode != nullptr); //if no "MolflowSimuSettings" node, it's a Synrad file
 
-    {
-        if (isMolflowFile) {
-            xml_node paramNode = simuParamNode.child("Parameters");
-            for (xml_node newParameter : paramNode.children("Parameter")) {
-                Parameter& newPar = geometrySettings.parameters.emplace_back();
-                newPar.name = newParameter.attribute("name").as_string();
-                if (newParameter.attribute("logXinterp")) {
-                    newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
-                } //else set to false by constructor
-                if (newParameter.attribute("logYinterp")) {
-                    newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
-                } //else set to false by constructor
-                for (xml_node newMoment : newParameter.children("Moment")) {
-                    newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
-                                                  newMoment.attribute("value").as_double()));
-                }
+    if (isMolflowFile) {
+        xml_node paramNode = simuParamNode.child("Parameters");
+        for (xml_node newParameter : paramNode.children("Parameter")) {
+            Parameter& newPar = geometrySettings.parameters.emplace_back();
+            newPar.name = newParameter.attribute("name").as_string();
+            if (newParameter.attribute("logXinterp")) {
+                newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+            } //else set to false by constructor
+            if (newParameter.attribute("logYinterp")) {
+                newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+            } //else set to false by constructor
+            for (xml_node newMoment : newParameter.children("Moment")) {
+                newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
+                                                newMoment.attribute("value").as_double()));
             }
         }
-        //TODO: Load parameters from catalog explicitly?
-        //work->InsertParametersBeforeCatalog(loadedParams);
-        model->tdParams.parameters.insert(model->tdParams.parameters.end(),geometrySettings.parameters.begin(),geometrySettings.parameters.end());
     }
+    //TODO: Load parameters from catalog explicitly?
+    //work->InsertParametersBeforeCatalog(loadedParams);
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(),geometrySettings.parameters.begin(),geometrySettings.parameters.end());
+    
 
     prg.SetMessage("Loading facets...",false);
-    //Facets , load for now via temp pointers and convert to vector afterwards
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    //SubprocessFac** loadFacets = (SubprocessFac **)malloc(model->sh.nbFacet * sizeof(SubprocessFac *));
-    //loadFacets.reserve(model->sh.nbFacet);
-    //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFac *));
+    geometrySettings.facetViewSettings.resize(model->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
     std::vector<std::shared_ptr<SimulationFacet>> loadFacets; // tmp facet holder
@@ -123,13 +119,8 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
 
         loadFacets.emplace_back(std::make_shared<MolflowSimFacet>(nbIndex));
-        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), model->sh.nbVertex);
+        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), geometrySettings.facetViewSettings[idx],model->sh.nbVertex);
 
-        //Set param names for interface
-        /*if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-        if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-        if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
-*/
         idx++;
         prg.SetProgress((double)idx/(double)model->sh.nbFacet);
     }
@@ -728,7 +719,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     return 0;
 }
 
-void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
+void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
@@ -883,10 +874,6 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
         std::stringstream angleText;
         angleText << angleMapNode.child_value("map");
 
-
-        //std::map<size_t,std::vector<size_t>> angleMapCache;
-        //size_t* angleMapCache = (size_t*)malloc(facet->sh.anglemapParams.GetDataSize());
-        //angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
         auto& angleMap = facet->angleMap.pdf;
         try {
             angleMap.clear();
@@ -913,11 +900,11 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 
-    /*
+    
     // Init by default as true
-    facet->viewSettings.textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
-    facet->viewSettings.volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
-    */
+    fv.textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    fv.volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
+    
 
     xml_node facetHistNode = facetNode.child("Histograms");
     if (facetHistNode) { // Molflow version before 2.8 didn't save histograms

@@ -241,19 +241,24 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					{ //Scope to store XML tree
 						xml_document saveDoc;
 						FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
-						this->geometrySettings.facetViewSettings.clear();
-						for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
-							auto facet = geom->GetFacet(facetId);
-							FacetViewSetting vs;
-							vs.textureVisible = facet->viewSettings.textureVisible;
-							vs.volumeVisible = facet->viewSettings.volumeVisible;
-							this->geometrySettings.facetViewSettings.emplace_back(vs);
-						}
-						this->geometrySettings.userMoments = userMoments;
-						this->geometrySettings.parameters = parameters;
-						this->geometrySettings.selections = mApp->selections;
 
-						writer.geometrySettings = this->geometrySettings;
+						{
+							GeometrySettings geomCache;
+
+							geomCache.facetViewSettings.clear();
+							for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
+								auto facet = geom->GetFacet(facetId);
+								FacetViewSetting vs;
+								vs.textureVisible = facet->viewSettings.textureVisible;
+								vs.volumeVisible = facet->viewSettings.volumeVisible;
+								geomCache.facetViewSettings.emplace_back(vs);
+							}
+							geomCache.userMoments = userMoments;
+							geomCache.parameters = parameters;
+							geomCache.selections = mApp->selections;
+
+							writer.geometrySettings = std::move(geomCache);
+						}
 
 						if (saveSelected)
 							writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
@@ -818,7 +823,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				xml_node interfNode = rootNode.child("Interface");
 				userMoments = loader.geometrySettings.userMoments;
-				geometrySettings = loader.geometrySettings;
+				//geometrySettings = loader.geometrySettings;
 				InsertParametersBeforeCatalog(loader.geometrySettings.parameters);
 
 				*geom->GetGeomProperties() = model->sh;
@@ -859,7 +864,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 
 
-				this->geometrySettings = loader.geometrySettings;
+				//this->geometrySettings = loader.geometrySettings;
 				// Init after load stage
 				//geom->InitializeMesh();
 				prg.SetMessage("Initializing geometry...");
