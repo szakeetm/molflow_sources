@@ -25,7 +25,7 @@ std::optional<std::pair<int,int>> TimeMoments::HasIntervalOverlap(const std::vec
     }
 
     //Convert moments to intervals
-    std::vector<Interval> intervals;
+    std::vector<Interval> intervals; intervals.reserve(moments.size());
     for(auto& vec : moments){
         double startTime = std::numeric_limits<double>::max();
         double endTime = std::numeric_limits<double>::lowest();
@@ -39,7 +39,7 @@ std::optional<std::pair<int,int>> TimeMoments::HasIntervalOverlap(const std::vec
     }
 
     for(auto vecOuter = intervals.begin(); vecOuter != intervals.end(); vecOuter++){
-        for(auto vecInner = vecOuter + 1; vecInner != intervals.end() && vecInner != vecOuter; vecInner++){
+        for(auto vecInner = vecOuter + 1; vecInner != intervals.end(); vecInner++){
             if (vecOuter->startTime + DBL_EPSILON < vecInner->endTime &&
                 vecInner->startTime + DBL_EPSILON <= vecOuter->endTime) {
                 return { { vecOuter - intervals.begin(),vecInner - intervals.begin() } }; // overlap
