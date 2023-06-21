@@ -34,7 +34,7 @@ MolflowSimFacet& MolflowSimFacet::operator=(const MolflowSimFacet& cpy){
     SimulationFacet::operator=(cpy);
     this->angleMap = cpy.angleMap;
     this->ogMap = cpy.ogMap;
-
+    this->sqrtTemp = cpy.sqrtTemp;
     return *this;
 }
 
@@ -42,7 +42,7 @@ MolflowSimFacet& MolflowSimFacet::operator=(MolflowSimFacet&& cpy) noexcept {
     SimulationFacet::operator=(cpy);
     this->angleMap = cpy.angleMap;
     this->ogMap = cpy.ogMap;
-
+    this->sqrtTemp = cpy.sqrtTemp;
     return *this;
 }
 
