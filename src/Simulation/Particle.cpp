@@ -1312,7 +1312,9 @@ void ParticleTracer::RecordLeakPos() {
  */
 int ParticleTracer::LookupMomentIndex(const double time, const size_t startIndex) {
 
-	if (model->intervalCache.empty()) return -1;
+    if (model->intervalCache.empty()) {
+        return -1; //no moments
+    }
 	auto lowerBound = std::lower_bound(model->intervalCache.begin() + startIndex, model->intervalCache.end(), time, [](const Interval& a, double b) {
 		return a.startTime < b;
 		});
@@ -1322,5 +1324,5 @@ int ParticleTracer::LookupMomentIndex(const double time, const size_t startIndex
 		return static_cast<int>(std::distance(model->intervalCache.begin(), lowerBound) + 1); //+1 to offset for m=0: const.flow
 	}
 
-	return -1;
+	return -1; //before first sampled moment
 }
