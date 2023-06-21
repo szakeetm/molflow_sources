@@ -1143,6 +1143,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->structures.clear();
 	mf_model->facets.clear();
 	mf_model->vertices3.clear();
+	mf_model->tdParams.moments = moments;
 
 	for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
 		mf_model->vertices3.emplace_back(*geom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
