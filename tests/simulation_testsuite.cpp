@@ -376,7 +376,13 @@ namespace {
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
                     exit(41);
                 }
-                if (Initializer::initFromFile(&simManager, model, &globState)) {
+
+
+                try {
+                    Initializer::initFromFile(&simManager, model, &globState);
+                }
+                catch (std::exception& err) {
+                    Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                     exit(42);
                 }
             }
@@ -506,7 +512,11 @@ namespace {
             if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                 exit(41);
             }
-            if (Initializer::initFromFile(simManager.get(), model, &globState)) {
+            try {
+                Initializer::initFromFile(simManager.get(), model, &globState);
+            }
+            catch (std::exception& err) {
+                Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                 exit(42);
             }
         }
@@ -530,7 +540,11 @@ namespace {
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                     exit(41);
                 }
-                if (Initializer::initFromFile(simManager.get(), model, &globState)) {
+                try {
+                    Initializer::initFromFile(simManager.get(), model, &globState);
+                }
+                catch (std::exception& err) {
+                    Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                     exit(42);
                 }
             }
