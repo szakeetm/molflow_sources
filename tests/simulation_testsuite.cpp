@@ -367,6 +367,7 @@ namespace {
         simManager.interactiveMode = false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         {
             {
@@ -503,6 +504,7 @@ namespace {
         simManager->interactiveMode = false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
                                          "--file", testFile,
@@ -656,13 +658,14 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings;
@@ -706,6 +709,7 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -714,8 +718,8 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings;
@@ -760,6 +764,7 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -768,8 +773,8 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
 
         FlowIO::WriterXML writer;
@@ -815,6 +820,7 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
@@ -822,8 +828,8 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings;
@@ -868,6 +874,7 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
@@ -879,8 +886,8 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings;
@@ -925,6 +932,7 @@ namespace {
         SimulationManager simManager{0};
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
+        UserSettings persistentUserSettings;
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
@@ -937,8 +945,8 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
-            Initializer::initFromFile(&simManager, model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings;
