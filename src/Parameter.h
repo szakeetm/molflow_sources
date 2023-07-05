@@ -35,6 +35,7 @@ public:
 	bool fromCatalog=false;
 
 	static int LoadParameterCatalog(std::vector<Parameter> &vec_param);
+	static void ClearParameters(std::vector<Parameter> &vec_param);
 };
 
 /*

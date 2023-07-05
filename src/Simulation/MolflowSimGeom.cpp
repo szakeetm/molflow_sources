@@ -180,9 +180,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
     Chronometer timer;
     timer.Start();
 
-    if (!m.try_lock()) {
-        return 1;
-    }
+    std::lock_guard<std::mutex> lock(modelMutex);
 
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SimulationFacet*>> facetPointers;
@@ -263,7 +261,6 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
 #endif // old_bvb
 
     timer.Stop();
-    m.unlock();
 
     initialized = true;
 
@@ -277,12 +274,10 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
 * match parameters
 * Generate speed distribution functions
 * Angle map
- * \return 0> for error codes, 0 when all ok
 */
-int MolflowSimulationModel::PrepareToRun() {
-    if (!m.try_lock()) {
-        return 1;
-    }
+void MolflowSimulationModel::PrepareToRun() {
+    std::lock_guard<std::mutex> lock(modelMutex);
+
     initialized = false;
 
     std::string errLog;
@@ -305,19 +300,13 @@ int MolflowSimulationModel::PrepareToRun() {
         const auto facet = facets[i];
         // TODO: Find a solution to integrate catalog parameters
         if(facet->sh.outgassing_paramId >= (int) tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet->sh.outgassing_paramId);
-            errLog.append(tmp);
+            throw Error(fmt::format("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.outgassing_paramId + 1, tdParams.parameters.size()));
         }
         if(facet->sh.opacity_paramId >= (int) tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet->sh.opacity_paramId);
-            errLog.append(tmp);
+            throw Error(fmt::format("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.opacity_paramId + 1, tdParams.parameters.size()));
         }
         if(facet->sh.sticking_paramId >= (int) tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet->sh.sticking_paramId);
-            errLog.append(tmp);
+            throw Error(fmt::format("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.sticking_paramId + 1, tdParams.parameters.size()));
         }
 
         if (facet->sh.outgassing_paramId >= 0) { //if time-dependent desorption
@@ -330,47 +319,21 @@ int MolflowSimulationModel::PrepareToRun() {
                 tdParams.IDs.emplace_back(std::move(id_vec));
             }
         }
-
-        /* //commented out: we generate a single one for 1K and multiply by sqrt(facet->sh.temperature)
-        // Generate speed distribution functions
-        int id = CDFGeneration::GetCDFId(temperatureList, facet->sh.temperature);
-        if (id >= 0)
-            facet->sh.CDFid = id; //we've already generated a CDF for this temperature
-        else {
-            auto[cdf_id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet->sh.temperature, wp.gasMass);
-            facet->sh.CDFid = cdf_id;
-            tdParams.CDFs.emplace_back(cdf_vec);
-            this->;
-        }
-        */
         
         //Angle map
         if (facet->sh.desorbType == DES_ANGLEMAP) {
             auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
             if (mfFacet->angleMap.pdf.empty()) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
-                errLog.append(tmp);
+                throw Error(fmt::format("Facet #{} uses angle map desorption but doesn't have a recorded angle map.", i + 1));
             }
             if (mfFacet->sh.anglemapParams.record) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
-                errLog.append(tmp);
+                throw Error(fmt::format("Facet #{}: Can't RECORD and USE angle map desorption at the same time.", i + 1));
             }
         }
     }
 
-    if(!errLog.empty()){
-        m.unlock();
-        return 1;
-    }
-
     CalcTotalOutgassing();
-
     initialized = true;
-    m.unlock();
-
-    return 0;
 }
 
 void MolflowSimulationModel::CalcIntervalCache() {

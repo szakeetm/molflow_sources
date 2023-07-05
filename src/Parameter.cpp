@@ -106,3 +106,15 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
     }
     return res;
 }
+
+void Parameter::ClearParameters(std::vector<Parameter>& vec_param) {
+
+        auto iter = vec_param.begin();
+        while (iter != vec_param.end()) {
+            //Delete non-catalog parameters
+            if (!iter->fromCatalog)
+                iter = vec_param.erase(iter);
+            else
+                ++iter;
+        }
+}

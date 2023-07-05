@@ -38,7 +38,10 @@ using namespace FlowIO;
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
 int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) {
-    if (!model->m.try_lock()) {
+    try { //unti LoadGeometry will throw error
+        std::lock_guard<std::mutex> lock(model->modelMutex);
+    }
+    catch (...) {
         return 1;
     }
 
@@ -101,6 +104,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     }
     //TODO: Load parameters from catalog explicitly?
     //work->InsertParametersBeforeCatalog(loadedParams);
+    Parameter::ClearParameters(model->tdParams.parameters);
     model->tdParams.parameters.insert(model->tdParams.parameters.end(),geometrySettings.parameters.begin(),geometrySettings.parameters.end());
     
 
@@ -119,7 +123,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
 
         loadFacets.emplace_back(std::make_shared<MolflowSimFacet>(nbIndex));
-        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), geometrySettings.facetViewSettings[idx],model->sh.nbVertex);
+        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), geometrySettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
 
         idx++;
         prg.SetProgress((double)idx/(double)model->sh.nbFacet);
@@ -158,7 +162,6 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, geometrySettings.userMoments, prg);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        model->m.unlock();
         return 1;
     }
 
@@ -224,8 +227,6 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
 
     model->tdParams.IDs = this->IDs;
     model->facets = std::move(loadFacets);
-
-    model->m.unlock();
 
     return 0;
 }
@@ -719,7 +720,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     return 0;
 }
 
-void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices) {
+void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
@@ -741,11 +742,20 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
     // TODO: Only parse Molflow files
     facet->sh.sticking = facetNode.child("Sticking").attribute("constValue").as_double();
     facet->sh.sticking_paramId = facetNode.child("Sticking").attribute("parameterId").as_int();
+    if (facet->sh.sticking_paramId >= static_cast<int>(nbTimedepParams)) {
+        throw Error(fmt::format("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.sticking_paramId + 1, nbTimedepParams));
+    }
     facet->sh.opacity_paramId = facetNode.child("Opacity").attribute("parameterId").as_int();
+    if (facet->sh.opacity_paramId >= static_cast<int>(nbTimedepParams)) {
+        throw Error(fmt::format("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.opacity_paramId + 1, nbTimedepParams));
+    }
     facet->sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
     facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
     facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
     facet->sh.outgassing_paramId = facetNode.child("Outgassing").attribute("parameterId").as_int();
+    if (facet->sh.outgassing_paramId >= static_cast<int>(nbTimedepParams)) {
+        throw Error(fmt::format("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.outgassing_paramId + 1, nbTimedepParams));
+    }
     bool hasOutgassingFile = facetNode.child("Outgassing").attribute("hasOutgassingFile").as_bool();
     facet->sh.useOutgassingFile = facetNode.child("Outgassing").attribute("useOutgassingFile").as_bool();
     facet->sh.temperature = facetNode.child("Temperature").attribute("value").as_double();

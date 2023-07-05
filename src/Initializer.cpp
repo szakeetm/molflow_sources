@@ -187,24 +187,19 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
 /**
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
- * \return 0> error code, 0 when ok
  */
-int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
+void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
                               GlobalSimuState *globStatePtr) {
     if (SettingsIO::prepareIO()) {
-        Log::console_error("Error preparing I/O folders\n");
-        return 1;
+        throw Error("Error preparing I/O folders");
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        if (loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr)) {
-            return 1;
-        }
+        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr);
     }
     else {
-        Log::console_error("Invalid file extension for input file detected: {}\n",
-                           std::filesystem::path(SettingsIO::workFile).extension().string());
-        return 1;
+        throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
+                           std::filesystem::path(SettingsIO::workFile).extension().string()));
     }
     if (!Settings::paramFile.empty() || !Settings::paramChanges.empty()) {
         // 1. Load selection groups in case we need them for parsing
@@ -216,28 +211,26 @@ int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mol
             ParameterParser::ParseInput(Settings::paramChanges, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
         if(ParameterParser::ChangeFacetParams(model->facets)){
-            return 1;
+            throw Error("Error in ParameterParser::ChangeFacetParams()");
         }
     }
 
     // Set desorption limit if used
     if (initDesLimit(model, *globStatePtr)) {
-        return 1;
+        throw Error("Error in Initializer::initDesLimit");
     }
 
     simManager->simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
     try {
         if(simManager->InitSimulation(model, globStatePtr))
-            throw std::runtime_error("Could not init simulation");
+            throw std::runtime_error("Error in simManager->InitSimulation()");
     }
     catch (std::exception &ex) {
         Log::console_error("Failed Initializing simulation units:\n{}\n", ex.what());
-        return 1;
+        throw ex;
     }
     Log::console_footer(1, "Forwarded successfully.\n");
-
-    return 0;
 }
 
 /**
@@ -304,19 +297,20 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
     model->InitializeFacets();
 
     initSimModel(model);
-    if(model->PrepareToRun()){
-        return 1;
+    try {
+        model->PrepareToRun();
+    }
+    catch (std::exception& err) {
+        Log::console_error("Error in model->PrepareToRun()\n{}",err.what());
+        return 1; //to convert to throwing error
     }
     globStatePtr->Resize(model);
-
-    return 0;
 }
 
 /**
 * \brief Wrapper for XML loading with LoaderXML
- * \return 0> error code, 0 when ok
  */
-int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
+void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
                              GlobalSimuState *globStatePtr) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
@@ -328,10 +322,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Geometry
     // Settings
     // Previous results
-    if (loader.LoadGeometry(fileName, model, prg)) {
-        Log::console_error("Load error.\n");
-        return 1;
-    }
+    loader.LoadGeometry(fileName, model, prg);
 
     // InsertParamsBeforeCatalog
     std::vector<Parameter> paramCatalog;
@@ -350,9 +341,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
 
     Log::console_msg_master(3, "Initializing geometry...\n");
     initSimModel(model);
-    if(model->PrepareToRun()){
-        return 1;
-    }
+    model->PrepareToRun();
 
     // 2. Create simulation dataports
     try {
@@ -391,8 +380,6 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     catch (const std::exception &e) {
         Log::console_error("[Warning] {}\n", e.what());
     }
-
-    return 0;
 }
 
 /**
@@ -400,7 +387,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
  * \return 0> error code, 0 when ok
  */
 int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
-    if (!model->m.try_lock()) {
+    try { //unti initDesLimit will throw error
+        std::lock_guard<std::mutex> lock(model->modelMutex);
+    }
+    catch (...) {
         return 1;
     }
 
@@ -420,7 +410,7 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
                 Log::console_msg_master(1, "Starting with desorption limit: {} from {}\n",
                                         model->otfParams.desorptionLimit, oldDesNb);
 
-                model->m.unlock();
+                
                 return 0;
             }
         }
@@ -428,11 +418,10 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
             Log::console_msg_master(1,
                                     "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption {}\n",
                                     oldDesNb);
-            model->m.unlock();
+            
             return 1;
         }
     }
-    model->m.unlock();
     return 0;
 }
 
@@ -441,14 +430,16 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
  * \return 0> error code, 0 when ok
  */
 int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, double time) {
-    if (!model->m.try_lock()) {
+    try { //unti initTimeLimit will throw error
+        std::lock_guard<std::mutex> lock(model->modelMutex);
+    }
+    catch (...) {
         return 1;
     }
 
     model->otfParams.timeLimit = time;
     Settings::simDuration = static_cast<size_t>(time);
 
-    model->m.unlock();
     return 0;
 }
 
@@ -494,7 +485,10 @@ std::string Initializer::getAutosaveFile() {
 */
 int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
 
-    if (!model->m.try_lock()) {
+    try { //unti initSimModel will throw error
+        std::lock_guard<std::mutex> lock(model->modelMutex);
+    }
+    catch (...) {
         return 1;
     }
 
@@ -536,7 +530,6 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
         }
         catch (const std::exception& err){
             Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
-            model->m.unlock();
             return 1;
         }
         hasVolatile |= sFac->sh.isVolatile;
@@ -545,11 +538,9 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
             ((sFac->sh.superDest - 1) >= model->sh.nbSuper || sFac->sh.superDest < 0)) {
             // Geometry error
             Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
-            model->m.unlock();
             return 1;
         }
     }
-    model->m.unlock();
 
     return 0;
 }

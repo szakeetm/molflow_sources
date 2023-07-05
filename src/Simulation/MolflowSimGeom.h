@@ -54,7 +54,7 @@ public:
 struct TimeDependentParameters {
     TimeDependentParameters() = default;
 
-    std::vector<Distribution2D> parameters;
+    std::vector<Parameter> parameters;
     std::vector<std::vector<IntegratedDesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
     std::vector<Moment> moments;
     
@@ -117,7 +117,7 @@ public:
     };
 
     //! Do calculations necessary before launching simulation
-    int PrepareToRun() override;
+    void PrepareToRun() override;
 
     //! Construct acceleration structure with a given splitting method
     int BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,

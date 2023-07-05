@@ -925,9 +925,12 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				MarkToReload();
 			}
 		}
-		catch (const std::exception&) {
-			if (!insert) geom->Clear();
-			throw;
+		catch (const std::exception& e) {
+			if (!insert) {
+				geom->Clear();
+
+			}
+			throw e;
 		}
 
 	}
@@ -1277,9 +1280,9 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			PrepareToRun();
 		}
 		catch (const std::exception& e) {
-			GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
 			std::stringstream err;
-			err << "Error (Full reload) " << e.what();
+			err << "Error (Worker::RealReload -> PrepareToRun()) " << e.what();
+			GLMessageBox::Display(err.str().c_str(), "Error (Worker::PrepareToRun()", GLDLG_OK, GLDLG_ICONWARNING);
 			throw std::runtime_error(err.str());
 		}
 	}
@@ -1300,9 +1303,9 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			simManager.ResetHits();
 		}
 		catch (const std::exception& e) {
-			GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
 			std::stringstream err;
-			err << "Error (Full reload) " << e.what();
+			err << "Error (Worker::RealReload) " << e.what();
+			GLMessageBox::Display(err.str().c_str(), "Error (Worker::RealReload()", GLDLG_OK, GLDLG_ICONWARNING);
 			throw std::runtime_error(err.str());
 		}
 
