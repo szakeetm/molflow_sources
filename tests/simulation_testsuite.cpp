@@ -225,6 +225,7 @@ namespace {
             SimulationManager simManager{0};
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
+            UserSettings persistentUserSettings;
 
             /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
             char * fileName_c = new char[testFile.size() + 1];
@@ -240,7 +241,7 @@ namespace {
                 CharPVec argc_v(argv);
                 char **args = argc_v.data();
                 Initializer::initFromArgv(argv.size(), (args), &simManager, model);
-                Initializer::initFromFile(&simManager, model, &globState);
+                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
 
             size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
@@ -379,7 +380,7 @@ namespace {
 
 
                 try {
-                    Initializer::initFromFile(&simManager, model, &globState);
+                    Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
                 }
                 catch (std::exception& err) {
                     Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -513,7 +514,7 @@ namespace {
                 exit(41);
             }
             try {
-                Initializer::initFromFile(simManager.get(), model, &globState);
+                Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
             }
             catch (std::exception& err) {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -541,7 +542,7 @@ namespace {
                     exit(41);
                 }
                 try {
-                    Initializer::initFromFile(simManager.get(), model, &globState);
+                    Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
                 }
                 catch (std::exception& err) {
                     Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -660,10 +661,11 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -712,10 +714,11 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -765,11 +768,12 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
 
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -818,10 +822,11 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -874,10 +879,11 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -931,10 +937,11 @@ namespace {
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model, persistentUserSettings);
             Initializer::initFromFile(&simManager, model, &globState);
         }
         FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::workPath + "/" + SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));

@@ -88,7 +88,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     if (isMolflowFile) {
         xml_node paramNode = simuParamNode.child("Parameters");
         for (xml_node newParameter : paramNode.children("Parameter")) {
-            Parameter& newPar = geometrySettings.parameters.emplace_back();
+            Parameter& newPar = userSettings.parameters.emplace_back();
             newPar.name = newParameter.attribute("name").as_string();
             if (newParameter.attribute("logXinterp")) {
                 newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
@@ -105,12 +105,12 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     //TODO: Load parameters from catalog explicitly?
     //work->InsertParametersBeforeCatalog(loadedParams);
     Parameter::ClearParameters(model->tdParams.parameters);
-    model->tdParams.parameters.insert(model->tdParams.parameters.end(),geometrySettings.parameters.begin(),geometrySettings.parameters.end());
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(),userSettings.parameters.begin(),userSettings.parameters.end());
     
 
     prg.SetMessage("Loading facets...",false);
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    geometrySettings.facetViewSettings.resize(model->sh.nbFacet);
+    userSettings.facetViewSettings.resize(model->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
     std::vector<std::shared_ptr<SimulationFacet>> loadFacets; // tmp facet holder
@@ -123,7 +123,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
         }
 
         loadFacets.emplace_back(std::make_shared<MolflowSimFacet>(nbIndex));
-        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), geometrySettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
+        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), userSettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
 
         idx++;
         prg.SetProgress((double)idx/(double)model->sh.nbFacet);
@@ -142,11 +142,9 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
     model->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
     // Default initialization
-    /**/
     model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
     model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
-    //geometrySettings.userMoments.clear();
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
         UserMoment um;
@@ -156,10 +154,10 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
             um.timeWindow = model->wp.timeWindowSize;
         }
         
-        geometrySettings.userMoments.emplace_back(um);
+        userSettings.userMoments.emplace_back(um);
     }
     try {
-        TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, geometrySettings.userMoments, prg);
+        TimeMoments::ParseAndCheckUserMoments(model->tdParams.moments, userSettings.userMoments, prg);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;
@@ -231,6 +229,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     return 0;
 }
 
+/*
 std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFileName) {
     std::vector<SelectionGroup> selGroup;
 
@@ -260,6 +259,8 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
 
     return selGroup;
 }
+
+*/
 
 int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
                                    GlobalSimuState *globState, GLProgress_Abstract& prg) {

@@ -182,12 +182,12 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
     xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
-    userMomentsNode.append_attribute("nb") = geometrySettings.userMoments.size();
-    for (size_t i = 0; i < geometrySettings.userMoments.size(); i++) {
+    userMomentsNode.append_attribute("nb") = userSettings.userMoments.size();
+    for (size_t i = 0; i < userSettings.userMoments.size(); i++) {
         xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
         newUserEntry.append_attribute("id") = i;
-        newUserEntry.append_attribute("content") = geometrySettings.userMoments[i].content.c_str();
-        newUserEntry.append_attribute("window") = geometrySettings.userMoments[i].timeWindow;
+        newUserEntry.append_attribute("content") = userSettings.userMoments[i].content.c_str();
+        newUserEntry.append_attribute("window") = userSettings.userMoments[i].timeWindow;
     }
 
     timeSettingsNode.append_attribute("timeWindow") = model->wp.timeWindowSize;
@@ -225,7 +225,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nonCatalogParameters = 0;
 
-    for (auto &parameter : geometrySettings.parameters) {
+    for (auto &parameter : userSettings.parameters) {
         if (!parameter.fromCatalog) { //Don't save catalog parameters
             xml_node newParameter = paramNode.append_child("Parameter");
             newParameter.append_attribute("id") = nonCatalogParameters;
@@ -723,10 +723,10 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
         t.append_attribute("thetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
     }
 
-    if (!geometrySettings.facetViewSettings.empty()) {
+    if (!userSettings.facetViewSettings.empty()) {
         e = facetNode.append_child("ViewSettings");
-        e.append_attribute("textureVisible") = geometrySettings.facetViewSettings[facet->globalId].textureVisible; //backward compatibility: 0 or 1
-        e.append_attribute("volumeVisible") = geometrySettings.facetViewSettings[facet->globalId].volumeVisible; //backward compatibility: 0 or 1
+        e.append_attribute("textureVisible") = userSettings.facetViewSettings[facet->globalId].textureVisible; //backward compatibility: 0 or 1
+        e.append_attribute("volumeVisible") = userSettings.facetViewSettings[facet->globalId].volumeVisible; //backward compatibility: 0 or 1
     }
 
     facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;

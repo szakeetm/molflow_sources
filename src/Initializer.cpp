@@ -189,13 +189,13 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
  */
 void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
-                              GlobalSimuState *globStatePtr) {
+                              GlobalSimuState *globStatePtr, UserSettings& userSettings) {
     if (SettingsIO::prepareIO()) {
         throw Error("Error preparing I/O folders");
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr);
+        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr, userSettings);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
@@ -203,12 +203,12 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
     }
     if (!Settings::paramFile.empty() || !Settings::paramChanges.empty()) {
         // 1. Load selection groups in case we need them for parsing
-        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
+        //std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
         // 2. Sweep parameters from file
         if (!Settings::paramFile.empty())
-            ParameterParser::ParseFile(Settings::paramFile, selGroups);
+            ParameterParser::ParseFile(Settings::paramFile, userSettings.selections);
         if (!Settings::paramChanges.empty())
-            ParameterParser::ParseInput(Settings::paramChanges, selGroups);
+            ParameterParser::ParseInput(Settings::paramChanges, userSettings.selections);
         ParameterParser::ChangeSimuParams(model->wp);
         if(ParameterParser::ChangeFacetParams(model->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
@@ -311,18 +311,21 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 * \brief Wrapper for XML loading with LoaderXML
  */
 void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
-                             GlobalSimuState *globStatePtr) {
+                             GlobalSimuState *globStatePtr, UserSettings& userSettings) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}\n", fileName));
 
     //1. Load Input File (regular XML)
-    FlowIO::LoaderXML loader;
-    // Easy if XML is split into multiple parts
-    // Geometry
-    // Settings
-    // Previous results
-    loader.LoadGeometry(fileName, model, prg);
+    {
+        FlowIO::LoaderXML loader;
+        // Easy if XML is split into multiple parts
+        // Geometry
+        // Settings
+        // Previous results
+        loader.LoadGeometry(fileName, model, prg);
+        userSettings = loader.userSettings; //persistent for saving
+    }
 
     // InsertParamsBeforeCatalog
     std::vector<Parameter> paramCatalog;
@@ -332,7 +335,6 @@ void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::
     //TODO: Load parameters from catalog explicitly?
     // For GUI
     // work->InsertParametersBeforeCatalog(loadedParams);
-    // Load viewsettings for each facet
 
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 

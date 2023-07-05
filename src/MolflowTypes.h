@@ -115,7 +115,8 @@ struct FacetViewSetting {
 	bool volumeVisible;
 };
 
-struct GeometrySettings {
+struct UserSettings {
+	//user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
     std::vector<SelectionGroup> selections;
     std::vector<FacetViewSetting> facetViewSettings;
     std::vector<UserMoment> userMoments;

@@ -134,6 +134,7 @@ int main(int argc, char** argv) {
     simManager.interactiveMode = true;
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState globState{};
+    UserSettings persistentUserSettings; //persistent user data that should be rewritten when saving
 
     // Parse arguments
     if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
@@ -152,7 +153,7 @@ int main(int argc, char** argv) {
     // Load input from file or generated test case
 	if (!SettingsIO::autogenerateTest) {
 		try {
-			Initializer::initFromFile(&simManager, model, &globState);
+			Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
 #if defined(USE_MPI)
 			MPI_Finalize();
 #endif
@@ -236,6 +237,7 @@ int main(int argc, char** argv) {
                 try {
                     // 2. Write XML file, use existing file as base or create new file
                     FlowIO::WriterXML writer;
+                    writer.userSettings = persistentUserSettings; //keep from loaded file
                     Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile);
                     if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
                         try {
@@ -375,6 +377,7 @@ int main(int argc, char** argv) {
             }
         }
         FlowIO::WriterXML writer(false, true);
+        writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         Log::console_msg_master(2, "Writing file {} ...\n", fullOutFile);
 

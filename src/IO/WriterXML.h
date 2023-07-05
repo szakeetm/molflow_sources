@@ -57,8 +57,8 @@ namespace FlowIO {
         void
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
-        GeometrySettings geometrySettings;
-        size_t writeProgress{0};
+        UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
+        size_t writeProgress{ 0 };
 
         void reportWriteStatus(const std::string &slaveStatus) const;
         void reportNewWriteStatus(const std::string &slaveStatus, double newProgress);
