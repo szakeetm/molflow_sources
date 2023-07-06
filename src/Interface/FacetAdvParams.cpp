@@ -1075,7 +1075,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	bool boundMap = true; // boundaryBtn->GetState();
 	double ratioU = 0.0;
     double ratioV = 0.0;
-    std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+    auto selectedFacets = geom->GetSelectedFacets();
 	int nbPerformed = 0;
 	bool doRatio = false;
 
@@ -1175,7 +1175,7 @@ bool FacetAdvParams::IsAngleMapRecording() {
 * \return bool value 0 if it didnt work 1 if it did
 */
 bool FacetAdvParams::Apply() {
-	std::vector<size_t> selectedFacets=geom->GetSelectedFacets();
+	auto selectedFacets=geom->GetSelectedFacets();
 	int nbPerformed = 0;
 	/*
 	bool boundMap = true; // boundaryBtn->GetState();

@@ -789,7 +789,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	// Update params
 	Geometry* geom = worker.GetGeometry();
 	// Get list of selected facet
-	std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+	auto selectedFacets = geom->GetSelectedFacets();
 	size_t nbSel = selectedFacets.size();
 
 	if (nbSel > 0) {
@@ -1108,7 +1108,7 @@ void MolFlow::ExportAngleMaps() {
 }
 
 void MolFlow::ImportAngleMaps() {
-	std::vector<size_t> selFacets = worker.GetGeometry()->GetSelectedFacets();
+	auto selFacets = worker.GetGeometry()->GetSelectedFacets();
 	if (selFacets.empty()) {
 		GLMessageBox::Display("Select at least one facet to import angle map to", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
