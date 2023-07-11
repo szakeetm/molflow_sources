@@ -1136,10 +1136,6 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection)
 			        || (doRatio && ((!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) || (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV))));
 			if (needsRemeshing) {
-                geom->SetFacetTextureProperties(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
-                                      hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
-                                      hasAnyTexture ? boundMap : false);
-
                 geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
                                       hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
                       hasAnyTexture ? boundMap : false);
