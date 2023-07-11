@@ -1323,13 +1323,8 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		double p = (double)i / (double)sh.nbFacet;
 		prg.SetProgress(p);
 		InterfaceFacet* f = facets[i];
-		//f->SetTexture(f->wp.texWidth_precise,f->wp.texHeight_precise,f->hasMesh);
 		BuildFacetList(f);
-		//double nU = &(f->wp.U).Norme();
-		//f->tRatio = f->wp.texWidth_precise / nU;
 	}
-	//return result;
-
 }
 
 /**
