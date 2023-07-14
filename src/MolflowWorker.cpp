@@ -584,26 +584,23 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				break;
 			}
 			if (ret != GLDLG_CANCEL_U) {
-				prg.SetMessage("Resetting worker...");
-				prg.SetVisible(true);
-				prg.SetMessage("Reading geometry...");
-				auto file = FileReader(fileName);
 				if (!insert) {
-					geom->LoadSTL(file, prg, scaleFactor);
+					geom->LoadSTL(fileName, prg, scaleFactor, false);
 					fullFileName = fileName;
-					mApp->DisplayCollapseDialog();
 				}
 				else { //insert
+					int targetStructId = geom->viewStruct;
+					if (targetStructId == -1) targetStructId = 0;
 					mApp->changedSinceSave = true;
-					geom->InsertSTL(file, prg, scaleFactor, newStr);
+					geom->LoadSTL(fileName, prg, scaleFactor, true, newStr, targetStructId);
 					MarkToReload();
 				}
+				mApp->DisplayCollapseDialog();
 			}
 		}
 		catch (const std::exception&) {
 			if (!insert) geom->Clear();
 			throw;
-
 		}
 
 	}
