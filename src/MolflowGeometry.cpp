@@ -3330,3 +3330,63 @@ void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<Simulation
 		++index;
 	}
 }
+
+PhysicalValue Geometry::GetPhysicalValue(InterfaceFacet* f, const PhysicalMode& mode, const double moleculesPerTP, const double densityCorrection, const double gasMass, const int index, const FacetMomentSnapshot& facetSnap) {
+
+	//if x==y==-1 and buffer=NULL then returns facet value, otherwise texture cell [x,y] value
+	//buff is either NULL or a (BYTE*) pointer to texture or direction buffer, must be locked by AccessDataport before call
+	//texture position must be calculated before call (index=i+j*w)
+
+
+	PhysicalValue result;
+
+	if (index == -1) { //Facet mode
+		//Not implemented yet, calculation in formula editor and Facet Details windows
+	}
+	else { //Texture cell mode
+		switch (mode) {
+		case PhysicalMode::CellArea:
+			result.value = f->GetMeshArea(index);
+			break;
+		case PhysicalMode::MCHits:
+			result.value = facetSnap.texture[index].countEquiv;
+			break;
+		case PhysicalMode::ImpingementRate:
+		{
+			double area = (f->GetMeshArea(index, true));
+			if (area == 0.0) area = 1.0;
+			result.value = facetSnap.texture[index].countEquiv / (area * 1E-4) * moleculesPerTP;
+			break;
+		}
+		case PhysicalMode::ParticleDensity:
+		{
+			double density = facetSnap.texture[index].sum_1_per_ort_velocity / (f->GetMeshArea(index, true) * 1E-4) * moleculesPerTP * densityCorrection;
+			result.value = density;
+			break;
+		}
+		case PhysicalMode::GasDensity:
+		{
+			double density = facetSnap.texture[index].sum_1_per_ort_velocity / (f->GetMeshArea(index, true) * 1E-4) * moleculesPerTP * densityCorrection;
+			result.value = density * gasMass / 1000.0 / 6E23;
+			break;
+		}
+		case PhysicalMode::Pressure:
+			result.value = facetSnap.texture[index].sum_v_ort_per_area * 1E4 * (gasMass / 1000 / 6E23) * 0.0100 * moleculesPerTP;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+			break;
+		case PhysicalMode::AvgGasVelocity:
+			result.value = 4.0 * facetSnap.texture[index].countEquiv / facetSnap.texture[index].sum_1_per_ort_velocity; //Different from FacetDetails, since textures don't record sum_1_per_v to save memory
+			break;
+		case PhysicalMode::GasVelocityVector:
+		{
+			double denominator = (facetSnap.direction[index].count > 0) ? (1.0 / facetSnap.direction[index].count) : 1.0;
+			result.vect = facetSnap.direction[index].dir * denominator;
+			break;
+		}
+		case PhysicalMode::NbVelocityVectors:
+			result.count = facetSnap.direction[index].count;
+			break;
+		}
+	}
+
+	return result;
+}
