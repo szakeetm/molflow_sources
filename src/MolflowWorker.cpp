@@ -792,8 +792,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						throw std::runtime_error(msg);
 					}
 				}
-				geom->InitOldStruct(mf_model.get());
-				
+
 				prg.SetMessage("Loading interface settings...");
 
 				xml_node interfNode = rootNode.child("Interface");
@@ -802,6 +801,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				InsertParametersBeforeCatalog(loader.userSettings.parameters);
 
 				*geom->GetGeomProperties() = model->sh;
+
+				for (int i = 0; i < model->structures.size(); i++) {
+					geom->SetStructureName(i, model->structures[i].name);
+				}
 
 				// Move actual geom to interface geom
 				geom->InitInterfaceVertices(model->vertices3);
@@ -1152,6 +1155,9 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->sh = *geom->GetGeomProperties();
 
 	mf_model->structures.resize(mf_model->sh.nbSuper); //Create structures
+	for (int i = 0; i < mf_model->sh.nbSuper; i++) {
+		mf_model->structures[i].name = geom->GetStructureName(i);
+	}
 
 	bool hasVolatile = false;
 

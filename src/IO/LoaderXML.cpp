@@ -76,8 +76,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     idx = 0;
     model->structures.resize(model->sh.nbSuper);
     for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-        model->structures[idx].strName = structure.attribute("name").value();
-        model->structures[idx].strFileName = fmt::format("{}.txt",model->structures[idx].strName); // For backward compatibilty with STR
+        model->structures[idx].name = structure.attribute("name").value();
         idx++;
     }
 

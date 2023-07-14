@@ -180,7 +180,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 
 	sh.nbSuper = 1;
-	strName[0] = strdup("Pipe");
+	structNames[0] = "Pipe";
 
 	try {
 		facets.resize(sh.nbFacet, nullptr);
@@ -301,7 +301,7 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 
 
 	sh.nbSuper = 1;
-	strName[0] = strdup("Prisma");
+	structNames[0]="Prisma";
 
 	try {
 		facets.resize(sh.nbFacet, nullptr);
@@ -409,8 +409,6 @@ void MolflowGeometry::InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
 	InsertSYNGeom(file, structId, newStr);
-	char* e = strrchr(strName[0], '.');
-	if (e) *e = 0;
 	InitializeGeometry();
 	InitializeInterfaceGeometry();
 	//AdjustProfile();
@@ -548,7 +546,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (size_t i = 0; i < nbNewSuper; i++) {
-		strName[sh.nbSuper + i] = strdup(file.ReadString());
+		structNames[sh.nbSuper + i] = file.ReadString();
 	}
 	file.ReadKeyword("}");
 
@@ -938,10 +936,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		strName[i] = strdup(file.ReadString());
-		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
-		strFileName[i] = strdup(tmp);
+		structNames[i] = file.ReadString();
 	}
 	file.ReadKeyword("}");
 
@@ -1211,10 +1206,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		strName[i] = strdup(file.ReadString());
-		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
-		strFileName[i] = strdup(tmp);
+		structNames[i] = file.ReadString();
 	}
 	file.ReadKeyword("}");
 
@@ -1584,7 +1576,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	file.Write("structures {\n");
 	for (size_t i = 0; i < sh.nbSuper; i++) {
 		file.Write("  \"");
-		file.Write(strName[i]);
+		file.Write(structNames[i]);
 		file.Write("\"\n");
 	}
 	file.Write("}\n");
@@ -3080,11 +3072,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		strName[sh.nbSuper + idx] = strdup(structure.attribute("name").value());
-		// For backward compatibilty with STR
-		char tmp[256];
-		snprintf(tmp, 256, "%s", fmt::format("{}.txt", strName[idx]).c_str()); // For backward compatibility with STR
-		strFileName[sh.nbSuper + idx] = strdup(tmp);
+		structNames[sh.nbSuper + idx] = structure.attribute("name").value();
 		idx++;
 	}
 
@@ -3278,27 +3266,6 @@ bool MolflowGeometry::CompareXML_simustate(const std::string& fileName_lhs, cons
 	const std::string& fileName_out, double cmpThreshold) {
 	return false;
 }
-
-bool MolflowGeometry::InitOldStruct(MolflowSimulationModel* model) {
-	for (int i = 0; i < MAX_SUPERSTR; i++) {
-		SAFE_FREE(strName[i]);
-		SAFE_FREE(strFileName[i]);
-	}
-	memset(strName, 0, MAX_SUPERSTR * sizeof(char*));
-	memset(strFileName, 0, MAX_SUPERSTR * sizeof(char*));
-	for (size_t i = 0; i < std::min((int)model->structures.size(), (int)MAX_SUPERSTR); ++i) {
-		strName[i] = (char*)malloc(std::min((size_t)model->structures[i].strName.size() + 1, (size_t)256) * sizeof(char));
-		strFileName[i] = (char*)malloc(std::min((size_t)model->structures[i].strFileName.size() + 1, (size_t)256) * sizeof(char));
-		std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((size_t)model->structures[i].strName.size(), (size_t)256));
-		std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((size_t)model->structures[i].strFileName.size(), (size_t)256));
-		strName[i][std::min((size_t)model->structures[i].strName.size(), (size_t)256)] = '\0';
-		strFileName[i][std::min((size_t)model->structures[i].strFileName.size(), (size_t)256)] = '\0';
-	}
-
-	return true;
-}
-
-
 
 void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
 	//General Facets

@@ -162,8 +162,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         for (size_t i = 0; i < model->sh.nbSuper; i++) {
             xml_node s = geomNode.child("Structures").append_child("Structure");
             s.append_attribute("id") = i;
-            s.append_attribute("name") = model->structures[i].strName.c_str();
-
+            s.append_attribute("name") = model->structures[i].name.c_str();
         }
     }
     finishWriteStatus("Writing structures...");
