@@ -226,12 +226,12 @@ namespace FlowIO {
         xml_node convNode = resultNode.append_child("Convergence");
 
         int formulaId = 0;
-        for(const auto& formulaVec : mApp->formula_ptr->convergenceValues){
+        for(const auto& formulaVec : mApp->formula_ptr->convergenceData){
             std::stringstream convText;
             convText << std::setprecision(10) << '\n';
             convText << std::scientific;
-            for(const auto& convVal : formulaVec.valueHistory){
-                convText << convVal.first << "\t" << convVal.second << "\n";
+            for(const auto& convVal : formulaVec){
+                convText << convVal.nbDes << "\t" << convVal.value << "\n";
             }
             xml_node newFormulaNode = convNode.append_child("ConvData");
             newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas[formulaId].GetExpression().c_str();

@@ -960,7 +960,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
     }
 }
 
-int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues,
+int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>> *convergenceValues,
                                      GLProgress_Abstract& prg) {
 
     xml_document loadXML;
@@ -979,11 +979,10 @@ int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vect
     xml_node resultNode = rootNode.child("MolflowResults");
     xml_node convNode = resultNode.child("Convergence");
 
-    convergenceValues->resize(0);
+    convergenceValues->clear();
     for(auto& convVec : convNode.children()){
         std::stringstream convText;
-        ConvergenceData convData;
-        std::vector<std::pair<size_t, double>>& vec = convData.valueHistory;
+        std::vector<FormulaHistoryDatapoint> convData;
         convText << convVec.child_value();
         // get length of file:
         convText.seekg (0, std::stringstream::end);
@@ -1012,9 +1011,7 @@ int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vect
                 std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
                 continue;
             }
-
-            //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
-            vec.emplace_back(std::make_pair(nbDes, convVal));
+            convData.emplace_back(FormulaHistoryDatapoint(nbDes, convVal));
         }
         convergenceValues->push_back(convData);
     }

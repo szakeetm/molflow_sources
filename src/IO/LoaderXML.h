@@ -49,7 +49,7 @@ namespace FlowIO {
         static int LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
                                        GlobalSimuState *globState, GLProgress_Abstract& prg);
         static int
-        LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues, GLProgress_Abstract& prg);
+        LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>> *convergenceValues, GLProgress_Abstract& prg);
         UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
     };
 }

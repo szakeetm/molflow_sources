@@ -32,7 +32,7 @@ FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* geom, std::
     selections = sel;
 }
 
-bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, const std::vector <std::pair<std::string, std::optional<double>>>& previousFormulaValues) {
+bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, const std::vector <std::pair<std::string, std::optional<double>>>& aboveFormulaValues) {
     bool ok = true;
     Geometry* geom = worker->GetGeometry();
     int nbFacet = geom->GetNbFacet();
@@ -246,25 +246,29 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if (iequals(v->varName, "Na")) {
         v->value = 6.02214179e23;
     }
-    else if ((idx = GetFacetIndex(v->varName,"Formula"))>0){ //Refer to previously evaluated formula
-        ok = (idx <= previousFormulaValues.size() && previousFormulaValues[idx-1].second.has_value());
-        if (ok) {
-            v->value = previousFormulaValues[idx - 1].second.value();
+    else if ((idx = GetFacetIndex(v->varName,"Formula"))>0) { //Refer to previously evaluated formula
+        if (idx > aboveFormulaValues.size()) {
+            throw Error(fmt::format("Formula {} should be defined above to refer to its value", idx));
         }
+        if (!aboveFormulaValues[idx - 1].second.has_value()) {
+            throw Error(fmt::format("Formula {} is not yet evaluated", idx));
+        }
+        ok = true;
+        v->value = aboveFormulaValues[idx - 1].second.value();
     }
     else if (v->varName.length() >= 2 && v->varName[0] == '"' && v->varName[v->varName.length() - 1] == '"') { //"formula name"
         bool found = false;
-        auto it = previousFormulaValues.begin();
-        while (!found && it != previousFormulaValues.end()) {
+        auto it = aboveFormulaValues.begin();
+        while (!found && it != aboveFormulaValues.end()) {
             found = ('"' + it->first + '"') == v->varName;
             if (!found) {
                 ++it;
             }
         }
-        ok = found && it->second.has_value();
-        if (ok ) {
-            v->value = it->second.value();
-        }
+        if (!found) throw Error(fmt::format("Formula name {} not found above", v->varName));
+        if (!it->second.has_value()) throw Error(fmt::format("Formula {} is not yet evaluated", v->varName));
+        ok = true;
+        v->value = it->second.value();
     }
     else if ((beginsWith(uppercase(v->varName), "SUM(") || beginsWith(uppercase(v->varName), "AVG(")) && endsWith(v->varName, ")")) {
         bool avgMode = (beginsWith(uppercase(v->varName), "AVG(")); //else SUM mode
