@@ -983,7 +983,7 @@ int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vect
     for(auto& convVec : convNode.children()){
         std::stringstream convText;
         ConvergenceData convData;
-        std::vector<std::pair<size_t, double>>& vec = convData.conv_vec;
+        std::vector<std::pair<size_t, double>>& vec = convData.valueHistory;
         convText << convVec.child_value();
         // get length of file:
         convText.seekg (0, std::stringstream::end);

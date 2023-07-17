@@ -230,7 +230,7 @@ namespace FlowIO {
             std::stringstream convText;
             convText << std::setprecision(10) << '\n';
             convText << std::scientific;
-            for(const auto& convVal : formulaVec.conv_vec){
+            for(const auto& convVal : formulaVec.valueHistory){
                 convText << convVal.first << "\t" << convVal.second << "\n";
             }
             xml_node newFormulaNode = convNode.append_child("ConvData");
