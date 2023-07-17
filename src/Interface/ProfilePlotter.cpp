@@ -288,7 +288,7 @@ void ProfilePlotter::plot() {
 	GLFormula formula;
 	formula.SetExpression(formulaText->GetText().c_str());
 	if (!formula.Parse()) {
-		GLMessageBox::Display(formula.GetErrorMsg().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(formula.GetParseErrorMsg().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 
@@ -301,8 +301,8 @@ void ProfilePlotter::plot() {
 		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	auto varIterator = formula.GetVariableAt(0);
-	if (!iequals(varIterator->varName, "x")) {
+	auto xVariable = formula.GetVariableAt(0);
+	if (!iequals(xVariable->varName, "x")) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
@@ -340,11 +340,13 @@ void ProfilePlotter::plot() {
 	// Plot
 	for (i = 0; i < 1000; i++) {
 		double x = (double)i;
-		double y;
-		varIterator->value = x;
-		auto yres = formula.Evaluate();
-		if (!yres.has_value()) break;
-		v->Add(x, yres.value(), false);
+		xVariable->value = x;
+		try {
+			v->Add(x, formula.Evaluate());
+		}
+		catch (...) {
+			continue; //Eval. error, but maybe for other x it is possible to evaluate (ex. div by zero)
+		}		
 	}
 	v->CommitChange();
 

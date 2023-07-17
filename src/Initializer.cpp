@@ -305,6 +305,7 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
         return 1; //to convert to throwing error
     }
     globStatePtr->Resize(model);
+    return 0;
 }
 
 /**
