@@ -395,7 +395,7 @@ simuPanel->Add(statusSimu);
 
 	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-	Parameter::LoadParameterCatalog(worker.parameters);
+	TimeDependentParameters::LoadParameterCatalog(worker.interfaceParameterCache);
 	OneTimeSceneInit_shared_post();
 
 	return GL_OK;
@@ -1269,7 +1269,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 
 	try {
 		ClearFormulas();
-		ClearParameters();
+		TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 		ClearAllSelections();
 		ClearAllViews();
 		ResetSimulation(false);
@@ -1438,18 +1438,6 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 
 	}
 	changedSinceSave = true;
-}
-
-void MolFlow::ClearParameters() {
-	auto iter = worker.parameters.begin();
-	while (iter != worker.parameters.end()) {
-		//Delete non-catalog parameters
-		if (!iter->fromCatalog)
-			iter = worker.parameters.erase(iter);
-		else
-			++iter;
-	}
-	if (parameterEditor) parameterEditor->Refresh();
 }
 
 void MolFlow::StartStopSimulation() {
@@ -1937,7 +1925,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
 	ClearFormulas();
-	ClearParameters();
+	TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 	ClearAllSelections();
 	ClearAllViews();
 
@@ -1967,6 +1955,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	if (parameterEditor) parameterEditor->Refresh();
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
@@ -2001,8 +1990,7 @@ void MolFlow::EmptyGeometry() {
 	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
-	ClearFormulas();
-	ClearParameters();
+	TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 	ClearAllSelections();
 	ClearAllViews();
 

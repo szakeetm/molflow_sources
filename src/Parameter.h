@@ -17,8 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _PARAMETERH_
-#define _PARAMETERH_
+#pragma once
 
 #include "Distributions.h"
 #include <string>
@@ -33,16 +32,4 @@ public:
     }
 	std::string name;
 	bool fromCatalog=false;
-
-	static int LoadParameterCatalog(std::vector<Parameter> &vec_param);
-	static void ClearParameters(std::vector<Parameter> &vec_param);
 };
-
-/*
-class StringClass:public Distribution2D {
-public:
-	std::string name;
-	bool fromCatalog;
-	StringClass();
-};*/
-#endif

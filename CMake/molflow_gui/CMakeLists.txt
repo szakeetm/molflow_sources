@@ -106,7 +106,6 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
         ${IO_DIR}/InterfaceXML.cpp

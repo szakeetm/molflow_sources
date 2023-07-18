@@ -286,10 +286,7 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
     // Settings
     // Previous results
 
-    // InsertParamsBeforeCatalog
-    std::vector<Parameter> paramCatalog;
-    Parameter::LoadParameterCatalog(paramCatalog);
-    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
+    TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 
@@ -329,13 +326,7 @@ void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::
     }
 
     // InsertParamsBeforeCatalog
-    std::vector<Parameter> paramCatalog;
-    Parameter::LoadParameterCatalog(paramCatalog);
-    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
-
-    //TODO: Load parameters from catalog explicitly?
-    // For GUI
-    // work->InsertParametersBeforeCatalog(loadedParams);
+    TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 

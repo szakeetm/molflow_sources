@@ -34,8 +34,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Particle.h"
 #include "RayTracing/RTHelper.h"
 
-class Parameter;
-
 // Local simulation structure
 class Simulation : public Simulation_Abstract {
 public:

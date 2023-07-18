@@ -252,7 +252,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 							writer.userSettings.facetViewSettings.emplace_back(vs);
 						}
 						writer.userSettings.userMoments = this->userMoments;
-						writer.userSettings.parameters = this->parameters;
+						writer.userSettings.parameters = this->interfaceParameterCache;
 						writer.userSettings.selections = mApp->selections;
 
 						if (saveSelected)
@@ -735,21 +735,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						parseFileName = "tmp/" + zipFileName;
 						ZipFile::ExtractFile(fileName, zipFileName, parseFileName);
 					}
-					/*else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
-						ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
-					}*/
 				}
-				/*if (!notFoundYet) {
-					for (int i = 0; i < numitems; i++) { //extract first xml file found in ZIP archive
-						auto zipItem = zip->GetEntry(i);
-						std::string zipFileName = zipItem->GetName();
-						if(FileUtils::GetExtension(zipFileName) == "csv"){ // extract angle maps
-							ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
-							std::cout << "Import fileName: "<< fileName<<" - "<< zipFileName<<std::endl;
-							ImportAngleMaps(fileName);
-						}
-					}
-				}*/
 				if (notFoundYet) {
 					throw std::runtime_error("Didn't find any XML file in the ZIP file.");
 				}
@@ -798,7 +784,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				xml_node interfNode = rootNode.child("Interface");
 				userMoments = loader.userSettings.userMoments;
 
-				InsertParametersBeforeCatalog(loader.userSettings.parameters);
+				TimeDependentParameters::InsertParametersBeforeCatalog(interfaceParameterCache,loader.userSettings.parameters);
 
 				*geom->GetGeomProperties() = model->sh;
 
@@ -1011,95 +997,6 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 }
 
 /**
-* \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
-* \param newParams vector containing new parameters to be inserted
-* \return index to insert position
-*/
-size_t Worker::InsertParametersBeforeCatalog(const std::vector<Parameter>& newParams) {
-	size_t index = 0;
-	for (; index != parameters.size() && parameters[index].fromCatalog == false; index++);
-	parameters.insert(parameters.begin() + index, newParams.begin(),
-		newParams.end()); //Insert to front (before catalog parameters)
-	return index; //returns insert position
-}
-
-/* //Moved to worker_shared.cpp
-
-void Worker::Update(float appTime) {
-	if (needsReload) RealReload();
-	//if (!needsReload) {
-		// Check calculation ending
-		bool done = true;
-		bool error = true;
-		if (dpControl) {
-			if (AccessDataport(dpControl)) {
-				int i = 0;
-				SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-				for (int proc = 0; proc < nbProcess && done; proc++) {
-					done = done && (master->states[proc] == PROCESS_DONE);
-					error = error && (master->states[proc] == PROCESS_ERROR);
-#if defined(MOLFLOW)
-					if (master->states[proc] == PROCESS_RUNAC) calcACprg = master->cmdParam[proc];
-#endif
-				}
-				ReleaseDataport(dpControl);
-			}
-		}
-
-		// End of simulation reached (Stop GUI)
-		if ((error || done) && running && appTime != 0.0f) {
-			InnerStop(appTime);
-			if (error) ThrowSubProcError();
-		}
-
-		// Retrieve hit count recording from the shared memory
-		if (dpHit) {
-
-			if (AccessDataport(dpHit)) {
-				BYTE *buffer = (BYTE *)dpHit->buff;
-
-				mApp->changedSinceSave = true;
-				// Globals
-				SHGHITS *gHits = (SHGHITS *)buffer;
-
-				// Copy Global hits and leaks
-				nbMCHit = gHits->globalStats.hit.nbMCHit;
-				nbAbsEquiv = gHits->globalStats.hit.nbAbsEquiv;
-				nbDesorption = gHits->globalStats.hit.nbDesorbed;
-				distTraveled_total = gHits->distTraveled_total;
-				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
-
-
-				nbLeakTotal = gHits->nbLeakTotal;
-				hitCacheSize = gHits->hitCacheSize;
-				memcpy(hitCache, gHits->hitCache, sizeof(HIT)*hitCacheSize);
-				leakCacheSize = gHits->leakCacheSize;
-				memcpy(leakCache, gHits->leakCache, sizeof(LEAK)*leakCacheSize); //will display only first leakCacheSize leaks
-
-				// Refresh local facet hit cache for the displayed moment
-				int nbFacet = geom->GetNbFacet();
-				for (int i = 0; i < nbFacet; i++) {
-					Facet *f = geom->GetFacet(i);
-					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->model->wp.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
-				}
-				try {
-					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
-				}
-				catch (const std::exception &e) {
-					GLMessageBox::Display(e.what(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
-					ReleaseDataport(dpHit);
-					return;
-				}
-				ReleaseDataport(dpHit);
-			}
-
-		}
-	//}
-
-}
-*/
-
-/**
 * \brief Saves current AngleMap from cache to results
 */
 int Worker::SendAngleMaps() {
@@ -1148,9 +1045,10 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->maxwell_CDF_1K.clear();
 	mf_model->tdParams.IDs.clear();
 
+	//Move interface's paramater cache to model
 	mf_model->tdParams.parameters.clear();
-	for (auto& param : this->parameters)
-		mf_model->tdParams.parameters.emplace_back(param); //parameter->Distribution2D conversion
+	for (auto& param : this->interfaceParameterCache)
+		mf_model->tdParams.parameters.emplace_back(param);
 
 	mf_model->sh = *geom->GetGeomProperties();
 
@@ -1508,8 +1406,6 @@ void Worker::PrepareToRun() {
 	}
 
 	Geometry* g = GetGeometry();
-	desorptionParameterIDs.clear();
-	IDs.clear();
 
 	bool needsAngleMapStatusRefresh = false;
 
@@ -1555,60 +1451,6 @@ void Worker::PrepareToRun() {
 }
 
 /**
-* \brief Get ID (if it exists) of the Commulative Distribution Function (CFD) for a particular temperature (bin)
-* \param temperature temperature for the CFD
-* \return ID of the CFD
-*/
-/*
-int Worker::GetCDFId(double temperature) const {
-	return CDFGeneration::GetCDFId(temperatures, temperature);
-}
-*/
-
-/*
-
-* \brief Generate a new Commulative Distribution Function (CFD) for a particular temperature (bin)
-* \param temperature for the CFD
-* \return Previous size of temperatures vector, which determines new ID
-
-int Worker::GenerateNewCDF(double temperature) {
-
-	auto [id_new, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatures, temperature, model->wp.gasMass);
-	CDFs.emplace_back(std::move(cdf_vec));
-
-	return (int)id_new;
-}
-*/
-
-/**
-* \brief Generate a new ID (integrated desorption) for desorption parameter for time-dependent simulations
-* \param paramId parameter ID
-* \return Previous size of IDs vector, which determines new id in the vector
-*/
-int Worker::GenerateNewID(size_t paramId) {
-	//This function is called if parameter with index paramId doesn't yet have a cumulative des. function
-	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-	auto [id_new, result] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, mf_model.get());
-	Parameter& par = parameters[paramId]; //we'll reference it a lot
-	//std::vector<IntegratedDesorptionEntry> result;
-	//result.logXinterp = par.logXinterp;
-	//result.logYinterp = par.logYinterp;
-	//result.SetValues(std::move(id_vec), false);
-	IDs.emplace_back(std::move(result));
-
-	return (int)id_new;
-}
-
-/**
-* \brief Get ID (if it exists) of the integrated desorption (ID) function for a particular paramId
-* \param paramId parameter ID
-* \return Id of the integrated desorption function
-*/
-int Worker::GetIDId(size_t paramId) const {
-	return IDGeneration::GetIDId(desorptionParameterIDs, paramId);
-}
-
-/**
 * \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
 */
 void Worker::CalcTotalOutgassing() {
@@ -1642,8 +1484,8 @@ void Worker::CalcTotalOutgassing() {
 
 					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue;
 					mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
-					size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
-					double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
+					size_t lastIndex = interfaceParameterCache[f->sh.outgassing_paramId].GetSize() - 1;
+					double finalRate_mbar_l_s = interfaceParameterCache[f->sh.outgassing_paramId].GetY(lastIndex);
 					mf_model->wp.finalOutgassingRate +=
 						finalRate_mbar_l_s * MBARLS_TO_PAM3S /
 						(1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
@@ -1663,7 +1505,7 @@ void Worker::CalcTotalOutgassing() {
 */
 int Worker::GetParamId(const std::string& name) {
 	int foundId = -1;
-	for (int i = 0; foundId == -1 && i < (int)parameters.size(); i++)
-		if (name == parameters[i].name) foundId = i;
+	for (int i = 0; foundId == -1 && i < (int)interfaceParameterCache.size(); i++)
+		if (name == interfaceParameterCache[i].name) foundId = i;
 	return foundId;
 }

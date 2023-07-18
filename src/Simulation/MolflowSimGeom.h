@@ -42,7 +42,7 @@ class SimulationFacet;
 class GlobalSimuState;
 
 class ParameterSurface : public Surface {
-    Distribution2D *dist;
+    Distribution2D *dist; //time-dependent opacity distribution
 public:
     ParameterSurface(Distribution2D *distribution) : dist(distribution) {};
 
@@ -51,12 +51,19 @@ public:
     bool IsHardHit(const Ray &r) override;
 };
 
+//Data structure specific to MolflowSimulationModel to store a collection of time-dependent parameters, similar to "Formulas"
+//instance: model->tdParams
 struct TimeDependentParameters {
     TimeDependentParameters() = default;
 
     std::vector<Parameter> parameters;
     std::vector<std::vector<IntegratedDesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
     std::vector<Moment> moments;
+
+    static int LoadParameterCatalog(std::vector<Parameter>& parameters);
+    static void ClearParameters(std::vector<Parameter>& parameters);
+    static size_t InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
+
     
     size_t GetMemSize() {
         size_t sum = 0;
@@ -76,7 +83,7 @@ struct TimeDependentParameters {
 class MolflowSimulationModel : public SimulationModel {
   
 public:
-    MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};
+    MolflowSimulationModel() : SimulationModel(), tdParams() {};
 
     ~MolflowSimulationModel();
 
@@ -146,7 +153,7 @@ public:
                 surface = std::make_shared<TransparentSurface>();
             }
             else {
-                surface = std::make_shared<AlphaSurface>(opacity);
+                surface = std::make_shared<SemiTransparentSurface>(opacity);
             }
             surfaces.insert(std::make_pair(opacity, surface));
 

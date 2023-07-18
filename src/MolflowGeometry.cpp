@@ -86,27 +86,9 @@ size_t MolflowGeometry::GetGeometrySize() {
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
 
-	//CDFs
-	/*
-	memoryUsage += sizeof(size_t); //number of CDFs
-	for (auto& i : work->CDFs) {
-		memoryUsage += sizeof(size_t); //CDF size
-		memoryUsage += i.size() * 2 * sizeof(double);
-	}
-	*/
-
-	//IDs
-	memoryUsage += sizeof(size_t); //number of IDs
-	for (auto& i : work->IDs) {
-
-		memoryUsage += sizeof(size_t); //ID size
-		memoryUsage += 2 * sizeof(bool); //logX,logY interpolation flags
-		memoryUsage += i.size() * sizeof(IntegratedDesorptionEntry);
-	}
-
 	//Parameters
 	memoryUsage += sizeof(size_t); //number of parameters
-	for (auto& i : work->parameters) {
+	for (auto& i : work->interfaceParameterCache) {
 
 		memoryUsage += sizeof(size_t); //parameter size
 
@@ -117,9 +99,6 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 	//moments size already passed
 	memoryUsage += sizeof(double) * (int)(work->moments).size(); //moments
-
-	memoryUsage += sizeof(size_t); //number of desparamIDs
-	memoryUsage += sizeof(size_t) * (int)(work->desorptionParameterIDs).size(); //desparamIDs
 	return memoryUsage;
 }
 
@@ -3100,7 +3079,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 				loadedParams.push_back(newPar);
 			}
 		}
-		work->InsertParametersBeforeCatalog(loadedParams);
+		TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, loadedParams);
 	}
 
 	//Facets
@@ -3131,9 +3110,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 
 		if (isMolflowFile) {
 			//Set param names for interface
-			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-			if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-			if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->interfaceParameterCache[facets[idx]->sh.sticking_paramId].name;
+			if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->interfaceParameterCache[facets[idx]->sh.opacity_paramId].name;
+			if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->interfaceParameterCache[facets[idx]->sh.outgassing_paramId].name;
 		}
 		idx++;
 	}
@@ -3290,9 +3269,9 @@ void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<Simulation
 		}
 
 		//Set param names for interface
-		if (intFacet->sh.sticking_paramId > -1) intFacet->userSticking = work->parameters[intFacet->sh.sticking_paramId].name;
-		if (intFacet->sh.opacity_paramId > -1) intFacet->userOpacity = work->parameters[intFacet->sh.opacity_paramId].name;
-		if (intFacet->sh.outgassing_paramId > -1) intFacet->userOutgassing = work->parameters[intFacet->sh.outgassing_paramId].name;
+		if (intFacet->sh.sticking_paramId > -1) intFacet->userSticking = work->interfaceParameterCache[intFacet->sh.sticking_paramId].name;
+		if (intFacet->sh.opacity_paramId > -1) intFacet->userOpacity = work->interfaceParameterCache[intFacet->sh.opacity_paramId].name;
+		if (intFacet->sh.outgassing_paramId > -1) intFacet->userOutgassing = work->interfaceParameterCache[intFacet->sh.outgassing_paramId].name;
 		if (intFacet->sh.isTextured) intFacet->hasMesh = true;
 		++index;
 	}

@@ -69,7 +69,6 @@ public:
     
 	void PlaceComponents() override;
     void UpdateFacetHits(bool allRows) override;
-	void ClearParameters();
 	void UpdatePlotters() override;
 	void RefreshPlotterCombos();
 

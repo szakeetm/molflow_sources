@@ -196,7 +196,7 @@ void ParameterEditor::Refresh()
 	UpdateCombo();
 	UpdateUserValues();
 	RebuildList();
-	if (work->parameters.size() > 0) { //If there is at least one parameter, show values and plot it
+	if (work->interfaceParameterCache.size() > 0) { //If there is at least one parameter, show values and plot it
 		ValidateInput();
 		Plot();
 	}
@@ -212,8 +212,8 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
     case MSG_BUTTON:
 		if (Contains({ applyButton,deleteButton }, src) ) {
 			int i = selectorCombo->GetSelectedIndex();
-			if (i > 0 && i-1 < work->parameters.size()) {
-				if (work->parameters[i-1].fromCatalog) {
+			if (i > 0 && i-1 < work->interfaceParameterCache.size()) {
+				if (work->interfaceParameterCache[i-1].fromCatalog) {
 					GLMessageBox::Display("Parameters imported from the catalog (.csv files in the parameter_catalog folder) are read-only.");
 					return;
 				}
@@ -222,13 +222,13 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		if (src==applyButton) {
 			if (ValidateInput() && mApp->AskToReset()) { //ValidateInput() constructs tempParam
 				if (selectorCombo->GetSelectedIndex() >= 1 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow()) {//existing param
-					work->parameters[selectorCombo->GetSelectedIndex()-1] = tempParam;
+					work->interfaceParameterCache[selectorCombo->GetSelectedIndex()-1] = tempParam;
 					UpdateCombo(); //If name changed
 					UpdateUserValues();
 					Plot();
 				} else if (selectorCombo->GetSelectedIndex() == 0) { //new Param
 					//work->parameters.push_back(tempParam); //Inserted newly defined parameter as last
-					size_t insertPos = work->InsertParametersBeforeCatalog({ tempParam }); //Inserts before catalog
+					size_t insertPos = TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, { tempParam }); //Inserts before catalog
 					UpdateCombo();
 					selectorCombo->SetSelectedIndex((int)insertPos); //Set to newly added parameter
 					deleteButton->SetEnabled(true);
@@ -241,7 +241,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		} else if (src == deleteButton) {
 			if (selectorCombo->GetSelectedValue() == "New...") return; //Delete button shouldn't have been enabled
 			if (mApp->AskToReset()) {
-				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex() - 1);
+				work->interfaceParameterCache.erase(work->interfaceParameterCache.begin() + selectorCombo->GetSelectedIndex() - 1);
 				UpdateCombo();
 				bool paramSelected = selectorCombo->GetSelectedIndex() > 0;
 				UpdateUserValues();
@@ -323,7 +323,7 @@ void ParameterEditor::PrepareForNewParam() {
 	//Clear plot
 	dataView->Reset();
 	//Set default name for new param
-	nameField->SetText("Param"+std::to_string(work->parameters.size()+1));
+	nameField->SetText("Param"+std::to_string(work->interfaceParameterCache.size()+1));
 	paramLogXtoggle->SetState(0);
 	paramLogYtoggle->SetState(0);
 }
@@ -332,10 +332,10 @@ void ParameterEditor::PrepareForNewParam() {
 * \brief Updates selector field for defined parameter lists in editor
 */
 void ParameterEditor::UpdateCombo() {
-	selectorCombo->SetSize((int)work->parameters.size() + 1);
+	selectorCombo->SetSize((int)work->interfaceParameterCache.size() + 1);
 	selectorCombo->SetValueAt(0, "New...");
-	for (size_t i = 0; i < work->parameters.size(); i++) {
-		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name);
+	for (size_t i = 0; i < work->interfaceParameterCache.size(); i++) {
+		selectorCombo->SetValueAt((int)i + 1, work->interfaceParameterCache[i].name);
 	}
 
 	if (selectorCombo->GetSelectedIndex() < 1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow()>1 ? 1 : 0); //Select first param, otherwise "New..."
@@ -462,7 +462,7 @@ bool ParameterEditor::ValidateInput() {
 			return false;
 		}
 		if (selectorCombo->GetSelectedIndex() == 0) {
-			for (auto& p : work->parameters) {
+			for (auto& p : work->interfaceParameterCache) {
 				if (tempName == p.name) {
 					GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 					return false;
@@ -533,8 +533,8 @@ bool ParameterEditor::ValidateInput() {
 void ParameterEditor::UpdateUserValues() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	//nameField->SetText("");
-	if (selectorCombo->GetSelectedIndex() > 0 && selectorCombo->GetSelectedIndex() - 1 < (int)work->parameters.size()) {
-		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex() - 1];
+	if (selectorCombo->GetSelectedIndex() > 0 && selectorCombo->GetSelectedIndex() - 1 < (int)work->interfaceParameterCache.size()) {
+		Parameter *getParam = &work->interfaceParameterCache[selectorCombo->GetSelectedIndex() - 1];
 
 		for (int row = 0; row < (int)getParam->GetSize(); row++) {
 			/*std::ostringstream str1, str2;

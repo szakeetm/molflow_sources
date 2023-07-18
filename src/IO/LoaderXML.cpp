@@ -103,7 +103,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     }
     //TODO: Load parameters from catalog explicitly?
     //work->InsertParametersBeforeCatalog(loadedParams);
-    Parameter::ClearParameters(model->tdParams.parameters);
+    TimeDependentParameters::ClearParameters(model->tdParams.parameters);
     model->tdParams.parameters.insert(model->tdParams.parameters.end(),userSettings.parameters.begin(),userSettings.parameters.end());
     
 
