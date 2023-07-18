@@ -325,9 +325,6 @@ void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::
         userSettings = loader.userSettings; //persistent for saving
     }
 
-    // InsertParamsBeforeCatalog
-    TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-
     Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
 
     //InitializeGeometry();
