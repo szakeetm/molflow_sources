@@ -1442,7 +1442,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 
 void MolFlow::StartStopSimulation() {
 
-	if (worker.globalStatCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
+	if (worker.globalStatCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.interfaceMomentCache.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"

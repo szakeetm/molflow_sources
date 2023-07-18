@@ -463,7 +463,7 @@ void FacetAdvParams::UpdateSize() {
 				if (f->sh.opacity == 1.0) {
                     auto nbCells = f->GetNbCell();
                     cell += (size_t)(nbCells.first * nbCells.second);
-					ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
+					ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 				}
 			}
 			ram += (((cell - 1)*cell) / 2 + 8 * cell)*((size_t)sizeof(ACFLOAT));
@@ -475,7 +475,7 @@ void FacetAdvParams::UpdateSize() {
 				InterfaceFacet *f = geom->GetFacet(i);
                 auto nbCells = f->GetNbCell();
                 cell += (size_t)(nbCells.first * nbCells.second);
-				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
+				ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 
 		}
@@ -528,12 +528,12 @@ void FacetAdvParams::UpdateSizeForRatio() {
 			if (f->selected) {
 			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
 				cell += (size_t)(nbCells.first * nbCells.second);
-				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->moments.size());
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
 			}
 			else {
                 auto nbCells = f->GetNbCell();
                 cell += (size_t)(nbCells.first * nbCells.second);
-				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
+				ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 			//}
 		}
@@ -547,12 +547,12 @@ void FacetAdvParams::UpdateSizeForRatio() {
 			if (f->selected) {
                 auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
                 cell += (size_t)(nbCells.first * nbCells.second);
-				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->moments.size());
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
 			}
 			else {
                 auto nbCells = f->GetNbCell();
                 cell += (size_t)(nbCells.first * nbCells.second);
-                ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
+                ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 		}
 

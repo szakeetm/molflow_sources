@@ -190,7 +190,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
                 for(auto& newMoment : parsedMoments)
                     AddMoment(newMoment);
 
-                work->moments = moments;
+                work->interfaceMomentCache = moments;
 				work->userMoments = userMoments;
 				work->model->wp.timeWindowSize = window;
 				work->model->wp.useMaxwellDistribution = useMaxwellToggle->GetState();
@@ -324,7 +324,7 @@ void MomentsEditor::RebuildList() {
 
 void MomentsEditor::Refresh() {
 	userMoments = work->userMoments;
-	moments = work->moments;
+	moments = work->interfaceMomentCache;
 	char tmp[128];
 	sprintf(tmp, "%g", work->model->wp.timeWindowSize);
 	windowSizeText->SetText(tmp);

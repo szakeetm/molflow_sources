@@ -58,7 +58,7 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
   Add(previousButton);
 
   char tmp[128];
-  sprintf(tmp,"%zd moments",w->moments.size());
+  sprintf(tmp,"%zd moments",w->interfaceMomentCache.size());
   editButton = new GLButton(0,tmp);
   editButton->SetBounds(35,25,100,18);
   Add(editButton);
@@ -97,7 +97,7 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
 */
 void TimeSettings::ProcessMessage(GLComponent *src,int message) {
   int id;
-  int nbMoments=(int)work->moments.size();
+  int nbMoments=(int)work->interfaceMomentCache.size();
   int stepSize;
 
   switch(message) {
@@ -149,7 +149,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		if (id==0)
 			timeLabel->SetText("Constant Flow");
 		else {
-			sprintf(tmp,"t=%gs",work->moments[id-1].time);
+			sprintf(tmp,"t=%gs",work->interfaceMomentCache[id-1].time);
 			timeLabel->SetText(tmp);
 		}
 		try {
@@ -183,7 +183,7 @@ void TimeSettings::RefreshMoments() {
 	timeLabel->SetText("Constant Flow");
 	timeId->SetText("0");
 	work->displayedMoment=0;
-	int nbMoments=(int)work->moments.size();
+	int nbMoments=(int)work->interfaceMomentCache.size();
 	char tmp[128];
 	sprintf(tmp,"%d moments",nbMoments);
 	editButton->SetText(tmp);

@@ -200,7 +200,7 @@ void TexturePlotter::Update(float appTime, bool force) {
 * \param force if update should be forced
 */
 void TexturePlotter::UpdateTable() {
-	size_t nbMoments = mApp->worker.moments.size();
+	size_t nbMoments = mApp->worker.interfaceMomentCache.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	maxValue = 0.0f;
 	//double scale;

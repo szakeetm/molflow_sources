@@ -369,7 +369,7 @@ void ProfilePlotter::refreshViews() {
 
 	double scaleY;
 
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
+	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];

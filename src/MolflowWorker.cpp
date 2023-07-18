@@ -673,7 +673,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				geom->LoadGEO(*file, prg, &version, this);
 				// Add moments only after user Moments are completely initialized
 				try {
-					TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
+					TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userMoments, prg);
 				} catch (std::exception& e) {
 					GLMessageBox::Display(e.what(), "Warning",
 						GLDLG_OK, GLDLG_ICONWARNING);
@@ -817,7 +817,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				// We call ParseAndCheck again (first loader called it), so we can display error if overlap was detected
 				{
 					try {
-						TimeMoments::ParseAndCheckUserMoments(moments, userMoments, prg);
+						TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userMoments, prg);
 					}
 					catch (std::exception& e) {
 						GLMessageBox::Display(e.what(), "Warning",
@@ -1036,7 +1036,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->structures.clear();
 	mf_model->facets.clear();
 	mf_model->vertices3.clear();
-	mf_model->tdParams.moments = moments;
+	mf_model->tdParams.moments = interfaceMomentCache;
 
 	for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
 		mf_model->vertices3.emplace_back(*geom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
@@ -1288,7 +1288,7 @@ void Worker::Start() {
 */
 void Worker::ResetMoments() {
 	displayedMoment = 0;
-	moments.clear();
+	interfaceMomentCache.clear();
 	userMoments.clear();
 }
 
@@ -1308,7 +1308,7 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
-		return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].window) /
+		return (model->wp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[moment - 1].window) /
 			globalStatCache.globalHits.nbDesorbed;
 	}
 }
@@ -1399,8 +1399,8 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 void Worker::PrepareToRun() {
 
 	//determine latest moment
-	if (!moments.empty())
-		model->wp.latestMoment = (moments.end() - 1)->time + (moments.end() - 1)->window / 2.0;
+	if (!interfaceMomentCache.empty())
+		model->wp.latestMoment = (interfaceMomentCache.end() - 1)->time + (interfaceMomentCache.end() - 1)->window / 2.0;
 	else {
 		model->wp.latestMoment = model->wp.timeWindowSize * .5;
 	}

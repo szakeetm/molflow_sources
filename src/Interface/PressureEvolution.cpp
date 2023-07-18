@@ -226,7 +226,7 @@ void PressureEvolution::refreshChart() {
 	GlobalHitBuffer& gHits = worker->globalStatCache;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
+	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 
 	for (auto& v : views) {
 
@@ -241,21 +241,21 @@ void PressureEvolution::refreshChart() {
 			}
 
 			if (displayMode == "MC Hits") {
-				for (size_t m = 1; m <= std::min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					v->Add(worker->moments[m - 1].time, (double)facetHits[m].hits.nbMCHit, false);
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
+					v->Add(worker->interfaceMomentCache[m - 1].time, (double)facetHits[m].hits.nbMCHit, false);
 				}
 			}
 			else if (displayMode== "Equiv. hits") {
-				for (size_t m = 1; m <= std::min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					v->Add(worker->moments[m - 1].time, facetHits[m].hits.nbHitEquiv, false);
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
+					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv, false);
 				}
 			}
 			else if (displayMode == "Pressure (mbar)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-				for (size_t m = 1; m <= std::min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					v->Add(worker->moments[m - 1].time, facetHits[m].hits.sum_v_ort*(scaleY/worker->moments[m - 1].window), false);
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
+					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_v_ort*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
 			else if (displayMode == "Density (1/m3)") {
@@ -263,16 +263,16 @@ void PressureEvolution::refreshChart() {
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
-				for (size_t m = 1; m <= std::min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					v->Add(worker->moments[m - 1].time, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->moments[m - 1].window), false);
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
+					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
 			else if (displayMode == "Imp.rate (1/s/m2)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-                for (size_t m = 1; m <= std::min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					v->Add(worker->moments[m - 1].time, facetHits[m].hits.nbHitEquiv*(scaleY/worker->moments[m - 1].window), false);
+                for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
+					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
 		}
@@ -298,7 +298,7 @@ void PressureEvolution::addView(size_t facetId) {
                 return;
             }
 		}
-		if (worker->moments.size() > 10000) {
+		if (worker->interfaceMomentCache.size() > 10000) {
 			GLMessageBox::Display("Only the first 10000 moments will be plotted", "Error", GLDLG_OK, GLDLG_ICONWARNING);
 		}
 	}

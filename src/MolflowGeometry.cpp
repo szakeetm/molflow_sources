@@ -97,8 +97,8 @@ size_t MolflowGeometry::GetGeometrySize() {
 	memoryUsage += sizeof(size_t); //number of temperatures
 	//memoryUsage += sizeof(double) * (int)(work->temperatures).size(); //temperatures
 
-	//moments size already passed
-	memoryUsage += sizeof(double) * (int)(work->moments).size(); //moments
+	//interfaceMomentCache size already passed
+	memoryUsage += sizeof(double) * (int)(work->interfaceMomentCache).size(); //moments
 	return memoryUsage;
 }
 
@@ -654,8 +654,8 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState& globStat
 		file.Write(profileFacet[i], "\t");
 
 	file.Write("\n");
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++) {
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; (m <= mApp->worker.interfaceMomentCache.size()) || (m == 0); m++) {
 		char tmp[128];
 		sprintf(tmp, " moment %zd {\n", m);
 		file.Write(tmp);
@@ -695,8 +695,8 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, GlobalSimuState& globStat
 	file.ReadKeyword("facets"); file.ReadKeyword(":");
 	for (int i = 0; i < nbProfile; i++)
 		profileFacet[i] = file.ReadInt();
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size() || (version < 10 && m == 0); m++) {
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size() || (version < 10 && m == 0); m++) {
 		if (version >= 10) {
 			file.ReadKeyword("moment");
 			if (m != file.ReadInt()) {
@@ -1357,8 +1357,8 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 
 			texture_limits[2].autoscale.max.moments_only = file.ReadDouble();
 
-			size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-			for (size_t m = 0; m <= mApp->worker.moments.size() || (m == 0 /*&& version<10*/); m++) {
+			size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+			for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size() || (m == 0 /*&& version<10*/); m++) {
 				//if (version>=10) {
 				file.ReadKeyword("moment");
 				if (m != file.ReadInt()) {
@@ -1371,7 +1371,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 				for (int i = 0; i < sh.nbFacet; i++) {
 					InterfaceFacet* f = facets[i];
 					if (f->hasMesh/* || version<8*/) {
-						prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size() * sh.nbFacet) * 0.33 + 0.66);
+						prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.interfaceMomentCache.size() * sh.nbFacet) * 0.33 + 0.66);
 						file.ReadKeyword("texture_facet");
 						// Check idx
 						int idx = file.ReadInt();
@@ -1387,7 +1387,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 
 						///Load textures, for GEO file version 3+
 
-						size_t profSize = (f->sh.isProfile) ? ((1 + mApp->worker.moments.size()) * (PROFILE_SIZE * sizeof(ProfileSlice))) : 0;
+						size_t profSize = (f->sh.isProfile) ? ((1 + mApp->worker.interfaceMomentCache.size()) * (PROFILE_SIZE * sizeof(ProfileSlice))) : 0;
 						size_t h = f->sh.texHeight;
 						size_t w = f->sh.texWidth;
 
@@ -1659,19 +1659,19 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	//SaveSelections();
 
 	prg.SetMessage("Writing textures...");
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 		sprintf(tmp, "moment %zd {\n", m);
 		file.Write(tmp);
 		for (size_t i = 0, k = 0; i < sh.nbFacet; i++) {
 			if (!saveSelected || facets[i]->selected) {
 				k++; //facet id in the group of selected facets
-				prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size() * sh.nbFacet) * 0.33 + 0.66);
+				prg.SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.interfaceMomentCache.size() * sh.nbFacet) * 0.33 + 0.66);
 				InterfaceFacet* f = facets[i];
 				if (f->hasMesh) {
 					size_t h = f->sh.texHeight;
 					size_t w = f->sh.texWidth;
-					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + (int)mApp->worker.moments.size())) : 0;
+					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + (int)mApp->worker.interfaceMomentCache.size())) : 0;
 					const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
 
 					//char tmp[256];
@@ -1786,10 +1786,10 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 	if (!lock) return;
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].time, mApp->worker.moments[m - 1].window);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
 		// Facets
 		for (size_t fInd = 0; fInd < sh.nbFacet; fInd++) {
 			InterfaceFacet* f = facets[fInd];
@@ -1802,7 +1802,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 					char tmp[256];
 					char out[512];
 					if (!globState.initialized) return;
-					size_t nbMoments = mApp->worker.moments.size();
+					size_t nbMoments = mApp->worker.interfaceMomentCache.size();
 					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + nbMoments)) : 0;
 					size_t w = f->sh.texWidth;
 					size_t h = f->sh.texHeight;
@@ -1968,10 +1968,10 @@ void MolflowGeometry::ExportProfiles(FILE* file, int isTXT, Worker* worker) {
 
 	fputs(header.str().c_str(), file);
 
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].time, mApp->worker.moments[m - 1].window);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2668,14 +2668,14 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 	xml_node resultNode = rootNode.append_child("MolflowResults");
 	prg.SetMessage("Saving simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
-	momentsNode.append_attribute("nb") = work->moments.size() + 1;
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
+	momentsNode.append_attribute("nb") = work->interfaceMomentCache.size() + 1;
+	size_t facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (size_t m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 
 		std::ostringstream msg;
-		msg << "Saving moment " << (m + 1) << "/" << (mApp->worker.moments.size() + 1) << "...";
+		msg << "Saving moment " << (m + 1) << "/" << (mApp->worker.interfaceMomentCache.size() + 1) << "...";
 		prg.SetMessage(msg.str(), false);
-		prg.SetProgress(0.5 + 0.5 * (double)m / (1.0 + (double)mApp->worker.moments.size()));
+		prg.SetProgress(0.5 + 0.5 * (double)m / (1.0 + (double)mApp->worker.interfaceMomentCache.size()));
 
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
@@ -2684,8 +2684,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			newMoment.append_attribute("timeWindow") = 0;
 		}
 		else {
-			newMoment.append_attribute("time") = work->moments[m - 1].first;
-			newMoment.append_attribute("timeWindow") = work->moments[m - 1].second;
+			newMoment.append_attribute("time") = work->interfaceMomentCache[m - 1].first;
+			newMoment.append_attribute("timeWindow") = work->interfaceMomentCache[m - 1].second;
 		}
 
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
@@ -2834,7 +2834,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 				}
 			}
 
-			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + mApp->worker.moments.size())) : 0;
+			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + mApp->worker.interfaceMomentCache.size())) : 0;
 
 			//Textures
 			size_t h = f->sh.texHeight;
@@ -2867,7 +2867,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 
 			} //end texture
-			size_t textureSize = (1 + (int)work->moments.size()) * w * h * sizeof(TextureCell);
+			size_t textureSize = (1 + (int)work->interfaceMomentCache.size()) * w * h * sizeof(TextureCell);
 
 			if (f->sh.countDirection && f->dirCache) {
 				xml_node dirNode = newFacetResult.append_child("Directions");
@@ -2894,7 +2894,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 				dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
 				dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
 			} //end directions
-			size_t dirSize = f->sh.countDirection ? (1 + (int)work->moments.size()) * w * h * sizeof(DirectionCell) : 0;
+			size_t dirSize = f->sh.countDirection ? (1 + (int)work->interfaceMomentCache.size()) * w * h * sizeof(DirectionCell) : 0;
 
 			size_t angleMapRecordedDataSize = sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
 				(f->sh.anglemapParams.thetaLowerRes +

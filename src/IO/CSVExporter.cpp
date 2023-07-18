@@ -264,7 +264,7 @@ namespace FlowIO {
             case FDetail::F_MEMORY:
                 ret = fmt::format("{}", "N/A");
                 // ret = fmt::format("{}", FormatMemory(facet->GetTexRamSize(1 +
-                // worker->moments.size())));
+                // worker->interfaceMomentCache.size())));
                 break;
             case FDetail::F_PLANARITY: {
                 // Facet planarity

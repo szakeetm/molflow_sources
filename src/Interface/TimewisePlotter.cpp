@@ -256,12 +256,12 @@ void TimewisePlotter::refreshViews() {
 
 	double scaleY;
 
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
+	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (size_t i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
 		UpdateMoment();
-		if (v->userData1<0 || v->userData1>worker->moments.size()) continue; //invalid moment
+		if (v->userData1<0 || v->userData1>worker->interfaceMomentCache.size()) continue; //invalid moment
 		int idx = profCombo->GetSelectedIndex();
 		if (idx < 0) return;
 		InterfaceFacet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
@@ -388,9 +388,9 @@ void TimewisePlotter::addView(int facet) {
 	for (size_t index : displayedMoments) {
 		if (nbView < 49) {
 			GLDataView *v = new GLDataView();
-			if (index<1 || (index) > worker->moments.size()) continue; //invalid moment
+			if (index<1 || (index) > worker->interfaceMomentCache.size()) continue; //invalid moment
 			//sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
-			sprintf(tmp, "t=%gs", worker->moments[index - 1].time);
+			sprintf(tmp, "t=%gs", worker->interfaceMomentCache[index - 1].time);
 			v->SetName(tmp);
 			v->userData1 = (int)index;
 			v->SetStyle(STYLE_DOT);
