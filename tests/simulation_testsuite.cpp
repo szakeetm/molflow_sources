@@ -227,12 +227,6 @@ namespace {
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
 
-            /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
-            char * fileName_c = new char[testFile.size() + 1];
-            std::copy(testFile.begin(), testFile.end(), fileName_c);
-            fileName_c[testFile.size()] = '\0';
-            argv.push_back(fileName_c);
-*/
             {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
@@ -379,6 +373,7 @@ namespace {
                     exit(41);
                 }
 
+                TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
                 try {
                     Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
