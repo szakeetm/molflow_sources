@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
     UserSettings persistentUserSettings; //persistent user data that should be rewritten when saving
 
     // Parse arguments
-    if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
+    if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)) {
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
@@ -149,9 +149,9 @@ int main(int argc, char** argv) {
     MFMPI::mpi_transfer_simu();
 #endif
 
-    Log::console_msg_master(1,"Loading parameters from parameter_catalog folder...");
+    Log::console_msg(1,"Loading parameters from parameter_catalog folder...");
     TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-    Log::console_msg_master(1, "done.\n");
+    Log::console_msg(1, "done.\n");
 
     // Load input from file or generated test case
 	if (!SettingsIO::autogenerateTest) {

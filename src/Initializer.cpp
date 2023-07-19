@@ -145,7 +145,7 @@ int Initializer::parseCommands(int argc, char **argv) {
 
 /**
 * \brief Comfort function wrapping around default initialization from command line arguments, taking care of default initializations
- * \return 0> error code, 0 when ok
+ * \return 0> error code, -1 when ok
  */
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
                               std::shared_ptr<MolflowSimulationModel> model) {
