@@ -101,12 +101,10 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
             }
         }
     }
-    //TODO: Load parameters from catalog explicitly?
-    //work->InsertParametersBeforeCatalog(loadedParams);
-    TimeDependentParameters::ClearParameters(model->tdParams.parameters);
-    model->tdParams.parameters.insert(model->tdParams.parameters.end(),userSettings.parameters.begin(),userSettings.parameters.end());
-    
 
+    TimeDependentParameters::ClearParameters(model->tdParams.parameters);
+    TimeDependentParameters::InsertParametersBeforeCatalog(model->tdParams.parameters, userSettings.parameters);
+    
     prg.SetMessage("Loading facets...",false);
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
     userSettings.facetViewSettings.resize(model->sh.nbFacet);
