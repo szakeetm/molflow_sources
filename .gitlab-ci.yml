@@ -330,7 +330,10 @@ build-test-macos-arm:
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml"
-    - mv report.xml $PROJPATH"/report.xml"
+    - |
+      if [ -f "report.xml" ]; then
+          mv report.xml "$PROJPATH/report.xml"
+      fi
   after_script:
     - echo "Finished"
   artifacts:
@@ -389,7 +392,10 @@ test-windows:
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - $AllArgs = @("--gtest_filter=\"-*ResultsWrong*:*PerformanceOkay*\"  --gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
-    - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
+    - |
+      if (Test-Path -Path "report.xml") {
+          Move-Item -Path "report.xml" -Destination (($PROJPATH) + "\report.xml")
+      }
   after_script:
     - Write-Host "Finished"
   artifacts:
