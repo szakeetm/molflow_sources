@@ -131,7 +131,7 @@ build-test-windows:
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Init project in:"+($pwd).path
-    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=ON -G Ninja $buildpath\..
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
@@ -181,7 +181,7 @@ build-test-windows:
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
-    - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=ON $buildpath/..
+    - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
