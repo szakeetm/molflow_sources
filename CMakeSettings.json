@@ -23,6 +23,17 @@
       "ctestCommandArgs": ""
     },
     {
+      "name": "x64-Debug-testsuite",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build_${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DUSE_TESTS=ON -DNO_INTERFACE=1",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": ""
+    },
+    {
       "name": "x64-Release",
       "generator": "Ninja",
       "configurationType": "Release",

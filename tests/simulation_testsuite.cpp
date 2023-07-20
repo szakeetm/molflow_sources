@@ -23,7 +23,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
 #include "../src/Simulation/MolflowSimFacet.h"
-//#define MOLFLOW_PATH ""
 
 #include <filesystem>
 #include <fstream>
@@ -44,36 +43,26 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define GIT_COMMIT_HASH "?"
 #endif
 
-// helper class for flexible argument initialization
-class CharPVec {
-public:
-    CharPVec() {};
+//Helper to convert vector<string> to C-style argv array
+char** ConvertToCStyleArgv(const std::vector<std::string>& arguments) {
+    // Create a dynamic array to hold the char* pointers
+    char** argv = new char* [arguments.size()];
 
-    CharPVec(int size) : vec(size, nullptr) {};
+    // Copy each argument string into the dynamic char* array
+    for (size_t i = 0; i < arguments.size(); ++i) {
+        // Allocate memory for each argument string
+        argv[i] = new char[arguments[i].size() + 1];
 
-    CharPVec(const std::vector<std::string> &svec) : vec(svec.size(), nullptr) {
-        cpy(svec);
-    };
-
-    ~CharPVec() { clear(); };
-
-    char **data() { return vec.data(); }
-
-    void cpy(const std::vector<std::string> &svec) {
-        if (vec.size() != svec.size()) vec.resize(svec.size());
-        for (int i = 0; i < vec.size(); ++i) {
-            vec[i] = new char[svec[i].size() + 1];
-            std::snprintf(vec[i], std::size(svec[i])+1, "%s", svec[i].c_str());
-        }
+        // Copy the argument string into the allocated memory
+        std::strcpy(argv[i], arguments[i].c_str());
     }
 
-    void clear() {
-        for (auto &c: vec) delete[] c;
-    }
+    // Append a null pointer at the end of the argv array
+    argv[arguments.size()] = nullptr;
 
-    // member
-    std::vector<char *> vec;
-};
+    return argv;
+}
+
 namespace {
 
     class SimulationFixture : public ::testing::TestWithParam<std::tuple<std::string,size_t>> {
@@ -105,7 +94,6 @@ namespace {
 
     };
 
-
     INSTANTIATE_TEST_SUITE_P(
             Performance,
             SimulationFixture,
@@ -113,7 +101,7 @@ namespace {
                     std::make_tuple("TestCases/B01-lr1000_pipe.zip",20),
                     std::make_tuple("TestCases/B02-lr10_pipe_tex.zip",20),
                     std::make_tuple("TestCases/B03-lr10_pipe_prof.zip",20),
-                    std::make_tuple("TestCases/B04-lr10_pipe_trans.zip"20)
+                    std::make_tuple("TestCases/B04-lr10_pipe_trans.zip",20)
             ));
 
     INSTANTIATE_TEST_SUITE_P(
@@ -121,7 +109,7 @@ namespace {
             ValidationFixture,
             ::testing::Values( //fileName, time per run in seconds
                     std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip",30),
-                    std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip",60),
+                    std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip",10),
                     std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip",60),
                     std::make_tuple("TestCases/03-anglemap_record.zip",30),
                     std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip",30),
@@ -232,10 +220,7 @@ namespace {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
                                                  "--outputPath", outPath};
-
-                CharPVec argc_v(argv);
-                char **args = argc_v.data();
-                Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
                 Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
 
@@ -363,14 +348,13 @@ namespace {
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
+        TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
         //First load reference results
         {
-            Log::console_msg(1, "Loading results for parsing...");
-            std::vector<std::string> argv = { "dummy", "-t", "99999","--file", outPath }; //default init with input file=result
-            CharPVec argc_v(argv);
-            char** args = argc_v.data();
-            if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
+            Log::console_msg(1, "Loading reference results for parsing...\n");
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile }; //default init with input file=result
+            if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
 
@@ -381,7 +365,6 @@ namespace {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                 exit(42);
             }
-            Log::console_msg(1, "done.\n");
         }
 
         //Make copy of reference results
@@ -390,30 +373,34 @@ namespace {
         //Make sure that reference case had hits and that copy was succesful
         EXPECT_NE(0, referenceState.globalStats.globalHits.nbMCHit);
         EXPECT_NE(0, referenceState.globalStats.globalHits.nbDesorbed);
-        EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
-        EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
+
+        Log::console_msg(1, "Reference results loaded and parsed.\n");
 
         //Now run a simulation
         std::string extension; //empty on unix
+        char delimiter = '/';
 #ifdef _WIN32
         extension = ".exe";
+        delimiter='\\';
 #endif // _WIN32
 
         while (nbFailed<maxFail && correctStreak<correctStreakForSuccess) {
-            
-            Log::console_msg(1,"Starting run {}...", runId);
-            std::string command = fmt::format("../molflowCLI{} -f {} -t {} -o {}", extension, testFile, runForTSec, outPath);
+            std::string resetFlag;
+            if (runId == 0) resetFlag = " --reset";
+            std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
+
+            Log::console_msg(1,"Starting run {}...\n", runId+1);
+            std::string command = fmt::format("..{}molflowCLI{} -f {} -t {} -o {}{}", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
             //Log::console_msg(1, command.c_str());
 
             int returnCode = std::system(command.c_str());
             ASSERT_EQ(0, returnCode) << "molflowCLI failed to run.";
 
             //Parse results
-            Log::console_msg(1, "Loading results for parsing...");
-            std::vector<std::string> argv = { "dummy", "-t", "99999","--file", outPath }; //default init with input file=result
-            CharPVec argc_v(argv);
-            char** args = argc_v.data();
-            if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
+            Log::console_msg(1, "Loading results for parsing...\n");
+            
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile }; //default init with input file=result
+            if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
 
@@ -424,11 +411,12 @@ namespace {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                 exit(42);
             }
-            Log::console_msg(1, "done.\n");
 
             //Make sure that results were loaded correctly
             EXPECT_NE(0, globState.globalStats.globalHits.nbDesorbed);
             EXPECT_NE(0, globState.globalStats.globalHits.nbMCHit);
+            std::filesystem::remove(resultFile);
+            Log::console_msg(1, "Run results loaded and parsed.\n");            
 
             //Compare results
             auto [diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(referenceState, globState, 0.009, 0.07);
@@ -478,10 +466,8 @@ namespace {
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
                                          "--file", testFile,
                                          "--outputPath", outPath};
-        CharPVec argc_v(argv);
-        char **args = argc_v.data();
         {
-            if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
+            if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                 exit(41);
             }
             Log::console_msg(1,"Loading parameter catalog...");
@@ -512,7 +498,7 @@ namespace {
                 simManager = std::make_shared<SimulationManager>();
                 model = std::make_shared<MolflowSimulationModel>();
                 simManager->interactiveMode = false;
-                if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
+                if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                     exit(41);
                 }
                 
@@ -639,9 +625,7 @@ namespace {
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
@@ -693,9 +677,7 @@ namespace {
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
@@ -748,9 +730,7 @@ namespace {
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "-o", outFile};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
 
@@ -803,9 +783,7 @@ namespace {
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outFile};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
@@ -861,9 +839,7 @@ namespace {
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outPath + "/" + outFile};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
@@ -920,9 +896,7 @@ namespace {
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "-o", outPathF + "/" + outFile};
         {
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
         FlowIO::WriterXML writer;
@@ -1092,7 +1066,5 @@ namespace {
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
-
-
     return RUN_ALL_TESTS();
 }
