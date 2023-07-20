@@ -510,6 +510,7 @@ namespace {
             if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                 exit(41);
             }
+            TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
             try {
                 Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
             }
