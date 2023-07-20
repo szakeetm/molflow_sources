@@ -373,7 +373,9 @@ namespace {
                     exit(41);
                 }
 
+                Log::console_msg(1, "Loading parameter catalog...");
                 TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+                Log::console_msg(1, "done.\n");
 
                 try {
                     Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -510,7 +512,9 @@ namespace {
             if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                 exit(41);
             }
+            Log::console_msg(1,"Loading parameter catalog...");
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+            Log::console_msg(1,"done.\n");
             try {
                 Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
             }
