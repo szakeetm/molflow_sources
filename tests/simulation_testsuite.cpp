@@ -76,7 +76,7 @@ public:
 };
 namespace {
 
-    class SimulationFixture : public ::testing::TestWithParam<std::string> {
+    class SimulationFixture : public ::testing::TestWithParam<std::tuple<std::string,size_t>> {
     protected:
         SimulationFixture() {
             // You can do set-up work for each test here.
@@ -110,28 +110,28 @@ namespace {
             Performance,
             SimulationFixture,
             ::testing::Values(
-                    "TestCases/B01-lr1000_pipe.zip",
-                    "TestCases/B02-lr10_pipe_tex.zip",
-                    "TestCases/B03-lr10_pipe_prof.zip",
-                    "TestCases/B04-lr10_pipe_trans.zip"
+                    std::make_tuple("TestCases/B01-lr1000_pipe.zip",20),
+                    std::make_tuple("TestCases/B02-lr10_pipe_tex.zip",20),
+                    std::make_tuple("TestCases/B03-lr10_pipe_prof.zip",20),
+                    std::make_tuple("TestCases/B04-lr10_pipe_trans.zip"20)
             ));
 
     INSTANTIATE_TEST_SUITE_P(
             Results,
             ValidationFixture,
-            ::testing::Values(
-                    "TestCases/01-quick_pipe_profiles_textures_2sided.zip",
-                    "TestCases/02-timedependent_with_two_parameters.zip",
-                    "TestCases/02b-timedependent_with_three_parameters.zip",
-                    "TestCases/03-anglemap_record.zip",
-                    "TestCases/03b-anglemap_record_transparent_target.zip",
-                    "TestCases/04-anglemap_desorb.zip",
-                    "TestCases/04b-anglemap_desorb-sticking source.zip",
-                    "TestCases/05-three_structures_nonsquare_textures.zip",
-                    "TestCases/06-dynamic_desorption_from_synrad.zip",
-                    "TestCases/07-volume_decay.zip",
-                    "TestCases/08-wall_sojourn_time.zip",
-                    "TestCases/09-histograms.zip"
+            ::testing::Values( //fileName, time per run in seconds
+                    std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip",30),
+                    std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip",60),
+                    std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip",60),
+                    std::make_tuple("TestCases/03-anglemap_record.zip",30),
+                    std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip",30),
+                    std::make_tuple("TestCases/04-anglemap_desorb.zip",30),
+                    std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip",30),
+                    std::make_tuple("TestCases/05-three_structures_nonsquare_textures.zip",30),
+                    std::make_tuple("TestCases/06-dynamic_desorption_from_synrad.zip",30),
+                    std::make_tuple("TestCases/07-volume_decay.zip",30),
+                    std::make_tuple("TestCases/08-wall_sojourn_time.zip",30),
+                    std::make_tuple("TestCases/09-histograms.zip",30)
             ));
 
     struct Stats {
@@ -192,8 +192,10 @@ namespace {
     };
 
     TEST_P(SimulationFixture, PerformanceOkay) {
-        std::string testFile = GetParam();
-        std::string outPath = "TPath_PO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
+        auto params = GetParam();
+        const std::string testFile = std::get<0>(params);
+        const size_t runForTSec = std::get<1>(params);
+        std::string outPath = "TempPath_PerformanceOkay_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         Log::console_msg(1, "Filename: {}\n", testFile);
         std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
@@ -219,7 +221,6 @@ namespace {
         bool fastEnough = false;
         const size_t nRuns = 5;
         const size_t keepNEntries = 20;
-        const size_t runForTSec = 20;
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             SimulationManager simManager{0};
@@ -345,153 +346,124 @@ namespace {
 
 
     TEST_P(ValidationFixture, ResultsOkay) {
-        std::string testFile = GetParam();
-        std::string outPath = "TPath_RO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
+        auto params = GetParam();
+        const std::string testFile = std::get<0>(params);
+        size_t runForTSec = std::get<1>(params);
+        std::string outPath = "TempPath_ResultsOkay_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         Log::console_msg(1, "Filename: {}\n", testFile);
-        size_t nbFails = 0;
-        size_t nCorrect = 0;
-        bool fastEnough = false;
-        const size_t nRuns = 20;
-        const size_t correctStreak = 3;
-        const size_t keepNEntries = 20;
-        const size_t runForTSec = 30;
-        std::vector<double> perfTimes;
 
-        SimulationManager simManager{0};
+        const size_t maxFail = 2; //Max allowed fails. At every fail, simulation time is doubled.
+        size_t runId = 0;
+        size_t nbFailed = 0;
+        size_t correctStreak = 0;
+        const size_t correctStreakForSuccess = 3; //Pass if this number of runs correct in a row
+
+        SimulationManager simManager{ 0 }; //start master process
         simManager.interactiveMode = false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
+        //First load reference results
         {
-            {
-                std::vector<std::string> argv = {"tester", "--verbosity", "1", "-t", std::to_string(runForTSec),
-                                             "--file", testFile, "--outputPath", outPath};
-                CharPVec argc_v(argv);
-                char **args = argc_v.data();
-                if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
-                    exit(41);
-                }
-
-                Log::console_msg(1, "Loading parameter catalog...");
-                TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-                Log::console_msg(1, "done.\n");
-
-                try {
-                    Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
-                }
-                catch (std::exception& err) {
-                    Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
-                    exit(42);
-                }
+            Log::console_msg(1, "Loading results for parsing...");
+            std::vector<std::string> argv = { "dummy", "-t", "99999","--file", outPath }; //default init with input file=result
+            CharPVec argc_v(argv);
+            char** args = argc_v.data();
+            if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
+                exit(41);
             }
-            {
-                double timeExpect = std::log(model->facets.size());
-                //timeExpect = timeExpect * timeExpect;
-                timeExpect = std::pow(timeExpect, 1.5);
-                if (!model->tdParams.moments.empty())
-                    timeExpect += std::pow(std::log(model->tdParams.moments.size()), 3.0);
 
-                timeExpect += std::max(0.0,
-                                       std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) -
-                                       10.0);
-                timeExpect += std::max(0.0, 1.1 * std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
-                timeExpect *= 4.0;
-                Settings::simDuration = static_cast<uint64_t>(std::min(50.0 + timeExpect, 600.0));
+            try {
+                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
+            catch (std::exception& err) {
+                Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+                exit(42);
+            }
+            Log::console_msg(1, "done.\n");
         }
 
+        //Make copy of reference results
+        GlobalSimuState referenceState = globState;
 
-        GlobalSimuState oldState = globState;
-        globState.Reset();
-        size_t oldHitsNb = oldState.globalStats.globalHits.nbMCHit;
-        size_t oldDesNb = oldState.globalStats.globalHits.nbDesorbed;
-        EXPECT_NE(0, oldDesNb);
-        EXPECT_NE(0, oldHitsNb);
+        //Make sure that reference case had hits and that copy was succesful
+        EXPECT_NE(0, referenceState.globalStats.globalHits.nbMCHit);
+        EXPECT_NE(0, referenceState.globalStats.globalHits.nbDesorbed);
         EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
         EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
 
-        int stepSizeTime = (int) (Settings::simDuration * ((double) (1.0) / nRuns));
-        Settings::simDuration = stepSizeTime;
+        //Now run a simulation
+        std::string extension; //empty on unix
+#ifdef _WIN32
+        extension = ".exe";
+#endif // _WIN32
 
-        // One test run with time, next with desorptions
-        {
-            Initializer::initTimeLimit(model, stepSizeTime);
+        while (nbFailed<maxFail && correctStreak<correctStreakForSuccess) {
+            
+            Log::console_msg(1,"Starting run {}...", runId);
+            std::string command = fmt::format("../molflowCLI{} -f {} -t {} -o {}", extension, testFile, runForTSec, outPath);
+            //Log::console_msg(1, command.c_str());
 
+            int returnCode = std::system(command.c_str());
+            ASSERT_EQ(0, returnCode) << "molflowCLI failed to run.";
 
-            EXPECT_NO_THROW(simManager.StartSimulation());
+            //Parse results
+            Log::console_msg(1, "Loading results for parsing...");
+            std::vector<std::string> argv = { "dummy", "-t", "99999","--file", outPath }; //default init with input file=result
+            CharPVec argc_v(argv);
+            char** args = argc_v.data();
+            if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
+                exit(41);
+            }
 
-            // Stop and copy results
-            simManager.StopSimulation();
+            try {
+                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            }
+            catch (std::exception& err) {
+                Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+                exit(42);
+            }
+            Log::console_msg(1, "done.\n");
 
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
+            //Make sure that results were loaded correctly
+            EXPECT_NE(0, globState.globalStats.globalHits.nbDesorbed);
+            EXPECT_NE(0, globState.globalStats.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
-            size_t runNb = 0;
+            //Compare results
+            auto [diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(referenceState, globState, 0.009, 0.07);
+
             if ((diff_glob != 0 || diff_loc != 0)) {
-                Log::console_msg(1, "[run{}] Diff {} global, {} local, {} fine\n", runNb, diff_glob, diff_loc, diff_fine);
-                nCorrect = 0;
-            } else {
-                nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences)\n", runNb, nCorrect, diff_fine);
+                Log::console_msg(1, "Run {} failed: {} global, {} local, {} fine differences.\n", runId+1, diff_glob, diff_loc, diff_fine);
+                nbFailed++;
+                if (nbFailed < maxFail) {
+                    correctStreak = 0;
+                    runForTSec *= 2; //try running longer
+                    Log::console_msg(1, "Increasing run time to {} seconds.\n", runForTSec);
+                }
             }
+            else {
+                correctStreak++;
+                Log::console_msg(1, "Run {} success: no global, no local, {} fine differences.\n", runId+1, diff_fine);
+            }
+            runId++;
         }
 
-        size_t desPerTimestep = globState.globalStats.globalHits.nbDesorbed;
-        for (size_t runNb = 1; runNb < nRuns; ++runNb) {
-            // Modify argv with new duration
-            /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
-            auto newDur_str = std::to_string((int)(newDur));
-            argv[4] = newDur_str;*/
-
-            Initializer::initTimeLimit(model, stepSizeTime * 3);
-            size_t newDesLimit = globState.globalStats.globalHits.nbDesorbed + desPerTimestep;
-            Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(newDesLimit);
-            Initializer::initDesLimit(model, globState);
-
-            EXPECT_NO_THROW(simManager.StartSimulation());
-
-            // Stop and copy results
-            simManager.StopSimulation();
-
-            EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
-            EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
-
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
-            if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
-                Log::console_msg(1, "[run{}] Diff {} global, {} local, {} fine\n", runNb, diff_glob, diff_loc, diff_fine);
-                nCorrect = 0;
-                continue; // try with more desorptions
-            } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1) {
-                nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences)\n", runNb, nCorrect, diff_fine);
-
-                continue; // try with more desorptions
-            } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak) {
-                nCorrect++;
-                Log::console_msg(1, "[run{}] Correct run #{} (no global, no local, {} fine differences) - Done.\n", runNb, nCorrect, diff_fine);
-            }
-
-            EXPECT_EQ(0, diff_glob);
-            EXPECT_EQ(0, diff_loc);
-
-            if (diff_glob > 0)
-                fmt::print(stderr, "[Warning] {} global differences found\n", diff_glob);
-            if (diff_loc > 0)
-                fmt::print(stderr, "[Warning] {} local differences found\n", diff_loc);
-            if (diff_fine > 0)
-                fmt::print(stderr, "[Warning] {} differences of fine counters found\n", diff_fine);
-            break;
+        //Test case pass or fail
+        if (nbFailed > maxFail) {
+            Log::console_msg(1, "This test case failed as there were {} failed runs.", maxFail);
         }
+        else {
+            Log::console_msg(1, "Test case passed as there were {} successful runs in a row.", correctStreakForSuccess);
+        }
+        EXPECT_LT(nbFailed, maxFail);
 
         simManager.KillAllSimUnits();
         simManager.ResetSimulations();
     }
 
     TEST_P(ValidationFixture, ResultsWrong) {
-        std::string testFile = GetParam();
+        std::string testFile = std::get<0>(GetParam());
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         Log::console_msg(1, "Filename: {}\n", testFile);
         size_t nbSuccess = 0;
@@ -993,7 +965,7 @@ namespace {
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
-    TEST(ParameterParsing, SweepFile) {
+    TEST(ParameterParsing, ParameterChangeFile) {
 
         // generate hash name for tmp working file
         std::string paramFile = std::to_string(std::hash<time_t>()(time(nullptr))) + ".cfg";
@@ -1038,7 +1010,7 @@ namespace {
         std::filesystem::remove(paramFile);
     }
 
-    TEST(ParameterParsing, SweepVec) {
+    TEST(ParameterParsing, ParameterChangeList) {
 
         // generate hash name for tmp working file
         std::vector<std::string> params;
