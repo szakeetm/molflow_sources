@@ -58,7 +58,7 @@ char** ConvertToCStyleArgv(const std::vector<std::string>& arguments) {
     }
 
     // Append a null pointer at the end of the argv array
-    argv[arguments.size()] = nullptr;
+    //argv[arguments.size()] = nullptr;
 
     return argv;
 }
