@@ -108,18 +108,18 @@ namespace {
             Results,
             ValidationFixture,
             ::testing::Values( //fileName, time per run in seconds
-                    std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip",30),
-                    std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip",10),
-                    std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip",60),
-                    std::make_tuple("TestCases/03-anglemap_record.zip",30),
-                    std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip",30),
-                    std::make_tuple("TestCases/04-anglemap_desorb.zip",30),
-                    std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip",30),
-                    std::make_tuple("TestCases/05-three_structures_nonsquare_textures.zip",30),
-                    std::make_tuple("TestCases/06-dynamic_desorption_from_synrad.zip",30),
-                    std::make_tuple("TestCases/07-volume_decay.zip",30),
-                    std::make_tuple("TestCases/08-wall_sojourn_time.zip",30),
-                    std::make_tuple("TestCases/09-histograms.zip",30)
+                    std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip",20),
+                    std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip",30),
+                    std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip",30),
+                    std::make_tuple("TestCases/03-anglemap_record.zip",20),
+                    std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip",20),
+                    std::make_tuple("TestCases/04-anglemap_desorb.zip",20),
+                    std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip",20),
+                    std::make_tuple("TestCases/05-three_structures_nonsquare_textures.zip",20),
+                    std::make_tuple("TestCases/06-dynamic_desorption_from_synrad.zip",20),
+                    std::make_tuple("TestCases/07-volume_decay.zip",20),
+                    std::make_tuple("TestCases/08-wall_sojourn_time.zip",20),
+                    std::make_tuple("TestCases/09-histograms.zip",20)
             ));
 
     struct Stats {
