@@ -329,7 +329,7 @@ build-test-macos-arm:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
-    - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml"
+    - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml" --gtest_fail_fast
     - |
       if [ -f "report.xml" ]; then
           mv report.xml "$PROJPATH/report.xml"
@@ -390,7 +390,7 @@ test-windows:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
-    - $AllArgs = @("--gtest_filter=\"-*ResultsWrong*:*PerformanceOkay*\"  --gtest_output='xml:report.xml'")
+    - $AllArgs = @("--gtest_filter=\"-*ResultsWrong*:*PerformanceOkay*\"  --gtest_output='xml:report.xml' --gtest_fail_fast")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - |
       if (Test-Path -Path "report.xml") {
@@ -420,7 +420,7 @@ test-windows:
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || cp ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
-    - ./testsuite --gtest_filter="*PerformanceOkay*" --gtest_output="xml:benchmark.xml"
+    - ./testsuite --gtest_filter="*PerformanceOkay*" --gtest_output="xml:benchmark.xml" --gtest_fail_fast
     - ls .
     - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/' || true
     - mv benchmark.xml $PROJPATH"/benchmark.xml"
@@ -480,7 +480,7 @@ benchmark-windows:
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
-    - $AllArgs = @("--gtest_filter=\"*PerformanceOkay*\" --gtest_output=xml:benchmark.xml")
+    - $AllArgs = @("--gtest_filter=\"*PerformanceOkay*\" --gtest_output=xml:benchmark.xml --gtest_fail_fast")
     - cmd.exe /c "start /b /wait /high testsuite.exe $AllArgs"
     - Move-Item -Path benchmark.xml -Destination (($PROJPATH) + "\benchmark.xml")
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
