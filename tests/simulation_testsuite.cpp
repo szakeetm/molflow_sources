@@ -343,15 +343,17 @@ namespace {
         size_t correctStreak = 0;
         const size_t correctStreakForSuccess = 3; //Pass if this number of runs correct in a row
 
-        SimulationManager simManager{ 0 }; //start master process
-        simManager.interactiveMode = false;
-        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-        GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
-        TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+        GlobalSimuState referenceState;
 
         //First load reference results
         {
+            SimulationManager simManager{ 0 }; //start master process
+            simManager.interactiveMode = false;
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+            GlobalSimuState globState{};
+            UserSettings persistentUserSettings;
+            TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+
             Log::console_msg(1, "Loading reference results for parsing...\n");
             std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile }; //default init with input file=result
             if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
@@ -365,16 +367,16 @@ namespace {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
                 exit(42);
             }
+            
+            //Make copy of reference results
+            referenceState = globState;
+
+            //Make sure that reference case had hits and that copy was succesful
+            EXPECT_NE(0, referenceState.globalStats.globalHits.nbMCHit);
+            EXPECT_NE(0, referenceState.globalStats.globalHits.nbDesorbed);
+
+            Log::console_msg(1, "Reference results loaded and parsed.\n");
         }
-
-        //Make copy of reference results
-        GlobalSimuState referenceState = globState;
-
-        //Make sure that reference case had hits and that copy was succesful
-        EXPECT_NE(0, referenceState.globalStats.globalHits.nbMCHit);
-        EXPECT_NE(0, referenceState.globalStats.globalHits.nbDesorbed);
-
-        Log::console_msg(1, "Reference results loaded and parsed.\n");
 
         //Now run a simulation
         std::string extension; //empty on unix
@@ -397,6 +399,14 @@ namespace {
             ASSERT_EQ(0, returnCode) << "molflowCLI failed to run.";
 
             //Parse results
+
+            SimulationManager simManager{ 0 }; //start master process
+            simManager.interactiveMode = false;
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+            GlobalSimuState globState{};
+            UserSettings persistentUserSettings;
+            TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+
             Log::console_msg(1, "Loading results for parsing...\n");
             
             std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile }; //default init with input file=result
@@ -445,9 +455,6 @@ namespace {
             Log::console_msg(1, "Test case passed as there were {} successful runs in a row.", correctStreakForSuccess);
         }
         EXPECT_LT(nbFailed, maxFail);
-
-        simManager.KillAllSimUnits();
-        simManager.ResetSimulations();
     }
 
     TEST_P(ValidationFixture, ResultsWrong) {
