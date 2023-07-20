@@ -71,7 +71,7 @@ endif()
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_1}/FlowCLI.cpp
+        ${CPP_DIR_1}/molflowCLI.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
