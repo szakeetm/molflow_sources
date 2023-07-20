@@ -131,7 +131,6 @@ int main(int argc, char** argv) {
 
     // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
-    simManager.interactiveMode = true;
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState globState{};
     UserSettings persistentUserSettings; //persistent user data that should be rewritten when saving
