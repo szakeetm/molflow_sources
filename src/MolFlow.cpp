@@ -138,8 +138,9 @@ Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
                      atan(), exp(), ln(), pow(x,y), log2(), log10(), sqrt(), abs()
 
 Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
+Previous formula values: by index (ex. Formula3) or name (ex. "Trans.prob.")
 )";
-int formulaSyntaxHeight = 500;
+int formulaSyntaxHeight = 525;
 
 MolFlow* mApp;
 
