@@ -392,7 +392,7 @@ namespace {
             std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 
             Log::console_msg(1,"Starting run {}...\n", runId+1);
-            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}{}\"", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
+            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{}", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
             //Log::console_msg(1, command.c_str());
 
             int returnCode = std::system(command.c_str());
