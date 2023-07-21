@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.9.13 beta (2023-07-21)
+
+### Feature
+
+- Support binary STL files (single body, load only)
+- Formulas can refer to formulas defined above
+- Progress printed for file saving (GUI and CLI)
+- Google Analytics replaced with Matomo (GDPR)
+- CLI: --notInteractive flag to suppress percentage update (log files)
+
+### Bugfix
+
+- Include missing vcomp140.dll for OpenMP parallelization on Windows
+- Fixed incorrect filename check saying xml not supported
+
 ## v2.9.12 beta (2023-06-01)
 
 ### Bugfix
