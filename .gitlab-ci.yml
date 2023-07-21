@@ -299,8 +299,6 @@ build-test-fedora:
 
 build-test-macos:
   extends: .build-test-unix
-  needs:
-    - job: build-macos
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -310,8 +308,6 @@ build-test-macos:
 
 build-test-macos-arm:
   extends: .build-test-unix
-  needs:
-    - job: build-macos-arm
   variables:
     OS_NAME: "mac_arm"
     OS_FULL_NAME: "mac_arm"
