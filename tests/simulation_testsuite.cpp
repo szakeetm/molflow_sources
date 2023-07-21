@@ -349,14 +349,13 @@ namespace {
         //First load reference results
         {
             SimulationManager simManager{ 0 }; //start master process
-            simManager.interactiveMode = false;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--interactive","false" }; //default init with input file=result
             if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -393,7 +392,7 @@ namespace {
             std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 
             Log::console_msg(1,"Starting run {}...\n", runId+1);
-            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{}", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
+            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --interactive false", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
             //Log::console_msg(1, command.c_str());
 
             int returnCode = std::system(command.c_str());
@@ -402,7 +401,6 @@ namespace {
             //Parse results
 
             SimulationManager simManager{ 0 }; //start master process
-            simManager.interactiveMode = false;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
@@ -410,7 +408,7 @@ namespace {
 
             Log::console_msg(1, "Loading results for parsing...\n");
             
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--interactive","false" }; //default init with input file=result
             if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -466,12 +464,11 @@ namespace {
         const size_t nRuns = 15;
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
-        simManager->interactiveMode = false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
-        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
+        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--interactive","false",
                                          "--file", testFile,
                                          "--outputPath", outPath};
         {
@@ -505,7 +502,6 @@ namespace {
                 // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
                 model = std::make_shared<MolflowSimulationModel>();
-                simManager->interactiveMode = false;
                 if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                     exit(41);
                 }
