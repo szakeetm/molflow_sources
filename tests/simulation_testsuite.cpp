@@ -448,10 +448,10 @@ namespace {
 
         //Test case pass or fail
         if (nbFailed > maxFail) {
-            Log::console_msg(1, "This test case failed as there were {} failed runs.", maxFail);
+            Log::console_msg(1, "This test case failed as there were {} failed runs.\n", maxFail);
         }
         else {
-            Log::console_msg(1, "Test case passed as there were {} successful runs in a row.", correctStreakForSuccess);
+            Log::console_msg(1, "Test case passed as there were {} successful runs in a row.\n", correctStreakForSuccess);
         }
         EXPECT_LT(nbFailed, maxFail);
     }
