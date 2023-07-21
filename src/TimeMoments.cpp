@@ -21,7 +21,7 @@ std::optional<std::pair<int,int>> TimeMoments::HasIntervalOverlap(const std::vec
     // Overlap when parsedMoment is empty
     for(auto vec = moments.begin(); vec != moments.end(); ++vec) {
         if (vec->empty())
-            return { { vec - moments.begin(),-1 } };
+            return { { static_cast<int>(vec - moments.begin()),-1 } };
     }
 
     //Convert moments to intervals
@@ -42,7 +42,7 @@ std::optional<std::pair<int,int>> TimeMoments::HasIntervalOverlap(const std::vec
         for(auto vecInner = vecOuter + 1; vecInner != intervals.end(); vecInner++){
             if (vecOuter->startTime + DBL_EPSILON < vecInner->endTime &&
                 vecInner->startTime + DBL_EPSILON <= vecOuter->endTime) {
-                return { { vecOuter - intervals.begin(),vecInner - intervals.begin() } }; // overlap
+                return { { static_cast<int>(vecOuter - intervals.begin()),static_cast<int>(vecInner - intervals.begin()) } }; // overlap
             }
         }
     }

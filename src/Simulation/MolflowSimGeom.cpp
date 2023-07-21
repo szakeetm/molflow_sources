@@ -78,7 +78,7 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(const std::exception &e) {
+    catch(const std::exception &) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -532,7 +532,7 @@ void GlobalSimuState::Reset() {
  * @param locThreshold threshold for relative difference on facet local counters
  * @return a tuple containing the number of global, local (facet), and fine (facet profile/texture) errors
  */
-std::tuple<int, int, int>
+std::tuple<size_t, size_t, size_t>
 GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
                          double locThreshold) {
 

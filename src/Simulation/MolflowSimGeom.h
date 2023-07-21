@@ -279,7 +279,7 @@ public:
 
     void Reset();
 
-    static std::tuple<int, int, int>
+    static std::tuple<size_t, size_t, size_t>
     Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
             double locThreshold);
 
