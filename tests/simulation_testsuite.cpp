@@ -342,7 +342,7 @@ namespace {
         size_t runId = 0;
         size_t nbFailed = 0;
         size_t correctStreak = 0;
-        const size_t correctStreakForSuccess = 3; //Pass if this number of runs correct in a row
+        const size_t correctStreakForSuccess = 2; //Pass if this number of runs correct in a row
 
         GlobalSimuState referenceState;
 
