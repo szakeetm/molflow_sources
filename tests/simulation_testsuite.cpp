@@ -355,7 +355,7 @@ namespace {
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--interactive","false" }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--notInteractive" }; //default init with input file=result
             if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -392,7 +392,7 @@ namespace {
             std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 
             Log::console_msg(1,"Starting run {}...\n", runId+1);
-            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --interactive false", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
+            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --notInteractive", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
             //Log::console_msg(1, command.c_str());
 
             int returnCode = std::system(command.c_str());
@@ -408,7 +408,7 @@ namespace {
 
             Log::console_msg(1, "Loading results for parsing...\n");
             
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--interactive","false" }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--notInteractive" }; //default init with input file=result
             if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -468,7 +468,7 @@ namespace {
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
-        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--interactive","false",
+        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--notInteractive",
                                          "--file", testFile,
                                          "--outputPath", outPath};
         {

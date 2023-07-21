@@ -38,7 +38,7 @@ namespace Settings {
     bool resetOnStart = false;
     std::string paramFile;
     std::vector<std::string> paramChanges;
-    bool interactive = true;  //If false, doesn't print percentage updates for CLI progressbars
+    bool notInteractive = false;  //If true, doesn't print percentage updates for CLI progressbars
 }
 
 void initDefaultSettings() {
@@ -117,7 +117,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("--setParams", Settings::paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
-    app.add_option("--interactive", Settings::interactive, "If false, progress message percentages aren't printed");
+    app.add_flag("--notInteractive", Settings::notInteractive, "Log file mode: No percentages printed of progress");
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
@@ -169,7 +169,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
-    simManager->interactiveMode = Settings::interactive;
+    simManager->interactiveMode = !Settings::notInteractive;
 
     if (simManager->InitSimulations()) {
         Log::console_error("Error: Initializing simulation units: {}\n", simManager->nbThreads);
