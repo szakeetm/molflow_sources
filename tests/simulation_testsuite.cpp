@@ -220,7 +220,7 @@ namespace {
             {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
-                                                 "--outputPath", outPath};
+                                                 "--outputPath", outPath, "--notInteractive" };
                 Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
                 Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
@@ -470,7 +470,7 @@ namespace {
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--notInteractive",
                                          "--file", testFile,
-                                         "--outputPath", outPath};
+                                         "--outputPath", outPath, "--notInteractive" };
         {
             if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                 exit(41);
@@ -627,7 +627,7 @@ namespace {
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--notInteractive"};
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -682,7 +682,7 @@ namespace {
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath};
+                                         "--outputPath", outPath, "--notInteractive" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -738,7 +738,7 @@ namespace {
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath, "-o", outFile};
+                                         "--outputPath", outPath, "-o", outFile, "--notInteractive" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -794,7 +794,7 @@ namespace {
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "-o", outFile};
+                                         "-o", outFile, "--notInteractive" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -852,7 +852,7 @@ namespace {
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "-o", outPath + "/" + outFile};
+                                         "-o", outPath + "/" + outFile, "--notInteractive" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -911,7 +911,7 @@ namespace {
         std::string outPathF = "TFPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath, "-o", outPathF + "/" + outFile};
+                                         "--outputPath", outPath, "-o", outPathF + "/" + outFile, "--notInteractive" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
