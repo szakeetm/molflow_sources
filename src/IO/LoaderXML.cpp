@@ -352,7 +352,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             } //end global node
 
-            prg.SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
+            //prg.SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
             bool hasHistogram =
                     model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
