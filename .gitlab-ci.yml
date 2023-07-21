@@ -383,7 +383,7 @@ test-windows:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
-    - $AllArgs = @("--gtest_filter=\"-*ResultsWrong*:*PerformanceOkay*\"  --gtest_output='xml:report.xml' --gtest_fail_fast")
+    - $AllArgs = @("--gtest_filter=`-*ResultsWrong*:*PerformanceOkay*`  --gtest_output='xml:report.xml' --gtest_fail_fast")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path "report.xml" -Destination (($PROJPATH) + "\report.xml")
   after_script:
@@ -470,7 +470,7 @@ benchmark-windows:
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
-    - $AllArgs = @("--gtest_filter=\"*PerformanceOkay*\" --gtest_output=xml:benchmark.xml --gtest_fail_fast")
+    - $AllArgs = @("--gtest_filter=`*PerformanceOkay*` --gtest_output=xml:benchmark.xml --gtest_fail_fast")
     - cmd.exe /c "start /b /wait /high testsuite.exe $AllArgs"
     - Move-Item -Path benchmark.xml -Destination (($PROJPATH) + "\benchmark.xml")
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
