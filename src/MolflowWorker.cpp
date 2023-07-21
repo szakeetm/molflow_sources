@@ -255,11 +255,13 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						writer.userSettings.parameters = this->interfaceParameterCache;
 						writer.userSettings.selections = mApp->selections;
 
-						if (saveSelected)
-							writer.SaveGeometry(saveDoc, mf_model, GetGeometry()->GetSelectedFacets());
-						else
-							writer.SaveGeometry(saveDoc, mf_model);
-						FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
+						if (saveSelected) {
+							writer.SaveGeometry(saveDoc, mf_model, prg, GetGeometry()->GetSelectedFacets());
+						}
+						else {
+							writer.SaveGeometry(saveDoc, mf_model, prg);
+						}
+						FlowIO::WriterInterfaceXML::WriteInterfaceSettings(saveDoc, mApp, saveSelected);
 
 						xml_document geom_only;
 						geom_only.reset(saveDoc);
@@ -267,7 +269,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						if (!crashSave && !saveSelected) {
 							try {
 								//success = geom->SaveXML_simustate(saveDoc, this, globalState, prg, saveSelected);
-								success = writer.SaveSimulationState(saveDoc, mf_model, globalState);
+								success = writer.SaveSimulationState(saveDoc, mf_model, prg, globalState);
 							}
 							catch (const std::exception& e) {
 								GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -797,7 +799,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				geom->InitInterfaceFacets(model->facets, this);
 
 				// Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
-				FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
+				FlowIO::LoaderInterfaceXML::LoadInterfaceSettings(interfNode, mApp);
 
 				if (loader.userSettings.facetViewSettings.size() == geom->GetNbFacet()) {
 					for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {

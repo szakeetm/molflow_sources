@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
 #include "../src/Simulation/MolflowSimFacet.h"
+#include "Helper/GLProgress_CLI.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -645,8 +646,11 @@ namespace {
         EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
@@ -697,8 +701,11 @@ namespace {
         EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
@@ -751,8 +758,11 @@ namespace {
         EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
         EXPECT_TRUE(SettingsIO::outputFile == outFile);
@@ -802,9 +812,11 @@ namespace {
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
-        newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile == outFile);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
@@ -860,9 +872,11 @@ namespace {
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath.empty());
-        newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
@@ -919,8 +933,11 @@ namespace {
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
         EXPECT_TRUE(SettingsIO::workPath == outPath);
         newDoc.load_file(fullFileName.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullFileName, model, globState);
+        GLProgress_CLI prg("Saving file...");
+        prg.interactiveMode = simManager.interactiveMode;
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);

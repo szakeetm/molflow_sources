@@ -195,7 +195,7 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr, userSettings);
+        CLILoadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr, userSettings, simManager->interactiveMode);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
@@ -306,13 +306,14 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 }
 
 /**
-* \brief Wrapper for XML loading with LoaderXML
+* \brief Wrapper for CLI's initFromFile for XML loading with LoaderXML
  */
-void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
-                             GlobalSimuState *globStatePtr, UserSettings& userSettings) {
+void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
+                             GlobalSimuState *globStatePtr, UserSettings& userSettings, bool interactiveMode) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
-    GLProgress_CLI prg(fmt::format("Loading geometry from file {}\n", fileName));
+    GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
+    prg.interactiveMode = interactiveMode; //Suppress percentages if ran in script
 
     //1. Load Input File (regular XML)
     {
@@ -325,31 +326,31 @@ void Initializer::loadFromXML(const std::string &fileName, bool loadState, std::
         userSettings = loader.userSettings; //persistent for saving
     }
 
-    Log::console_msg_master(3, "Loaded geometry ({} bytes)\n", model->size());
+    prg.SetMessage(fmt::format("Loaded geometry ({} bytes)", model->size()));
 
     //InitializeGeometry();
     model->InitializeFacets();
 
-    Log::console_msg_master(3, "Initializing geometry...\n");
+    prg.SetMessage("Initializing geometry...",true);
     initSimModel(model);
     model->PrepareToRun();
 
     // 2. Create simulation dataports
     try {
 
-        Log::console_msg_master(3, "Resizing global state counters...\n");
+        prg.SetMessage("Resizing global state counters...");
         globStatePtr->Resize(model);
 
         // 3. init counters with previous results
-        if (loadState) {
-            Log::console_msg_master(3, "Loading simulation state...\n");
+        if (loadSimulationState) {
+            prg.SetMessage("Loading simulation state...");
             if (Settings::loadAutosave) {
                 std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 autosaveFileName = autoSavePrefix + autosaveFileName;
                 
                 if (std::filesystem::exists(autosaveFileName)) {
-                    Log::console_msg_master(2, "Found autosave file {}, loading simulation state...\n");
+                    prg.SetMessage(fmt::format("Found autosave file {}, loading simulation state...\n",autosaveFileName),true);
                     FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globStatePtr, prg);
                 }
             } else {

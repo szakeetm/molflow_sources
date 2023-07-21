@@ -41,6 +41,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/ConsoleLogger.h>
 #include <ZipLib/ZipFile.h>
 #include "versionId.h"
+#include "Helper/GLProgress_CLI.hpp"
 
 //#if defined(MOLFLOW)
 #include <SettingsIO.h>
@@ -183,9 +184,6 @@ int main(int argc, char** argv) {
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
 
-
-    //simManager.ReloadHitBuffer();
-    //simManager.IncreasePriority();
     if(Settings::simDuration > 0)
         Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalStats.globalHits.nbDesorbed);
     else if(model->otfParams.desorptionLimit > 0)
@@ -237,10 +235,11 @@ int main(int argc, char** argv) {
                         .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
 
                 try {
+                    GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
+                    prg.interactiveMode = simManager.interactiveMode;
                     // 2. Write XML file, use existing file as base or create new file
                     FlowIO::WriterXML writer;
                     writer.userSettings = persistentUserSettings; //keep from loaded file
-                    Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile);
                     if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
                         try {
                             std::filesystem::copy_file(SettingsIO::workFile, outFile,
@@ -251,13 +250,11 @@ int main(int argc, char** argv) {
                     }
                     else {
                         pugi::xml_document newDoc;
-                        writer.SaveGeometry(newDoc, model);
-                        //writer.SaveSimulationState(newDoc, model, globStatePtr);
-                        writer.SaveXMLToFile(newDoc, outFile);
-                        //SettingsIO::workFile = outFile;
+                        writer.SaveGeometry(newDoc, model, prg);
+                        writer.WriteXMLToFile(newDoc, outFile);
                     }
                     // 3. append updated results
-                    writer.SaveSimulationState(outFile, model, globState);
+                    writer.AppendSimulationStateToFile(outFile, model, prg, globState);
                 } catch(std::filesystem::filesystem_error& e) {
                     Log::console_error("Warning: Could not create file: {}\n", e.what());
                 }
@@ -281,9 +278,10 @@ int main(int argc, char** argv) {
         }
         else if(Settings::autoSaveDuration && (uint64_t)(elapsedTime)%Settings::autoSaveDuration==0){ // autosave every x seconds
             // Autosave
-            Log::console_msg_master(2,"[{:.2}s] Creating auto save file {}\n", elapsedTime, autoSave);
+            GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
+            prg.interactiveMode = simManager.interactiveMode;
             FlowIO::WriterXML writer;
-            writer.SaveSimulationState(autoSave, model, globState);
+            writer.AppendSimulationStateToFile(autoSave, model, prg, globState);
         }
 
         if(Settings::outputDuration && (uint64_t)(elapsedTime)%Settings::outputDuration==0){ // autosave every x seconds
@@ -378,18 +376,18 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
+        prg.interactiveMode = simManager.interactiveMode;
         FlowIO::WriterXML writer(false, true);
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        Log::console_msg_master(2, "Writing file {} ...\n", fullOutFile);
-
         newDoc.load_file(fullOutFile.c_str());
-        writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(newDoc, model, globState);
-        writer.SaveXMLToFile(newDoc, fullOutFile);
+        writer.SaveGeometry(newDoc, model, prg);
+        writer.SaveSimulationState(newDoc, model, prg, globState);
+        writer.WriteXMLToFile(newDoc, fullOutFile);
 
         if(createZip){
-            Log::console_msg_master(2, "Compressing xml to zip...\n");
+            prg.SetMessage("Compressing xml to zip...");
 
             //Zipper library
             std::string fileNameWithZIP = std::filesystem::path(fullOutFile).replace_extension(".zip").string();
@@ -410,7 +408,7 @@ int main(int argc, char** argv) {
 
             //At this point, if no error was thrown, the compression is successful
             try {
-                Log::console_msg_master(2, "Successfully compressed to {}, removing {} ...\n", fileNameWithZIP, fullOutFile);
+                prg.SetMessage(fmt::format("Successfully compressed to {}, removing {} ...", fileNameWithZIP, fullOutFile));
                 std::filesystem::remove(fullOutFile);
             }
             catch (std::exception &e) {

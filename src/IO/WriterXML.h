@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <PugiXML/pugixml.hpp>
 #include "PugiXML/pugixml.hpp"
+#include <Helper/GLProgress_abstract.hpp>
 
 #include <string>
 #include "Simulation/MolflowSimGeom.h"
@@ -46,25 +47,18 @@ namespace FlowIO {
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
         pugi::xml_node GetRootNode(pugi::xml_document &saveDoc);
 
-        bool SaveXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName);
+        bool WriteXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName);
         void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
-                          const std::vector<size_t> &selection = std::vector<size_t>{});
+            GLProgress_Abstract& prg, const std::vector<size_t> &selection = std::vector<size_t>{});
 
-        bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState);
-
-        bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState);
+        bool AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);
+        bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);
 
         void
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
         UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
-        size_t writeProgress{ 0 };
 
-        void reportWriteStatus(const std::string &slaveStatus) const;
-        void reportNewWriteStatus(const std::string &slaveStatus, double newProgress);
-        void finishWriteStatus(const std::string &slaveStatus);
-        void setWriteProgress(const double newProgress);
-        void setWriteProgress(const size_t newProgress);
     };
 }
 

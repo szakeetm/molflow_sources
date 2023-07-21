@@ -41,8 +41,8 @@ namespace Settings {
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static void loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<MolflowSimulationModel> model,
-                           GlobalSimuState *globState, UserSettings& userSettings);
+    static void CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
+                           GlobalSimuState *globState, UserSettings& userSettings, bool interactiveMode);
     static int initSimModel(std::shared_ptr<MolflowSimulationModel> model);
 public:
     static std::string getAutosaveFile();

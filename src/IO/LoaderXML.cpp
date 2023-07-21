@@ -709,7 +709,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
             m++;
         } //end moment
 
-        prg.SetMessage("File load complete.\n",false);
+        prg.SetMessage("Simulation state load complete.");
     }
     catch (const std::exception &e) {
         Log::console_error("[LoaderXML] {}", e.what());

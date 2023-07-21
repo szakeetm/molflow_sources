@@ -32,31 +32,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace FlowIO;
 using namespace pugi;
 
-void WriterXML::setWriteProgress(const double newProgress) {
-    setWriteProgress((size_t)newProgress);
-}
-
-void WriterXML::setWriteProgress(const size_t newProgress) {
-    writeProgress = newProgress;
-}
-
-void WriterXML::reportWriteStatus(const std::string &slaveStatus) const {
-    Log::console_msg(2, "[{}] {} [{}%]", Util::getTimepointString(), slaveStatus, writeProgress);
-}
-
-void WriterXML::reportNewWriteStatus(const std::string &slaveStatus, double newProgress) {
-    size_t p = (size_t)(newProgress * 100.0 + 0.5);
-    if (writeProgress != p) {
-        setWriteProgress(p);
-        Log::console_msg(2, "\r[{}] {} [{}%]", Util::getTimepointString(), slaveStatus, writeProgress);
-    }
-}
-
-void WriterXML::finishWriteStatus(const std::string &slaveStatus) {
-    setWriteProgress((size_t)100);
-    Log::console_msg(2, "\r[{}] {} [{}%]\n", Util::getTimepointString(), slaveStatus, writeProgress);
-}
-
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     // Check whether we do a old to new format update
     // If yes, move old scheme to new scheme by adding the root node
@@ -106,12 +81,12 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
 }
 
 void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
-                             const std::vector<size_t> &selection) {
+            GLProgress_Abstract& prg, const std::vector<size_t> &selection) {
     xml_node rootNode = GetRootNode(saveDoc);
 
     if(update)
         rootNode.remove_child("Geometry");
-    reportWriteStatus("Saving vertices...");
+    prg.SetMessage("Saving vertices...");
     xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
@@ -123,39 +98,23 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         v.append_attribute("y") = model->vertices3[i].y;
         v.append_attribute("z") = model->vertices3[i].z;
     }
-    finishWriteStatus("Saving vertices...");
-
-    reportWriteStatus("Writing facets...");
+    prg.SetMessage("Writing facets...", false);
+    
     geomNode.append_child("Facets");
     
-    if (selection.empty()) {
-        geomNode.child("Facets").append_attribute("nb") = model->facets.size();
-        for (size_t i = 0; i < model->facets.size(); i++) {
-            //prg.SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
-            //if (!saveSelected || model->facets[i]->selected) {
-            reportNewWriteStatus("Writing facets...", (double)i / (double)model->facets.size());
-            xml_node f = geomNode.child("Facets").append_child("Facet");
-            f.append_attribute("id") = i;
-            SaveFacet(f, (MolflowSimFacet*) model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
-            //}
-        }
+    //Save every facet or only those of the selection
+    size_t nbF = selection.empty() ? model->facets.size() : selection.size();
+    geomNode.child("Facets").append_attribute("nb") = nbF;
+    for (size_t i = 0; i < nbF; i++) {
+        prg.SetProgress((double)i / (double)nbF);
+        xml_node f = geomNode.child("Facets").append_child("Facet");
+        f.append_attribute("id") = i;
+        size_t facetId = selection.empty() ? i : selection[i];
+        SaveFacet(f, (MolflowSimFacet*) model->facets[facetId].get(), model->vertices3.size());
     }
-    else
-    {
-        geomNode.child("Facets").append_attribute("nb") =selection.size();
-        for (size_t i = 0; i < selection.size();i++) {
-            //prg.SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
-            //if (!saveSelected || model->facets[i]->selected) {
-            reportNewWriteStatus("Writing facets...", (double)i / (double)selection.size());
-            xml_node f = geomNode.child("Facets").append_child("Facet");
-            f.append_attribute("id") = i; //Different from global facet id
-            SaveFacet(f, (MolflowSimFacet*) model->facets[selection[i]].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
-            //}
-        }
-    }
-    finishWriteStatus("Writing facets...");
+    
 
-    reportWriteStatus("Writing structures...");
+    prg.SetMessage("Writing structures...");
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
 
     if (model->structures.size() == model->sh.nbSuper) {
@@ -165,10 +124,9 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
             s.append_attribute("name") = model->structures[i].name.c_str();
         }
     }
-    finishWriteStatus("Writing structures...");
 
     // Simulation Settings
-    reportWriteStatus("Writing simulation parameters...");
+    prg.SetMessage("Writing simulation parameters...");
     if(update)
         rootNode.remove_child("MolflowSimuSettings");
     xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
@@ -260,14 +218,13 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
     }
 #endif
-    finishWriteStatus("Writing simulation parameters...");
 }
 
 // Save XML document to file
 bool
-WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
     if (!saveDoc.save_file(outputFileName.c_str())) {
-        std::cerr << "Error writing XML file." << std::endl; //successful save
+        std::cerr << "Error writing XML file." << std::endl;
         return false;
     }
     return true;
@@ -275,11 +232,11 @@ WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileNam
 
 // Directly append to file (load + save)
 bool
-WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
+WriterXML::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
-    SaveSimulationState(saveDoc, model, globState);
+    SaveSimulationState(saveDoc, model, prg, globState);
 
     if (!saveDoc.save_file(outputFileName.c_str())) {
         std::cerr << "Error writing XML file." << std::endl; //successful save
@@ -289,7 +246,7 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_pt
 }
 
 // Append to open XML node
-bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
+bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
 
     auto lock = GetHitLock(&globState, 10000);
     if (!lock) return false;
@@ -302,9 +259,9 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
     //size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
-    reportWriteStatus("Writing simulation results...");
+    prg.SetMessage("Writing simulation results...");
     for (size_t m = 0; m <= model->tdParams.moments.size(); m++) {
-        reportNewWriteStatus("Writing simulation results...", 0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
+        prg.SetProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         xml_node newMoment = momentsNode.append_child("Moment");
         newMoment.append_attribute("id") = m;
         if (m == 0) {
@@ -612,8 +569,6 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
     minMaxNode.child("Moments_only").child("Density").append_attribute("max") = 0.0;
     minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
     minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
-
-    finishWriteStatus("Writing simulation results...");
 
     return true;
 }

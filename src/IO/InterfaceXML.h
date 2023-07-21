@@ -31,14 +31,14 @@ namespace FlowIO{
         public LoaderXML {
         public:
             LoaderInterfaceXML() : LoaderXML() {};
-            static void LoadInterface(pugi::xml_node interfaceNode, MolFlow *mApp);
+            static void LoadInterfaceSettings(pugi::xml_node interfaceNode, MolFlow *mApp);
         };
 
         class WriterInterfaceXML :
         public WriterXML {
         public:
             WriterInterfaceXML(bool useOldXMLFormat, bool update) : WriterXML(useOldXMLFormat, update){};
-            static void WriteInterface(pugi::xml_document &saveDoc, MolFlow *mApp, bool saveSelected);
+            static void WriteInterfaceSettings(pugi::xml_document &saveDoc, MolFlow *mApp, bool saveSelected);
         };
 }
 #endif //MOLFLOW_PROJ_INTERFACEXML_H

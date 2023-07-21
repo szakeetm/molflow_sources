@@ -29,7 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 namespace FlowIO {
     using namespace pugi;
 
-    void LoaderInterfaceXML::LoadInterface(xml_node interfNode, MolFlow *mApp) {
+    void LoaderInterfaceXML::LoadInterfaceSettings(xml_node interfNode, MolFlow *mApp) {
         //xml_node interfNode = loadXML.child("Interface");
 
         xml_node selNode = interfNode.child("Selections");
@@ -125,7 +125,7 @@ namespace FlowIO {
         // return;
     }
 
-    void WriterInterfaceXML::WriteInterface(xml_document &saveDoc, MolFlow *mApp, bool saveSelected) {
+    void WriterInterfaceXML::WriteInterfaceSettings(xml_document &saveDoc, MolFlow *mApp, bool saveSelected) {
 
         xml_node rootNode;
         if(mApp->useOldXMLFormat){
