@@ -57,7 +57,7 @@ public:
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
     std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters
-    mutable std::timed_mutex tMutex;
+    mutable std::timed_mutex simuStateMutex;
 
 };
 // -- Methods ---------------------------------------------------

@@ -1190,7 +1190,7 @@ DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
 //Otherwise returns the unique_lock that auto-unlocks the mutex when destroyed
 [[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs)
 {
-    std::unique_lock<std::timed_mutex> lock(simStatePtr->tMutex, std::chrono::milliseconds(waitMs));
+    std::unique_lock<std::timed_mutex> lock(simStatePtr->simuStateMutex, std::chrono::milliseconds(waitMs));
     if (!lock.owns_lock()) {
         return std::nullopt; //couldn't acquire lock, timed out
     }

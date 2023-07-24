@@ -11,7 +11,7 @@
 #include <RayTracing/BVH.h>
 #endif
 
-Simulation::Simulation() : tMutex()
+Simulation::Simulation() : simuStateMutex()
 {
 	totalDesorbed = 0;
 
@@ -29,7 +29,7 @@ Simulation::Simulation() : tMutex()
 
     //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
-Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
+Simulation::Simulation(Simulation&& o) noexcept : simuStateMutex() {
 
     totalDesorbed = o.totalDesorbed;
 
@@ -64,7 +64,7 @@ bool result = 0;
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        if (!particleTracer.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10))) {
+        if (!particleTracer.tmpParticleLog.simuStateMutex.try_lock_for(std::chrono::seconds(10))) {
 #pragma omp critical            
             result = -1;
         }
@@ -73,7 +73,7 @@ bool result = 0;
         if (model->otfParams.enableLogging) {
            particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
         }
-        particleTracer.tmpParticleLog.tMutex.unlock();
+        particleTracer.tmpParticleLog.simuStateMutex.unlock();
     }
     return result;
 }

@@ -1267,14 +1267,14 @@ bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *p
 bool ParticleTracer::UpdateLog(ParticleLog *globalLog, size_t timeout){
     if (!tmpParticleLog.pLog.empty()) {
         //if (!LockMutex(worker->logMutex, timeout)) return false;
-        if (!globalLog->tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
+        if (!globalLog->simuStateMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
             return false;
         }
         size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
         Saturate(writeNb, 0, tmpParticleLog.pLog.size());
         globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog.pLog.begin(), tmpParticleLog.pLog.begin() + writeNb);
         //myLogTarget = (model->otfParams.logLimit - globalLog->size()) / model->otfParams.nbProcess + 1; //+1 to avoid all threads rounding down
-        globalLog->tMutex.unlock();
+        globalLog->simuStateMutex.unlock();
         tmpParticleLog.clear();
         tmpParticleLog.pLog.shrink_to_fit();
         tmpParticleLog.pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));

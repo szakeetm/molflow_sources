@@ -119,7 +119,7 @@ public:
 int main(int argc, char** argv) {
 
     // Set local to parse input files the same on all systems
-    std::setlocale(LC_ALL, "en_US.UTF - 8");
+    std::setlocale(LC_ALL, "en_US.UTF - 8"); //There's also a call in initFromArgv()
 
 #if defined(USE_MPI)
     MFMPI::mpi_initialize();

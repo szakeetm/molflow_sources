@@ -51,6 +51,7 @@ void initDefaultSettings() {
     Settings::resetOnStart = false;
     Settings::paramFile.clear();
     Settings::paramChanges.clear();
+    Settings::notInteractive = false;
 
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
@@ -151,11 +152,7 @@ int Initializer::parseCommands(int argc, char **argv) {
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
                               std::shared_ptr<MolflowSimulationModel> model) {
 
-#if defined(WIN32) || defined(__APPLE__)
-    setlocale(LC_ALL, "C");
-#else
-    std::setlocale(LC_ALL, "C");
-#endif
+    std::setlocale(LC_ALL, "en_US.UTF-8"); //duplicate, in case we called this function from the test suite and not from main()
 
     initDefaultSettings();
 
@@ -171,7 +168,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     simManager->useCPU = true;
     simManager->interactiveMode = !Settings::notInteractive;
 
-    if (simManager->InitSimulations()) {
+    if (simManager->InitSimulations()) { //currently only calls CreateCPUHandle()
         Log::console_error("Error: Initializing simulation units: {}\n", simManager->nbThreads);
         return 1;
     }

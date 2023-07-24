@@ -246,7 +246,7 @@ public:
     GlobalSimuState &operator=(const GlobalSimuState &src);
     GlobalSimuState &operator+=(const GlobalSimuState &src);
 
-    GlobalSimuState(GlobalSimuState &&rhs) noexcept: tMutex() {
+    GlobalSimuState(GlobalSimuState &&rhs) noexcept: simuStateMutex() {
         globalHistograms = std::move(rhs.globalHistograms);
         facetStates = std::move(rhs.facetStates);
         globalStats = rhs.globalStats;
@@ -260,7 +260,7 @@ public:
         initialized = rhs.initialized;
     };
 
-    GlobalSimuState() : globalStats(), tMutex() {
+    GlobalSimuState() : globalStats(), simuStateMutex() {
 
     };
 
@@ -298,7 +298,7 @@ public:
         );
     }
 
-    mutable std::timed_mutex tMutex;
+    mutable std::timed_mutex simuStateMutex;
 };
 
 
@@ -314,7 +314,7 @@ public:
         return *this;
     }
 
-    ParticleLog(ParticleLog &&rhs) noexcept: tMutex() {
+    ParticleLog(ParticleLog &&rhs) noexcept: simuStateMutex() {
         pLog = std::move(pLog);
     };
 
@@ -322,7 +322,7 @@ public:
         pLog = rhs.pLog;
     };
 
-    ParticleLog() : tMutex() {
+    ParticleLog() : simuStateMutex() {
 
     };
 
@@ -334,7 +334,7 @@ public:
         pLog.clear();
     };
     std::vector<ParticleLoggerItem> pLog;
-    mutable std::timed_mutex tMutex;
+    mutable std::timed_mutex simuStateMutex;
 };
 
 #endif //MOLFLOW_PROJ_MOLFLOWSIMGEOM_H
