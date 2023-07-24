@@ -35,29 +35,34 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "RayTracing/RTHelper.h"
 
 // Local simulation structure
-class Simulation : public Simulation_Abstract {
+class Simulation /*: public Simulation_Abstract*/ {
 public:
 
     Simulation();
-    Simulation(Simulation&& o) noexcept ;
+    //Simulation(Simulation&& o) noexcept ;
     virtual ~Simulation() = default;
 
-    std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
-    void ClearSimulation() override;
-    size_t LoadSimulation(std::string& loadStatus) override;
-    int RebuildAccelStructure() override;
+    std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) ;
+    void ClearSimulation() ;
+    size_t LoadSimulation(std::string& loadStatus) ;
+    int RebuildAccelStructure() ;
 
-    void ResetSimulation() override;
+    void ResetSimulation() ;
 
-    size_t GetHitsSize() override;
+    size_t GetHitsSize() ;
 
-    int ReinitializeParticleLog() override;
-    MFSim::ParticleTracer * GetParticleTracerPtr(size_t i) override;
-    void ConstructParticleTracers(size_t n, bool fixedSeed) override;
+    int ReinitializeParticleLog() ;
+    MFSim::ParticleTracer * GetParticleTracerPtr(size_t i) ;
+    void ConstructParticleTracers(size_t n, bool fixedSeed) ;
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
     std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters
     mutable std::timed_mutex simuStateMutex;
 
+    std::shared_ptr<SimulationModel> model;
+    GlobalSimuState* globStatePtr;
+    ParticleLog* globParticleLogPtr; //Recorded particle log since last UpdateMCHits
+
+    size_t totalDesorbed; // todo: should be a "sim counter"
+
 };
-// -- Methods ---------------------------------------------------

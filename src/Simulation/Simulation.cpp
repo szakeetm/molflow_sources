@@ -11,7 +11,7 @@
 #include <RayTracing/BVH.h>
 #endif
 
-Simulation::Simulation() : simuStateMutex()
+Simulation::Simulation()
 {
 	totalDesorbed = 0;
 
@@ -27,9 +27,9 @@ Simulation::Simulation() : simuStateMutex()
     globStatePtr = nullptr;
     globParticleLogPtr = nullptr;
 
-    //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
-Simulation::Simulation(Simulation&& o) noexcept : simuStateMutex() {
+/*
+Simulation::Simulation(Simulation&& o) noexcept {
 
     totalDesorbed = o.totalDesorbed;
 
@@ -50,13 +50,9 @@ Simulation::Simulation(Simulation&& o) noexcept : simuStateMutex() {
     globParticleLogPtr = o.globParticleLogPtr;
 
 }
+*/
 
 int Simulation::ReinitializeParticleLog() {
-    /*tmpParticleLog.clear();
-    tmpParticleLog.shrink_to_fit();
-    if (model->otfParams.enableLogging) {
-        tmpParticleLog.reserve(model->otfParams.logLimit*//* / model->otfParams.nbProcess*//*);
-    }*/
 
 bool result = 0;
 #pragma omp parallel for shared(result)
@@ -223,9 +219,6 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
 
         // Init tmp vars per thread
         particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
-
-        //currentParticle.tmpState = *tmpResults;
-        //delete tmpResults;
     }
 
     //Reserve particle log
@@ -235,11 +228,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     loadStatus = "Building ray-tracing structure";
     RebuildAccelStructure();
 
-    // Initialise simulation
-
-
-    //if(!model->sh.name.empty())
-    //loadOK = true;
+    // Initialize simulation
     timer.Stop();
 
     Log::console_msg_master(3, "  Load {} successful\n", simModelPtr->sh.name);
@@ -249,9 +238,6 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     Log::console_msg_master(3, "  Number of structure: {}\n", simModelPtr->sh.nbSuper);
     Log::console_msg_master(3, "  Global Hit: {} bytes\n", sizeof(GlobalHitBuffer));
     Log::console_msg_master(3, "  Facet Hit : {} bytes\n", simModelPtr->sh.nbFacet * sizeof(FacetHitBuffer));
-/*        printf("  Texture   : %zd bytes\n", textTotalSize);
-    printf("  Profile   : %zd bytes\n", profTotalSize);
-    printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
     Log::console_msg_master(3, "  Total     : {} bytes\n", GetHitsSize());
     for(auto& particleTracer : particleTracers)
@@ -270,8 +256,6 @@ size_t Simulation::GetHitsSize() {
 
 
 void Simulation::ResetSimulation() {
-    //currentParticles.clear();// = CurrentParticleStatus();
-    //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
 
 #pragma omp parallel for
 // New GlobalSimuState structure for threads
@@ -285,12 +269,5 @@ void Simulation::ResetSimulation() {
 
         particleTracer.tmpParticleLog.clear();
     }
-
     totalDesorbed = 0;
-    //tmpParticleLog.clear();
 }
-
-/*bool Simulation::StartSimulation() {
-    if (!currentParticles.lastHitFacet) StartFromSource();
-    return (currentParticles.lastHitFacet != nullptr);
-}*/
