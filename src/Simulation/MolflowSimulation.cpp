@@ -1,4 +1,4 @@
-#include "Simulation.h"
+#include "MolflowSimulation.h"
 #include "IntersectAABB_shared.h"
 #include <cstring>
 #include <cereal/archives/binary.hpp>

@@ -23,7 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cstring>
 #include <sstream>
 #include <cereal/archives/binary.hpp>
-#include "Simulation.h"
+#include "MolflowSimulation.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
 #include "Helper/MathTools.h"

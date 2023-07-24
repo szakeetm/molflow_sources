@@ -92,7 +92,7 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_2}/Buffer_shared.cpp
 
-        #${SIMU_DIR}/Simulation.cpp
+        #${SIMU_DIR}/MolflowSimulation.cpp
         #${SIMU_DIR}/SimulationMC.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
