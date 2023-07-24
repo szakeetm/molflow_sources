@@ -58,13 +58,14 @@ static constexpr const char* molflowCliLogo = R"(
  |_|  |_\___/_|_| |_\___/\_/\_/
     )"; //Unused, clutters iterative simulations and parameter sweeps
 
-void GatherResults(MolflowSimulationModel& model, GlobalSimuState& globSim){
+//Transfers recorded angle maps from "simulation state" to "model"
+void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState){
     for(int i = 0; i < model.facets.size(); i++ ) {
 #if defined(MOLFLOW)
         auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
         if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
             //Retrieve angle map from hits dp
-            f->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
+            f->angleMap.pdf = globSimState.facetStates[i].recordedAngleMapPdf;
         }
 #endif
     }
@@ -184,10 +185,12 @@ int main(int argc, char** argv) {
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
 
-    if(Settings::simDuration > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalStats.globalHits.nbDesorbed);
-    else if(model->otfParams.desorptionLimit > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalStats.globalHits.nbDesorbed);
+    if (Settings::simDuration > 0) {
+        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), Settings::simDuration, globState.globalStats.globalHits.nbDesorbed);
+    }
+    else if (model->otfParams.desorptionLimit > 0) {
+        Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalStats.globalHits.nbDesorbed);
+    }
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -214,6 +217,7 @@ int main(int argc, char** argv) {
 
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
+    Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
     do {
         ProcessSleep(1000);
 
@@ -303,7 +307,7 @@ int main(int argc, char** argv) {
     // Terminate simulation
     simManager.StopSimulation();
     simManager.KillAllSimUnits();
-    GatherResults(*model, globState);
+    GatherAngleMapRecordings(*model, globState);
     Log::console_msg(1,"[{}][{}] Simulation finished.\n", MFMPI::world_rank, Util::getTimepointString());
 
 #if defined(USE_MPI)
