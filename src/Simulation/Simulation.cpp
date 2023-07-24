@@ -11,7 +11,7 @@
 #include <RayTracing/BVH.h>
 #endif
 
-Simulation::Simulation()
+MolflowSimulation::MolflowSimulation()
 {
 	totalDesorbed = 0;
 
@@ -29,7 +29,7 @@ Simulation::Simulation()
 
 }
 /*
-Simulation::Simulation(Simulation&& o) noexcept {
+MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
 
     totalDesorbed = o.totalDesorbed;
 
@@ -52,7 +52,7 @@ Simulation::Simulation(Simulation&& o) noexcept {
 }
 */
 
-int Simulation::ReinitializeParticleLog() {
+int MolflowSimulation::ReinitializeParticleLog() {
 
 bool result = 0;
 #pragma omp parallel for shared(result)
@@ -74,14 +74,14 @@ bool result = 0;
     return result;
 }
 
-MFSim::ParticleTracer * Simulation::GetParticleTracerPtr(size_t i) {
+MFSim::ParticleTracer * MolflowSimulation::GetParticleTracerPtr(size_t i) {
     if(i < particleTracers.size())
         return &particleTracers.at(i);
     else
         return nullptr;
 }
 
-void Simulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
+void MolflowSimulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
     particleTracers.clear();
     particleTracers.resize(n);
     size_t pid = 0;
@@ -94,7 +94,7 @@ void Simulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
     }
 }
 
-std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
+std::pair<int, std::optional<std::string>> MolflowSimulation::SanityCheckModel(bool strictCheck) {
     std::string errLog = "[Error Log on Check]\n";
     int errorsOnCheck = 0;
 
@@ -163,7 +163,7 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
     return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
 
-void Simulation::ClearSimulation() {
+void MolflowSimulation::ClearSimulation() {
 
     //loadOK = false;
 
@@ -183,7 +183,7 @@ void Simulation::ClearSimulation() {
     totalDesorbed = 0;
 }
 
-int Simulation::RebuildAccelStructure() {
+int MolflowSimulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
@@ -200,7 +200,7 @@ int Simulation::RebuildAccelStructure() {
 
 
 
-size_t Simulation::LoadSimulation(std::string& loadStatus) {
+size_t MolflowSimulation::LoadSimulation(std::string& loadStatus) {
     Chronometer timer;
     timer.Start();
     loadStatus="Clearing previous simulation";
@@ -247,7 +247,7 @@ size_t Simulation::LoadSimulation(std::string& loadStatus) {
     return 0;
 }
 
-size_t Simulation::GetHitsSize() {
+size_t MolflowSimulation::GetHitsSize() {
     MolflowSimulationModel* simModelPtr = (MolflowSimulationModel*) model.get();
     return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
            + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModelPtr->tdParams.moments.size());
@@ -255,7 +255,7 @@ size_t Simulation::GetHitsSize() {
 
 
 
-void Simulation::ResetSimulation() {
+void MolflowSimulation::ResetSimulation() {
 
 #pragma omp parallel for
 // New GlobalSimuState structure for threads
