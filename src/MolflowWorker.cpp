@@ -1144,7 +1144,7 @@ bool Worker::InterfaceGeomToSimModel() {
 			//ReleaseDataport(loader);
 			std::ostringstream err;
 			err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
-			//SetErrorSub(err.str().c_str());
+			//SetThreadError(err.str().c_str());
 			std::cerr << err.str() << std::endl;
 			return false;
 		}

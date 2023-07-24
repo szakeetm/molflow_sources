@@ -92,7 +92,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         if (destIndex == -1) {
             /*char err[128];
             sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
-            SetErrorSub(err);*/
+            SetThreadError(err);*/
             if (particleTracerId == 0)RecordHit(HIT_REF);
             lastHitFacet = iFacet;
             return; //LEAK
@@ -117,7 +117,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     if (!found) {
         /*char err[128];
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
-        SetErrorSub(err);*/
+        SetThreadError(err);*/
         if (particleTracerId == 0)RecordHit(HIT_REF);
         lastHitFacet = iFacet;
         return; //LEAK
@@ -431,7 +431,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                         mapPositionW = (size_t) outgLowerIndex - mapPositionH * mfFac->ogMap.outgassingMapWidth;
                         foundInMap = true;
                         /*if (!foundInMap) {
-                            SetErrorSub("Starting point not found in imported desorption map");
+                            SetThreadError("Starting point not found in imported desorption map");
                             return false;
                         }*/
                     }
@@ -604,7 +604,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     if (src->sh.superIdx == -1) {
         std::ostringstream out;
         out << "Facet " << (src->globalId + 1) << " is in all structures, it shouldn't desorb.";
-        //SetErrorSub(out.str().c_str());
+        //SetThreadError(out.str().c_str());
         std::cerr << out.str() << std::endl;
 
         return false;

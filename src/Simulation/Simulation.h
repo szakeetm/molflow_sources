@@ -53,7 +53,7 @@ public:
 
     int ReinitializeParticleLog() override;
     MFSim::ParticleTracer * GetParticleTracerPtr(size_t i) override;
-    void SetNParticle(size_t n, bool fixedSeed) override;
+    void ConstructParticleTracers(size_t n, bool fixedSeed) override;
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
     std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters

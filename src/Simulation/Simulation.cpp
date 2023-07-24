@@ -85,7 +85,7 @@ MFSim::ParticleTracer * Simulation::GetParticleTracerPtr(size_t i) {
         return nullptr;
 }
 
-void Simulation::SetNParticle(size_t n, bool fixedSeed) {
+void Simulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
     particleTracers.clear();
     particleTracers.resize(n);
     size_t pid = 0;
