@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}", err.what());
-            ShutdownMPI()
+            ShutdownMPI();
             return 42;
         }
     }
@@ -204,93 +204,8 @@ int main(int argc, char** argv) {
     Chronometer simTimer;
     simTimer.Start();
     double elapsedTime = 0.0;
-
-    // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
-    bool endCondition = false;
-    Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
-    do {
-        ProcessSleep(1000);
-
-        elapsedTime = simTimer.Elapsed();
-        if(model->otfParams.desorptionLimit != 0)
-            endCondition = simuState.globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
-
-        if(endCondition){
-
-            // if there is a next des limit, handle that
-            if(!Settings::desLimit.empty()) {
-
-                // First write an intermediate output file
-                // 1. Get file name
-                std::string outFile = std::filesystem::path(SettingsIO::outputPath)
-                        .append("desorbed_")
-                        .concat(std::to_string(model->otfParams.desorptionLimit))
-                        .concat("_")
-                        .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
-
-                try {
-                    GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
-                    prg.interactiveMode = simManager.interactiveMode;
-                    // 2. Write XML file, use existing file as base or create new file
-                    FlowIO::WriterXML writer;
-                    writer.userSettings = persistentUserSettings; //keep from loaded file
-                    if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
-                        try {
-                            std::filesystem::copy_file(SettingsIO::workFile, outFile,
-                                                           std::filesystem::copy_options::overwrite_existing);
-                        } catch (std::filesystem::filesystem_error &e) {
-                            Log::console_error("Could not copy file: {}\n", e.what());
-                        }
-                    }
-                    else {
-                        pugi::xml_document newDoc;
-                        writer.SaveGeometry(newDoc, model, prg);
-                        writer.WriteXMLToFile(newDoc, outFile);
-                    }
-                    // 3. append updated results
-                    writer.AppendSimulationStateToFile(outFile, model, prg, simuState);
-                } catch(std::filesystem::filesystem_error& e) {
-                    Log::console_error("Warning: Could not create file: {}\n", e.what());
-                }
-                // Next choose the next desorption limit and start
-
-                model->otfParams.desorptionLimit = Settings::desLimit.front();
-                Settings::desLimit.pop_front();
-                simManager.ForwardOtfParams(&model->otfParams);
-                endCondition = false;
-                Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
-
-                try {
-                    ProcessSleep(1000);
-                    simManager.StartSimulation();
-                }
-                catch (const std::exception& e) {
-                    Log::console_error("ERROR: Starting simulation: {}\n", e.what());
-                    endCondition = true;
-                }
-            }
-        }
-        else if(Settings::autoSaveDuration && (uint64_t)(elapsedTime)%Settings::autoSaveDuration==0){ // autosave every x seconds
-            // Autosave
-            GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
-            prg.interactiveMode = simManager.interactiveMode;
-            FlowIO::WriterXML writer;
-            writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
-        }
-
-        if(Settings::outputDuration && (uint64_t)(elapsedTime)%Settings::outputDuration==0){ // autosave every x seconds
-            // Print runtime stats
-            if((uint64_t)elapsedTime / Settings::outputDuration <= 1){
-                printer.PrintHeader();
-            }
-            printer.Print(elapsedTime, simuState);
-        }
-
-        // Check for potential time end
-        if(Settings::simDuration > 0) {
-            endCondition |= (elapsedTime >= (double) Settings::simDuration);
-        }
-    } while(!endCondition);
+    DoMainLoop(elapsedTime, simTimer, model, simuState,
+        simManager, persistentUserSettings, autoSave, printer);
     simTimer.Stop();
     elapsedTime = simTimer.Elapsed();
 
@@ -421,4 +336,96 @@ void ShutdownMPI() {
 #if defined(USE_MPI)
     MPI_Finalize();
 #endif
+}
+
+void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer) {
+    // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
+    bool endCondition = false;
+    Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
+    do {
+        ProcessSleep(1000);
+
+        elapsedTime = simTimer.Elapsed();
+        if (model->otfParams.desorptionLimit != 0)
+            endCondition = simuState.globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
+
+        if (endCondition) {
+
+            // if there is a next des limit, handle that
+            if (!Settings::desLimit.empty()) {
+
+                // First write an intermediate output file
+                // 1. Get file name
+                std::string outFile = std::filesystem::path(SettingsIO::outputPath)
+                    .append("desorbed_")
+                    .concat(std::to_string(model->otfParams.desorptionLimit))
+                    .concat("_")
+                    .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
+
+                try {
+                    GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
+                    prg.interactiveMode = simManager.interactiveMode;
+                    // 2. Write XML file, use existing file as base or create new file
+                    FlowIO::WriterXML writer;
+                    writer.userSettings = persistentUserSettings; //keep from loaded file
+                    if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+                        try {
+                            std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                                std::filesystem::copy_options::overwrite_existing);
+                        }
+                        catch (std::filesystem::filesystem_error& e) {
+                            Log::console_error("Could not copy file: {}\n", e.what());
+                        }
+                    }
+                    else {
+                        pugi::xml_document newDoc;
+                        writer.SaveGeometry(newDoc, model, prg);
+                        writer.WriteXMLToFile(newDoc, outFile);
+                    }
+                    // 3. append updated results
+                    writer.AppendSimulationStateToFile(outFile, model, prg, simuState);
+                }
+                catch (std::filesystem::filesystem_error& e) {
+                    Log::console_error("Warning: Could not create file: {}\n", e.what());
+                }
+                // Next choose the next desorption limit and start
+
+                model->otfParams.desorptionLimit = Settings::desLimit.front();
+                Settings::desLimit.pop_front();
+                simManager.ForwardOtfParams(&model->otfParams);
+                endCondition = false;
+                Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
+
+                try {
+                    ProcessSleep(1000);
+                    simManager.StartSimulation();
+                }
+                catch (const std::exception& e) {
+                    Log::console_error("ERROR: Starting simulation: {}\n", e.what());
+                    endCondition = true;
+                }
+            }
+        }
+        else if (Settings::autoSaveDuration && (uint64_t)(elapsedTime) % Settings::autoSaveDuration == 0) { // autosave every x seconds
+            // Autosave
+            GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
+            prg.interactiveMode = simManager.interactiveMode;
+            FlowIO::WriterXML writer;
+            writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
+        }
+
+        if (Settings::outputDuration && (uint64_t)(elapsedTime) % Settings::outputDuration == 0) { // autosave every x seconds
+            // Print runtime stats
+            if ((uint64_t)elapsedTime / Settings::outputDuration <= 1) {
+                printer.PrintHeader();
+            }
+            printer.Print(elapsedTime, simuState);
+        }
+
+        // Check for potential time end
+        if (Settings::simDuration > 0) {
+            endCondition |= (elapsedTime >= (double)Settings::simDuration);
+        }
+    } while (!endCondition);
 }
