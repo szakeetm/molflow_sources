@@ -119,11 +119,7 @@ public:
 int main(int argc, char** argv) {
 
     // Set local to parse input files the same on all systems
-#if defined(WIN32) || defined(__APPLE__)
-    setlocale(LC_ALL, "C");
-#else
-    std::setlocale(LC_ALL, "C");
-#endif
+    std::setlocale(LC_ALL, "en_US.UTF - 8");
 
 #if defined(USE_MPI)
     MFMPI::mpi_initialize();
