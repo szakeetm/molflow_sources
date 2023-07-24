@@ -23,8 +23,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 #include "MolflowSimGeom.h"
+#include "SimulationUnit.h"
 #include <Random.h>
-#include "Simulation.h"
 
 struct SimulationFacetTempVar;
 

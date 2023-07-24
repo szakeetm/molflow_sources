@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <vector>
 #include <mutex>
 
+#include "SimulationUnit.h"
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
 #include "Vector.h"
@@ -32,7 +33,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowSimGeom.h"
 #include "Particle.h"
 #include "RayTracing/RTHelper.h"
-#include "Simulation.h"
 
 // Local simulation structure
 class Simulation /*: public Simulation_Abstract*/ {
