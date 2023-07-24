@@ -1184,7 +1184,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	}
 
 	prg.SetMessage("Reloading structures for simulation unit...");
-	ReloadSim(sendOnly, prg); //Convert interf. geom to worker::mode and construct global counters, then copy to simManagar.simulations[0]
+	ReloadSim(sendOnly, prg); //Convert interf. geom to worker::mode and construct global counters, then copy to simManager.simulation
 	
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->CalcTotalOutgassing(); // needs IDs
