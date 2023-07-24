@@ -221,8 +221,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
 }
 
 // Save XML document to file
-bool
-WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+bool WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
     if (!saveDoc.save_file(outputFileName.c_str())) {
         std::cerr << "Error writing XML file." << std::endl;
         return false;
@@ -231,8 +230,7 @@ WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileNa
 }
 
 // Directly append to file (load + save)
-bool
-WriterXML::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
+bool WriterXML::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 

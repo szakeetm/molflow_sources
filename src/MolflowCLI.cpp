@@ -42,6 +42,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <ZipLib/ZipFile.h>
 #include "versionId.h"
 #include "Helper/GLProgress_CLI.hpp"
+#include "MolflowCLI.hpp"
 
 //#if defined(MOLFLOW)
 #include <SettingsIO.h>
@@ -51,70 +52,45 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "FlowMPI.h"
 #include "File.h"
 
-static constexpr const char* molflowCliLogo = R"(
-  __  __     _  __ _
- |  \/  |___| |/ _| |_____ __ __
- | |\/| / _ \ |  _| / _ \ V  V /
- |_|  |_\___/_|_| |_\___/\_/\_/
-    )"; //Unused, clutters iterative simulations and parameter sweeps
-
-//Transfers recorded angle maps from "simulation state" to "model"
-void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState){
-    for(int i = 0; i < model.facets.size(); i++ ) {
-#if defined(MOLFLOW)
-        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
-        if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
-            //Retrieve angle map from hits dp
-            f->angleMap.pdf = globSimState.facetStates[i].recordedAngleMapPdf;
-        }
-#endif
+RuntimeStatPrinter::RuntimeStatPrinter(size_t n_hits, size_t n_des) {
+    oldHitsNb = n_hits;
+    oldDesNb = n_des;
+};
+void RuntimeStatPrinter::PrintHeader() const{
+    // Print Header at the beginning
+    Log::console_msg_master(1, "\n");
+    if(MFMPI::world_size > 1) {
+        Log::console_msg_master(1, "{:<6} ",
+                                "Node#");
     }
+    Log::console_msg_master(1, "{:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n",
+                            "Time",
+                            "#Hits (run)", "#Hits (total)","Hit/sec",
+                            "#Des (run)", "#Des (total)","Des/sec");
+    if(MFMPI::world_size > 1) {
+        Log::console_msg_master(1, "{}",std::string(6,'-'));
+    }
+    Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-'));
+}
+void RuntimeStatPrinter::Print(double elapsedTime, GlobalSimuState& globState, bool printSum) const{
+    if(printSum) {
+        Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'='));
+        Log::console_msg_master(1, "{:<6} ", "x");
+    }
+    else if(MFMPI::world_size > 1) {
+        Log::console_msg(1, "{:<6} ", MFMPI::world_rank);
+    }
+
+    Log::console_msg(1,"{:<14.2f} {:<20} {:<20} {:<20.2f} {:<20} {:<20} {:<20.2f}\n",
+                        elapsedTime,
+                        globState.globalStats.globalHits.nbMCHit - oldHitsNb, globState.globalStats.globalHits.nbMCHit,
+                        (double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) /
+                        (elapsedTime),
+                        globState.globalStats.globalHits.nbDesorbed - oldDesNb, globState.globalStats.globalHits.nbDesorbed,
+                        (double) (globState.globalStats.globalHits.nbDesorbed - oldDesNb) /
+                        (elapsedTime));
 }
 
-class RuntimeStatPrinter {
-    size_t oldHitsNb{0};
-    size_t oldDesNb{0};
-public:
-    RuntimeStatPrinter() = default;
-    RuntimeStatPrinter(size_t n_hits, size_t n_des) {
-        oldHitsNb = n_hits;
-        oldDesNb = n_des;
-    };
-    void PrintHeader() const{
-        // Print Header at the beginning
-        Log::console_msg_master(1, "\n");
-        if(MFMPI::world_size > 1) {
-            Log::console_msg_master(1, "{:<6} ",
-                                    "Node#");
-        }
-        Log::console_msg_master(1, "{:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n",
-                                "Time",
-                                "#Hits (run)", "#Hits (total)","Hit/sec",
-                                "#Des (run)", "#Des (total)","Des/sec");
-        if(MFMPI::world_size > 1) {
-            Log::console_msg_master(1, "{}",std::string(6,'-'));
-        }
-        Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-'));
-    }
-    void Print(double elapsedTime, GlobalSimuState& globState, bool printSum=false) const{
-        if(printSum) {
-            Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'='));
-            Log::console_msg_master(1, "{:<6} ", "x");
-        }
-        else if(MFMPI::world_size > 1) {
-            Log::console_msg(1, "{:<6} ", MFMPI::world_rank);
-        }
-
-        Log::console_msg(1,"{:<14.2f} {:<20} {:<20} {:<20.2f} {:<20} {:<20} {:<20.2f}\n",
-                         elapsedTime,
-                         globState.globalStats.globalHits.nbMCHit - oldHitsNb, globState.globalStats.globalHits.nbMCHit,
-                         (double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) /
-                         (elapsedTime),
-                         globState.globalStats.globalHits.nbDesorbed - oldDesNb, globState.globalStats.globalHits.nbDesorbed,
-                         (double) (globState.globalStats.globalHits.nbDesorbed - oldDesNb) /
-                         (elapsedTime));
-    }
-};
 
 int main(int argc, char** argv) {
 
@@ -150,7 +126,7 @@ int main(int argc, char** argv) {
 
 	if (SettingsIO::autogenerateTest) { //auto-gen test case
         try {
-            Initializer::initAutoGenerated(&simManager, model, &simuState, 10.0, 10, M_PI_4));
+            Initializer::initAutoGenerated(&simManager, model, &simuState, 10.0, 10, M_PI_4);
         } catch (std::exception* err) {
             Log::console_error("Initializer::initAutoGenerated error:\n{}",err->what());
             ShutdownMPI();
@@ -443,5 +419,18 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
     catch (const std::exception& e) {
         Log::console_error("ERROR: Starting simulation: {}\n", e.what());
         endCondition = true;
+    }
+}
+
+//Transfers recorded angle maps from "simulation state" to "model"
+void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState) {
+    for (int i = 0; i < model.facets.size(); i++) {
+#if defined(MOLFLOW)
+        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
+        if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
+            //Retrieve angle map from hits dp
+            f->angleMap.pdf = globSimState.facetStates[i].recordedAngleMapPdf;
+        }
+#endif
     }
 }
