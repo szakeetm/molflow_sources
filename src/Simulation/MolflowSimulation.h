@@ -21,6 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <tuple>
 #include <vector>
+#include <string>
 #include <mutex>
 
 #include "SimulationUnit.h"
@@ -42,7 +43,7 @@ public:
     //MolflowSimulation(MolflowSimulation&& o) noexcept;
     virtual ~MolflowSimulation() = default;
 
-    std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
+    std::vector<std::string> SanityCheckModel(bool strictCheck) override;
     void ClearSimulation() override;
     size_t LoadSimulation(std::string& loadStatus) override;
     int RebuildAccelStructure() override;

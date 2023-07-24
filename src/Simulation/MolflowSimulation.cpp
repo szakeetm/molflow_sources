@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include <Helper/Chronometer.h>
 #include <Helper/ConsoleLogger.h>
+#include "Helper/StringHelper.h"
 #if defined(USE_OLD_BVH)
 // currently always have SuperStructure
 #else
@@ -77,36 +78,29 @@ void MolflowSimulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
     }
 }
 
-std::pair<int, std::optional<std::string>> MolflowSimulation::SanityCheckModel(bool strictCheck) {
-    std::string errLog = "[Error Log on Check]\n";
-    int errorsOnCheck = 0;
+std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
+    std::vector<std::string> errLog;
 
     if (!model->initialized) {
-        errLog.append("Model not initialized\n");
-        errorsOnCheck++;
+        errLog.push_back("Model not initialized");
     }
     if (model->vertices3.empty()) {
-        errLog.append("Loaded empty vertex list\n");
-        errorsOnCheck++;
+        errLog.push_back("Loaded empty vertex list");
     }
     if (model->facets.empty()) {
-        errLog.append("Loaded empty facet list\n");
-        errorsOnCheck++;
+        errLog.push_back("Loaded empty facet list");
     }
     if(model->sh.nbFacet != model->facets.size()) {
         char tmp[256];
         snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
-        errLog.append(tmp);
-        errorsOnCheck++;
+        errLog.push_back(tmp);
     }
     for(auto& fac : model->facets){
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
             char tmp[256];
             snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId+1);
-            errLog.append(tmp);
-            if(errLog.size() > 1280) errLog.resize(1280);
-            errorsOnCheck++;
+            errLog.push_back(tmp);
         }
         else if (!fac->sh.isTextured && (hasAnyTexture)) {
             fac->sh.countDes = false;
@@ -117,9 +111,7 @@ std::pair<int, std::optional<std::string>> MolflowSimulation::SanityCheckModel(b
             fac->sh.countDirection = false;
             char tmp[256];
             snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId+1);
-            errLog.append(tmp);
-            if(errLog.size() > 1920) errLog.resize(1920);
-            errorsOnCheck++;
+            errLog.push_back(tmp);
         }
     }
 
@@ -127,23 +119,20 @@ std::pair<int, std::optional<std::string>> MolflowSimulation::SanityCheckModel(b
     if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
         char tmp[255];
         sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
-        errLog.append(tmp);
-        errorsOnCheck++;
+        errLog.push_back(tmp);
     }
 
     if(!globStatePtr){
-        errLog.append("No global simulation state set\n");
-        errorsOnCheck++;
+        errLog.push_back("No global simulation state set\n");
     }
     else if(!globStatePtr->initialized){
-        errLog.append("Global simulation state not initialized\n");
-        errorsOnCheck++;
+        errLog.push_back("Global simulation state not initialized\n");
     }
 
-    if(errorsOnCheck){
-        Log::console_error("{}", errLog);
+    if(!errLog.empty()){
+        Log::console_error("Error log on model sanity check:\n{}", FlattenLines(errLog));
     }
-    return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
+    return errLog;
 }
 
 void MolflowSimulation::ClearSimulation() {
