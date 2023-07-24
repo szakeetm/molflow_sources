@@ -38,7 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 class MolflowSimulation : public Simulation_Abstract {
 public:
 
-    MolflowSimulation();
+    //MolflowSimulation();
     MolflowSimulation(MolflowSimulation&& o) noexcept;
     virtual ~MolflowSimulation() = default;
 
@@ -54,8 +54,8 @@ public:
     int ReinitializeParticleLog() override;
     MFSim::ParticleTracer* GetParticleTracerPtr(size_t i) override;
     void ConstructParticleTracers(size_t n, bool fixedSeed) override;
-    bool lastLogUpdateOK; // Last log update timeout
-    bool hasVolatile;   // Contains volatile facet
+    bool lastLogUpdateOK=true; // Last log update timeout
+    bool hasVolatile=false;   // Contains volatile facet
     std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters
     mutable std::timed_mutex simuStateMutex;
 

@@ -105,7 +105,7 @@ namespace MFSim {
         //size_t structureId;        // Current structure
         GlobalSimuState tmpState;
         ParticleLog tmpParticleLog;
-        SimulationFacet *lastHitFacet;     // Last hitted facet
+        SimulationFacet *lastHitFacet=nullptr;     // Last hitted facet
         MersenneTwister randomGenerator;
         MolflowSimulationModel *model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call

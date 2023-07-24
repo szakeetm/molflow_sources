@@ -11,23 +11,6 @@
 #include <RayTracing/BVH.h>
 #endif
 
-MolflowSimulation::MolflowSimulation()
-{
-	totalDesorbed = 0;
-
-    lastLogUpdateOK = true;
-
-    for(auto& particleTracer : particleTracers) {
-        particleTracer.lastHitFacet = nullptr;
-        particleTracer.ray.lastIntersected = -1;
-    }
-
-    hasVolatile = false;
-
-    globStatePtr = nullptr;
-    globParticleLogPtr = nullptr;
-
-}
 /*
 MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
 
