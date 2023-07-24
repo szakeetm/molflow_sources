@@ -204,8 +204,10 @@ int main(int argc, char** argv) {
     Chronometer simTimer;
     simTimer.Start();
     double elapsedTime = 0.0;
+
     DoMainLoop(elapsedTime, simTimer, model, simuState,
         simManager, persistentUserSettings, autoSave, printer);
+
     simTimer.Stop();
     elapsedTime = simTimer.Elapsed();
 
@@ -229,25 +231,9 @@ int main(int argc, char** argv) {
         printer.Print(elapsedTime, simuState);
     }
 
-#if defined(USE_MPI)
-    MPI_Barrier(MPI_COMM_WORLD);
-    MFMPI::mpi_receive_states(model, simuState);
-    if(MFMPI::world_rank != 0){
-        // Cleanup all files from nodes tmp path
-        if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
-            std::filesystem::remove_all(SettingsIO::outputPath);
-        }
-        if(std::filesystem::exists(autoSave)){
-            std::filesystem::remove(autoSave);
-        }
-    }
-    // Finalize the MPI environment.
-    MPI_Finalize();
-    if(MFMPI::world_rank != 0){
-        return 0;
-    }
-#endif //USE_MPI
+    CleanUpMPI();
 
+    //Print sum
     if(elapsedTime > 1e-4) {
         if(MFMPI::world_size > 1)
             printer.Print(elapsedTime, simuState, true);
@@ -262,74 +248,13 @@ int main(int argc, char** argv) {
             FlowIO::Exporter::export_facet_quantities(&simuState, model.get());
         }
 
-        // Export results
-        //  a) Use existing autosave as base
-        //  b) Create copy of input file
-        // update geometry info (in case of param sweep)
-        // and simply update simulation results
-        bool createZip = std::filesystem::path(SettingsIO::outputFile).extension() == ".zip";
-        SettingsIO::outputFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".xml").string();
-
-        std::string fullOutFile = std::filesystem::path(SettingsIO::outputPath).append(SettingsIO::outputFile).string();
-        if(std::filesystem::exists(autoSave)){
-            std::filesystem::rename(autoSave, fullOutFile);
-        }
-        else if(!SettingsIO::overwrite){
-            // Copy full file description first, in case outputFile is different
-            if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)){
-                try {
-                    std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
-                                               std::filesystem::copy_options::overwrite_existing);
-                } catch (std::filesystem::filesystem_error &e) {
-                    Log::console_error("Could not copy file to preserve initial file layout: {}\n", e.what());
-                }
-            }
-        }
-        GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
-        prg.interactiveMode = simManager.interactiveMode;
-        FlowIO::WriterXML writer(false, true);
-        writer.userSettings = persistentUserSettings;
-        pugi::xml_document newDoc;
-        newDoc.load_file(fullOutFile.c_str());
-        writer.SaveGeometry(newDoc, model, prg);
-        writer.SaveSimulationState(newDoc, model, prg, simuState);
-        writer.WriteXMLToFile(newDoc, fullOutFile);
-
-        if(createZip){
-            prg.SetMessage("Compressing xml to zip...");
-
-            //Zipper library
-            std::string fileNameWithZIP = std::filesystem::path(fullOutFile).replace_extension(".zip").string();
-            if (std::filesystem::exists(fileNameWithZIP)) { // should be workFile == inputFile
-                try {
-                    std::filesystem::remove(fileNameWithZIP);
-                }
-                catch (std::exception &e) {
-                    Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP, e.what());
-                }
-            }
-            try {
-                ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
-            }
-            catch (std::exception& e) {
-                Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}", fileNameWithZIP, e.what());
-            }
-
-            //At this point, if no error was thrown, the compression is successful
-            try {
-                prg.SetMessage(fmt::format("Successfully compressed to {}, removing {} ...", fileNameWithZIP, fullOutFile));
-                std::filesystem::remove(fullOutFile);
-            }
-            catch (std::exception &e) {
-                Log::console_error("Error removing\n{}\nMaybe file is in use:\n{}",fullOutFile,e.what());
-            }
-        }
+        WriteResults(model, simuState, simManager, persistentUserSettings, autoSave);
     }
 
     // Cleanup
     SettingsIO::cleanup_files();
 
-    return 0;
+    return 0; //success
 }
 
 void ShutdownMPI() {
@@ -351,60 +276,9 @@ void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Molf
             endCondition = simuState.globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
 
         if (endCondition) {
-
             // if there is a next des limit, handle that
             if (!Settings::desLimit.empty()) {
-
-                // First write an intermediate output file
-                // 1. Get file name
-                std::string outFile = std::filesystem::path(SettingsIO::outputPath)
-                    .append("desorbed_")
-                    .concat(std::to_string(model->otfParams.desorptionLimit))
-                    .concat("_")
-                    .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
-
-                try {
-                    GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
-                    prg.interactiveMode = simManager.interactiveMode;
-                    // 2. Write XML file, use existing file as base or create new file
-                    FlowIO::WriterXML writer;
-                    writer.userSettings = persistentUserSettings; //keep from loaded file
-                    if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
-                        try {
-                            std::filesystem::copy_file(SettingsIO::workFile, outFile,
-                                std::filesystem::copy_options::overwrite_existing);
-                        }
-                        catch (std::filesystem::filesystem_error& e) {
-                            Log::console_error("Could not copy file: {}\n", e.what());
-                        }
-                    }
-                    else {
-                        pugi::xml_document newDoc;
-                        writer.SaveGeometry(newDoc, model, prg);
-                        writer.WriteXMLToFile(newDoc, outFile);
-                    }
-                    // 3. append updated results
-                    writer.AppendSimulationStateToFile(outFile, model, prg, simuState);
-                }
-                catch (std::filesystem::filesystem_error& e) {
-                    Log::console_error("Warning: Could not create file: {}\n", e.what());
-                }
-                // Next choose the next desorption limit and start
-
-                model->otfParams.desorptionLimit = Settings::desLimit.front();
-                Settings::desLimit.pop_front();
-                simManager.ForwardOtfParams(&model->otfParams);
-                endCondition = false;
-                Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
-
-                try {
-                    ProcessSleep(1000);
-                    simManager.StartSimulation();
-                }
-                catch (const std::exception& e) {
-                    Log::console_error("ERROR: Starting simulation: {}\n", e.what());
-                    endCondition = true;
-                }
+                HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition);
             }
         }
         else if (Settings::autoSaveDuration && (uint64_t)(elapsedTime) % Settings::autoSaveDuration == 0) { // autosave every x seconds
@@ -428,4 +302,146 @@ void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Molf
             endCondition |= (elapsedTime >= (double)Settings::simDuration);
         }
     } while (!endCondition);
+}
+
+void CleanUpMPI() {
+#if defined(USE_MPI)
+    MPI_Barrier(MPI_COMM_WORLD);
+    MFMPI::mpi_receive_states(model, simuState);
+    if (MFMPI::world_rank != 0) {
+        // Cleanup all files from nodes tmp path
+        if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
+            std::filesystem::remove_all(SettingsIO::outputPath);
+        }
+        if (std::filesystem::exists(autoSave)) {
+            std::filesystem::remove(autoSave);
+        }
+    }
+    // Finalize the MPI environment.
+    MPI_Finalize();
+    if (MFMPI::world_rank != 0) {
+        return 0;
+    }
+#endif //USE_MPI
+}
+
+void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave) {
+    // Export results
+        //  a) Use existing autosave as base
+        //  b) Create copy of input file
+        // update geometry info (in case of param sweep)
+        // and simply update simulation results
+    bool createZip = std::filesystem::path(SettingsIO::outputFile).extension() == ".zip";
+    SettingsIO::outputFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".xml").string();
+
+    std::string fullOutFile = std::filesystem::path(SettingsIO::outputPath).append(SettingsIO::outputFile).string();
+    if (std::filesystem::exists(autoSave)) {
+        std::filesystem::rename(autoSave, fullOutFile);
+    }
+    else if (!SettingsIO::overwrite) {
+        // Copy full file description first, in case outputFile is different
+        if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+            try {
+                std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
+                    std::filesystem::copy_options::overwrite_existing);
+            }
+            catch (std::filesystem::filesystem_error& e) {
+                Log::console_error("Could not copy file to preserve initial file layout: {}\n", e.what());
+            }
+        }
+    }
+    GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
+    prg.interactiveMode = simManager.interactiveMode;
+    FlowIO::WriterXML writer(false, true);
+    writer.userSettings = persistentUserSettings;
+    pugi::xml_document newDoc;
+    newDoc.load_file(fullOutFile.c_str());
+    writer.SaveGeometry(newDoc, model, prg);
+    writer.SaveSimulationState(newDoc, model, prg, simuState);
+    writer.WriteXMLToFile(newDoc, fullOutFile);
+
+    if (createZip) {
+        prg.SetMessage("Compressing xml to zip...");
+
+        //Zipper library
+        std::string fileNameWithZIP = std::filesystem::path(fullOutFile).replace_extension(".zip").string();
+        if (std::filesystem::exists(fileNameWithZIP)) { // should be workFile == inputFile
+            try {
+                std::filesystem::remove(fileNameWithZIP);
+            }
+            catch (std::exception& e) {
+                Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}", fileNameWithZIP, e.what());
+            }
+        }
+        try {
+            ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
+        }
+        catch (std::exception& e) {
+            Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}", fileNameWithZIP, e.what());
+        }
+
+        //At this point, if no error was thrown, the compression is successful
+        try {
+            prg.SetMessage(fmt::format("Successfully compressed to {}, removing {} ...", fileNameWithZIP, fullOutFile));
+            std::filesystem::remove(fullOutFile);
+        }
+        catch (std::exception& e) {
+            Log::console_error("Error removing\n{}\nMaybe file is in use:\n{}", fullOutFile, e.what());
+        }
+    }
+}
+
+void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+    SimulationManager& simManager, UserSettings& persistentUserSettings, bool& endCondition) {
+    // First write an intermediate output file
+                // 1. Get file name
+    std::string outFile = std::filesystem::path(SettingsIO::outputPath)
+        .append("desorbed_")
+        .concat(std::to_string(model->otfParams.desorptionLimit))
+        .concat("_")
+        .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
+
+    try {
+        GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
+        prg.interactiveMode = simManager.interactiveMode;
+        // 2. Write XML file, use existing file as base or create new file
+        FlowIO::WriterXML writer;
+        writer.userSettings = persistentUserSettings; //keep from loaded file
+        if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+            try {
+                std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                    std::filesystem::copy_options::overwrite_existing);
+            }
+            catch (std::filesystem::filesystem_error& e) {
+                Log::console_error("Could not copy file: {}\n", e.what());
+            }
+        }
+        else {
+            pugi::xml_document newDoc;
+            writer.SaveGeometry(newDoc, model, prg);
+            writer.WriteXMLToFile(newDoc, outFile);
+        }
+        // 3. append updated results
+        writer.AppendSimulationStateToFile(outFile, model, prg, simuState);
+    }
+    catch (std::filesystem::filesystem_error& e) {
+        Log::console_error("Warning: Could not create file: {}\n", e.what());
+    }
+    // Next choose the next desorption limit and start
+
+    model->otfParams.desorptionLimit = Settings::desLimit.front();
+    Settings::desLimit.pop_front();
+    simManager.ForwardOtfParams(&model->otfParams);
+    endCondition = false;
+    Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
+
+    try {
+        ProcessSleep(1000);
+        simManager.StartSimulation();
+    }
+    catch (const std::exception& e) {
+        Log::console_error("ERROR: Starting simulation: {}\n", e.what());
+        endCondition = true;
+    }
 }
