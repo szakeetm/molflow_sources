@@ -94,8 +94,12 @@ void RuntimeStatPrinter::Print(double elapsedTime, GlobalSimuState& globState, b
 
 int main(int argc, char** argv) {
 
-    // Set local to parse input files the same on all systems
-    std::setlocale(LC_ALL, "en_US.UTF - 8"); //There's also a call in initFromArgv()
+// Set local to parse input files the same on all systems
+#if defined(WIN32) || defined(__APPLE__)
+    setlocale(LC_ALL, "en_US.UTF-8");
+#else
+    std::setlocale(LC_ALL, "en_US.UTF-8"); //duplicate, in case we called this function from the test suite and not from main()
+#endif
 
 #if defined(USE_MPI)
     MFMPI::mpi_initialize();
