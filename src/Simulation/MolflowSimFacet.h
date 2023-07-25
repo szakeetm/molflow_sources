@@ -18,11 +18,9 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_MOLFLOWSIMFACET_H
-#define MOLFLOW_PROJ_MOLFLOWSIMFACET_H
+#pragma once
 
 #include "SimulationFacet.h"
-#include "MolflowTypes.h"
 
 class Anglemap {
 public:
@@ -58,6 +56,8 @@ public:
     }
 };
 
+//Extends generic simulation facet with Molflow-specific stuff
+//Currently: temperautre, outgassing map, angle map
 class MolflowSimFacet : public SimulationFacet {
 public:
     MolflowSimFacet() : SimulationFacet() {};
@@ -80,6 +80,6 @@ public:
 
     OutgassingMap ogMap;
     Anglemap angleMap;
-};
 
-#endif //MOLFLOW_PROJ_MOLFLOWSIMFACET_H
+    double sqrtTemp; //pre-caculated sqrt(sh.temperature) for frequent multiplication
+};
