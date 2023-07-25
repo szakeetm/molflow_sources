@@ -110,7 +110,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     userSettings.facetViewSettings.resize(model->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
-    std::vector<std::shared_ptr<SimulationFacet>> loadFacets; // tmp facet holder
+    std::vector<std::unique_ptr<SimulationFacet>> loadFacets; // tmp facet holder
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
@@ -119,7 +119,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
             throw Error(errMsg);
         }
 
-        loadFacets.emplace_back(std::make_shared<MolflowSimFacet>(nbIndex));
+        loadFacets.emplace_back(std::make_unique<MolflowSimFacet>(nbIndex));
         LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), userSettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
 
         idx++;
@@ -221,7 +221,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     }
 
     model->tdParams.IDs = this->IDs;
-    model->facets = std::move(loadFacets);
+    model->facets = std::move(loadFacets); //Transfer ownership
 
     return 0;
 }

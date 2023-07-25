@@ -210,31 +210,31 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
-            auto& facet = *facets.at(id);
+            auto& facet = facets[id];
             auto type = std::get<1>(par);
             switch (type) {
                 case (Parameters::FacetParam::opacity):
-                    facet.sh.opacity = std::get<2>(par);
-                    if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0) {
+                    facet->sh.opacity = std::get<2>(par);
+                    if(facet->sh.opacity < 0.0 || facet->sh.opacity > 1.0) {
                         nbError++;
                         Log::console_error("[ParameterChange][Facet][ID: {}] Invalid opacity on facet: {}\n", id,
-                                           facet.sh.opacity);
+                                           facet->sh.opacity);
                     }
                     break;
                 case (Parameters::FacetParam::outgassing):
-                    facet.sh.outgassing = std::get<2>(par);
+                    facet->sh.outgassing = std::get<2>(par);
                     break;
                 case (Parameters::FacetParam::sticking):
-                    facet.sh.sticking = std::get<2>(par);
-                    if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0) {
+                    facet->sh.sticking = std::get<2>(par);
+                    if(facet->sh.sticking < 0.0 || facet->sh.sticking > 1.0) {
                         nbError++;
                         Log::console_error(
                                 "[ParameterChange][Facet][ID: {}] Invalid sticking coefficient on facet: {}\n", id,
-                                facet.sh.sticking);
+                                facet->sh.sticking);
                     }
                     break;
                 case (Parameters::FacetParam::temperature):
-                    facet.sh.temperature = std::get<2>(par);
+                    facet->sh.temperature = std::get<2>(par);
                     break;
                 default:
                     Log::console_error("Unknown FacetParam {}\n", (size_t)(std::get<1>(par)));

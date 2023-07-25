@@ -1015,11 +1015,11 @@ int Worker::SendAngleMaps() {
 	if (!lock) return 1;
 
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
-		auto* sFac = (MolflowSimFacet*)model->facets[i].get();
-		if (sFac->sh.anglemapParams.record)
+		auto* mfFac = (MolflowSimFacet*)model->facets[i].get();
+		if (mfFac->sh.anglemapParams.record)
 			globalState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
-		sFac->angleMap.pdf = angleMapCaches[i];
+		mfFac->angleMap.pdf = angleMapCaches[i];
 	}
 	return 0;
 }
