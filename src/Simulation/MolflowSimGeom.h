@@ -82,14 +82,15 @@ struct TimeDependentParameters {
 class MolflowSimulationModel : public SimulationModel {
   
 public:
-    MolflowSimulationModel() : SimulationModel(), tdParams() {};
+    /*
+    MolflowSimulationModel() : SimulationModel() {};
 
     ~MolflowSimulationModel();
 
     MolflowSimulationModel(MolflowSimulationModel &&o) noexcept;
 
     MolflowSimulationModel(const MolflowSimulationModel &o);
-
+    */
     size_t size() override;
 
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {

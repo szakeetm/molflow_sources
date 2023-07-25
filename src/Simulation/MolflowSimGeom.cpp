@@ -394,6 +394,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
     wp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
     wp.finalOutgassingRate = finalOutgassingRate;
 }
+/*
 
 MolflowSimulationModel::MolflowSimulationModel(MolflowSimulationModel &&o) noexcept {
     *this = std::move(o);
@@ -404,6 +405,7 @@ MolflowSimulationModel::MolflowSimulationModel(const MolflowSimulationModel &o) 
 };
 
 MolflowSimulationModel::~MolflowSimulationModel() = default;
+*/
 
 /**
 * \brief Calculates the used memory used by the whole simulation model
