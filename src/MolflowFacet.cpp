@@ -1433,10 +1433,12 @@ double InterfaceFacet::DensityCorrection() {
 	else return 1.0;
 }
 
+
 /**
 * \brief Serializes data from facet into a cereal binary archive
 * \param outputarchive reference to the binary archive
 */
+/*
 void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
 	//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
@@ -1491,3 +1493,4 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 	);
 
 }
+*/
