@@ -92,7 +92,7 @@ public:
     MolflowSimulationModel(const MolflowSimulationModel &o);
     */
     size_t size() override;
-
+    /*
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
         structures = o.structures;
@@ -122,6 +122,7 @@ public:
 
         return *this;
     };
+    */
 
     //! Do calculations necessary before launching simulation
     void PrepareToRun() override;
