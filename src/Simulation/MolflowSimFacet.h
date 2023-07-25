@@ -62,10 +62,10 @@ class MolflowSimFacet : public SimulationFacet {
 public:
     MolflowSimFacet() : SimulationFacet() {};
     explicit MolflowSimFacet(size_t nbIndex) : SimulationFacet(nbIndex) {};
-    MolflowSimFacet(const MolflowSimFacet &o);
-    MolflowSimFacet(MolflowSimFacet &&cpy) noexcept;
-    MolflowSimFacet &operator=(const MolflowSimFacet &o);
-    MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
+    //MolflowSimFacet(const MolflowSimFacet &o);
+    //MolflowSimFacet(MolflowSimFacet &&cpy) noexcept;
+    //MolflowSimFacet &operator=(const MolflowSimFacet &o);
+    //MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
 
     bool InitializeOnLoad(const size_t id);
 

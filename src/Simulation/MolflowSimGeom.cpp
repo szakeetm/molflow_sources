@@ -227,13 +227,8 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
     for(auto& sFac : this->facets){
         if (sFac->sh.opacity_paramId == -1){ //constant sticking
             sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            //sFac->surf = simModelPtr->GetSurface(sFac.get());
         }
-        /*else {
-            auto* par = &simModelPtr->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = simModelPtr->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }*/
-        sFac->surf = GetSurface(sFac.get());
+        sFac->surf = GetSurface(sFac);
     }
 
     this->accel.clear();

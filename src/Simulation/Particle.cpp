@@ -94,7 +94,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
             sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
             SetThreadError(err);*/
             if (particleTracerId == 0)RecordHit(HIT_REF);
-            lastHitFacet = iFacet;
+            lastHitFacet.reset(iFacet);
             return; //LEAK
         }
     } else destIndex = iFacet->sh.teleportDest - 1;
@@ -119,7 +119,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
         SetThreadError(err);*/
         if (particleTracerId == 0)RecordHit(HIT_REF);
-        lastHitFacet = iFacet;
+        lastHitFacet.reset(iFacet);
         return; //LEAK
     }
 
@@ -163,7 +163,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         nbTry++;
     }
 
-    lastHitFacet = destination;
+    lastHitFacet.reset(destination);
 
     //Count hits on teleport facets
     /*iFacet->sh.tmpCounter.hit.nbAbsEquiv++;
@@ -464,9 +464,9 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     ray.lastIntersected = lastHitFacet->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
-    ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
+    ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
-    auto mfLastHitFacet = auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(lastHitFacet);); //access extended properties
+    auto mfLastHitFacet = std::dynamic_pointer_cast<MolflowSimFacet>(lastHitFacet); //access extended properties
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfLastHitFacet->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
@@ -532,7 +532,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     if (!found) {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
-            auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(sFac);
+            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
             auto& outgMap = mfSrc->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
@@ -645,20 +645,20 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
-        IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+        IncreaseFacetCounter(src.get(), momentIndex, 0, 1, 0, 2.0 / ortVelocity,
 		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
-        IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+        IncreaseFacetCounter(src.get(), momentIndex, 0, 1, 0, 2.0 / ortVelocity,
             (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     //Desorption doesn't contribute to angular profiles, nor to angle maps
-    ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    LogHit(src);
+    ProfileFacet(src.get(), momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
+    LogHit(src.get());
     if (/*src->texture && */src->sh.countDes)
-        RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
+        RecordHitOnTexture(src.get(), momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
 
     // Reset volatile state
@@ -844,7 +844,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         if (particleTracerId == 0)
             RecordHit(HIT_MOVING);
     } else if (particleTracerId == 0)RecordHit(HIT_REF);
-    lastHitFacet = iFacet;
+    lastHitFacet.reset(iFacet);
     //nbPHit++;
 }
 

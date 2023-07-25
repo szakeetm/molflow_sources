@@ -140,7 +140,7 @@ public:
     * \param facet facet for which a Surface should be found or created
      * \return new or existing Surface corresponding to the choosen parameters of the facet
     */
-    Surface *GetSurface(SimulationFacet* facet) override {
+    std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override {
 
         if (facet->sh.opacity_paramId == -1){ //constant sticking
             //facet->sh.opacity = std::clamp(facet->sh.opacity, 0.0, 1.0);
@@ -158,7 +158,7 @@ public:
             }
             surfaces.insert(std::make_pair(opacity, surface));
 
-            return surface.get();
+            return surface;
         }
         else {
             auto opacity_paramId = facet->sh.opacity_paramId;
@@ -168,14 +168,14 @@ public:
             if (!surfaces.empty()) {
                 auto surf = surfaces.find(indexed_id);
                 if (surf != surfaces.end())
-                    return surf->second.get();
+                    return surf->second;
             }
 
             std::shared_ptr<ParameterSurface> surface;
             surface = std::make_shared<ParameterSurface>(par);
             surfaces.insert(std::make_pair(indexed_id, surface));
             Log::console_msg_master(5, "Insert surface with param id: {}\n", indexed_id);
-            return surface.get();
+            return surface;
         }
     };
 

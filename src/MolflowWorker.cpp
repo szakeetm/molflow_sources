@@ -1149,7 +1149,7 @@ bool Worker::InterfaceGeomToSimModel() {
 			return false;
 		}
 
-		mf_model->facets.push_back(std::make_shared<MolflowSimFacet>(sFac));
+		mf_model->facets.emplace_back(std::make_shared<MolflowSimFacet>(std::move(sFac)));
 	}
 
 	if (!mf_model->facets.empty() && !mf_model->vertices3.empty())

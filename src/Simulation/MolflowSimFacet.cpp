@@ -22,6 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <fmt/core.h>
 #include <cmath> //sqrt
 
+/*
 MolflowSimFacet::MolflowSimFacet(const MolflowSimFacet& cpy)  : SimulationFacet(cpy) {
     *this = cpy;
 }
@@ -29,7 +30,8 @@ MolflowSimFacet::MolflowSimFacet(const MolflowSimFacet& cpy)  : SimulationFacet(
 MolflowSimFacet::MolflowSimFacet(MolflowSimFacet&& cpy) noexcept : SimulationFacet(cpy){
     *this = std::move(cpy);
 }
-
+*/
+/*
 MolflowSimFacet& MolflowSimFacet::operator=(const MolflowSimFacet& cpy){
     SimulationFacet::operator=(cpy);
     this->angleMap = cpy.angleMap;
@@ -45,6 +47,7 @@ MolflowSimFacet& MolflowSimFacet::operator=(MolflowSimFacet&& cpy) noexcept {
     this->sqrtTemp = cpy.sqrtTemp;
     return *this;
 }
+*/
 
 /**
 * \brief Initialise various properties for a single facet
