@@ -788,16 +788,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				TimeDependentParameters::InsertParametersBeforeCatalog(interfaceParameterCache,loader.userSettings.parameters);
 
-				*geom->GetGeomProperties() = model->sh;
-
-				for (int i = 0; i < model->structures.size(); i++) {
-					geom->SetStructureName(i, model->structures[i].name);
-				}
-
-				// Move actual geom to interface geom
-				geom->InitInterfaceVertices(model->vertices3);
-				geom->InitInterfaceFacets(model->facets, this);
-
 				// Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
 				FlowIO::LoaderInterfaceXML::LoadInterfaceSettings(interfNode, mApp);
 
@@ -829,7 +819,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 
 				prg.SetMessage("Initializing geometry...");
-
+				SimModelToInterfaceGeom();
 				geom->InitializeGeometry();
 				prg.SetMessage("Building mesh...");
 				auto nbFacet = geom->GetNbFacet();
@@ -922,27 +912,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 	// Readers that load the geometry directly into the sim model
 	// need to update the interface geometry afterwards
-	if (ext == "xml" || ext == "zip") {
-		if (!insert) {
-			SimModelToInterfaceGeom();
-		}
-		else {
-			InterfaceGeomToSimModel();
-		}
-	}
-	else if (insert)
+	if (insert) {
 		InterfaceGeomToSimModel();
-
-	if (!insert) {
+	} else {
 		CalcTotalOutgassing();
-		/*
-		//Refresh is already done by the caller Molflow::LoadFile()
-
-		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments(); //Sets displayed moment to 0
-		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
-		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
-		if (mApp->timewisePlotter) mApp->timewisePlotter->Refresh();
-		*/
 	}
 
 	globalStatCache = globalState.globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
@@ -952,28 +925,18 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 	}
 }
 
-bool Worker::SimModelToInterfaceGeom() {
+void Worker::SimModelToInterfaceGeom() {
 
 	*geom->GetGeomProperties() = model->sh;
 
 	bool hasVolatile = false;
 
-	for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-		assert(model->sh.nbFacet == model->facets.size());
-		SimulationFacet* sFac = model->facets[facIdx].get();
-		{
-			InterfaceFacet* facet = geom->GetFacet(facIdx);
-
-			facet->sh = sFac->sh;
-			/*sFac.indices = facet->indices;
-			sFac.vertices2 = facet->vertices2;
-			sFac.ogMap = facet->ogMap;
-			sFac.angleMap.pdf = angleMapVector;
-			sFac.textureCellIncrements = textIncVector;*/
-		}
+	for (int i = 0; i < model->structures.size(); i++) {
+		geom->SetStructureName(i, model->structures[i].name);
 	}
 
-	return true;
+	geom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
+	geom->SetInterfaceFacets(model->facets, this);
 }
 
 

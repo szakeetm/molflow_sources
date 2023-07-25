@@ -98,7 +98,7 @@ public:
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
-    void InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) override;
+    void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) override;
 
 private:
 

@@ -3246,11 +3246,9 @@ bool MolflowGeometry::CompareXML_simustate(const std::string& fileName_lhs, cons
 	return false;
 }
 
-void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
+void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
 	//General Facets
-	
-	Geometry::InitInterfaceFacets(sFacets, work);
-
+	Geometry::SetInterfaceFacets(sFacets, work);
 
 	// Init Molflow properties
 	size_t index = 0;
