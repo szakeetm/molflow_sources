@@ -19,7 +19,6 @@ public:
 };
 
 void ShutdownMPI();
-void CleanUpMPI(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState, std::string& autoSave);
 void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
     SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer);void CleanUpMPI();
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,

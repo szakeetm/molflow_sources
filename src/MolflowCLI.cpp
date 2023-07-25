@@ -212,7 +212,24 @@ int main(int argc, char** argv) {
         printer.Print(elapsedTime, simuState);
     }
 
-    CleanUpMPI(model,simuState,autoSave);
+#if defined(USE_MPI)
+    MPI_Barrier(MPI_COMM_WORLD);
+    MFMPI::mpi_receive_states(model, simuState);
+    if (MFMPI::world_rank != 0) {
+        // Cleanup all files from nodes tmp path
+        if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
+            std::filesystem::remove_all(SettingsIO::outputPath);
+        }
+        if (std::filesystem::exists(autoSave)) {
+            std::filesystem::remove(autoSave);
+        }
+    }
+    // Finalize the MPI environment.
+    MPI_Finalize();
+    if (MFMPI::world_rank != 0) {
+        return 0;
+    }
+#endif //USE_MPI
 
     //Print sum
     if(elapsedTime > 1e-4) {
@@ -283,27 +300,6 @@ void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Molf
             endCondition |= (elapsedTime >= (double)Settings::simDuration);
         }
     } while (!endCondition);
-}
-
-void CleanUpMPI(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState, std::string& autoSave) {
-#if defined(USE_MPI)
-    MPI_Barrier(MPI_COMM_WORLD);
-    MFMPI::mpi_receive_states(model, simuState);
-    if (MFMPI::world_rank != 0) {
-        // Cleanup all files from nodes tmp path
-        if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
-            std::filesystem::remove_all(SettingsIO::outputPath);
-        }
-        if (std::filesystem::exists(autoSave)) {
-            std::filesystem::remove(autoSave);
-        }
-    }
-    // Finalize the MPI environment.
-    MPI_Finalize();
-    if (MFMPI::world_rank != 0) {
-        return 0;
-    }
-#endif //USE_MPI
 }
 
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
