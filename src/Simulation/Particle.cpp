@@ -459,14 +459,14 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         return false;
     }
 
-    auto src = model->facets[i].get();
+    auto& src = model->facets[i];
     lastHitFacet = src;
     ray.lastIntersected = lastHitFacet->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
-    auto mfLastHitFacet = static_cast<MolflowSimFacet*>(lastHitFacet); //access extended properties
+    auto mfLastHitFacet = auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(lastHitFacet);); //access extended properties
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfLastHitFacet->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
@@ -493,7 +493,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     while (!found && nbTry < 1000) {
         double u, v;
         if (foundInMap) {
-            auto& outgMap = ((MolflowSimFacet*)(src))->ogMap;
+            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
+            auto& outgMap = mfSrc->ogMap;
             if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
                 u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidth_precise;
@@ -531,7 +532,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     if (!found) {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
-            auto& outgMap = ((MolflowSimFacet*)(src))->ogMap;
+            auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(sFac);
+            auto& outgMap = mfSrc->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
@@ -575,11 +577,12 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                                          randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_ANGLEMAP: {
+            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
-                    src->sh.anglemapParams, ((MolflowSimFacet*)(src))->angleMap, randomGenerator.rnd());
+                    src->sh.anglemapParams, mfSrc->angleMap, randomGenerator.rnd());
 
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, ((MolflowSimFacet*)(src))->angleMap, randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, mfSrc->angleMap, randomGenerator.rnd());
                             
             /*                                                      
             //Debug
@@ -1111,7 +1114,7 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
 }
 
 void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
-    auto mfLastHitFacet = static_cast<MolflowSimFacet*>(lastHitFacet); //access extended properties
+    auto mfLastHitFacet = std::dynamic_pointer_cast<MolflowSimFacet>(lastHitFacet); //access extended properties
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
         if (model->wp.useMaxwellDistribution)
             velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfLastHitFacet->sqrtTemp, randomGenerator.rnd());

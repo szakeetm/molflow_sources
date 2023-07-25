@@ -3255,13 +3255,12 @@ void MolflowGeometry::InitInterfaceFacets(std::vector<std::shared_ptr<Simulation
 	// Init Molflow properties
 	size_t index = 0;
 	for (auto& sFac : sFacets) {
-		auto fac = (MolflowSimFacet*)sFac.get();
-		//facets[index] = new InterfaceFacet(fac->indices.size());
+		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(sFac);
 		auto& intFacet = facets[index];
 
 		// Molflow
-		intFacet->ogMap = fac->ogMap;
-		intFacet->angleMapCache = fac->angleMap.pdf;
+		intFacet->ogMap = mfFac->ogMap;
+		intFacet->angleMapCache = mfFac->angleMap.pdf;
 
 		if (intFacet->ogMap.outgassingMapWidth > 0 || intFacet->ogMap.outgassingMapHeight > 0
 			|| intFacet->ogMap.outgassingFileRatioU > 0.0 || intFacet->ogMap.outgassingFileRatioV > 0.0) {

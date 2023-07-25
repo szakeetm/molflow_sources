@@ -1015,7 +1015,7 @@ int Worker::SendAngleMaps() {
 	if (!lock) return 1;
 
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
-		auto* mfFac = (MolflowSimFacet*)model->facets[i].get();
+		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
 		if (mfFac->sh.anglemapParams.record)
 			globalState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)

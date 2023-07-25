@@ -479,45 +479,45 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
     bool hasVolatile = false;
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        auto* sFac = (MolflowSimFacet*) model->facets[facIdx].get();
+        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facIdx]);
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
-        if (sFac->sh.isTextured) {
-            auto meshAreas = sFac->InitTextureMesh();
-            textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
+        if (mfFac->sh.isTextured) {
+            auto meshAreas = mfFac->InitTextureMesh();
+            textIncVector.resize(mfFac->sh.texHeight * mfFac->sh.texWidth);
 
-            double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
-            double rh = sFac->sh.V.Norme() / (double) (sFac->sh.texHeight_precise);
+            double rw = mfFac->sh.U.Norme() / (double) (mfFac->sh.texWidth_precise);
+            double rh = mfFac->sh.V.Norme() / (double) (mfFac->sh.texHeight_precise);
             double area = rw * rh;
-            area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
+            area *= (mfFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
 
-            for (size_t j = 0; j < sFac->sh.texHeight; j++) {
-                for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+            for (size_t j = 0; j < mfFac->sh.texHeight; j++) {
+                for (size_t i = 0; i < mfFac->sh.texWidth; i++) {
                     if (meshAreas[add] < 0.0) {
                         textIncVector[add] = 1.0 / area;
                     } else {
-                        textIncVector[add] = 1.0 / (meshAreas[add] * ((sFac->sh.is2sided) ? 2.0 : 1.0));
+                        textIncVector[add] = 1.0 / (meshAreas[add] * ((mfFac->sh.is2sided) ? 2.0 : 1.0));
                     }
                     add++;
                 }
             }
         }
-        sFac->textureCellIncrements = textIncVector;
+        mfFac->textureCellIncrements = textIncVector;
 
         //Some initialization
         try {
-            if (!sFac->InitializeOnLoad(facIdx)) return false;
+            if (!mfFac->InitializeOnLoad(facIdx)) return false;
         }
         catch (const std::exception& err){
             Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
             return 1;
         }
-        hasVolatile |= sFac->sh.isVolatile;
+        hasVolatile |= mfFac->sh.isVolatile;
 
-        if ((sFac->sh.superDest || sFac->sh.isVolatile) &&
-            ((sFac->sh.superDest - 1) >= model->sh.nbSuper || sFac->sh.superDest < 0)) {
+        if ((mfFac->sh.superDest || mfFac->sh.isVolatile) &&
+            ((mfFac->sh.superDest - 1) >= model->sh.nbSuper || mfFac->sh.superDest < 0)) {
             // Geometry error
             Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
             return 1;

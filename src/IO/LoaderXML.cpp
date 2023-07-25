@@ -110,7 +110,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
     userSettings.facetViewSettings.resize(model->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
-    std::vector<std::unique_ptr<SimulationFacet>> loadFacets; // tmp facet holder
+    std::vector<std::shared_ptr<SimulationFacet>> loadFacets; // tmp facet holder
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
@@ -118,9 +118,10 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Mo
             sprintf(errMsg, "Facet %zd has only %zd vertices. ", idx + 1, nbIndex);
             throw Error(errMsg);
         }
-
-        loadFacets.emplace_back(std::make_unique<MolflowSimFacet>(nbIndex));
-        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), userSettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
+        auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
+        loadFacets.push_back(newFacetPtr);
+        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(newFacetPtr);
+        LoadFacet(facetNode, mfFac.get(), userSettings.facetViewSettings[idx],model->sh.nbVertex,model->tdParams.parameters.size());
 
         idx++;
         prg.SetProgress((double)idx/(double)model->sh.nbFacet);

@@ -110,7 +110,8 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
         size_t facetId = selection.empty() ? i : selection[i];
-        SaveFacet(f, (MolflowSimFacet*) model->facets[facetId].get(), model->vertices3.size());
+        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
+        SaveFacet(f, mfFac.get(), model->vertices3.size());
     }
     
 
