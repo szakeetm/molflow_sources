@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
-    simManager.interactiveMode = false;
+    simManager.noProgress = false;
 #endif
 
     // Start async simulation run, check state in following loop
@@ -265,7 +265,7 @@ void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Molf
         else if (Settings::autoSaveDuration && (uint64_t)(elapsedTime) % Settings::autoSaveDuration == 0) { // autosave every x seconds
             // Autosave
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
-            prg.interactiveMode = simManager.interactiveMode;
+            prg.noProgress = simManager.noProgress;
             FlowIO::WriterXML writer;
             writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
         }
@@ -333,7 +333,7 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
         }
     }
     GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
-    prg.interactiveMode = simManager.interactiveMode;
+    prg.noProgress = simManager.noProgress;
     FlowIO::WriterXML writer(false, true);
     writer.userSettings = persistentUserSettings;
     pugi::xml_document newDoc;
@@ -385,7 +385,7 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
 
     try {
         GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         // 2. Write XML file, use existing file as base or create new file
         FlowIO::WriterXML writer;
         writer.userSettings = persistentUserSettings; //keep from loaded file

@@ -220,7 +220,7 @@ namespace {
             {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
-                                                 "--outputPath", outPath, "--notInteractive" };
+                                                 "--outputPath", outPath, "--noProgress" };
                 Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
                 Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
@@ -355,7 +355,7 @@ namespace {
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--notInteractive" }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--noProgress" }; //default init with input file=result
             if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -392,7 +392,7 @@ namespace {
             std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 
             Log::console_msg(1,"Starting run {}...\n", runId+1);
-            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --notInteractive", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
+            std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --noProgress", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
             //Log::console_msg(1, command.c_str());
 
             int returnCode = std::system(command.c_str());
@@ -408,7 +408,7 @@ namespace {
 
             Log::console_msg(1, "Loading results for parsing...\n");
             
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--notInteractive" }; //default init with input file=result
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--noProgress" }; //default init with input file=result
             if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
                 exit(41);
             }
@@ -468,9 +468,9 @@ namespace {
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
-        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--notInteractive",
+        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--noProgress",
                                          "--file", testFile,
-                                         "--outputPath", outPath, "--notInteractive" };
+                                         "--outputPath", outPath, "--noProgress" };
         {
             if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                 exit(41);
@@ -627,7 +627,7 @@ namespace {
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
 
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--notInteractive"};
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress"};
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -643,7 +643,7 @@ namespace {
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
@@ -682,7 +682,7 @@ namespace {
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath, "--notInteractive" };
+                                         "--outputPath", outPath, "--noProgress" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -698,7 +698,7 @@ namespace {
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
@@ -738,7 +738,7 @@ namespace {
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath, "-o", outFile, "--notInteractive" };
+                                         "--outputPath", outPath, "-o", outFile, "--noProgress" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -755,7 +755,7 @@ namespace {
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
@@ -794,7 +794,7 @@ namespace {
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "-o", outFile, "--notInteractive" };
+                                         "-o", outFile, "--noProgress" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -809,7 +809,7 @@ namespace {
         EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
@@ -852,7 +852,7 @@ namespace {
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "-o", outPath + "/" + outFile, "--notInteractive" };
+                                         "-o", outPath + "/" + outFile, "--noProgress" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -869,7 +869,7 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath.empty());
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
@@ -911,7 +911,7 @@ namespace {
         std::string outPathF = "TFPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
-                                         "--outputPath", outPath, "-o", outPathF + "/" + outFile, "--notInteractive" };
+                                         "--outputPath", outPath, "-o", outPathF + "/" + outFile, "--noProgress" };
         {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
@@ -930,7 +930,7 @@ namespace {
         EXPECT_TRUE(SettingsIO::workPath == outPath);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
-        prg.interactiveMode = simManager.interactiveMode;
+        prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);

@@ -38,7 +38,7 @@ namespace Settings {
     bool resetOnStart = false;
     std::string paramFile;
     std::vector<std::string> paramChanges;
-    bool notInteractive = false;  //If true, doesn't print percentage updates for CLI progressbars
+    bool noProgress = false;  //If true, doesn't print percentage updates for CLI progressbars
 }
 
 void initDefaultSettings() {
@@ -51,7 +51,7 @@ void initDefaultSettings() {
     Settings::resetOnStart = false;
     Settings::paramFile.clear();
     Settings::paramChanges.clear();
-    Settings::notInteractive = false;
+    Settings::noProgress = false;
 
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
@@ -118,7 +118,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("--setParams", Settings::paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
-    app.add_flag("--notInteractive", Settings::notInteractive, "Log file mode: No percentages printed of progress");
+    app.add_flag("--noProgress", Settings::noProgress, "Log file mode: No percentage updates printed of progress");
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
@@ -171,7 +171,6 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     Log::console_header(1, "Initializing simulation...\n");
 
     simManager->nbThreads = Settings::nbThreads;
-    simManager->interactiveMode = !Settings::notInteractive;
 
     if (simManager->InitSimulations()) { //currently only calls CreateCPUHandle()
         Log::console_error("Error: Initializing simulation units: {}\n", simManager->nbThreads);
@@ -199,7 +198,7 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        CLILoadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr, userSettings, simManager->interactiveMode);
+        CLILoadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
@@ -300,11 +299,11 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 * \brief Wrapper for CLI's initFromFile for XML loading with LoaderXML
  */
 void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
-                             GlobalSimuState *globStatePtr, UserSettings& userSettings, bool interactiveMode) {
+                             GlobalSimuState *globStatePtr, UserSettings& userSettings, bool noProgress) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
-    prg.interactiveMode = interactiveMode; //Suppress percentages if ran in script
+    prg.noProgress = noProgress; //Suppress percentages if ran in script
 
     //1. Load Input File (regular XML)
     {
