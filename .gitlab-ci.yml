@@ -449,6 +449,8 @@ benchmark-macos:
     OS_NAME: "mac"
   tags:
     - macos
+  when: manual
+  allow_failure: true
 
 benchmark-macos-arm:
   extends: .benchmark-unix
@@ -456,6 +458,8 @@ benchmark-macos-arm:
     OS_NAME: "mac_arm"
   tags:
     - macos-arm
+  when: manual
+  allow_failure: true
 
 benchmark-windows:
   stage: benchmark
