@@ -213,6 +213,7 @@ namespace {
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             SimulationManager simManager{0};
+            simManager.interactiveMode=false;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
@@ -349,6 +350,7 @@ namespace {
         //First load reference results
         {
             SimulationManager simManager{ 0 }; //start master process
+            simManager.interactiveMode=false;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
@@ -401,6 +403,7 @@ namespace {
             //Parse results
 
             SimulationManager simManager{ 0 }; //start master process
+            simManager.interactiveMode=false;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             UserSettings persistentUserSettings;
@@ -464,6 +467,7 @@ namespace {
         const size_t nRuns = 15;
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
+        simManager->interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -501,6 +505,7 @@ namespace {
             if (runNb != 0) {
                 // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
+                simManager->interactiveMode=false;
                 model = std::make_shared<MolflowSimulationModel>();
                 if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
                     exit(41);
@@ -588,12 +593,13 @@ namespace {
 
         {
             SimulationManager simMan(0);
+            simMan.interactiveMode=false;
             EXPECT_EQ(0, simMan.InitSimulations());
         }
 
         {
             SimulationManager simMan(0);
-            simMan.useCPU = true;
+            simMan.interactiveMode=false;
             simMan.nbThreads = 0;
             simMan.InitSimulations();
             EXPECT_NE(0, simMan.nbThreads);
@@ -601,7 +607,7 @@ namespace {
 
         {
             SimulationManager simMan(0);
-            simMan.useCPU = true;
+            simMan.interactiveMode=false;
             simMan.nbThreads = 1; // more not possible,
             simMan.InitSimulations();
             EXPECT_EQ(1, simMan.nbThreads);
@@ -611,7 +617,7 @@ namespace {
     TEST(SubProcessCreateAndKill, CPU) {
         {
             SimulationManager simMan(0);
-            simMan.useCPU = true;
+            simMan.interactiveMode=false;
             simMan.nbThreads = 1;
             simMan.InitSimulations();
             EXPECT_EQ(1, simMan.nbThreads);
@@ -623,6 +629,7 @@ namespace {
     TEST(InputOutput, DefaultInput) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -675,6 +682,7 @@ namespace {
     TEST(InputOutput, Outputpath) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -731,6 +739,7 @@ namespace {
     TEST(InputOutput, OutputpathAndFile) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -788,6 +797,7 @@ namespace {
     TEST(InputOutput, Outputfile) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -842,6 +852,7 @@ namespace {
     TEST(InputOutput, OutputfileWithPath) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
@@ -900,6 +911,7 @@ namespace {
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
         SimulationManager simManager{0};
+        simManager.interactiveMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         UserSettings persistentUserSettings;
