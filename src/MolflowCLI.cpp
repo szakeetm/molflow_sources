@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     simTimer.Start();
     double elapsedTime = 0.0;
 
-    DoMainLoop(elapsedTime, simTimer, model, simuState,
+    CLIMainLoop(elapsedTime, simTimer, model, simuState,
         simManager, persistentUserSettings, autoSave, printer);
 
     simTimer.Stop();
@@ -261,7 +261,7 @@ void ShutdownMPI() {
 #endif
 }
 
-void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
     SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
