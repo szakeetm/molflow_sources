@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
         printer.Print(elapsedTime, simuState);
     }
 
-    CleanUpMPI();
+    CleanUpMPI(model,simuState,autoSave);
 
     //Print sum
     if(elapsedTime > 1e-4) {
@@ -285,7 +285,7 @@ void DoMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Molf
     } while (!endCondition);
 }
 
-void CleanUpMPI() {
+void CleanUpMPI(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState, std::string& autoSave) {
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
     MFMPI::mpi_receive_states(model, simuState);

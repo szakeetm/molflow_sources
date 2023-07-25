@@ -153,10 +153,11 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
                               std::shared_ptr<MolflowSimulationModel> model) {
 
 // Set local to parse input files the same on all systems
-#if defined(WIN32) || defined(__APPLE__)
+//duplicate, in case we called this function from the test suite and not from main()
+#if defined(__APPLE__)
     setlocale(LC_ALL, "en_US.UTF-8");
 #else
-    std::setlocale(LC_ALL, "en_US.UTF-8"); //duplicate, in case we called this function from the test suite and not from main()
+    std::setlocale(LC_ALL, "en_US.UTF-8");
 #endif
 
     initDefaultSettings();
