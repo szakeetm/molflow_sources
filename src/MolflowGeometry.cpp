@@ -2655,7 +2655,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSimuState& globState, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
 	xml_node rootNode;
 	//Lock during writing
-	std::unique_lock<std::timed_mutex> lock(globState.simuStateMutex, std::chrono::seconds(10));
+	std::unique_lock<std::timed_mutex> lock(globState.particleLogMutex, std::chrono::seconds(10));
 	if (!lock.owns_lock()) {
 		return false;
 	}

@@ -18,8 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_MOLFLOWSIMGEOM_H
-#define MOLFLOW_PROJ_MOLFLOWSIMGEOM_H
+#pragma once
 
 #include <vector>
 #include "../MolflowTypes.h"
@@ -309,12 +308,13 @@ public:
  */
 struct ParticleLog {
 public:
+    //Methods below are required because it's part of ParticleTracer which is stored in a vector
     ParticleLog &operator=(const ParticleLog &src) {
         pLog = src.pLog;
         return *this;
     }
 
-    ParticleLog(ParticleLog &&rhs) noexcept: simuStateMutex() {
+    ParticleLog(ParticleLog &&rhs) noexcept { //move constructor
         pLog = std::move(pLog);
     };
 
@@ -322,19 +322,14 @@ public:
         pLog = rhs.pLog;
     };
 
-    ParticleLog() : simuStateMutex() {
-
-    };
+    ParticleLog() = default;
 
     void resize(size_t nbLogs) {
         std::vector<ParticleLoggerItem>(nbLogs).swap(pLog);
     };
-
     void clear() {
         pLog.clear();
     };
     std::vector<ParticleLoggerItem> pLog;
-    mutable std::timed_mutex simuStateMutex;
+    mutable std::timed_mutex particleLogMutex;
 };
-
-#endif //MOLFLOW_PROJ_MOLFLOWSIMGEOM_H

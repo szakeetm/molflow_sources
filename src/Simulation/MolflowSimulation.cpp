@@ -44,7 +44,7 @@ bool result = 0;
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        if (!particleTracer.tmpParticleLog.simuStateMutex.try_lock_for(std::chrono::seconds(10))) {
+        if (!particleTracer.tmpParticleLog.particleLogMutex.try_lock_for(std::chrono::seconds(10))) {
 #pragma omp critical            
             result = -1;
         }
@@ -53,7 +53,7 @@ bool result = 0;
         if (model->otfParams.enableLogging) {
            particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
         }
-        particleTracer.tmpParticleLog.simuStateMutex.unlock();
+        particleTracer.tmpParticleLog.particleLogMutex.unlock();
     }
     return result;
 }

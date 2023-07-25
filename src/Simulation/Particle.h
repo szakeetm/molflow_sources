@@ -38,15 +38,12 @@ namespace MFSim {
  */
     class ParticleTracer {
     public:
-        //double GenerateRandomVelocity(int CDFId, const double rndVal);
-
-        //double GenerateDesorptionTime(const SimulationFacet *src, const double rndVal);
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
         bool SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes);
 
-        bool StartFromSource();
+        bool StartFromSource(Ray& ray);
 
         bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, size_t timeout_ms);
 
@@ -112,7 +109,6 @@ namespace MFSim {
         std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 
         bool allQuit{false};
-        bool StartFromSource(Ray &ray);
 
         Vector3d nullVector; //so we don't have to allocate and destroy for dummy uses
 
