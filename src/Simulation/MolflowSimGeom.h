@@ -41,9 +41,9 @@ class SimulationFacet;
 class GlobalSimuState;
 
 class ParameterSurface : public Surface {
-    Distribution2D *dist; //time-dependent opacity distribution
+    Parameter* timeDepParam; //time-dependent opacity distribution
 public:
-    ParameterSurface(Distribution2D *distribution) : dist(distribution) {};
+    ParameterSurface(Parameter *param) : timeDepParam(param) {};
 
     ~ParameterSurface() = default;
 
@@ -138,31 +138,16 @@ public:
     /**
     * \brief Returns an existing or a new surface corresponding to a facet's properties
     * \param facet facet for which a Surface should be found or created
-     * \return new or existing Surface corresponding to the choosen parameters of the facet
+     * \return new or existing Surface corresponding to the chosen parameters of the facet
     */
     std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override {
 
         if (facet->sh.opacity_paramId == -1){ //constant sticking
-            //facet->sh.opacity = std::clamp(facet->sh.opacity, 0.0, 1.0);
-            double opacity = std::clamp(facet->sh.opacity, 0.0, 1.0);
-
-            std::shared_ptr<Surface> surface;
-            if(opacity == 1.0) {
-                surface = std::make_shared<Surface>();
-            }
-            else if(opacity == 0.0) {
-                surface = std::make_shared<TransparentSurface>();
-            }
-            else {
-                surface = std::make_shared<SemiTransparentSurface>(opacity);
-            }
-            surfaces.insert(std::make_pair(opacity, surface));
-
-            return surface;
+            return SimulationModel::GetSurface(facet); //simply based on opacity
         }
-        else {
+        else { //time-dependent opacity
             auto opacity_paramId = facet->sh.opacity_paramId;
-            auto* par = &this->tdParams.parameters[facet->sh.opacity_paramId];
+            Parameter* parPtr = &(this->tdParams.parameters[facet->sh.opacity_paramId]);
 
             double indexed_id = 10.0 + opacity_paramId;
             if (!surfaces.empty()) {
@@ -170,9 +155,8 @@ public:
                 if (surf != surfaces.end())
                     return surf->second;
             }
-
-            std::shared_ptr<ParameterSurface> surface;
-            surface = std::make_shared<ParameterSurface>(par);
+            //not found, make new
+            auto surface = std::make_shared<ParameterSurface>(parPtr);
             surfaces.insert(std::make_pair(indexed_id, surface));
             Log::console_msg_master(5, "Insert surface with param id: {}\n", indexed_id);
             return surface;

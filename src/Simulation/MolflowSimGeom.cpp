@@ -44,7 +44,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
  * \return true on hard hit
 */
 bool ParameterSurface::IsHardHit(const Ray &r) {
-    const double td_opacity = dist->InterpY(r.time, false);
+    const double td_opacity = timeDepParam->InterpY(r.time, false);
     if(td_opacity >= 1.0)
         return true;
     else
@@ -226,7 +226,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
 
     for(auto& sFac : this->facets){
         if (sFac->sh.opacity_paramId == -1){ //constant sticking
-            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0); //sanitize
         }
         sFac->surf = GetSurface(sFac);
     }
