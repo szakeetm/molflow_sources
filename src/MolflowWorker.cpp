@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <direct.h>
 #include <process.h>
 #include "SMP.h"
+#include "Interface/LoadStatus.h"
 
 #else
 
@@ -1239,9 +1240,13 @@ void Worker::Start() {
 		throw std::runtime_error("Desorption limit has already been reached.");
 
 	try {
-		if (simManager.StartSimulation()) {
-			throw std::logic_error("Processes are already done!");
-		}
+		{
+			LoadStatus loadWindow(this);
+			loadWindow.SetVisible(true);//debug, otherwise after waitTime
+			if (simManager.StartSimulation(&loadWindow)) {
+				throw std::logic_error("Processes are already done, in error, or aborted by user.");
+			}
+		} //loadWindow goes out of scope
 	}
 	catch (const std::exception& e) {
 		throw Error(e.what()); //convert to runtime error
