@@ -1242,7 +1242,7 @@ void Worker::Start() {
 	try {
 		{
 			LoadStatus loadWindow(this);
-			loadWindow.SetVisible(true);//debug, otherwise after waitTime
+			//loadWindow.SetVisible(true);//debug, otherwise after waitTime
 			if (simManager.StartSimulation(&loadWindow)) {
 				throw std::logic_error("Processes are already done, in error, or aborted by user.");
 			}
