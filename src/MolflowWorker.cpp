@@ -24,7 +24,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <direct.h>
 #include <process.h>
 #include "SMP.h"
-#include "Interface/LoadStatus.h"
 
 #else
 
@@ -60,8 +59,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/GlobalSettings.h"
 #include "Interface/FacetAdvParams.h"
 #include "Interface/ProfilePlotter.h"
-
-
+#include "Interface/LoadStatus.h"
 #include "ConvergencePlotter.h"
 
 #if defined(MOLFLOW)
