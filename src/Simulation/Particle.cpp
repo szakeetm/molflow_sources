@@ -85,6 +85,7 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
 
     // Facets
     globSimuState.facetStates += tmpState.facetStates;
+
     return true;
 }
 
