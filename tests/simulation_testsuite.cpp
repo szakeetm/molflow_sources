@@ -249,7 +249,7 @@ namespace {
 
             // Stop and copy results
             simManager.StopSimulation();
-            simManager.KillAllSimUnits();
+            simManager.KillSimulation();
 
             perfTimes.emplace_back((double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
@@ -616,7 +616,7 @@ namespace {
             simMan.nbThreads = 1;
             simMan.SetUpSimulation();
             EXPECT_EQ(1, simMan.nbThreads);
-            simMan.KillAllSimUnits();
+            simMan.KillSimulation();
             EXPECT_EQ(0, simMan.nbThreads);
         }
     }
