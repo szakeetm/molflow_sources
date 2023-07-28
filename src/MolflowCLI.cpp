@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
 
     // Terminate simulation
     simManager.StopSimulation();
-    simManager.KillAllSimUnits();
+    simManager.KillSimulation();
     GatherAngleMapRecordings(*model, simuState);
     Log::console_msg(1,"[{}][{}] Simulation finished.\n", MFMPI::world_rank, Util::getTimepointString());
 
