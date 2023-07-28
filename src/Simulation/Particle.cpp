@@ -35,10 +35,19 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 using namespace MFSim;
 
-bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, size_t timeout_ms) {
+bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, 
+    std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
+
+    statusMutex.lock();
+    myStatus = "Waiting to access global hit counter...";
+    statusMutex.unlock();
 
     auto lock = GetHitLock(&globSimuState, timeout_ms);
     if (!lock) return false;
+
+    statusMutex.lock();
+    myStatus = "Adding local hits to global hit counter...";
+    statusMutex.unlock();
 
     //Global hits
     globSimuState.globalStats.globalHits += tmpState.globalStats.globalHits;
@@ -1256,34 +1265,43 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout_ms) {
+bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog,
+    std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
 
-    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout_ms);
+    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), 
+        myStatus, statusMutex, timeout_ms);
     
     // only 1, so no reduce necessary
-    if (particleLog) UpdateLog(particleLog, timeout_ms);
+    if (particleLog) UpdateLog(particleLog, myStatus, statusMutex, timeout_ms);
 
     // At last delete tmpCache
+    statusMutex.lock();
+    myStatus = "Resetting temporary local results...";
+    statusMutex.unlock();
     if(lastHitUpdateOK) tmpState.Reset();
 
     return lastHitUpdateOK;
 }
 
-bool ParticleTracer::UpdateLog(ParticleLog *globalLog, size_t timeout){
+bool ParticleTracer::UpdateLog(ParticleLog *globalLog, 
+    std::string& myStatus, std::mutex& statusMutex, size_t timeout){
     if (!tmpParticleLog.pLog.empty()) {
-        //if (!LockMutex(worker->logMutex, timeout)) return false;
+        statusMutex.lock();
+        myStatus = "Waiting to access global particle log...";
+        statusMutex.unlock();
         if (!globalLog->particleLogMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
             return false;
         }
+        statusMutex.lock();
+        myStatus = "Adding local particle log to global...";
+        statusMutex.unlock();
         size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
         Saturate(writeNb, 0, tmpParticleLog.pLog.size());
         globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog.pLog.begin(), tmpParticleLog.pLog.begin() + writeNb);
-        //myLogTarget = (model->otfParams.logLimit - globalLog->size()) / model->otfParams.nbProcess + 1; //+1 to avoid all threads rounding down
         globalLog->particleLogMutex.unlock();
         tmpParticleLog.clear();
         tmpParticleLog.pLog.shrink_to_fit();
         tmpParticleLog.pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));
-        //SetLocalAndMasterState(0, GetMyStatusAsText(), false, true);
     }
 
     return true;

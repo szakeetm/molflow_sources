@@ -45,7 +45,8 @@ namespace MFSim {
 
         bool StartFromSource(Ray& ray);
 
-        bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, size_t timeout_ms);
+        bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments,
+            std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
 
         void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
@@ -79,8 +80,10 @@ namespace MFSim {
 
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
-        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout_ms);
-        bool UpdateLog(ParticleLog *globalLog, size_t timeout);
+        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, 
+            std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
+        bool UpdateLog(ParticleLog *globalLog, 
+            std::string& myStatus, std::mutex& statusMutex, size_t timeout);
 
         void Reset();
 
@@ -100,7 +103,7 @@ namespace MFSim {
         double velocity;
         double expectedDecayMoment; //for radioactive gases
         //size_t structureId;        // Current structure
-        GlobalSimuState tmpState;
+        GlobalSimuState tmpState; //Thread-local "unadded" results, that are reset to 0 when added to global state
         ParticleLog tmpParticleLog;
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
