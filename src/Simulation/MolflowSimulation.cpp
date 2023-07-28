@@ -154,13 +154,14 @@ int MolflowSimulation::RebuildAccelStructure() {
 
 
 
-size_t MolflowSimulation::LoadSimulation(std::string& loadStatus) {
+size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus) {
     Chronometer timer;
     timer.Start();
-    loadStatus="Clearing previous simulation";
-    ClearSimulation();
-    loadStatus="Constructing thread-local result counters";
+
+    procInfo.UpdateMasterStatus("Resetting simulation...", loadStatus);
+    ResetSimulation();
     
+    procInfo.UpdateMasterStatus("Constructing thread hit counters...", loadStatus);
     auto* simModelPtr = (MolflowSimulationModel*) model.get();
 
 #pragma omp parallel for
@@ -176,11 +177,13 @@ size_t MolflowSimulation::LoadSimulation(std::string& loadStatus) {
     }
 
     //Reserve particle log
+    procInfo.UpdateMasterStatus("Setting up partcile logs...", loadStatus);
     ReinitializeParticleLog();
 
     // Build ADS
-    loadStatus = "Building ray-tracing structure";
+    procInfo.UpdateMasterStatus("Building ray-tracing accel. structure...", loadStatus);
     RebuildAccelStructure();
+    procInfo.UpdateMasterStatus("", loadStatus);
 
     // Initialize simulation
     timer.Stop();

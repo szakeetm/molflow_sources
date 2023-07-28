@@ -45,7 +45,7 @@ public:
 
     std::vector<std::string> SanityCheckModel(bool strictCheck) override;
     //void ClearSimulation() override;
-    size_t LoadSimulation(std::string& loadStatus) override;
+    size_t LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus=nullptr) override;
     int RebuildAccelStructure() override;
 
     void ResetSimulation() override;

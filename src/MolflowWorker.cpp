@@ -1,3 +1,4 @@
+#include "Worker.h"
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
@@ -936,6 +937,11 @@ void Worker::SimModelToInterfaceGeom() {
 
 	geom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
 	geom->SetInterfaceFacets(model->facets, this);
+}
+
+std::string Worker::GetSimManagerStatus()
+{
+	return simManager.GetMasterStatus();
 }
 
 

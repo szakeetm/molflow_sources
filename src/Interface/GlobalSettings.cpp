@@ -227,7 +227,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 	processList = new GLList(0);
 	processList->SetHScrollVisible(true);
-	processList->SetSize(5, MAX_PROCESS+1);
+	processList->SetSize(5, MAX_PROCESS+2);
 	processList->SetColumnWidths((int*)plWidth);
 	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);

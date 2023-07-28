@@ -172,8 +172,8 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     simManager->nbThreads = Settings::nbThreads;
 
-    if (simManager->InitSimulations()) { //currently only calls CreateCPUHandle()
-        Log::console_error("Error: Initializing simulation units: {}\n", simManager->nbThreads);
+    if (simManager->SetUpSimulations()) { //currently only calls CreateCPUHandle()
+        Log::console_error("Error: Setting up simulation units [{} threads]...\n", simManager->nbThreads);
         return 1;
     }
 
