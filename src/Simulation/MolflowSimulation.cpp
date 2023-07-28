@@ -164,6 +164,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     procInfo.UpdateMasterStatus("Constructing thread hit counters...", loadStatus);
     auto* simModelPtr = (MolflowSimulationModel*) model.get();
 
+    size_t finished = 0;
 #pragma omp parallel for
     // New GlobalSimuState structure for threads
     for(int i=0;i<particleTracers.size();i++)
@@ -174,10 +175,17 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
 
         // Init tmp vars per thread
         particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
+
+        // Update the progress string in a thread-safe manner
+#pragma omp critical
+        {
+            finished++;
+            procInfo.UpdateMasterStatus(fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()), loadStatus);
+        }
     }
 
     //Reserve particle log
-    procInfo.UpdateMasterStatus("Setting up partcile logs...", loadStatus);
+    procInfo.UpdateMasterStatus("Setting up particle logs...", loadStatus);
     ReinitializeParticleLog();
 
     // Build ADS

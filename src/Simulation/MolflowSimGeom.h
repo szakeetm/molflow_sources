@@ -249,12 +249,15 @@ public:
 
     };
 
+    //Commented out: C++ destroys it on its own
+    /*
     ~GlobalSimuState() {
 #if defined(MOLFLOW)
         globalHistograms.clear();
         facetStates.clear();
 #endif
     }
+    */
 
     bool initialized = false;
 
