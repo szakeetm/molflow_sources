@@ -1157,8 +1157,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			simManager.ResetSimulations();
 			prg.SetMessage("Clearing Logger...");
 			particleLog.clear();
-			prg.SetMessage("Creating hit buffer...");
-			simManager.ResetHits();
+			prg.SetMessage("Resetting hit counter...");
+			simManager.ResetSimulations();
 		}
 		catch (const std::exception& e) {
 			std::stringstream err;

@@ -111,7 +111,7 @@ namespace MFSim {
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
         std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 
-        bool allQuit{false};
+        bool exitRequested{false};
 
         Vector3d nullVector; //so we don't have to allocate and destroy for dummy uses
 

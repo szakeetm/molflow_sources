@@ -135,25 +135,7 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
     return errLog;
 }
 
-void MolflowSimulation::ClearSimulation() {
 
-    //loadOK = false;
-
-#pragma omp parallel for
-    // New GlobalSimuState structure for threads
-    for (int i = 0; i < particleTracers.size(); i++)
-    {
-        auto& particleTracer = particleTracers[i];
-        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
-        particleTracer.tmpState.Reset();
-        particleTracer.model = (MolflowSimulationModel*) model.get();
-        particleTracer.totalDesorbed = 0;
-
-        particleTracer.tmpParticleLog.clear();
-
-    }
-    totalDesorbed = 0;
-}
 
 int MolflowSimulation::RebuildAccelStructure() {
     Chronometer timer;
@@ -234,8 +216,8 @@ void MolflowSimulation::ResetSimulation() {
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        particleTracer.Reset();
         particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.Reset();
         particleTracer.model = (MolflowSimulationModel*) model.get();
         particleTracer.totalDesorbed = 0;
 
@@ -243,3 +225,26 @@ void MolflowSimulation::ResetSimulation() {
     }
     totalDesorbed = 0;
 }
+
+//Commented out: will use ResetSimulation instead, almost identical
+/*
+void MolflowSimulation::ClearSimulation() {
+
+    //loadOK = false;
+
+#pragma omp parallel for
+    // New GlobalSimuState structure for threads
+    for (int i = 0; i < particleTracers.size(); i++)
+    {
+        auto& particleTracer = particleTracers[i];
+        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.tmpState.Reset();
+        particleTracer.model = (MolflowSimulationModel*)model.get();
+        particleTracer.totalDesorbed = 0;
+
+        particleTracer.tmpParticleLog.clear();
+
+    }
+    totalDesorbed = 0;
+}
+*/

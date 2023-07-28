@@ -44,7 +44,7 @@ public:
     virtual ~MolflowSimulation() = default;
 
     std::vector<std::string> SanityCheckModel(bool strictCheck) override;
-    void ClearSimulation() override;
+    //void ClearSimulation() override;
     size_t LoadSimulation(std::string& loadStatus) override;
     int RebuildAccelStructure() override;
 

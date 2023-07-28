@@ -525,7 +525,7 @@ namespace {
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
-            simManager->ResetHits();
+            simManager->ResetSimulations();
             simManager->InitSimulation(model, &globState);
 
             EXPECT_NE(0, oldDesNb);
