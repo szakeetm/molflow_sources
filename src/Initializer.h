@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <SimulationManager.h>
 #include "Simulation/MolflowSimGeom.h"
 
-namespace CLIArgumentSettings {
+namespace CLIArguments {
     extern size_t nbThreads;
     extern uint64_t simDuration;
     extern uint64_t outputDuration;

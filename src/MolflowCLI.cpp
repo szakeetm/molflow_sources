@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    if(CLIArgumentSettings::simDuration == 0 && model->otfParams.desorptionLimit == 0){
+    if(CLIArguments::simDuration == 0 && model->otfParams.desorptionLimit == 0){
         Log::console_error("Neither a time limit nor a desorption limit has been set.\n");
         return 44;
     }
@@ -159,8 +159,8 @@ int main(int argc, char** argv) {
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
 
-    if (CLIArgumentSettings::simDuration > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), CLIArgumentSettings::simDuration, simuState.globalStats.globalHits.nbDesorbed);
+    if (CLIArguments::simDuration > 0) {
+        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), CLIArguments::simDuration, simuState.globalStats.globalHits.nbDesorbed);
     }
     else if (model->otfParams.desorptionLimit > 0) {
         Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, simuState.globalStats.globalHits.nbDesorbed);
@@ -275,11 +275,11 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
 
         if (endCondition) {
             // if there is a next des limit, handle that
-            if (!CLIArgumentSettings::desLimit.empty()) {
+            if (!CLIArguments::desLimit.empty()) {
                 HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition);
             }
         }
-        else if (CLIArgumentSettings::autoSaveDuration && (uint64_t)(elapsedTime) % CLIArgumentSettings::autoSaveDuration == 0) { // autosave every x seconds
+        else if (CLIArguments::autoSaveDuration && (uint64_t)(elapsedTime) % CLIArguments::autoSaveDuration == 0) { // autosave every x seconds
             // Autosave
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
             prg.noProgress = simManager.noProgress;
@@ -287,17 +287,17 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
             writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
         }
 
-        if (CLIArgumentSettings::outputDuration && (uint64_t)(elapsedTime) % CLIArgumentSettings::outputDuration == 0) { // autosave every x seconds
+        if (CLIArguments::outputDuration && (uint64_t)(elapsedTime) % CLIArguments::outputDuration == 0) { // autosave every x seconds
             // Print runtime stats
-            if ((uint64_t)elapsedTime / CLIArgumentSettings::outputDuration <= 1) {
+            if ((uint64_t)elapsedTime / CLIArguments::outputDuration <= 1) {
                 printer.PrintHeader();
             }
             printer.Print(elapsedTime, simuState);
         }
 
         // Check for potential time end
-        if (CLIArgumentSettings::simDuration > 0) {
-            endCondition |= (elapsedTime >= (double)CLIArgumentSettings::simDuration);
+        if (CLIArguments::simDuration > 0) {
+            endCondition |= (elapsedTime >= (double)CLIArguments::simDuration);
         }
     } while (!endCondition);
 }
@@ -407,8 +407,8 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
     }
     // Next choose the next desorption limit and start
 
-    model->otfParams.desorptionLimit = CLIArgumentSettings::desLimit.front();
-    CLIArgumentSettings::desLimit.pop_front();
+    model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
+    CLIArguments::desLimit.pop_front();
     simManager.ForwardOtfParams(&model->otfParams);
     endCondition = false;
     Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);

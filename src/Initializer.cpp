@@ -28,7 +28,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/ConsoleLogger.h>
 #include <SettingsIO.h>
 
-namespace CLIArgumentSettings {
+namespace CLIArguments {
     size_t nbThreads = 0;
     uint64_t simDuration = 10;
     uint64_t outputDuration = 60;
@@ -42,16 +42,16 @@ namespace CLIArgumentSettings {
 }
 
 void initDefaultSettings() {
-    CLIArgumentSettings::nbThreads = 0;
-    CLIArgumentSettings::simDuration = 0;
-    CLIArgumentSettings::outputDuration = 60;
-    CLIArgumentSettings::autoSaveDuration = 600;
-    CLIArgumentSettings::loadAutosave = false;
-    CLIArgumentSettings::desLimit.clear();
-    CLIArgumentSettings::resetOnStart = false;
-    CLIArgumentSettings::paramFile.clear();
-    CLIArgumentSettings::paramChanges.clear();
-    CLIArgumentSettings::noProgress = false;
+    CLIArguments::nbThreads = 0;
+    CLIArguments::simDuration = 0;
+    CLIArguments::outputDuration = 60;
+    CLIArguments::autoSaveDuration = 600;
+    CLIArguments::loadAutosave = false;
+    CLIArguments::desLimit.clear();
+    CLIArguments::resetOnStart = false;
+    CLIArguments::paramFile.clear();
+    CLIArguments::paramChanges.clear();
+    CLIArguments::noProgress = false;
 
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
@@ -91,8 +91,8 @@ int Initializer::parseCommands(int argc, char **argv) {
     std::vector<double> limits;
 
     // Define options
-    app.add_option("-j,--threads", CLIArgumentSettings::nbThreads, "# Threads to be deployed");
-    app.add_option("-t,--time", CLIArgumentSettings::simDuration, "Simulation duration in seconds");
+    app.add_option("-j,--threads", CLIArguments::nbThreads, "# Threads to be deployed");
+    app.add_option("-t,--time", CLIArguments::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
 
     auto group = app.add_option_group("subgroup");
@@ -105,22 +105,22 @@ int Initializer::parseCommands(int argc, char **argv) {
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
     CLI::Option *optOpath = app.add_option("--outputPath", SettingsIO::outputPath,
                                            "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-s,--outputDuration", CLIArgumentSettings::outputDuration, "Seconds between each stat output if not zero");
-    app.add_option("-a,--autosaveDuration", CLIArgumentSettings::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_option("-s,--outputDuration", CLIArguments::outputDuration, "Seconds between each stat output if not zero");
+    app.add_option("-a,--autosaveDuration", CLIArguments::autoSaveDuration, "Seconds for autoSave if not zero");
     app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
     app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
                    "Will write a CSV file containing all physical quantities for each facet");
 
-    app.add_option("--setParamsByFile", CLIArgumentSettings::paramFile,
+    app.add_option("--setParamsByFile", CLIArguments::paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
-    app.add_option("--setParams", CLIArgumentSettings::paramChanges,
+    app.add_option("--setParams", CLIArguments::paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", AppSettings::verbosity, "Restrict console output to different levels");
-    app.add_flag("--noProgress", CLIArgumentSettings::noProgress, "Log file mode: No percentage updates printed of progress");
-    app.add_flag("--loadAutosave", CLIArgumentSettings::loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_flag("-r,--reset", CLIArgumentSettings::resetOnStart, "Resets simulation status loaded from file");
+    app.add_flag("--noProgress", CLIArguments::noProgress, "Log file mode: No percentage updates printed of progress");
+    app.add_flag("--loadAutosave", CLIArguments::loadAutosave, "Whether autosave_ file should be used if exists");
+    app.add_flag("-r,--reset", CLIArguments::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
                                              "Overwrite input file with new results")->excludes(optOfile, optOpath);
@@ -135,9 +135,9 @@ int Initializer::parseCommands(int argc, char **argv) {
 
     //std::cout<<app.config_to_str(true,true);
     for (auto& lim : limits)
-        CLIArgumentSettings::desLimit.push_back(static_cast<size_t>(lim));
+        CLIArguments::desLimit.push_back(static_cast<size_t>(lim));
 
-    if (CLIArgumentSettings::simDuration == 0 && CLIArgumentSettings::desLimit.empty()) {
+    if (CLIArguments::simDuration == 0 && CLIArguments::desLimit.empty()) {
         Log::console_error("No end criterion has been set. Use either -t or -d\n");
         return 0;
     }
@@ -170,8 +170,8 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     Log::console_header(1, "Initializing simulation...\n");
 
-    simManager->nbThreads = CLIArgumentSettings::nbThreads;
-    simManager->noProgress = CLIArgumentSettings::noProgress;
+    simManager->nbThreads = CLIArguments::nbThreads;
+    simManager->noProgress = CLIArguments::noProgress;
 
     if (simManager->SetUpSimulation()) { //currently only calls CreateCPUHandle()
         Log::console_error("Error: Setting up simulation units [{} threads]...\n", simManager->nbThreads);
@@ -179,11 +179,11 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     }
 
     model->otfParams.nbProcess = simManager->nbThreads;
-    model->otfParams.timeLimit = (double) CLIArgumentSettings::simDuration;
-    //model->otfParams.desorptionLimit = CLIArgumentSettings::desLimit.front();
+    model->otfParams.timeLimit = (double) CLIArguments::simDuration;
+    //model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
     Log::console_msg_master(1, "Active cores: {}\n", simManager->nbThreads);
-    if (CLIArgumentSettings::simDuration != 0) {
-        Log::console_msg_master(1, "Running simulation for: {} sec\n", CLIArgumentSettings::simDuration);
+    if (CLIArguments::simDuration != 0) {
+        Log::console_msg_master(1, "Running simulation for: {} sec\n", CLIArguments::simDuration);
     }
 
     return -1;
@@ -199,18 +199,18 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        CLILoadFromXML(SettingsIO::workFile, !CLIArgumentSettings::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
+        CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
                            std::filesystem::path(SettingsIO::workFile).extension().string()));
     }
-    if (!CLIArgumentSettings::paramFile.empty() || !CLIArgumentSettings::paramChanges.empty()) {
+    if (!CLIArguments::paramFile.empty() || !CLIArguments::paramChanges.empty()) {
         // Apply parameter changes from file
-        if (!CLIArgumentSettings::paramFile.empty())
-            ParameterParser::ParseFile(CLIArgumentSettings::paramFile, userSettings.selections);
-        if (!CLIArgumentSettings::paramChanges.empty())
-            ParameterParser::ParseInput(CLIArgumentSettings::paramChanges, userSettings.selections);
+        if (!CLIArguments::paramFile.empty())
+            ParameterParser::ParseFile(CLIArguments::paramFile, userSettings.selections);
+        if (!CLIArguments::paramChanges.empty())
+            ParameterParser::ParseInput(CLIArguments::paramChanges, userSettings.selections);
         ParameterParser::ChangeSimuParams(model->wp);
         if(ParameterParser::ChangeFacetParams(model->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
@@ -335,7 +335,7 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
         // 3. init counters with previous results
         if (loadSimulationState) {
             prg.SetMessage("Loading simulation state...");
-            if (CLIArgumentSettings::loadAutosave) {
+            if (CLIArguments::loadAutosave) {
                 std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 autosaveFileName = autoSavePrefix + autosaveFileName;
@@ -380,12 +380,12 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
     model->otfParams.desorptionLimit = 0;
 
     // Skip desorptions if limit was already reached
-    if (!CLIArgumentSettings::desLimit.empty()) {
+    if (!CLIArguments::desLimit.empty()) {
         size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
-        size_t listSize = CLIArgumentSettings::desLimit.size();
+        size_t listSize = CLIArguments::desLimit.size();
         for (size_t l = 0; l < listSize; ++l) {
-            model->otfParams.desorptionLimit = CLIArgumentSettings::desLimit.front();
-            CLIArgumentSettings::desLimit.pop_front();
+            model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
+            CLIArguments::desLimit.pop_front();
 
             if (oldDesNb > model->otfParams.desorptionLimit) {
                 Log::console_msg_master(1, "Skipping desorption limit: {}\n", model->otfParams.desorptionLimit);
@@ -397,7 +397,7 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
                 return 0;
             }
         }
-        if (CLIArgumentSettings::desLimit.empty()) {
+        if (CLIArguments::desLimit.empty()) {
             Log::console_msg_master(1,
                                     "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption {}\n",
                                     oldDesNb);
@@ -421,7 +421,7 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
     }
 
     model->otfParams.timeLimit = time;
-    CLIArgumentSettings::simDuration = static_cast<size_t>(time);
+    CLIArguments::simDuration = static_cast<size_t>(time);
 
     return 0;
 }
@@ -434,7 +434,7 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
 std::string Initializer::getAutosaveFile() {
     // Create copy of input file for autosave
     std::string autoSave;
-    if (CLIArgumentSettings::autoSaveDuration > 0) {
+    if (CLIArguments::autoSaveDuration > 0) {
         autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
