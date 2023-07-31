@@ -1101,7 +1101,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             Log::console_error("{}\n", cmp_string);
         }
     }
-    if (Settings::verbosity >=4){
+    if (AppSettings::verbosity >=4){
         std::istringstream compStreamFine(cmpFileFine);
         for (; i < 32 && std::getline(compStreamFine, cmp_string, '\n'); ++i) {
             Log::console_msg_master(4, "{}\n", cmp_string);

@@ -241,8 +241,8 @@ namespace {
                 if (model->otfParams.desorptionLimit != 0)
                     endCondition = globState.globalStats.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
                 // Check for potential time end
-                if (Settings::simDuration > 0) {
-                    endCondition |= elapsedTime >= Settings::simDuration;
+                if (CLIArgumentSettings::simDuration > 0) {
+                    endCondition |= elapsedTime >= CLIArgumentSettings::simDuration;
                 }
             } while (!endCondition);
             simTimer.Stop();
@@ -520,8 +520,8 @@ namespace {
             }
             // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
-            Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(300);
+            CLIArgumentSettings::desLimit.clear();
+            CLIArgumentSettings::desLimit.emplace_back(300);
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
