@@ -18,8 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_LOADERXML_H
-#define MOLFLOW_PROJ_LOADERXML_H
+#pragma once
 
 #include <set>
 #include <map>
@@ -31,27 +30,23 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/GLProgress_abstract.hpp>
 
 namespace FlowIO {
+
     class Loader {
     protected:
-        std::vector<std::vector<IntegratedDesorptionEntry>> IDs;         //integrated distribution function for each time-dependent desorption type
-        //std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
     public:
-        virtual int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) = 0;
+        virtual void LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) = 0;
     };
 
-    class LoaderXML : public Loader {
+    class XmlLoader : public Loader {
 
     protected:
         void LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams);
     public:
-        int LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) override;
-        //static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);
+        void LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) override;
         static int LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
                                        GlobalSimuState *globState, GLProgress_Abstract& prg);
         static int
-        LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>> *convergenceValues, GLProgress_Abstract& prg);
-        UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
+        LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, GLProgress_Abstract& prg);
+        UserSettings userSettings; //Cache that will be passed on to Worker/model after loading
     };
 }
-
-#endif //MOLFLOW_PROJ_LOADERXML_H

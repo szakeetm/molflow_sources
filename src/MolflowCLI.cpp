@@ -283,7 +283,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
             // Autosave
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
             prg.noProgress = simManager.noProgress;
-            FlowIO::WriterXML writer;
+            FlowIO::XmlWriter writer;
             writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
         }
 
@@ -330,7 +330,7 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
     }
     GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
     prg.noProgress = simManager.noProgress;
-    FlowIO::WriterXML writer(false, true);
+    FlowIO::XmlWriter writer(false, true);
     writer.userSettings = persistentUserSettings;
     pugi::xml_document newDoc;
     newDoc.load_file(fullOutFile.c_str());
@@ -383,7 +383,7 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
         GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
         prg.noProgress = simManager.noProgress;
         // 2. Write XML file, use existing file as base or create new file
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings; //keep from loaded file
         if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
             try {

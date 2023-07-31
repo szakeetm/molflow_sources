@@ -32,10 +32,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 using namespace FlowIO;
 using namespace pugi;
 
-xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
+xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
     // Check whether we do a old to new format update
     // If yes, move old scheme to new scheme by adding the root node
-    if(update){
+    if(updateRootNode){
         bool oldFormatUsed = false;
         auto rootNode = saveDoc.document_element();
         if(!saveDoc.child("SimulationEnvironment")){
@@ -62,7 +62,7 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
     } else {
-        if(update) {
+        if(updateRootNode) {
             rootNode = saveDoc.document_element();
             rootNode = saveDoc.child("SimulationEnvironment");
         }
@@ -80,11 +80,14 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     return rootNode;
 }
 
-void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
-            GLProgress_Abstract& prg, const std::vector<size_t> &selection) {
+void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
+            GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave) {
     xml_node rootNode = GetRootNode(saveDoc);
 
-    if(update)
+
+    bool saveAllFacets = selectionToSave.empty();
+
+    if(updateRootNode)
         rootNode.remove_child("Geometry");
     prg.SetMessage("Saving vertices...");
     xml_node geomNode = rootNode.prepend_child("Geometry");
@@ -103,13 +106,13 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     geomNode.append_child("Facets");
     
     //Save every facet or only those of the selection
-    size_t nbF = selection.empty() ? model->facets.size() : selection.size();
+    size_t nbF = saveAllFacets ? model->facets.size() : selectionToSave.size();
     geomNode.child("Facets").append_attribute("nb") = nbF;
     for (size_t i = 0; i < nbF; i++) {
         prg.SetProgress((double)i / (double)nbF);
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
-        size_t facetId = selection.empty() ? i : selection[i];
+        size_t facetId = saveAllFacets ? i : selectionToSave[i];
         auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
         SaveFacet(f, mfFac.get(), model->vertices3.size());
     }
@@ -128,7 +131,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
 
     // Simulation Settings
     prg.SetMessage("Writing simulation parameters...");
-    if(update)
+    if(updateRootNode)
         rootNode.remove_child("MolflowSimuSettings");
     xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
 
@@ -183,7 +186,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nonCatalogParameters = 0;
 
-    for (auto &parameter : userSettings.parameters) {
+    for (auto &parameter : model->tdParams.parameters) {
         if (!parameter.fromCatalog) { //Don't save catalog parameters
             xml_node newParameter = paramNode.append_child("Parameter");
             newParameter.append_attribute("id") = nonCatalogParameters;
@@ -201,6 +204,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         }
     }
     paramNode.append_attribute("nb") = nonCatalogParameters;
+
     xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
     if (model->wp.globalHistogramParams.recordBounce) {
         xml_node nbBounceNode = globalHistNode.append_child("Bounces");
@@ -219,10 +223,87 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
     }
 #endif
+
+    prg.SetMessage("Writing interface settings...");
+    if (updateRootNode)
+        rootNode.remove_child("Interface");
+    xml_node interfNode = rootNode.insert_child_after("Interface", simuParamNode);
+
+    xml_node selNode = interfNode.append_child("Selections");
+    selNode.append_attribute("nb") = saveAllFacets ? userSettings.selections.size() : 0; //Don't save sel.groups if save file restricted to a subset of facets
+    if (saveAllFacets) {
+        for (size_t i = 0; i < userSettings.selections.size(); i++) { //don't save selections when exporting part of the geometry (saveSelected)
+            xml_node newSel = selNode.append_child("Selection");
+            newSel.append_attribute("id") = i;
+            newSel.append_attribute("name") = userSettings.selections[i].name.c_str();
+            newSel.append_attribute("nb") = userSettings.selections[i].facetIds.size();
+            for (size_t j = 0; j < userSettings.selections[i].facetIds.size(); j++) {
+                xml_node newItem = newSel.append_child("selItem");
+                newItem.append_attribute("id") = j;
+                newItem.append_attribute("facet") = userSettings.selections[i].facetIds[j];
+            }
+        }
+    }
+
+    xml_node viewNode = interfNode.append_child("Views");
+    viewNode.append_attribute("nb") = saveAllFacets ? userSettings.views.size() : 0;
+    if (saveAllFacets) {
+        for (int i = 0; i < userSettings.views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
+            xml_node newView = viewNode.append_child("View");
+            newView.append_attribute("id") = i;
+            newView.append_attribute("name") = userSettings.views[i].name.c_str();
+            newView.append_attribute("projMode") = userSettings.views[i].projMode;
+            newView.append_attribute("camAngleOx") = userSettings.views[i].camAngleOx;
+            newView.append_attribute("camAngleOy") = userSettings.views[i].camAngleOy;
+            newView.append_attribute("camAngleOz") = userSettings.views[i].camAngleOz;
+            newView.append_attribute("camDist") = userSettings.views[i].camDist;
+            newView.append_attribute("lightAngleOx") = userSettings.views[i].lightAngleOx;
+            newView.append_attribute("lightAngleOy") = userSettings.views[i].lightAngleOy;
+            newView.append_attribute("camOffset.x") = userSettings.views[i].camOffset.x;
+            newView.append_attribute("camOffset.y") = userSettings.views[i].camOffset.y;
+            newView.append_attribute("camOffset.z") = userSettings.views[i].camOffset.z;
+            newView.append_attribute("performXY") = userSettings.views[i].performXY;
+            newView.append_attribute("vLeft") = userSettings.views[i].vLeft;
+            newView.append_attribute("vRight") = userSettings.views[i].vRight;
+            newView.append_attribute("vTop") = userSettings.views[i].vTop;
+            newView.append_attribute("vBottom") = userSettings.views[i].vBottom;
+        }
+    }
+
+    xml_node formulaNode = interfNode.append_child("Formulas");
+    formulaNode.append_attribute("nb") = saveAllFacets ? userSettings.userFormulas.size() : 0;
+    if (saveAllFacets) { //don't save formulas when exporting part of the geometry (saveSelected)
+        for (size_t i = 0; i < userSettings.userFormulas.size(); i++) {
+            xml_node newFormula = formulaNode.append_child("Formula");
+            newFormula.append_attribute("id") = i;
+            newFormula.append_attribute("name") = userSettings.userFormulas[i].name;
+            newFormula.append_attribute("expression") = userSettings.userFormulas[i].expression;
+        }
+    }
+
+    if (userSettings.profilePlotterSettings) {
+        xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
+        profilePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.profilePlotterSettings->logYscale;
+        xml_node viewsNode = profilePlotterNode.append_child("Views");
+        for (int v : userSettings.profilePlotterSettings->viewIds) {
+            xml_node view = viewsNode.append_child("View");
+            view.append_attribute("facetId") = v;
+        }
+    }
+
+    if (userSettings.convergencePlotterSettings) {
+        xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
+        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.convergencePlotterSettings->logYscale;
+        xml_node viewsNode = convergencePlotterNode.append_child("Views");
+        for (int v : userSettings.convergencePlotterSettings->viewIds) {
+            xml_node view = viewsNode.append_child("View");
+            view.append_attribute("formulaHash") = v;
+        }
+    }
 }
 
 // Save XML document to file
-bool WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+bool XmlWriter::WriteXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
     if (!saveDoc.save_file(outputFileName.c_str())) {
         std::cerr << "Error writing XML file." << std::endl;
         return false;
@@ -231,7 +312,7 @@ bool WriterXML::WriteXMLToFile(xml_document &saveDoc, const std::string &outputF
 }
 
 // Directly append to file (load + save)
-bool WriterXML::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
+bool XmlWriter::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
@@ -245,7 +326,7 @@ bool WriterXML::AppendSimulationStateToFile(const std::string &outputFileName, s
 }
 
 // Append to open XML node
-bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
+bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
 
     auto lock = GetHitLock(&globState, 10000);
     if (!lock) return false;
@@ -576,7 +657,7 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void WriterXML::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
+void XmlWriter::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
     xml_node e = facetNode.append_child("Sticking");
     e.append_attribute("constValue") = facet->sh.sticking;
     e.append_attribute("parameterId") = facet->sh.sticking_paramId;
@@ -752,6 +833,32 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
 #endif
 }
 
-WriterXML::WriterXML(bool useOldXMLFormat, bool update) : useOldXMLFormat(useOldXMLFormat), update(update){
+XmlWriter::XmlWriter(bool useOldXMLFormat, bool updateRootNode) : useOldXMLFormat(useOldXMLFormat), updateRootNode(updateRootNode){
 
+}
+
+void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, const std::vector<GLFormula>& appFormulas) {
+
+    auto rootNode = GetRootNode(saveDoc);
+    xml_node resultNode = rootNode.child("MolflowResults");
+    if (!resultNode) {
+        resultNode = rootNode.append_child("MolflowResults");
+    }
+    //Convergence results
+    xml_node convNode = resultNode.append_child("Convergence");
+
+    int formulaId = 0;
+    for (const auto& formulaVec : convergenceData) {
+        std::stringstream convText;
+        convText << std::setprecision(10) << '\n';
+        convText << std::scientific;
+        for (const auto& convVal : formulaVec) {
+            convText << convVal.nbDes << "\t" << convVal.value << "\n";
+        }
+        xml_node newFormulaNode = convNode.append_child("ConvData");
+        newFormulaNode.append_attribute("Formula") = appFormulas[formulaId].GetExpression().c_str();
+        xml_node newConv = newFormulaNode.append_child(node_cdata);
+        newConv.set_value(convText.str().c_str());
+        formulaId++;
+    }
 }

@@ -297,7 +297,7 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 }
 
 /**
-* \brief Wrapper for CLI's initFromFile for XML loading with LoaderXML
+* \brief Wrapper for CLI's initFromFile for XML loading with XmlLoader
  */
 void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
                              GlobalSimuState *globStatePtr, UserSettings& userSettings, bool noProgress) {
@@ -308,16 +308,21 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
 
     //1. Load Input File (regular XML)
     {
-        FlowIO::LoaderXML loader;
+        FlowIO::XmlLoader loader;
         // Easy if XML is split into multiple parts
         // Geometry
         // Settings
         // Previous results
-        loader.LoadGeometry(fileName, model, prg);
+        try {
+            loader.LoadGeometry(fileName, model, prg);
+        }
+        catch (Error& err) {
+            Log::console_error("Error loading file:\n{}", err.what());
+        }
         userSettings = loader.userSettings; //persistent for saving
     }
 
-    prg.SetMessage(fmt::format("Loaded geometry ({} bytes)", model->size()));
+    prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", model->size()/1024/1024));
 
     //InitializeGeometry();
     model->InitializeFacets();
@@ -342,10 +347,10 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
                 
                 if (std::filesystem::exists(autosaveFileName)) {
                     prg.SetMessage(fmt::format("Found autosave file {}, loading simulation state...\n",autosaveFileName),true);
-                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globStatePtr, prg);
+                    FlowIO::XmlLoader::LoadSimulationState(autosaveFileName, model, globStatePtr, prg);
                 }
             } else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globStatePtr, prg);
+                FlowIO::XmlLoader::LoadSimulationState(SettingsIO::workFile, model, globStatePtr, prg);
             }
 
             // Update Angle map status

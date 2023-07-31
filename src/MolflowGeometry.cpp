@@ -488,9 +488,8 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 
 	file.ReadKeyword("views"); file.ReadKeyword("{");
 	for (size_t i = 0; i < nbV; i++) {
-		char tmpName[256];
 		AVIEW v;
-		strcpy(tmpName, file.ReadString());
+		v.name=file.ReadString();
 		v.projMode = file.ReadInt();
 		v.camAngleOx = file.ReadDouble();
 		v.camAngleOy = file.ReadDouble();
@@ -505,7 +504,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 		v.vRight = file.ReadDouble();
 		v.vTop = file.ReadDouble();
 		v.vBottom = file.ReadDouble();
-		mApp->AddView(tmpName, v);
+		mApp->AddView(v);
 	}
 	file.ReadKeyword("}");
 
@@ -517,7 +516,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 		s.name = strdup(tmpName);
 		size_t nbSel = file.ReadSizeT();
 		for (size_t j = 0; j < nbSel; j++) {
-			s.selection.push_back(file.ReadInt() + sh.nbFacet);
+			s.facetIds.push_back(file.ReadInt() + sh.nbFacet);
 		}
 		mApp->AddSelection(s);
 	}
@@ -870,9 +869,8 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 
 		file.ReadKeyword("views"); file.ReadKeyword("{");
 		for (int i = 0; i < nbV; i++) {
-			char tmpName[256];
 			AVIEW v;
-			strcpy(tmpName, file.ReadString());
+			v.name=file.ReadString();
 			v.projMode = file.ReadInt();
 			v.camAngleOx = file.ReadDouble();
 			v.camAngleOy = file.ReadDouble();
@@ -887,7 +885,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			v.vRight = file.ReadDouble();
 			v.vTop = file.ReadDouble();
 			v.vBottom = file.ReadDouble();
-			mApp->AddView(tmpName, v);
+			mApp->AddView( v);
 		}
 		file.ReadKeyword("}");
 	}
@@ -902,7 +900,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			int nbSel = file.ReadInt();
 
 			for (int j = 0; j < nbSel; j++) {
-				s.selection.push_back(file.ReadInt());
+				s.facetIds.push_back(file.ReadInt());
 			}
 			mApp->AddSelection(s);
 		}
@@ -1147,9 +1145,9 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	file.ReadKeyword("views"); file.ReadKeyword("{");
 	for (int i = 0; i < nbV; i++) {
-		char tmpName[256];
+		
 		AVIEW v;
-		strcpy(tmpName, file.ReadString());
+		v.name = file.ReadString());
 		v.projMode = file.ReadInt();
 		v.camAngleOx = file.ReadDouble();
 		v.camAngleOy = file.ReadDouble();
@@ -1164,7 +1162,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		v.vRight = file.ReadDouble();
 		v.vTop = file.ReadDouble();
 		v.vBottom = file.ReadDouble();
-		mApp->AddView(tmpName, v);
+		mApp->AddView(v);
 	}
 	file.ReadKeyword("}");
 
@@ -1177,7 +1175,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		int nbSel = file.ReadInt();
 
 		for (int j = 0; j < nbSel; j++) {
-			s.selection.push_back(file.ReadInt());
+			s.facetIds.push_back(file.ReadInt());
 		}
 		mApp->AddSelection(s);
 	}
@@ -1543,8 +1541,8 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 		file.Write("  \"");
 		file.Write(mApp->selections[i].name);
 		file.Write("\"\n ");
-		file.Write(mApp->selections[i].selection.size(), "\n");
-		for (auto& sel : mApp->selections[i].selection) {
+		file.Write(mApp->selections[i].facetIds.size(), "\n");
+		for (auto& sel : mApp->selections[i].facetIds) {
 			file.Write("  ");
 			file.Write(sel, "\n");
 		}
@@ -3126,7 +3124,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 		s.name = strdup(sNode.attribute("name").as_string());
 		size_t nbSel = sNode.select_nodes("selItem").size();
 		for (xml_node iNode : sNode.children("selItem"))
-			s.selection.push_back(iNode.attribute("facet").as_int() + sh.nbFacet); //offset selection numbers
+			s.facetIds.push_back(iNode.attribute("facet").as_int() + sh.nbFacet); //offset selection numbers
 		mApp->AddSelection(s);
 	}
 
@@ -3164,7 +3162,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 		v.vRight = newView.attribute("vRight").as_double();
 		v.vTop = newView.attribute("vTop").as_double();
 		v.vBottom = newView.attribute("vBottom").as_double();
-		mApp->AddView(v.name.c_str(), v);
+		mApp->AddView(v);
 	}
 
 	sh.nbVertex += nbNewVertex;

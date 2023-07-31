@@ -312,7 +312,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 catch (...) {
                     return false;
                 }
-                facetsToSum = (*selections)[selGroupId - 1].selection;
+                facetsToSum = (*selections)[selGroupId - 1].facetIds;
             }
         }
         size_t sumLL=0;

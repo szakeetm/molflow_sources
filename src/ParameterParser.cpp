@@ -76,7 +76,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         id_str.erase (std::remove(id_str.begin(), id_str.end(), '\"'), id_str.end());
         for(const auto sel : selections){
             if(sel.name == id_str) {
-                id_range = sel.selection;
+                id_range = sel.facetIds;
                 fromSelection = true;
                 break;
             }

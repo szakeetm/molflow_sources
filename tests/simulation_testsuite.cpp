@@ -634,7 +634,7 @@ namespace {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
@@ -690,7 +690,7 @@ namespace {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
@@ -748,7 +748,7 @@ namespace {
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
 
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
@@ -804,7 +804,7 @@ namespace {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
@@ -863,7 +863,7 @@ namespace {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::outputFile;
@@ -923,7 +923,7 @@ namespace {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
             Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::workPath + "/" + SettingsIO::outputFile;
@@ -1055,13 +1055,13 @@ namespace {
         std::vector<SelectionGroup> selections;
         SelectionGroup group;
         group.name = "ValidSelection";
-        group.selection = {5, 8, 9};
+        group.facetIds = {5, 8, 9};
         selections.push_back(group);
         group.name = "InvalidSelection";
-        group.selection = {1, 2, 3, 4};
+        group.facetIds = {1, 2, 3, 4};
         selections.push_back(group);
         group.name = "NotValid";
-        group.selection = {10, 11, 12};
+        group.facetIds = {10, 11, 12};
         selections.push_back(group);
         outfile << "facet.\"NotValid\".opacity=0.3\n"
                    "facet.\"ValidSelection\".opacity=0.5\n"

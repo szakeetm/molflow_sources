@@ -108,9 +108,6 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowWorker.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
-        ${IO_DIR}/InterfaceXML.cpp
-        ${IO_DIR}/InterfaceXML.h
-
         ${HEADER_DIR_2}/FlowMPI.h
         ${HEADER_DIR_2}/FlowMPI.cpp
         ${HEADER_DIR_2}/IntersectAABB_shared.cpp

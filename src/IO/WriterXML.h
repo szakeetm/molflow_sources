@@ -38,18 +38,20 @@ namespace FlowIO {
         //virtual void SaveGeometry(std::string outputFileName, SimulationModel *model) = 0;
     };
 
-    class WriterXML : public Writer {
+    class XmlWriter : public Writer {
     protected:
         bool useOldXMLFormat;
-        bool update;
+        bool updateRootNode;
     public:
-        WriterXML(bool useOldXMLFormat = false, bool update = false);
+        XmlWriter(bool useOldXMLFormat = false, bool updateRootNode = false);
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
         pugi::xml_node GetRootNode(pugi::xml_document &saveDoc);
 
-        bool WriteXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName);
+        bool WriteXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName); //CLI uses it, prints to console on error
         void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
-            GLProgress_Abstract& prg, const std::vector<size_t> &selection = std::vector<size_t>{});
+            GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave = std::vector<size_t>{});
+
+        void WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, const std::vector<GLFormula>& appFormulas);
 
         bool AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);
         bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);
@@ -58,7 +60,6 @@ namespace FlowIO {
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
         UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
-
     };
 }
 

@@ -20,6 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 #include "GLApp/GLTypes.h"
 #include "Parameter.h"
+#include "Interface.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
 #include <vector>
@@ -108,19 +109,6 @@ struct IntegratedVelocityEntry {
 	inline double GetElement(const bool first) const {
 		return first ? velocity : cumulativeProbability;
 	}
-};
-
-struct FacetViewSetting {
-	bool textureVisible;
-	bool volumeVisible;
-};
-
-struct UserSettings {
-	//user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
-    std::vector<SelectionGroup> selections;
-    std::vector<FacetViewSetting> facetViewSettings;
-    std::vector<UserMoment> userMoments;
-    std::vector<Parameter> parameters;
 };
 
 

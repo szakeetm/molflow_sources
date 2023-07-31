@@ -1,4 +1,5 @@
 #include "Worker.h"
+#include "Worker.h"
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
@@ -32,17 +33,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <future>
 #include <cmath>
-//#include <cstdlib>
 #include <fstream>
-//#include <istream>
 #include <filesystem>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
 #include <stdexcept>
-/*//#include <cereal/archives/xml.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>*/
-#include <IO/InterfaceXML.h>
 #include <Buffer_shared.h>
 #include <Simulation/IDGeneration.h>
 #include <Simulation/CDFGeneration.h>
@@ -56,12 +51,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/MathTools.h"
 #include "Helper/StringHelper.h"
 #include "Facet_shared.h"
-//#include "Simulation.h" //SHELEM
 #include "Interface/GlobalSettings.h"
 #include "Interface/FacetAdvParams.h"
 #include "Interface/ProfilePlotter.h"
 #include "Interface/LoadStatus.h"
 #include "ConvergencePlotter.h"
+
+#include "IO/LoaderXML.h"
+#include "IO/WriterXML.h"
 
 #if defined(MOLFLOW)
 
@@ -240,20 +237,8 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					std::stringstream xmlStream; //Will store XML file content
 					{ //Scope to store XML tree
 						xml_document saveDoc;
-						FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
-
-						//Construct user settings that writer will use
-						writer.userSettings.facetViewSettings.clear();
-						for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
-							auto facet = geom->GetFacet(facetId);
-							FacetViewSetting vs;
-							vs.textureVisible = facet->viewSettings.textureVisible;
-							vs.volumeVisible = facet->viewSettings.volumeVisible;
-							writer.userSettings.facetViewSettings.emplace_back(vs);
-						}
-						writer.userSettings.userMoments = this->userMoments;
-						writer.userSettings.parameters = this->interfaceParameterCache;
-						writer.userSettings.selections = mApp->selections;
+						FlowIO::XmlWriter writer(mApp->useOldXMLFormat, false);
+						writer.userSettings = InterfaceSettingsToSimModel(model);
 
 						if (saveSelected) {
 							writer.SaveGeometry(saveDoc, mf_model, prg, GetGeometry()->GetSelectedFacets());
@@ -261,15 +246,14 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						else {
 							writer.SaveGeometry(saveDoc, mf_model, prg);
 						}
-						FlowIO::WriterInterfaceXML::WriteInterfaceSettings(saveDoc, mApp, saveSelected);
 
 						xml_document geom_only;
 						geom_only.reset(saveDoc);
 						bool success = false; //success: simulation state could be saved
 						if (!crashSave && !saveSelected) {
 							try {
-								//success = geom->SaveXML_simustate(saveDoc, this, globalState, prg, saveSelected);
 								success = writer.SaveSimulationState(saveDoc, mf_model, prg, globalState);
+								writer.WriteConvergenceValues(saveDoc, mApp->formula_ptr->convergenceData, mApp->formula_ptr->formulas);
 							}
 							catch (const std::exception& e) {
 								GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -769,7 +753,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (!insert) {
 
 				geom->Clear();
-				FlowIO::LoaderInterfaceXML loader;
+				FlowIO::XmlLoader loader;
 				auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 				{
 					try {
@@ -781,46 +765,20 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					}
 				}
 
-				prg.SetMessage("Loading interface settings...");
-
-				xml_node interfNode = rootNode.child("Interface");
-				userMoments = loader.userSettings.userMoments;
-
-				TimeDependentParameters::InsertParametersBeforeCatalog(interfaceParameterCache,loader.userSettings.parameters);
-
-				// Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
-				FlowIO::LoaderInterfaceXML::LoadInterfaceSettings(interfNode, mApp);
-
-				if (loader.userSettings.facetViewSettings.size() == geom->GetNbFacet()) {
-					for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
-						auto facet = geom->GetFacet(facetId);
-						facet->viewSettings.textureVisible = loader.userSettings.facetViewSettings[facetId].textureVisible;
-						facet->viewSettings.volumeVisible = loader.userSettings.facetViewSettings[facetId].volumeVisible;
-					}
-				}
-				else {
-					std::cerr << "Amount of view settings doesn't equal number of facets: "
-						<< loader.userSettings.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
-						<< std::endl;
-				}
-
-				prg.SetMessage("Parsing user moments...");
-				// Add moments only after user Moments are completely initialized
-				// We call ParseAndCheck again (first loader called it), so we can display error if overlap was detected
-				{
-					try {
-						TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userMoments, prg);
-					}
-					catch (std::exception& e) {
-						GLMessageBox::Display(e.what(), "Warning",
-							GLDLG_OK, GLDLG_ICONWARNING);
-						return;
-					}
-				}
+				interfaceParameterCache = mf_model->tdParams.parameters; //copy to cache
 
 				prg.SetMessage("Initializing geometry...");
 				SimModelToInterfaceGeom();
+				prg.SetMessage("Applying interface settings...");
+				try {
+					SimModelToInterfaceSettings(loader.userSettings,prg);
+				}
+				catch (std::exception& e) { //Moments overlap check fail?
+					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
+					return;
+				}
 				geom->InitializeGeometry();
+
 				prg.SetMessage("Building mesh...");
 				auto nbFacet = geom->GetNbFacet();
 
@@ -854,9 +812,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					simManager.ForwardGlobalCounter(&globalState, &particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
-						FlowIO::LoaderXML::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
-						FlowIO::LoaderInterfaceXML::LoadConvergenceValues(parseFileName, &mApp->formula_ptr->convergenceData, prg);
-
+						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
+						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->formula_ptr->convergenceData, prg);
 					}
 					simManager.simulationChanged = true; //mark for loading
 
@@ -937,6 +894,45 @@ void Worker::SimModelToInterfaceGeom() {
 
 	geom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
 	geom->SetInterfaceFacets(model->facets, this);
+}
+
+void Worker::SimModelToInterfaceSettings(const UserSettings& userSettings, GLProgress_GUI& prg)
+{
+	TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userSettings.userMoments, prg);
+	
+	mApp->selections = userSettings.selections;
+	mApp->RebuildSelectionMenus();
+
+	mApp->views = userSettings.views;
+	mApp->RebuildViewMenus();
+
+	for (auto formula : userSettings.userFormulas) {
+		mApp->formula_ptr->AddFormula(formula.name, formula.expression);
+	}
+	
+	//Apply facet view settings that don't exist in MolflowSimFacet, only InterfaceFacet
+	if (userSettings.facetViewSettings.size() == geom->GetNbFacet()) {
+		for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
+			auto facet = geom->GetFacet(facetId);
+			facet->viewSettings.textureVisible = userSettings.facetViewSettings[facetId].textureVisible;
+			facet->viewSettings.volumeVisible = userSettings.facetViewSettings[facetId].volumeVisible;
+		}
+	}
+	else {
+		std::cerr << "Amount of view settings doesn't equal number of facets: "
+			<< userSettings.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
+			<< std::endl;
+	}
+
+	if (userSettings.profilePlotterSettings) {
+		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings->logYscale);
+		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings->viewIds);
+	}
+
+	if (userSettings.convergencePlotterSettings) {
+		mApp->convergencePlotter->SetLogScaled(userSettings.convergencePlotterSettings->logYscale);
+		mApp->convergencePlotter->SetViews(userSettings.convergencePlotterSettings->viewIds);
+	}
 }
 
 std::string Worker::GetSimManagerStatus()
@@ -1482,4 +1478,44 @@ int Worker::GetParamId(const std::string& name) {
 	for (int i = 0; foundId == -1 && i < (int)interfaceParameterCache.size(); i++)
 		if (name == interfaceParameterCache[i].name) foundId = i;
 	return foundId;
+}
+
+UserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
+	//Construct user settings that writer will use
+	UserSettings result;
+
+	result.userMoments = this->userMoments;
+	std::dynamic_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;
+	result.selections = mApp->selections;
+	result.views = mApp->views;
+
+	auto nbFacet = geom->GetNbFacet();
+	for (size_t facetId = 0; facetId < nbFacet; facetId++) {
+		auto facet = geom->GetFacet(facetId);
+		FacetViewSetting vs;
+		vs.textureVisible = facet->viewSettings.textureVisible;
+		vs.volumeVisible = facet->viewSettings.volumeVisible;
+		result.facetViewSettings.push_back(std::move(vs));
+	}
+
+	for (const auto &appFormula : mApp->formula_ptr->formulas) {
+		UserFormula uf;
+		uf.name = appFormula.GetName();
+		uf.expression = appFormula.GetExpression();
+		result.userFormulas.push_back(std::move(uf));
+	}
+
+	if (mApp->profilePlotter) {
+		result.profilePlotterSettings = std::make_unique<PlotterSetting>();
+		result.profilePlotterSettings->logYscale = mApp->profilePlotter->IsLogScaled();
+		result.profilePlotterSettings->viewIds = mApp->profilePlotter->GetViews();
+	}
+
+	if (mApp->convergencePlotter) {
+		result.convergencePlotterSettings = std::make_unique<PlotterSetting>();
+		result.convergencePlotterSettings->logYscale = mApp->convergencePlotter->IsLogScaled();
+		result.convergencePlotterSettings->viewIds = mApp->convergencePlotter->GetViews();
+	}
+
+	return result;
 }
