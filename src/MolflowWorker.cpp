@@ -896,7 +896,7 @@ void Worker::SimModelToInterfaceGeom() {
 	geom->SetInterfaceFacets(model->facets, this);
 }
 
-void Worker::SimModelToInterfaceSettings(const UserSettings& userSettings, GLProgress_GUI& prg)
+void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings, GLProgress_GUI& prg)
 {
 	TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userSettings.userMoments, prg);
 	
@@ -1480,9 +1480,9 @@ int Worker::GetParamId(const std::string& name) {
 	return foundId;
 }
 
-UserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
+MolflowUserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
 	//Construct user settings that writer will use
-	UserSettings result;
+	MolflowUserSettings result;
 
 	result.userMoments = this->userMoments;
 	std::dynamic_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;

@@ -735,7 +735,6 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	//mApp->ClearFormulas();
 
 	// Globals
-	char tmp[512];
 	prg.SetMessage("Reading GEO file header...");
 	file.ReadKeyword("version"); file.ReadKeyword(":");
 	*version = file.ReadInt();
@@ -1147,7 +1146,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	for (int i = 0; i < nbV; i++) {
 		
 		CameraView v;
-		v.name = file.ReadString());
+		v.name = file.ReadString();
 		v.projMode = file.ReadInt();
 		v.camAngleOx = file.ReadDouble();
 		v.camAngleOy = file.ReadDouble();
@@ -1482,7 +1481,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	file.Write("nbSuper:"); file.Write(sh.nbSuper, "\n");
 	file.Write("nbFormula:"); file.Write((!saveSelected) ? mApp->formula_ptr->formulas.size() : 0, "\n");
 
-	file.Write("nbView:"); file.Write(mApp->nbView, "\n");
+	file.Write("nbView:"); file.Write(mApp->views.size(), "\n");
 	file.Write("nbSelection:"); file.Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
 
 	file.Write("gasMass:"); file.Write(worker->model->wp.gasMass, "\n");
@@ -1516,22 +1515,22 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	file.Write("}\n");
 
 	file.Write("views {\n");
-	for (int i = 0; i < mApp->nbView; i++) {
+	for (const auto& view : mApp->views) {
 		file.Write("  \"");
-		file.Write(mApp->views[i].name);
+		file.Write(view.name);
 		file.Write("\"\n");
-		file.Write(mApp->views[i].projMode, " ");
-		file.Write(mApp->views[i].camAngleOx, " ");
-		file.Write(mApp->views[i].camAngleOy, " ");
-		file.Write(mApp->views[i].camDist, " ");
-		file.Write(mApp->views[i].camOffset.x, " ");
-		file.Write(mApp->views[i].camOffset.y, " ");
-		file.Write(mApp->views[i].camOffset.z, " ");
-		file.Write(mApp->views[i].performXY, " ");
-		file.Write(mApp->views[i].vLeft, " ");
-		file.Write(mApp->views[i].vRight, " ");
-		file.Write(mApp->views[i].vTop, " ");
-		file.Write(mApp->views[i].vBottom, "\n");
+		file.Write(view.projMode, " ");
+		file.Write(view.camAngleOx, " ");
+		file.Write(view.camAngleOy, " ");
+		file.Write(view.camDist, " ");
+		file.Write(view.camOffset.x, " ");
+		file.Write(view.camOffset.y, " ");
+		file.Write(view.camOffset.z, " ");
+		file.Write(view.performXY, " ");
+		file.Write(view.vLeft, " ");
+		file.Write(view.vRight, " ");
+		file.Write(view.vTop, " ");
+		file.Write(view.vBottom, "\n");
 	}
 	file.Write("}\n");
 

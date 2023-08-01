@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <PugiXML/pugixml.hpp>
 #include "PugiXML/pugixml.hpp"
 #include <Helper/GLProgress_abstract.hpp>
+#include <GLApp/GLFormula.h>
 
 #include <string>
 #include "Simulation/MolflowSimGeom.h"
@@ -59,7 +60,7 @@ namespace FlowIO {
         void
         SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
-        UserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
+        MolflowUserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
     };
 }
 

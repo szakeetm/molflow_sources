@@ -276,8 +276,8 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         for (size_t i = 0; i < userSettings.userFormulas.size(); i++) {
             xml_node newFormula = formulaNode.append_child("Formula");
             newFormula.append_attribute("id") = i;
-            newFormula.append_attribute("name") = userSettings.userFormulas[i].name;
-            newFormula.append_attribute("expression") = userSettings.userFormulas[i].expression;
+            newFormula.append_attribute("name") = userSettings.userFormulas[i].name.c_str();
+            newFormula.append_attribute("expression") = userSettings.userFormulas[i].expression.c_str();
         }
     }
 

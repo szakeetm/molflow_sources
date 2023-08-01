@@ -110,7 +110,7 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
-            throw Error(fmt::format("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex);
+            throw Error(fmt::format("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex));
         }
         auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
         loadModel.facets.push_back(newFacetPtr);
@@ -302,7 +302,7 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
     try {
         prg.SetMessage("Replacing model with loaded one...");
         std::lock_guard<std::mutex> lock(loadModel.modelMutex);
-        model = std::make_shared<MolflowSimulationModel>(loadModel);
+        model.reset(&loadModel);
     }
     catch (...) {
         throw Error("Couldn't lock simulation model mutex.");

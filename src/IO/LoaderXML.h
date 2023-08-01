@@ -47,6 +47,6 @@ namespace FlowIO {
                                        GlobalSimuState *globState, GLProgress_Abstract& prg);
         static int
         LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, GLProgress_Abstract& prg);
-        UserSettings userSettings; //Cache that will be passed on to Worker/model after loading
+        MolflowUserSettings userSettings; //Cache that will be passed on to Worker/model after loading
     };
 }
