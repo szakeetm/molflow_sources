@@ -185,30 +185,22 @@ typedef struct {
 
 class AnglemapParams {
 public:
-    AnglemapParams(){
-        record = false;
-        phiWidth = 0;
-        thetaLimit = 0.0;
-        thetaLimit = 0;
-		thetaLowerRes = 0;
-        thetaHigherRes = 0;
-    }
-	bool   record; // Record incident angle 2-dim distribution
-	//bool hasRecorded;
-	size_t phiWidth; //resolution between -PI and +PI
-	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
-	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
-	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
+
+	bool   record = false; // Record incident angle 2-dim distribution
+	size_t phiWidth = 0; //resolution between -PI and +PI
+	double thetaLimit = 0.0; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+	size_t thetaLowerRes = 0; //resolution between 0 and angleMapThetaLimit
+	size_t thetaHigherRes = 0; //resolution between angleMapThetaLimit and PI/2
 	
 	template<class Archive>
 	void serialize(Archive & archive)
 	{
 		archive(
-			   record, // Record incident angle 2-dim distribution
-		 phiWidth, //resolution between -PI and +PI
-		 thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
-		 thetaLowerRes, //resolution between 0 and angleMapThetaLimit
-		 thetaHigherRes //resolution between angleMapThetaLimit and PI/2
+			record, // Record incident angle 2-dim distribution
+			phiWidth, //resolution between -PI and +PI
+			thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+			thetaLowerRes, //resolution between 0 and angleMapThetaLimit
+			thetaHigherRes //resolution between angleMapThetaLimit and PI/2
 		);
 	}
 
@@ -227,7 +219,7 @@ public:
 	}
 };
 
-class Reflection {
+class ReflectionParam {
 public:
 	double diffusePart;
 	double specularPart;
@@ -240,14 +232,6 @@ public:
 	}
 };
 
-//Just for AC matrix calculation in Molflow, old mesh structure:
-typedef struct {
-
-	float   area;     // Area of element
-	float   uCenter;  // Center coordinates
-	float   vCenter;  // Center coordinates
-	int     elemId;   // Element index (MESH array)
-	bool    full;     // Element is full
-
-} SHELEM_OLD;
-
+struct MolflowUserSettings : UserSettings {
+	std::vector<UserMoment> userMoments;
+};
