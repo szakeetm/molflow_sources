@@ -40,7 +40,7 @@ class ProfilePlotter : public GLWindow {
 public:
 
     // Construction
-    ProfilePlotter();
+    ProfilePlotter(Worker* work);
 
     // Component method
     void Display(Worker* w);

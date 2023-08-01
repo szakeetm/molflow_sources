@@ -754,12 +754,13 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				geom->Clear();
 				FlowIO::XmlLoader loader;
-				auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+				std::shared_ptr<MolflowSimulationModel> mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 				{
 					try {
-						auto loadedModel = loader.LoadGeometry(parseFileName,
+						std::shared_ptr<MolflowSimulationModel> loadedModel = loader.LoadGeometry(parseFileName,
             				TimeDependentParameters::GetCatalogParameters(mf_model->tdParams.parameters), prg);
-            			mf_model->modelMutex.lock();
+            			//mf_model->modelMutex.lock(); //Don't lock, would try to destroy mutex in locked state
+						model.reset(loadedModel.get());
             			mf_model = loadedModel;
 					}
 					catch (const std::exception& ex) {
@@ -833,8 +834,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 				catch (const std::exception& e) {
 					if (!mApp->profilePlotter) {
-						mApp->profilePlotter = new ProfilePlotter();
-						mApp->profilePlotter->SetWorker(this);
+						mApp->profilePlotter = new ProfilePlotter(this);
 					}
 					mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
 					if (!mApp->convergencePlotter) {
@@ -928,7 +928,7 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 	}
 
 	if (userSettings.profilePlotterSettings.hasData) {
-		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter();
+		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(this);
 		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings.logYscale);
 		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings.viewIds);
 	}

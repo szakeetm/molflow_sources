@@ -52,7 +52,7 @@ extern SynRad*mApp;
 /**
 * \brief Constructor with initialisation for Profile plotter window (Tools/Profile Plotter)
 */
-ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
+ProfilePlotter::ProfilePlotter(Worker* work) :GLWindow() , views{}{
 
 	int wD = 650;
 	int hD = 400;
@@ -60,7 +60,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 	SetTitle("Profile plotter");
 	SetIconfiable(true);
 	nbView = 0;
-	worker = nullptr;
+	worker = work;
 
 	lastUpdate = 0.0f;
 
@@ -254,13 +254,9 @@ void ProfilePlotter::Refresh() {
 * \param w worker handle
 */
 void ProfilePlotter::Display(Worker *w) {
-
-	
     SetWorker(w);
 	SetVisible(true);
 	Refresh();
-	
-
 }
 
 /**

@@ -1575,7 +1575,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			break;
 
 		case MENU_TOOLS_PROFPLOTTER:
-			if (!profilePlotter) profilePlotter = new ProfilePlotter();
+			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
 			profilePlotter->Display(&worker);
 			break;
 		case MENU_TOOLS_TEXPLOTTER:
@@ -1834,7 +1834,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			}
 		}
 		else if (src == profilePlotterBtn) {
-			if (!profilePlotter) profilePlotter = new ProfilePlotter();
+			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
 			if (!profilePlotter->IsVisible()) profilePlotter->Display(&worker);
 			else profilePlotter->SetVisible(false);
 		}
