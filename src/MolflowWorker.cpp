@@ -253,7 +253,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						if (!crashSave && !saveSelected) {
 							try {
 								success = writer.SaveSimulationState(saveDoc, mf_model, prg, globalState);
-								writer.WriteConvergenceValues(saveDoc, mApp->formula_ptr->convergenceData);
+								writer.WriteConvergenceValues(saveDoc, mApp->appFormulas->convergenceData);
 							}
 							catch (const std::exception& e) {
 								GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -757,7 +757,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 				{
 					try {
-						loader.LoadGeometry(parseFileName, mf_model, prg);
+						auto loadedModel = loader.LoadGeometry(parseFileName,
+            				TimeDependentParameters::GetCatalogParameters(mf_model->tdParams.parameters), prg);
+            			mf_model->modelMutex.lock();
+            			mf_model = loadedModel;
 					}
 					catch (const std::exception& ex) {
 						std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
@@ -813,7 +816,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
 						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
-						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->formula_ptr->convergenceData, prg);
+						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->appFormulas->convergenceData, prg);
 					}
 					simManager.simulationChanged = true; //mark for loading
 
@@ -835,7 +838,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					}
 					mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
 					if (!mApp->convergencePlotter) {
-						mApp->convergencePlotter = new ConvergencePlotter(this, mApp->formula_ptr);
+						mApp->convergencePlotter = new ConvergencePlotter(this, mApp->appFormulas);
 						mApp->convergencePlotter->SetWorker(this);
 					}
 					mApp->convergencePlotter->Reset(); //To avoid trying to display non-loaded simulation results
@@ -907,7 +910,7 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 	mApp->RebuildViewMenus();
 
 	for (auto formula : userSettings.userFormulas) {
-		mApp->formula_ptr->AddFormula(formula.name, formula.expression);
+		mApp->appFormulas->AddFormula(formula.name, formula.expression);
 	}
 	
 	//Apply facet view settings that don't exist in MolflowSimFacet, only InterfaceFacet
@@ -925,11 +928,13 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 	}
 
 	if (userSettings.profilePlotterSettings.hasData) {
+		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter();
 		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings.logYscale);
 		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings.viewIds);
 	}
 
 	if (userSettings.convergencePlotterSettings.hasData) {
+		if (!mApp->convergencePlotter) mApp->convergencePlotter = new ConvergencePlotter(this, mApp->appFormulas);
 		mApp->convergencePlotter->SetLogScaled(userSettings.convergencePlotterSettings.logYscale);
 		mApp->convergencePlotter->SetViews(userSettings.convergencePlotterSettings.viewIds);
 	}
@@ -1498,7 +1503,7 @@ MolflowUserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<Simulati
 		result.facetViewSettings.push_back(std::move(vs));
 	}
 
-	for (const auto &appFormula : mApp->formula_ptr->formulas) {
+	for (const auto &appFormula : mApp->appFormulas->formulas) {
 		UserFormula uf;
 		uf.name = appFormula.GetName();
 		uf.expression = appFormula.GetExpression();

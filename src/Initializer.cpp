@@ -193,7 +193,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
  */
 void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
-                              GlobalSimuState *globStatePtr, UserSettings& userSettings) {
+                              GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings) {
     if (SettingsIO::prepareIO()) {
         throw Error("Error preparing I/O folders");
     }
@@ -300,7 +300,7 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 * \brief Wrapper for CLI's initFromFile for XML loading with XmlLoader
  */
 void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
-                             GlobalSimuState *globStatePtr, UserSettings& userSettings, bool noProgress) {
+                             GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings, bool noProgress) {
 
     //Log::console_header(1, "Loading geometry from file {}\n", fileName);
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
@@ -314,7 +314,10 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
         // Settings
         // Previous results
         try {
-            loader.LoadGeometry(fileName, model, prg);
+            auto loadedModel = loader.LoadGeometry(fileName,
+            TimeDependentParameters::GetCatalogParameters(model->tdParams.parameters), prg);
+            model->modelMutex.lock();
+            model = loadedModel;
         }
         catch (Error& err) {
             Log::console_error("Error loading file:\n{}", err.what());

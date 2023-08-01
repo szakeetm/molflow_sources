@@ -1286,6 +1286,16 @@ void TimeDependentParameters::ClearParameters(std::vector<Parameter>& parameters
     }
 }
 
+std::vector<Parameter> TimeDependentParameters::GetCatalogParameters(const std::vector<Parameter>& parameters) {
+    std::vector<Parameter> result;
+    for (const auto& param : parameters) {
+        if (param.fromCatalog) {
+            result.push_back(param);
+        }
+    }
+    return result;
+}
+
 /**
 * \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
 * \param newParams vector containing new parameters to be inserted

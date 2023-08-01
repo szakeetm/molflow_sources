@@ -61,6 +61,7 @@ struct TimeDependentParameters {
 
     static int LoadParameterCatalog(std::vector<Parameter>& parameters);
     static void ClearParameters(std::vector<Parameter>& parameters);
+    static std::vector<Parameter> GetCatalogParameters(const std::vector<Parameter>& parameters);
     static size_t InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
 
     

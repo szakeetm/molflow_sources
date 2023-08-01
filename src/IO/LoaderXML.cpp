@@ -37,9 +37,9 @@ using namespace FlowIO;
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg) {
-  
-    MolflowSimulationModel loadModel; //temporary, only replace actual model if full load was successful
+std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::string &inputFileName, const std::vector<Parameter>& catalog, GLProgress_Abstract& prg) {
+    
+    std::shared_ptr<MolflowSimulationModel> loadModel=std::make_shared<MolflowSimulationModel>();
     xml_document loadXML;
     auto inputFile = inputFileName.c_str();
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
@@ -48,29 +48,29 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
         std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+" <<std::endl;
         rootNode = loadXML.root();
     }
-    loadModel.sh.name = FileUtils::GetFilename(inputFile);
+    loadModel->sh.name = FileUtils::GetFilename(inputFile);
 
     xml_node geomNode = rootNode.child("Geometry");
 
     prg.SetMessage("Loading vertices...");
     //Vertices
-    loadModel.sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
+    loadModel->sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
-    loadModel.vertices3.resize(loadModel.sh.nbVertex); loadModel.vertices3.shrink_to_fit();
+    loadModel->vertices3.resize(loadModel->sh.nbVertex); loadModel->vertices3.shrink_to_fit();
     size_t idx = 0;
     for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
-        loadModel.vertices3[idx].x = vertex.attribute("x").as_double();
-        loadModel.vertices3[idx].y = vertex.attribute("y").as_double();
-        loadModel.vertices3[idx].z = vertex.attribute("z").as_double();
+        loadModel->vertices3[idx].x = vertex.attribute("x").as_double();
+        loadModel->vertices3[idx].y = vertex.attribute("y").as_double();
+        loadModel->vertices3[idx].z = vertex.attribute("z").as_double();
         idx++;
     }
 
     //Structures
-    loadModel.sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
+    loadModel->sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
     idx = 0;
-    loadModel.structures.resize(loadModel.sh.nbSuper);
+    loadModel->structures.resize(loadModel->sh.nbSuper);
     for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-        loadModel.structures[idx].name = structure.attribute("name").value();
+        loadModel->structures[idx].name = structure.attribute("name").value();
         idx++;
     }
 
@@ -98,13 +98,13 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
             }
         }
 
-        TimeDependentParameters::ClearParameters(loadModel.tdParams.parameters);
-        TimeDependentParameters::InsertParametersBeforeCatalog(loadModel.tdParams.parameters, tmpLoadedParams);
+        loadModel->tdParams.parameters = catalog; //Copy catalog
+        TimeDependentParameters::InsertParametersBeforeCatalog(loadModel->tdParams.parameters, tmpLoadedParams);
     }
 
     prg.SetMessage("Loading facets...",false);
-    loadModel.sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    userSettings.facetViewSettings.resize(loadModel.sh.nbFacet);
+    loadModel->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
+    userSettings.facetViewSettings.resize(loadModel->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
@@ -113,28 +113,28 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
             throw Error(fmt::format("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex));
         }
         auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
-        loadModel.facets.push_back(newFacetPtr);
-        LoadFacet(facetNode, newFacetPtr.get(), userSettings.facetViewSettings[idx],loadModel.sh.nbVertex,loadModel.tdParams.parameters.size());
+        loadModel->facets.push_back(newFacetPtr);
+        LoadFacet(facetNode, newFacetPtr.get(), userSettings.facetViewSettings[idx],loadModel->sh.nbVertex,loadModel->tdParams.parameters.size());
         idx++;
-        prg.SetProgress((double)idx/(double)loadModel.sh.nbFacet);
+        prg.SetProgress((double)idx/(double)loadModel->sh.nbFacet);
     }
 
     prg.SetMessage("Loading physics parameters...",false);
 
-    loadModel.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-    loadModel.wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+    loadModel->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+    loadModel->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
     if (simuParamNode.child("Gas").attribute("enableDecay")) {
-        loadModel.wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
+        loadModel->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
     }
     else {
-        loadModel.wp.enableDecay = loadModel.wp.halfLife < 1e100;
+        loadModel->wp.enableDecay = loadModel->wp.halfLife < 1e100;
     }
 
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
-    loadModel.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+    loadModel->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
     // Default initialization
-    loadModel.wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
-    loadModel.wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
+    loadModel->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+    loadModel->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
@@ -142,46 +142,46 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
         um.content=newUserEntry.attribute("content").as_string();
         um.timeWindow=newUserEntry.attribute("window").as_double();
         if(um.timeWindow==0.0){
-            um.timeWindow = loadModel.wp.timeWindowSize;
+            um.timeWindow = loadModel->wp.timeWindowSize;
         }
         
         userSettings.userMoments.emplace_back(um);
     }
     
-    TimeMoments::ParseAndCheckUserMoments(loadModel.tdParams.moments, userSettings.userMoments, prg);
+    TimeMoments::ParseAndCheckUserMoments(loadModel->tdParams.moments, userSettings.userMoments, prg);
 
     xml_node motionNode = simuParamNode.child("Motion");
-    loadModel.wp.motionType = motionNode.attribute("type").as_int();
-    if (loadModel.wp.motionType == 1) { //fixed motion
+    loadModel->wp.motionType = motionNode.attribute("type").as_int();
+    if (loadModel->wp.motionType == 1) { //fixed motion
         xml_node v = motionNode.child("VelocityVector");
-        loadModel.wp.motionVector2.x = v.attribute("vx").as_double();
-        loadModel.wp.motionVector2.y = v.attribute("vy").as_double();
-        loadModel.wp.motionVector2.z = v.attribute("vz").as_double();
+        loadModel->wp.motionVector2.x = v.attribute("vx").as_double();
+        loadModel->wp.motionVector2.y = v.attribute("vy").as_double();
+        loadModel->wp.motionVector2.z = v.attribute("vz").as_double();
     }
-    else if (loadModel.wp.motionType == 2) { //rotation
+    else if (loadModel->wp.motionType == 2) { //rotation
         xml_node v = motionNode.child("AxisBasePoint");
-        loadModel.wp.motionVector1.x = v.attribute("x").as_double();
-        loadModel.wp.motionVector1.y = v.attribute("y").as_double();
-        loadModel.wp.motionVector1.z = v.attribute("z").as_double();
+        loadModel->wp.motionVector1.x = v.attribute("x").as_double();
+        loadModel->wp.motionVector1.y = v.attribute("y").as_double();
+        loadModel->wp.motionVector1.z = v.attribute("z").as_double();
         xml_node v2 = motionNode.child("RotationVector");
-        loadModel.wp.motionVector2.x = v2.attribute("x").as_double();
-        loadModel.wp.motionVector2.y = v2.attribute("y").as_double();
-        loadModel.wp.motionVector2.z = v2.attribute("z").as_double();
+        loadModel->wp.motionVector2.x = v2.attribute("x").as_double();
+        loadModel->wp.motionVector2.y = v2.attribute("y").as_double();
+        loadModel->wp.motionVector2.z = v2.attribute("z").as_double();
     }
 
     auto forcesNode = simuParamNode.child("MeasureForces");
     if (!forcesNode) {
-        loadModel.wp.enableForceMeasurement = false;
-        loadModel.wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
+        loadModel->wp.enableForceMeasurement = false;
+        loadModel->wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
     }
     else {
-        loadModel.wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
+        loadModel->wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
         auto torqueNode = forcesNode.child("Torque");
         if (torqueNode) {
             auto v = torqueNode.child("refPoint");
-            loadModel.wp.torqueRefPoint.x = v.attribute("x").as_double();
-            loadModel.wp.torqueRefPoint.y = v.attribute("y").as_double();
-            loadModel.wp.torqueRefPoint.z = v.attribute("z").as_double();
+            loadModel->wp.torqueRefPoint.x = v.attribute("x").as_double();
+            loadModel->wp.torqueRefPoint.y = v.attribute("y").as_double();
+            loadModel->wp.torqueRefPoint.z = v.attribute("z").as_double();
         }
     }
 
@@ -190,22 +190,22 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");
         if (nbBounceNode) {
-            loadModel.wp.globalHistogramParams.recordBounce=true;
-            loadModel.wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
-            loadModel.wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+            loadModel->wp.globalHistogramParams.recordBounce=true;
+            loadModel->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+            loadModel->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
         }
         xml_node distanceNode = globalHistNode.child("Distance");
         if (distanceNode) {
-            loadModel.wp.globalHistogramParams.recordDistance=true;
-            loadModel.wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
-            loadModel.wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+            loadModel->wp.globalHistogramParams.recordDistance=true;
+            loadModel->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+            loadModel->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
         }
 #ifdef MOLFLOW
         xml_node timeNode = globalHistNode.child("Time");
         if (timeNode) {
-            loadModel.wp.globalHistogramParams.recordTime=true;
-            loadModel.wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
-            loadModel.wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
+            loadModel->wp.globalHistogramParams.recordTime=true;
+            loadModel->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+            loadModel->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
         }
 #endif
     }
@@ -298,16 +298,7 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
                 userSettings.convergencePlotterSettings.viewIds.push_back(view.attribute("formulaHash").as_int());
         }
     }
-
-    try {
-        prg.SetMessage("Replacing model with loaded one...");
-        std::lock_guard<std::mutex> lock(loadModel.modelMutex);
-        model.reset(&loadModel);
-    }
-    catch (...) {
-        throw Error("Couldn't lock simulation model mutex.");
-    }
-
+    return loadModel;
 }
 
 /*

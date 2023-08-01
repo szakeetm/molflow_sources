@@ -161,7 +161,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 	  if (mApp->facetDetails) mApp->facetDetails->Update();
 		//if (mApp->autoUpdateFormulas) mApp->UpdateFormula();
         if (mApp->autoUpdateFormulas && mApp->formulaEditor && mApp->formulaEditor->IsVisible()) {
-          mApp->formula_ptr->EvaluateFormulas(work->globalStatCache.globalHits.nbDesorbed);
+          mApp->appFormulas->EvaluateFormulas(work->globalStatCache.globalHits.nbDesorbed);
           mApp->formulaEditor->UpdateValues();
         }
     } else if (src==editButton) {

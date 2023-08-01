@@ -227,7 +227,7 @@ MolFlow::MolFlow()
 	mApp = this; //to refer to the app as extern variable
 
 	auto eval = std::make_shared<FormulaEvaluator_MF>(&worker, (MolflowGeometry*)worker.GetGeometry(), &selections);
-	formula_ptr = std::make_shared<Formulas>(eval);
+	appFormulas = std::make_shared<Formulas>(eval);
 }
 
 // Name: OneTimeSceneInit()
@@ -1453,7 +1453,7 @@ void MolFlow::StartStopSimulation() {
 
 	worker.StartStop(m_fTime);
 	if (!worker.IsRunning()) { //Force update on simulation stop
-		formula_ptr->EvaluateFormulas(worker.globalStatCache.globalHits.nbDesorbed);
+		appFormulas->EvaluateFormulas(worker.globalStatCache.globalHits.nbDesorbed);
 		UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
@@ -1930,7 +1930,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearAllSelections();
 	ClearAllViews();
 
-	formula_ptr->AddFormula("Trans.prob.", "A2/SUMDES");
+	appFormulas->AddFormula("Trans.prob.", "A2/SUMDES");
 
 	UpdateStructMenu();
 	// Send to sub process

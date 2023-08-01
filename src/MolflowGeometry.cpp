@@ -907,7 +907,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	for (int i = 0; i < nbF; i++) { //parse formulas now that selection groups are loaded
-		mApp->formula_ptr->AddFormula(loadFormulas[i][0], loadFormulas[i][1]);
+		mApp->appFormulas->AddFormula(loadFormulas[i][0], loadFormulas[i][1]);
 	}
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
@@ -1479,7 +1479,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	file.Write("nbVertex:"); file.Write(sh.nbVertex, "\n");
 	file.Write("nbFacet:"); file.Write(saveSelected ? selectedFacets.size() : sh.nbFacet, "\n");
 	file.Write("nbSuper:"); file.Write(sh.nbSuper, "\n");
-	file.Write("nbFormula:"); file.Write((!saveSelected) ? mApp->formula_ptr->formulas.size() : 0, "\n");
+	file.Write("nbFormula:"); file.Write((!saveSelected) ? mApp->appFormulas->formulas.size() : 0, "\n");
 
 	file.Write("nbView:"); file.Write(mApp->views.size(), "\n");
 	file.Write("nbSelection:"); file.Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
@@ -1504,7 +1504,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 
 	file.Write("formulas {\n");
 	if (!saveSelected) {
-		for (auto& formula : mApp->formula_ptr->formulas) {
+		for (auto& formula : mApp->appFormulas->formulas) {
 			file.Write("  \"");
 			file.Write(formula.GetName());
 			file.Write("\" \"");
@@ -2517,13 +2517,13 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 	}
 
 	xml_node formulaNode = interfNode.append_child("Formulas");
-	formulaNode.append_attribute("nb") = (!saveSelected) * (mApp->formula_ptr->formulas.size());
+	formulaNode.append_attribute("nb") = (!saveSelected) * (mApp->appFormulas->formulas.size());
 	if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
-		for (size_t i = 0; i < mApp->formula_ptr->formulas.size(); i++) {
+		for (size_t i = 0; i < mApp->appFormulas->formulas.size(); i++) {
 			xml_node newFormula = formulaNode.append_child("Formula");
 			newFormula.append_attribute("id") = i;
-			newFormula.append_attribute("name") = mApp->formula_ptr->formulas[i].GetName();
-			newFormula.append_attribute("expression") = mApp->formula_ptr->formulas[i].GetExpression();
+			newFormula.append_attribute("name") = mApp->appFormulas->formulas[i].GetName();
+			newFormula.append_attribute("expression") = mApp->appFormulas->formulas[i].GetExpression();
 		}
 	}
 
@@ -2975,7 +2975,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 	xml_node convNode = resultNode.append_child("Convergence");
 
 	int formulaId = 0;
-	for (const auto& formulaVec : mApp->formula_ptr->convergenceValues) {
+	for (const auto& formulaVec : mApp->appFormulas->convergenceValues) {
 		std::stringstream convText;
 		convText << std::setprecision(10) << '\n';
 		convText << std::scientific;
@@ -2983,7 +2983,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			convText << convVal.first << "\t" << convVal.second << "\n";
 		}
 		xml_node newFormulaNode = convNode.append_child("ConvData");
-		newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas[formulaId]->GetExpression();
+		newFormulaNode.append_attribute("Formula") = mApp->appFormulas->formulas[formulaId]->GetExpression();
 		xml_node newConv = newFormulaNode.append_child(node_cdata);
 		newConv.set_value(convText.str().c_str());
 		formulaId++;
@@ -3173,7 +3173,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 			std::string expr = newFormula.attribute("expression").as_string();
 			std::string name = newFormula.attribute("name").as_string();
 			mApp->OffsetFormula(expr, (int)sh.nbFacet);
-			mApp->formula_ptr->AddFormula(name, expr);
+			mApp->appFormulas->AddFormula(name, expr);
 		}
 	}
 
