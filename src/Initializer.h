@@ -41,7 +41,7 @@ namespace CLIArguments {
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static void CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
+    static std::shared_ptr<MolflowSimulationModel> CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
                            GlobalSimuState *globState, MolflowUserSettings& userSettings, bool noProgress);
     static int initSimModel(std::shared_ptr<MolflowSimulationModel> model);
 public:

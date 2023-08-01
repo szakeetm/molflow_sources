@@ -199,7 +199,8 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
     }
 
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
+        auto loadedModel = CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
+        model = loadedModel;
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
@@ -299,10 +300,10 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 /**
 * \brief Wrapper for CLI's initFromFile for XML loading with XmlLoader
  */
-void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
+std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
                              GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings, bool noProgress) {
 
-    //Log::console_header(1, "Loading geometry from file {}\n", fileName);
+    std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
     prg.noProgress = noProgress; //Suppress percentages if ran in script
 
@@ -314,10 +315,8 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
         // Settings
         // Previous results
         try {
-            auto loadedModel = loader.LoadGeometry(fileName,
+            loadedModel = loader.LoadGeometry(fileName,
             TimeDependentParameters::GetCatalogParameters(model->tdParams.parameters), prg);
-            model->modelMutex.lock();
-            model = loadedModel;
         }
         catch (Error& err) {
             Log::console_error("Error loading file:\n{}", err.what());
@@ -325,20 +324,20 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
         userSettings = loader.userSettings; //persistent for saving
     }
 
-    prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", model->size()/1024/1024));
+    prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", loadedModel->size()/1024/1024));
 
     //InitializeGeometry();
-    model->InitializeFacets();
+    loadedModel->InitializeFacets();
 
     prg.SetMessage("Initializing geometry...",true);
-    initSimModel(model);
-    model->PrepareToRun();
+    initSimModel(loadedModel);
+    loadedModel->PrepareToRun();
 
     // 2. Create simulation dataports
     try {
 
         prg.SetMessage("Resizing global state counters...");
-        globStatePtr->Resize(model);
+        globStatePtr->Resize(loadedModel);
 
         // 3. init counters with previous results
         if (loadSimulationState) {
@@ -350,16 +349,16 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
                 
                 if (std::filesystem::exists(autosaveFileName)) {
                     prg.SetMessage(fmt::format("Found autosave file {}, loading simulation state...\n",autosaveFileName),true);
-                    FlowIO::XmlLoader::LoadSimulationState(autosaveFileName, model, globStatePtr, prg);
+                    FlowIO::XmlLoader::LoadSimulationState(autosaveFileName, loadedModel, globStatePtr, prg);
                 }
             } else {
-                FlowIO::XmlLoader::LoadSimulationState(SettingsIO::workFile, model, globStatePtr, prg);
+                FlowIO::XmlLoader::LoadSimulationState(SettingsIO::workFile, loadedModel, globStatePtr, prg);
             }
 
             // Update Angle map status
-            for(int i = 0; i < model->facets.size(); i++ ) {
+            for(int i = 0; i < loadedModel->facets.size(); i++ ) {
 #if defined(MOLFLOW)
-                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
+                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(loadedModel->facets[i]);
                 if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
                     //Retrieve angle map from hits dp
                     globStatePtr->facetStates[i].recordedAngleMapPdf = f->angleMap.pdf;
@@ -371,6 +370,8 @@ void Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulatio
     catch (const std::exception &e) {
         Log::console_error("[Warning] {}\n", e.what());
     }
+
+    return loadedModel;
 }
 
 /**
