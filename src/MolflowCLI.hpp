@@ -5,9 +5,6 @@ static constexpr const char* molflowCliLogo = R"(
  |_|  |_\___/_|_| |_\___/\_/\_/
     )"; //Unused, clutters iterative simulations and parameter sweeps
 
-//Transfers recorded angle maps from "simulation state" to "model"
-
-
 class RuntimeStatPrinter {
     size_t oldHitsNb=0;
     size_t oldDesNb=0;
@@ -20,9 +17,9 @@ public:
 
 void ShutdownMPI();
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer);void CleanUpMPI();
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer);void CleanUpMPI();
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave);
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave);
 void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, bool& endCondition);
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition);
 void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState);

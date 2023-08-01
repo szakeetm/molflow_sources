@@ -460,8 +460,6 @@ namespace FlowIO {
                 return -2;
             }
         }
-
-
         return n_elements;
     }
 

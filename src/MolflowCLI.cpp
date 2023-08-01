@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
     SimulationManager simManager{MFMPI::world_rank};
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState simuState{};
-    UserSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
+    MolflowUserSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
 
     // Parse arguments
     if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)) {
@@ -262,7 +262,7 @@ void ShutdownMPI() {
 }
 
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
     Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
@@ -303,7 +303,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
 }
 
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, std::string& autoSave) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave) {
     // Export results
         //  a) Use existing autosave as base
         //  b) Create copy of input file
@@ -370,7 +370,7 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
 }
 
 void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, UserSettings& persistentUserSettings, bool& endCondition) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition) {
     // First write an intermediate output file
                 // 1. Get file name
     std::string outFile = std::filesystem::path(SettingsIO::outputPath)
