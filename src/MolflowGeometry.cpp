@@ -488,7 +488,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 
 	file.ReadKeyword("views"); file.ReadKeyword("{");
 	for (size_t i = 0; i < nbV; i++) {
-		AVIEW v;
+		CameraView v;
 		v.name=file.ReadString();
 		v.projMode = file.ReadInt();
 		v.camAngleOx = file.ReadDouble();
@@ -869,7 +869,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 
 		file.ReadKeyword("views"); file.ReadKeyword("{");
 		for (int i = 0; i < nbV; i++) {
-			AVIEW v;
+			CameraView v;
 			v.name=file.ReadString();
 			v.projMode = file.ReadInt();
 			v.camAngleOx = file.ReadDouble();
@@ -1146,7 +1146,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	file.ReadKeyword("views"); file.ReadKeyword("{");
 	for (int i = 0; i < nbV; i++) {
 		
-		AVIEW v;
+		CameraView v;
 		v.name = file.ReadString());
 		v.projMode = file.ReadInt();
 		v.camAngleOx = file.ReadDouble();
@@ -3130,7 +3130,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 
 	xml_node viewNode = interfNode.child("Views");
 	for (xml_node newView : selNode.children("View")) {
-		AVIEW v;
+		CameraView v;
 		v.name = newView.attribute("name").as_string();
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();

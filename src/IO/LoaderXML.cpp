@@ -226,7 +226,7 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
 
     xml_node viewNode = interfNode.child("Views");
     for (xml_node newView : viewNode.children("View")) {
-        AVIEW v;
+        CameraView v;
         v.name = newView.attribute("name").as_string();
         v.projMode = newView.attribute("projMode").as_int();
         v.camAngleOx = newView.attribute("camAngleOx").as_double();
