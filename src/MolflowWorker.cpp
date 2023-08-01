@@ -253,7 +253,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 						if (!crashSave && !saveSelected) {
 							try {
 								success = writer.SaveSimulationState(saveDoc, mf_model, prg, globalState);
-								writer.WriteConvergenceValues(saveDoc, mApp->formula_ptr->convergenceData, mApp->formula_ptr->formulas);
+								writer.WriteConvergenceValues(saveDoc, mApp->formula_ptr->convergenceData);
 							}
 							catch (const std::exception& e) {
 								GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,

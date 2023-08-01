@@ -22,14 +22,16 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_WRITERXML_H
 
 #include <PugiXML/pugixml.hpp>
-#include "PugiXML/pugixml.hpp"
 #include <Helper/GLProgress_abstract.hpp>
-#include <GLApp/GLFormula.h>
-
 #include <string>
-#include "Simulation/MolflowSimGeom.h"
+#include "MolflowTypes.h"
 
 class MolflowSimFacet;
+class MolflowSimulationModel;
+class MolflowSimulationModel;
+class GlobalSimuState;
+struct FormulaHistoryDatapoint;
+
 namespace FlowIO {
 
     class Writer {
@@ -52,7 +54,7 @@ namespace FlowIO {
         void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
             GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave = std::vector<size_t>{});
 
-        void WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, const std::vector<GLFormula>& appFormulas);
+        void WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData);
 
         bool AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);
         bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState);

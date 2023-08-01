@@ -27,6 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "WriterXML.h"
 #include "versionId.h"
 #include "Simulation/MolflowSimFacet.h"
+#include "Simulation/MolflowSimGeom.h"
 
 
 using namespace FlowIO;
@@ -837,8 +838,8 @@ XmlWriter::XmlWriter(bool useOldXMLFormat, bool updateRootNode) : useOldXMLForma
 
 }
 
-void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, const std::vector<GLFormula>& appFormulas) {
-
+void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData) {
+    //make sure userSettings.userFormuals is set (for names)
     auto rootNode = GetRootNode(saveDoc);
     xml_node resultNode = rootNode.child("MolflowResults");
     if (!resultNode) {
@@ -856,7 +857,9 @@ void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::v
             convText << convVal.nbDes << "\t" << convVal.value << "\n";
         }
         xml_node newFormulaNode = convNode.append_child("ConvData");
-        newFormulaNode.append_attribute("Formula") = appFormulas[formulaId].GetExpression().c_str();
+        if (userSettings.userFormulas.size() > formulaId) {
+            newFormulaNode.append_attribute("Formula") = userSettings.userFormulas[formulaId].expression.c_str();
+        }
         xml_node newConv = newFormulaNode.append_child(node_cdata);
         newConv.set_value(convText.str().c_str());
         formulaId++;
