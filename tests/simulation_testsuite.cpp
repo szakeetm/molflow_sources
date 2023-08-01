@@ -215,7 +215,7 @@ namespace {
             SimulationManager simManager{0};
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
 
             {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
@@ -351,7 +351,7 @@ namespace {
             SimulationManager simManager{ 0 }; //start master process
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
@@ -403,7 +403,7 @@ namespace {
             SimulationManager simManager{ 0 }; //start master process
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading results for parsing...\n");
@@ -466,7 +466,7 @@ namespace {
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--noProgress",
                                          "--file", testFile,
@@ -627,7 +627,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress"};
         {
@@ -680,7 +680,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -737,7 +737,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -795,7 +795,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
@@ -850,7 +850,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
@@ -976,11 +976,14 @@ namespace {
                    "facet.3.sticking=10.01\n"
                    "facet.50-90.outgassing=42e5\n"
                    "facet.100.temperature=290.92\n"
+                   "facet.\"mySelection\".temperature=333.33\n"
                    "simulation.mass=42.42\n"
                    "simulation.enableDecay=1\n"
                    "simulation.halfLife=42.42";
         outfile.close();
-        ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
+
+        SelectionGroup sel1; sel1.name = "mySelection"; sel1.facetIds = { 107,109,110 };
+        ParameterParser::ParseFile(paramFile, { sel1 });
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
@@ -1000,6 +1003,7 @@ namespace {
         ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
         ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
         ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
+
         ParameterParser::ChangeFacetParams(facets);
         ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
         ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
@@ -1007,6 +1011,10 @@ namespace {
         ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
         ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
         ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
+        ASSERT_DOUBLE_EQ(facets[107]->sh.temperature, 333.33);
+        ASSERT_DOUBLE_EQ(facets[108]->sh.temperature, 293.15); //default
+        ASSERT_DOUBLE_EQ(facets[109]->sh.temperature, 333.33);
+        ASSERT_DOUBLE_EQ(facets[110]->sh.temperature, 333.33);
 
         std::filesystem::remove(paramFile);
     }
@@ -1020,8 +1028,11 @@ namespace {
         params.emplace_back("facet.3.sticking=10.01");
         params.emplace_back("facet.50-90.outgassing=42e5");
         params.emplace_back("facet.100.temperature=290.92");
+        params.emplace_back("facet.\"mySelection\".temperature=333.33");
         params.emplace_back("simulation.mass=42.42");
-        ParameterParser::ParseInput(params, std::vector<SelectionGroup>());
+        
+        SelectionGroup sel1; sel1.name = "mySelection"; sel1.facetIds = { 107,109,110 };
+        ParameterParser::ParseInput(params, { sel1 });
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
@@ -1044,6 +1055,10 @@ namespace {
         ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
         ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
         ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
+        ASSERT_DOUBLE_EQ(facets[107]->sh.temperature, 333.33);
+        ASSERT_DOUBLE_EQ(facets[108]->sh.temperature, 293.15); //default
+        ASSERT_DOUBLE_EQ(facets[109]->sh.temperature, 333.33);
+        ASSERT_DOUBLE_EQ(facets[110]->sh.temperature, 333.33);
     }
 
     TEST(ParameterParsing, Group) {
