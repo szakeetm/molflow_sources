@@ -924,14 +924,14 @@ void Worker::SimModelToInterfaceSettings(const UserSettings& userSettings, GLPro
 			<< std::endl;
 	}
 
-	if (userSettings.profilePlotterSettings) {
-		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings->logYscale);
-		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings->viewIds);
+	if (userSettings.profilePlotterSettings.hasData) {
+		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings.logYscale);
+		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings.viewIds);
 	}
 
-	if (userSettings.convergencePlotterSettings) {
-		mApp->convergencePlotter->SetLogScaled(userSettings.convergencePlotterSettings->logYscale);
-		mApp->convergencePlotter->SetViews(userSettings.convergencePlotterSettings->viewIds);
+	if (userSettings.convergencePlotterSettings.hasData) {
+		mApp->convergencePlotter->SetLogScaled(userSettings.convergencePlotterSettings.logYscale);
+		mApp->convergencePlotter->SetViews(userSettings.convergencePlotterSettings.viewIds);
 	}
 }
 
@@ -1506,15 +1506,15 @@ UserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel
 	}
 
 	if (mApp->profilePlotter) {
-		result.profilePlotterSettings = std::make_unique<PlotterSetting>();
-		result.profilePlotterSettings->logYscale = mApp->profilePlotter->IsLogScaled();
-		result.profilePlotterSettings->viewIds = mApp->profilePlotter->GetViews();
+		result.profilePlotterSettings.hasData=true;
+		result.profilePlotterSettings.logYscale = mApp->profilePlotter->IsLogScaled();
+		result.profilePlotterSettings.viewIds = mApp->profilePlotter->GetViews();
 	}
 
 	if (mApp->convergencePlotter) {
-		result.convergencePlotterSettings = std::make_unique<PlotterSetting>();
-		result.convergencePlotterSettings->logYscale = mApp->convergencePlotter->IsLogScaled();
-		result.convergencePlotterSettings->viewIds = mApp->convergencePlotter->GetViews();
+		result.convergencePlotterSettings.hasData=true;
+		result.convergencePlotterSettings.logYscale = mApp->convergencePlotter->IsLogScaled();
+		result.convergencePlotterSettings.viewIds = mApp->convergencePlotter->GetViews();
 	}
 
 	return result;

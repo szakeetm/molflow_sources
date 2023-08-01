@@ -27,14 +27,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 extern MolFlow *mApp;
 
-typedef struct {
+struct COLUMN{
 
   const char *name;
   int   width;
   int   align;
   int   timeDepColor; //Can display time-dependent value, change color accordingly
 
-} COLUMN;
+} ;
 
 /**
 * \brief Values for the table headers for when a facet is opened in the window

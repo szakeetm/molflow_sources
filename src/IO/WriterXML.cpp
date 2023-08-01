@@ -281,21 +281,21 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
         }
     }
 
-    if (userSettings.profilePlotterSettings) {
+    if (userSettings.profilePlotterSettings.hasData) {
         xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
-        profilePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.profilePlotterSettings->logYscale;
+        profilePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.profilePlotterSettings.logYscale;
         xml_node viewsNode = profilePlotterNode.append_child("Views");
-        for (int v : userSettings.profilePlotterSettings->viewIds) {
+        for (int v : userSettings.profilePlotterSettings.viewIds) {
             xml_node view = viewsNode.append_child("View");
             view.append_attribute("facetId") = v;
         }
     }
 
-    if (userSettings.convergencePlotterSettings) {
+    if (userSettings.convergencePlotterSettings.hasData) {
         xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
-        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.convergencePlotterSettings->logYscale;
+        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.convergencePlotterSettings.logYscale;
         xml_node viewsNode = convergencePlotterNode.append_child("Views");
-        for (int v : userSettings.convergencePlotterSettings->viewIds) {
+        for (int v : userSettings.convergencePlotterSettings.viewIds) {
             xml_node view = viewsNode.append_child("View");
             view.append_attribute("formulaHash") = v;
         }

@@ -20,7 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 #include "GLApp/GLTypes.h"
 #include "Parameter.h"
-#include "Interface.h"
+//#include "Interface.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
 #include <vector>
@@ -168,20 +168,20 @@ public:
 TextureCell operator+(const TextureCell& lhs,const TextureCell& rhs); //non-member function so std::plus can use it
 
 //Texture limit types
-typedef struct {
+ struct TEXTURE_MOMENT_TYPE{
 	double steady_state;
 	double moments_only;
-} TEXTURE_MOMENT_TYPE;
+} ;
 
-typedef struct {
+ struct TEXTURE_MIN_MAX{
 	TEXTURE_MOMENT_TYPE min;
 	TEXTURE_MOMENT_TYPE max;
-} TEXTURE_MIN_MAX;
+} ;
 
-typedef struct {
+ struct TEXTURE_SCALE_TYPE{
 	TEXTURE_MIN_MAX manual;
 	TEXTURE_MIN_MAX autoscale;
-} TEXTURE_SCALE_TYPE;
+} ;
 
 class AnglemapParams {
 public:

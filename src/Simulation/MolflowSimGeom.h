@@ -249,16 +249,6 @@ public:
 
     };
 
-    //Commented out: C++ destroys it on its own
-    /*
-    ~GlobalSimuState() {
-#if defined(MOLFLOW)
-        globalHistograms.clear();
-        facetStates.clear();
-#endif
-    }
-    */
-
     bool initialized = false;
 
     void Clear();
@@ -316,9 +306,11 @@ public:
     void resize(size_t nbLogs) {
         std::vector<ParticleLoggerItem>(nbLogs).swap(pLog);
     };
+
     void clear() {
         pLog.clear();
     };
+
     std::vector<ParticleLoggerItem> pLog;
     mutable std::timed_mutex particleLogMutex;
 };

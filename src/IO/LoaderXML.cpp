@@ -273,29 +273,29 @@ void XmlLoader::LoadGeometry(const std::string &inputFileName, std::shared_ptr<M
     }
     xml_node ppNode = interfNode.child("ProfilePlotter");
     if (ppNode) {
-        userSettings.profilePlotterSettings = std::make_unique<PlotterSetting>(); //init
+        userSettings.profilePlotterSettings.hasData=true;
         xml_node paramsNode = ppNode.child("Parameters");
         if (paramsNode && paramsNode.attribute("logScale"))
-            userSettings.profilePlotterSettings->logYscale = paramsNode.attribute("logScale").as_bool();
+            userSettings.profilePlotterSettings.logYscale = paramsNode.attribute("logScale").as_bool();
         xml_node viewsNode = ppNode.child("Views");
         if (viewsNode) {
             std::vector<int> views;
             for (xml_node view : viewsNode.children("View"))
-                userSettings.profilePlotterSettings->viewIds.push_back(view.attribute("facetId").as_int());
+                userSettings.profilePlotterSettings.viewIds.push_back(view.attribute("facetId").as_int());
         }
     }
 
     xml_node cpNode = interfNode.child("ConvergencePlotter");
     if (cpNode) {
-        userSettings.convergencePlotterSettings = std::make_unique<PlotterSetting>(); //init
+        userSettings.convergencePlotterSettings.hasData=true;
         xml_node paramsNode = cpNode.child("Parameters");
         if (paramsNode && paramsNode.attribute("logScale"))
-            userSettings.convergencePlotterSettings->logYscale=paramsNode.attribute("logScale").as_bool();
+            userSettings.convergencePlotterSettings.logYscale=paramsNode.attribute("logScale").as_bool();
         xml_node viewsNode = cpNode.child("Views");
         if (viewsNode) {
             std::vector<int> views;
             for (xml_node view : viewsNode.children("View"))
-                userSettings.convergencePlotterSettings->viewIds.push_back(view.attribute("formulaHash").as_int());
+                userSettings.convergencePlotterSettings.viewIds.push_back(view.attribute("formulaHash").as_int());
         }
     }
 
