@@ -760,8 +760,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 						std::shared_ptr<MolflowSimulationModel> loadedModel = loader.LoadGeometry(parseFileName,
             				TimeDependentParameters::GetCatalogParameters(mf_model->tdParams.parameters), prg);
             			//mf_model->modelMutex.lock(); //Don't lock, would try to destroy mutex in locked state
-						model.reset(loadedModel.get());
-            			mf_model = loadedModel;
+						model = loadedModel;
+						mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model); //Update cast
 					}
 					catch (const std::exception& ex) {
 						std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
@@ -875,7 +875,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 	if (insert) {
 		InterfaceGeomToSimModel();
 	} else {
-		CalcTotalOutgassing();
+		//CalcTotalOutgassing(); RealReload()->ReloadSim()->PrepareToRun() already called it
 	}
 
 	globalStatCache = globalState.globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
@@ -901,7 +901,9 @@ void Worker::SimModelToInterfaceGeom() {
 
 void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings, GLProgress_GUI& prg)
 {
-	TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userSettings.userMoments, prg);
+	userMoments = userSettings.userMoments; //Copy user moment strings
+	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+	interfaceMomentCache = mf_model->tdParams.moments; //Copy parsed moments
 	
 	mApp->selections = userSettings.selections;
 	mApp->RebuildSelectionMenus();
@@ -1003,6 +1005,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 	//auto geom = GetMolflowGeometry();
 	// TODO: Proper clear call before for Real reload?
+	//TODO: return model, just like LoadGeometry()
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->structures.clear();
 	mf_model->facets.clear();
@@ -1156,7 +1159,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	ReloadSim(sendOnly, prg); //Convert interf. geom to worker::mode and construct global counters, then copy to simManager.simulation
 	
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-	mf_model->CalcTotalOutgassing(); // needs IDs
+	//mf_model->CalcTotalOutgassing(); // ReloadSim() / PrepareToRun() already called it
 
 	if (!sendOnly) {
 		try {
@@ -1164,8 +1167,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			simManager.ResetSimulations();
 			prg.SetMessage("Clearing Logger...");
 			particleLog.clear();
-			prg.SetMessage("Resetting hit counter...");
-			simManager.ResetSimulations();
 		}
 		catch (const std::exception& e) {
 			std::stringstream err;
