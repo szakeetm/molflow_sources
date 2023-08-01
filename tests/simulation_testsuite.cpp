@@ -215,7 +215,7 @@ namespace {
             SimulationManager simManager{0};
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
 
             {
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
@@ -351,7 +351,7 @@ namespace {
             SimulationManager simManager{ 0 }; //start master process
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
@@ -403,7 +403,7 @@ namespace {
             SimulationManager simManager{ 0 }; //start master process
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
-            UserSettings persistentUserSettings;
+            MolflowUserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading results for parsing...\n");
@@ -466,7 +466,7 @@ namespace {
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--noProgress",
                                          "--file", testFile,
@@ -627,7 +627,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress"};
         {
@@ -680,7 +680,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -737,7 +737,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -795,7 +795,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
@@ -850,7 +850,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
