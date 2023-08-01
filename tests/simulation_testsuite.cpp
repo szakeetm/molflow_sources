@@ -909,7 +909,7 @@ namespace {
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
-        UserSettings persistentUserSettings;
+        MolflowUserSettings persistentUserSettings;
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
