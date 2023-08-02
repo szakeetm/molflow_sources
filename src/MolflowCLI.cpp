@@ -211,8 +211,8 @@ int main(int argc, char** argv) {
     MFMPI::mpi_receive_states(model, simuState);
     if (MFMPI::world_rank != 0) {
         // Cleanup all files from nodes tmp path
-        if (SettingsIO::outputPath.find("tmp") != std::string::npos) {
-            std::filesystem::remove_all(SettingsIO::outputPath);
+        if (parsedArgs.outputPath.find("tmp") != std::string::npos) {
+            std::filesystem::remove_all(parsedArgs.outputPath);
         }
         if (std::filesystem::exists(autoSave)) {
             std::filesystem::remove(autoSave);
