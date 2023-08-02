@@ -31,8 +31,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 namespace CLIArguments {
     size_t nbThreads = 0;
     uint64_t simDuration = 10;
-    uint64_t outputDuration = 60;
-    uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
+    uint64_t outputInterval = 60;
+    uint64_t autoSaveInterval = 600; // default: autosave every 600s=10min
     bool loadAutosave = false;
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
@@ -44,8 +44,8 @@ namespace CLIArguments {
 void initDefaultSettings() {
     CLIArguments::nbThreads = 0;
     CLIArguments::simDuration = 0;
-    CLIArguments::outputDuration = 60;
-    CLIArguments::autoSaveDuration = 600;
+    CLIArguments::outputInterval = 60;
+    CLIArguments::autoSaveInterval = 600;
     CLIArguments::loadAutosave = false;
     CLIArguments::desLimit.clear();
     CLIArguments::resetOnStart = false;
@@ -56,13 +56,11 @@ void initDefaultSettings() {
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
     SettingsIO::overwrite = false;
-    SettingsIO::autogenerateTest = false;
 
     SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();
     SettingsIO::outputFile.clear();
     SettingsIO::workPath.clear();
-    //SettingsIO::inputPath.clear();
     SettingsIO::outputPath.clear();
 }
 
@@ -98,15 +96,14 @@ int Initializer::parseCommands(int argc, char **argv) {
     auto group = app.add_option_group("subgroup");
     group->add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
             ->check(CLI::ExistingFile);
-    group->add_flag("--auto", SettingsIO::autogenerateTest, "Use auto generated test case");
     group->require_option(1);
 
     CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
     CLI::Option *optOpath = app.add_option("--outputPath", SettingsIO::outputPath,
                                            "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-s,--outputDuration", CLIArguments::outputDuration, "Seconds between each stat output if not zero");
-    app.add_option("-a,--autosaveDuration", CLIArguments::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_option("-s,--outputInterval", CLIArguments::outputInterval, "Seconds between each stat output, zero=disabled");
+    app.add_option("-a,--autosaveInterval", CLIArguments::autoSaveInterval, "Autosave interval in seconds, zero=disabled)");
     app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
     app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
@@ -145,12 +142,10 @@ int Initializer::parseCommands(int argc, char **argv) {
     return -1;
 }
 
-/**
-* \brief Comfort function wrapping around default initialization from command line arguments, taking care of default initializations
- * \return 0> error code, -1 when ok
- */
-int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
-                              std::shared_ptr<MolflowSimulationModel> model) {
+
+// \brief Comfort function wrapping around default initialization from command line arguments, taking care of default initializations
+
+void Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model) {
 
 // Set local to parse input files the same on all systems
 //duplicate, in case we called this function from the test suite and not from main()
@@ -164,43 +159,38 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     int err = 1;
     if (-1 < (err = parseCommands(argc, argv))) {
-        Log::console_error("Error: Initializing parsing arguments\n");
-        return err;
+        throw Error("Error: Initializing parsing arguments");
     }
 
     Log::console_header(1, "Initializing simulation...\n");
 
     simManager->nbThreads = CLIArguments::nbThreads;
     simManager->noProgress = CLIArguments::noProgress;
+    model->otfParams.nbProcess = simManager->nbThreads;
+    model->otfParams.timeLimit = (double)CLIArguments::simDuration;
 
     if (simManager->SetUpSimulation()) { //currently only calls CreateCPUHandle()
-        Log::console_error("Error: Setting up simulation units [{} threads]...\n", simManager->nbThreads);
-        return 1;
+       throw Error(fmt::format("Error: Setting up simulation units [{} threads]...\n", simManager->nbThreads));
     }
 
-    model->otfParams.nbProcess = simManager->nbThreads;
-    model->otfParams.timeLimit = (double) CLIArguments::simDuration;
-    //model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
     Log::console_msg_master(1, "Active cores: {}\n", simManager->nbThreads);
     if (CLIArguments::simDuration != 0) {
         Log::console_msg_master(1, "Running simulation for: {} sec\n", CLIArguments::simDuration);
     }
-
-    return -1;
 }
 
 /**
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
  */
-void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
+std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
                               GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings) {
     if (SettingsIO::prepareIO()) {
         throw Error("Error preparing I/O folders");
     }
 
+    std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
     if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        auto loadedModel = CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
-        model = loadedModel;
+        loadedModel = CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
@@ -212,33 +202,35 @@ void Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Mo
             ParameterParser::ParseFile(CLIArguments::paramFile, userSettings.selections);
         if (!CLIArguments::paramChanges.empty())
             ParameterParser::ParseInput(CLIArguments::paramChanges, userSettings.selections);
-        ParameterParser::ChangeSimuParams(model->wp);
-        if(ParameterParser::ChangeFacetParams(model->facets)){
+        ParameterParser::ChangeSimuParams(loadedModel->wp);
+        if(ParameterParser::ChangeFacetParams(loadedModel->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
         }
     }
 
     // Set desorption limit if used
-    if (initDesLimit(model, *globStatePtr)) {
+    if (initDesLimit(loadedModel, *globStatePtr)) {
         throw Error("Error in Initializer::initDesLimit");
     }
 
     simManager->simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
     try {
-        simManager->InitSimulation(model, globStatePtr);
+        simManager->InitSimulation(loadedModel, globStatePtr);
     }
     catch (std::exception &ex) {
         Log::console_error("Failed Initializing simulation units:\n{}\n", ex.what());
         throw ex;
     }
     Log::console_footer(1, "Forwarded successfully.\n");
+    return loadedModel;
 }
 
 /**
 * \brief Initialize simulation from automatically generated test case (prism)
  * \return 0> error code, 0 when ok
  */
+/*
 void Initializer::initAutoGenerated(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
                                    GlobalSimuState *globStatePtr, double ratio, int steps, double angle) {
     if (SettingsIO::prepareIO()) {
@@ -256,7 +248,7 @@ void Initializer::initAutoGenerated(SimulationManager *simManager, std::shared_p
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
     simManager->InitSimulation(model, globStatePtr);
     Log::console_footer(1, "Forwarded successfully.\n");
-}
+}*/
 
 /**
 * \brief Generate a test case with an oblique prism given an angle
@@ -443,7 +435,7 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
 std::string Initializer::getAutosaveFile() {
     // Create copy of input file for autosave
     std::string autoSave;
-    if (CLIArguments::autoSaveDuration > 0) {
+    if (CLIArguments::autoSaveInterval > 0) {
         autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";

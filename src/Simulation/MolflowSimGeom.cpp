@@ -660,7 +660,13 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     // facets
 
     auto locThreshold_bak = locThreshold;
-    for(int facetId = 0; facetId < lhsGlobHit.facetStates.size(); ++facetId)
+    if (lhsGlobHit.facetStates.size() != rhsGlobHit.facetStates.size()) {
+        cmpFile += fmt::format("[FacetStates] Different number of facet states: {} vs {}\n", lhsGlobHit.facetStates.size(), rhsGlobHit.facetStates.size());
+        ++facetErrNb;
+    }
+
+    size_t nbCmp = std::min(lhsGlobHit.facetStates.size(), rhsGlobHit.facetStates.size());
+    for(int facetId = 0; facetId < nbCmp; ++facetId)
     {//cmp
         if(lhsGlobHit.facetStates[facetId].momentResults.size() != rhsGlobHit.facetStates[facetId].momentResults.size()){
             cmpFile += fmt::format("[Facet][{}] Different amount of moments for each state: {} vs {}\n", facetId, lhsGlobHit.facetStates[facetId].momentResults.size(), rhsGlobHit.facetStates[facetId].momentResults.size());

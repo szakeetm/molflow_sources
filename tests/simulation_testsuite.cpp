@@ -217,13 +217,24 @@ namespace {
             GlobalSimuState globState{};
             MolflowUserSettings persistentUserSettings;
 
-            {
+            
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
                                                  "--outputPath", outPath, "--noProgress" };
-                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
-            }
+                try {
+                    Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+                }
+                catch (Error& err) {
+                    Log::console_error(err.what());
+                    exit(41);
+                }            
+                try {
+                    model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                }
+                catch (std::exception& err) {
+                    Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+                    exit(42);
+                }
 
             size_t oldHitsNb = globState.globalStats.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
@@ -355,13 +366,15 @@ namespace {
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--noProgress" }; //default init with input file=result
-            if (-1<Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--noProgress", "--outputPath", outPath }; //default init with input file=result
+            try {
+                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            } catch (Error& err) {
+                Log::console_error(err.what());
                 exit(41);
             }
-
             try {
-                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
             catch (std::exception& err) {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -408,13 +421,16 @@ namespace {
 
             Log::console_msg(1, "Loading results for parsing...\n");
             
-            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--noProgress" }; //default init with input file=result
-            if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model)) {
+            std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--noProgress", "--outputPath", outPath }; //default init with input file=result
+            try {
+                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            }
+            catch (Error& err) {
+                Log::console_error(err.what());
                 exit(41);
             }
-
             try {
-                Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
             }
             catch (std::exception& err) {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -425,6 +441,7 @@ namespace {
             EXPECT_NE(0, globState.globalStats.globalHits.nbDesorbed);
             EXPECT_NE(0, globState.globalStats.globalHits.nbMCHit);
             std::filesystem::remove(resultFile);
+            std::filesystem::remove(outPath);
             Log::console_msg(1, "Run results loaded and parsed.\n");            
 
             //Compare results
@@ -471,20 +488,21 @@ namespace {
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--noProgress",
                                          "--file", testFile,
                                          "--outputPath", outPath, "--noProgress" };
-        {
-            if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
-                exit(41);
-            }
-            Log::console_msg(1,"Loading parameter catalog...");
-            TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-            Log::console_msg(1,"done.\n");
-            try {
-                Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
-            }
-            catch (std::exception& err) {
-                Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
-                exit(42);
-            }
+        
+        try {
+            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model);
+        }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }
+        TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+        try {
+            model = Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
         }
 
         // Keep oldstate from file for compari
@@ -502,16 +520,16 @@ namespace {
                 // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
                 model = std::make_shared<MolflowSimulationModel>();
-                if (-1 < Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model)) {
+                try {
+                    Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model);
+                }
+                catch (Error& err) {
+                    Log::console_error(err.what());
                     exit(41);
                 }
-                
-                Log::console_msg(1,"Loading parameter catalog...");
                 TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-                Log::console_msg(1,"done.\n");
-            
                 try {
-                    Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
+                    model = Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
                 }
                 catch (std::exception& err) {
                     Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -630,10 +648,22 @@ namespace {
         MolflowUserSettings persistentUserSettings;
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress"};
-        {
+        
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  
+        try {
+            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
+        }
+        
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
@@ -686,10 +716,22 @@ namespace {
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "--noProgress" };
-        {
+        
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  
+        try {
+            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
+        }
+        
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
@@ -743,10 +785,20 @@ namespace {
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "-o", outFile, "--noProgress" };
-        {
+        
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  try {
+            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
+        }        
 
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
@@ -800,10 +852,22 @@ namespace {
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outFile, "--noProgress" };
-        {
+    
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  
+        try {
+            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
+        }
+    
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
@@ -859,10 +923,22 @@ namespace {
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outPath + "/" + outFile, "--noProgress" };
-        {
+        
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  
+        try {
+            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+        }
+        catch (std::exception& err) {
+            Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+            exit(42);
+        }
+        
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
@@ -919,10 +995,22 @@ namespace {
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "-o", outPathF + "/" + outFile, "--noProgress" };
-        {
+        
+        try {
             Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
         }
+        catch (Error& err) {
+            Log::console_error(err.what());
+            exit(41);
+        }  
+		try {
+			model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+		}
+		catch (std::exception& err) {
+			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
+			exit(42);
+		}
+        
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
