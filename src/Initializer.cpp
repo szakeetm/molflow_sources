@@ -28,42 +28,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/ConsoleLogger.h>
 #include <SettingsIO.h>
 
-namespace CLIArguments {
-    size_t nbThreads = 0;
-    uint64_t simDuration = 10;
-    uint64_t outputInterval = 60;
-    uint64_t autoSaveInterval = 600; // default: autosave every 600s=10min
-    bool loadAutosave = false;
-    std::list<uint64_t> desLimit;
-    bool resetOnStart = false;
-    std::string paramFile;
-    std::vector<std::string> paramChanges;
-    bool noProgress = false;  //If true, doesn't print percentage updates for CLI progressbars
-}
-
-void initDefaultSettings() {
-    CLIArguments::nbThreads = 0;
-    CLIArguments::simDuration = 0;
-    CLIArguments::outputInterval = 60;
-    CLIArguments::autoSaveInterval = 600;
-    CLIArguments::loadAutosave = false;
-    CLIArguments::desLimit.clear();
-    CLIArguments::resetOnStart = false;
-    CLIArguments::paramFile.clear();
-    CLIArguments::paramChanges.clear();
-    CLIArguments::noProgress = false;
-
-    SettingsIO::outputFacetDetails = false;
-    SettingsIO::outputFacetQuantities = false;
-    SettingsIO::overwrite = false;
-
-    SettingsIO::workFile.clear();
-    SettingsIO::inputFile.clear();
-    SettingsIO::outputFile.clear();
-    SettingsIO::workPath.clear();
-    SettingsIO::outputPath.clear();
-}
-
 /**
 * \brief Modifies the default --help command output
  */
@@ -80,7 +44,7 @@ public:
 * \brief Parse all CLI commands to use with the corresponding variables (@Settings / @SettingsIO)
  * \return 0> error code, 0 when ok
  */
-int Initializer::parseCommands(int argc, char **argv) {
+SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
     CLI::App app{"Molflow+/Synrad+ Simulation Management"};
     app.formatter(std::make_shared<FlowFormatter>());
 
@@ -88,64 +52,69 @@ int Initializer::parseCommands(int argc, char **argv) {
     bool verbose = false;
     std::vector<double> limits;
 
+    SettingsIO::CLIArguments parsedArgs;
+
     // Define options
-    app.add_option("-j,--threads", CLIArguments::nbThreads, "# Threads to be deployed");
-    app.add_option("-t,--time", CLIArguments::simDuration, "Simulation duration in seconds");
+    app.add_option("-j,--threads", parsedArgs.nbThreads, "# Threads to be deployed");
+    app.add_option("-t,--time", parsedArgs.simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
 
     auto group = app.add_option_group("subgroup");
-    group->add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
+    group->add_option("-f,--file", parsedArgs.inputFile, "Required input file (XML/ZIP only)")
             ->check(CLI::ExistingFile);
     group->require_option(1);
 
-    CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
+    CLI::Option *optOfile = app.add_option("-o,--output", parsedArgs.outputFile,
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
-    CLI::Option *optOpath = app.add_option("--outputPath", SettingsIO::outputPath,
+    CLI::Option *optOpath = app.add_option("--outputPath", parsedArgs.outputPath,
                                            "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-s,--outputInterval", CLIArguments::outputInterval, "Seconds between each stat output, zero=disabled");
-    app.add_option("-a,--autosaveInterval", CLIArguments::autoSaveInterval, "Autosave interval in seconds, zero=disabled)");
-    app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
+    app.add_option("-s,--outputInterval", parsedArgs.outputInterval, "Seconds between each stat output, zero=disabled");
+    app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, "Autosave interval in seconds, zero=disabled)");
+    app.add_flag("--writeFacetDetails", parsedArgs.outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
-    app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
+    app.add_flag("--writeFacetQuantities", parsedArgs.outputFacetQuantities,
                    "Will write a CSV file containing all physical quantities for each facet");
 
-    app.add_option("--setParamsByFile", CLIArguments::paramFile,
+    app.add_option("--setParamsByFile", parsedArgs.paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
-    app.add_option("--setParams", CLIArguments::paramChanges,
+    app.add_option("--setParams", parsedArgs.paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", AppSettings::verbosity, "Restrict console output to different levels");
-    app.add_flag("--noProgress", CLIArguments::noProgress, "Log file mode: No percentage updates printed of progress");
-    app.add_flag("--loadAutosave", CLIArguments::loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_flag("-r,--reset", CLIArguments::resetOnStart, "Resets simulation status loaded from file");
+    app.add_flag("--noProgress", parsedArgs.noProgress, "Log file mode: No percentage updates printed of progress");
+    app.add_flag("--loadAutosave", parsedArgs.loadAutosave, "Whether autosave_ file should be used if exists");
+    app.add_flag("-r,--reset", parsedArgs.resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
-    CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
+    CLI::Option *optOverwrite = app.add_flag("--overwrite", parsedArgs.overwrite,
                                              "Overwrite input file with new results")->excludes(optOfile, optOpath);
     optOfile->excludes(optOverwrite);
     optOpath->excludes(optOverwrite);
     app.set_config("--config");
 
-    CLI11_PARSE(app, argc, argv);
+    try {
+        app.parse(argc,argv);
+    }
+    catch (const CLI::ParseError& e) {
+        throw Error(fmt::format("Argument parse error: {}", e.what()));
+    }
 
     if (verbose)
         AppSettings::verbosity = 42;
 
     //std::cout<<app.config_to_str(true,true);
     for (auto& lim : limits)
-        CLIArguments::desLimit.push_back(static_cast<size_t>(lim));
+        parsedArgs.desLimit.push_back(static_cast<size_t>(lim));
 
-    if (CLIArguments::simDuration == 0 && CLIArguments::desLimit.empty()) {
-        Log::console_error("No end criterion has been set. Use either -t or -d\n");
-        return 0;
+    if (parsedArgs.simDuration == 0 && parsedArgs.desLimit.empty()) {
+        throw Error("No end criterion has been set. Use either -t or -d\n");
     }
-
-    return -1;
+    return parsedArgs;
 }
 
 
 // \brief Comfort function wrapping around default initialization from command line arguments, taking care of default initializations
 
-void Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model) {
+SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, SimulationManager& simManager, std::shared_ptr<MolflowSimulationModel> model) {
 
 // Set local to parse input files the same on all systems
 //duplicate, in case we called this function from the test suite and not from main()
@@ -155,53 +124,48 @@ void Initializer::initFromArgv(int argc, char **argv, SimulationManager *simMana
     std::setlocale(LC_ALL, "en_US.UTF-8");
 #endif
 
-    initDefaultSettings();
-
-    int err = 1;
-    if (-1 < (err = parseCommands(argc, argv))) {
-        throw Error("Error: Initializing parsing arguments");
-    }
+    SettingsIO::CLIArguments parsedArgs;
+    parsedArgs = parseArguments(argc, argv);
 
     Log::console_header(1, "Initializing simulation...\n");
 
-    simManager->nbThreads = CLIArguments::nbThreads;
-    simManager->noProgress = CLIArguments::noProgress;
-    model->otfParams.nbProcess = simManager->nbThreads;
-    model->otfParams.timeLimit = (double)CLIArguments::simDuration;
+    simManager.nbThreads = parsedArgs.nbThreads;
+    simManager.noProgress = parsedArgs.noProgress;
+    model->otfParams.nbProcess = simManager.nbThreads;
+    model->otfParams.timeLimit = (double)parsedArgs.simDuration;
 
-    if (simManager->SetUpSimulation()) { //currently only calls CreateCPUHandle()
-       throw Error(fmt::format("Error: Setting up simulation units [{} threads]...\n", simManager->nbThreads));
+    if (simManager.SetUpSimulation()) { //currently only calls CreateCPUHandle()
+       throw Error(fmt::format("Error: Setting up simulation units [{} threads]...\n", simManager.nbThreads));
     }
 
-    Log::console_msg_master(1, "Active cores: {}\n", simManager->nbThreads);
-    if (CLIArguments::simDuration != 0) {
-        Log::console_msg_master(1, "Running simulation for: {} sec\n", CLIArguments::simDuration);
+    Log::console_msg_master(1, "Active cores: {}\n", simManager.nbThreads);
+    if (parsedArgs.simDuration != 0) {
+        Log::console_msg_master(1, "Running simulation for: {} sec\n", parsedArgs.simDuration);
     }
+    return parsedArgs;
 }
 
 /**
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
  */
-std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
-                              GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings) {
-    if (SettingsIO::prepareIO()) {
-        throw Error("Error preparing I/O folders");
-    }
+std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationManager& simManager, std::shared_ptr<MolflowSimulationModel> model,
+                              GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
+    SettingsIO::prepareIO(parsedArgs);
 
     std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
-    if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
-        loadedModel = CLILoadFromXML(SettingsIO::workFile, !CLIArguments::resetOnStart, model, globStatePtr, userSettings, simManager->noProgress);
+    if (std::filesystem::path(parsedArgs.workFile).extension() == ".xml") {
+        loadedModel = CLILoadFromXML(parsedArgs.workFile, !parsedArgs.resetOnStart, model, globStatePtr, userSettings, parsedArgs);
     }
     else {
         throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
-                           std::filesystem::path(SettingsIO::workFile).extension().string()));
+                           std::filesystem::path(parsedArgs.workFile).extension().string()));
     }
-    if (!CLIArguments::paramFile.empty() || !CLIArguments::paramChanges.empty()) {
+    if (!parsedArgs.paramFile.empty() || !parsedArgs.paramChanges.empty()) {
         // Apply parameter changes from file
-        if (!CLIArguments::paramFile.empty())
-            ParameterParser::ParseFile(CLIArguments::paramFile, userSettings.selections);
-        if (!CLIArguments::paramChanges.empty())
-            ParameterParser::ParseInput(CLIArguments::paramChanges, userSettings.selections);
+        if (!parsedArgs.paramFile.empty())
+            ParameterParser::ParseFile(parsedArgs.paramFile, userSettings.selections);
+        if (!parsedArgs.paramChanges.empty())
+            ParameterParser::ParseInput(parsedArgs.paramChanges, userSettings.selections);
         ParameterParser::ChangeSimuParams(loadedModel->wp);
         if(ParameterParser::ChangeFacetParams(loadedModel->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
@@ -209,14 +173,14 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
     }
 
     // Set desorption limit if used
-    if (initDesLimit(loadedModel, *globStatePtr)) {
+    if (initDesLimit(loadedModel, *globStatePtr, parsedArgs)) {
         throw Error("Error in Initializer::initDesLimit");
     }
 
-    simManager->simulationChanged = true;
+    simManager.simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
     try {
-        simManager->InitSimulation(loadedModel, globStatePtr);
+        simManager.InitSimulation(loadedModel, globStatePtr);
     }
     catch (std::exception &ex) {
         Log::console_error("Failed Initializing simulation units:\n{}\n", ex.what());
@@ -233,7 +197,7 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
 /*
 void Initializer::initAutoGenerated(SimulationManager *simManager, std::shared_ptr<MolflowSimulationModel> model,
                                    GlobalSimuState *globStatePtr, double ratio, int steps, double angle) {
-    if (SettingsIO::prepareIO()) {
+    if (parsedArgs.prepareIO()) {
         throw Error("Error preparing I/O folders\n");
     }
 
@@ -244,9 +208,9 @@ void Initializer::initAutoGenerated(SimulationManager *simManager, std::shared_p
         throw Error("Failed to set desorption limit(s).");
     }
 
-    simManager->simulationChanged = true;
+    simManager.simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
-    simManager->InitSimulation(model, globStatePtr);
+    simManager.InitSimulation(model, globStatePtr);
     Log::console_footer(1, "Forwarded successfully.\n");
 }*/
 
@@ -293,11 +257,11 @@ Initializer::loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, G
 * \brief Wrapper for CLI's initFromFile for XML loading with XmlLoader
  */
 std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
-                             GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings, bool noProgress) {
+                             GlobalSimuState *globStatePtr, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
 
     std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
-    prg.noProgress = noProgress; //Suppress percentages if ran in script
+    prg.noProgress = parsedArgs.noProgress; //Suppress percentages if ran in script
 
     //1. Load Input File (regular XML)
     {
@@ -334,8 +298,8 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         // 3. init counters with previous results
         if (loadSimulationState) {
             prg.SetMessage("Loading simulation state...");
-            if (CLIArguments::loadAutosave) {
-                std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
+            if (parsedArgs.loadAutosave) {
+                std::string autosaveFileName = std::filesystem::path(parsedArgs.workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 autosaveFileName = autoSavePrefix + autosaveFileName;
                 
@@ -344,7 +308,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
                     FlowIO::XmlLoader::LoadSimulationState(autosaveFileName, loadedModel, globStatePtr, prg);
                 }
             } else {
-                FlowIO::XmlLoader::LoadSimulationState(SettingsIO::workFile, loadedModel, globStatePtr, prg);
+                FlowIO::XmlLoader::LoadSimulationState(parsedArgs.workFile, loadedModel, globStatePtr, prg);
             }
 
             // Update Angle map status
@@ -370,7 +334,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
 * \brief Initialize a desorption limit by checking against the given input (vector)
  * \return 0> error code, 0 when ok
  */
-int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
+int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState, SettingsIO::CLIArguments& parsedArgs) {
     try { //unti initDesLimit will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
     }
@@ -381,12 +345,12 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
     model->otfParams.desorptionLimit = 0;
 
     // Skip desorptions if limit was already reached
-    if (!CLIArguments::desLimit.empty()) {
+    if (!parsedArgs.desLimit.empty()) {
         size_t oldDesNb = globState.globalStats.globalHits.nbDesorbed;
-        size_t listSize = CLIArguments::desLimit.size();
+        size_t listSize = parsedArgs.desLimit.size();
         for (size_t l = 0; l < listSize; ++l) {
-            model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
-            CLIArguments::desLimit.pop_front();
+            model->otfParams.desorptionLimit = parsedArgs.desLimit.front();
+            parsedArgs.desLimit.pop_front();
 
             if (oldDesNb > model->otfParams.desorptionLimit) {
                 Log::console_msg_master(1, "Skipping desorption limit: {}\n", model->otfParams.desorptionLimit);
@@ -398,7 +362,7 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
                 return 0;
             }
         }
-        if (CLIArguments::desLimit.empty()) {
+        if (parsedArgs.desLimit.empty()) {
             Log::console_msg_master(1,
                                     "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption {}\n",
                                     oldDesNb);
@@ -413,7 +377,7 @@ int Initializer::initDesLimit(std::shared_ptr<MolflowSimulationModel> model, Glo
 * \brief Initializes time limit for the simulation
  * \return 0> error code, 0 when ok
  */
-int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, double time) {
+int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, SettingsIO::CLIArguments& parsedArgs) {
     try { //unti initTimeLimit will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
     }
@@ -421,8 +385,8 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
         return 1;
     }
 
-    model->otfParams.timeLimit = time;
-    CLIArguments::simDuration = static_cast<size_t>(time);
+    model->otfParams.timeLimit = parsedArgs.simDuration;
+    parsedArgs.simDuration = static_cast<size_t>(parsedArgs.simDuration);
 
     return 0;
 }
@@ -432,11 +396,11 @@ int Initializer::initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, do
 * \brief Prepares autosave file that is created in user specified intervals
  * \return output file name
  */
-std::string Initializer::getAutosaveFile() {
+std::string Initializer::getAutosaveFile(SettingsIO::CLIArguments& parsedArgs) {
     // Create copy of input file for autosave
     std::string autoSave;
-    if (CLIArguments::autoSaveInterval > 0) {
-        autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
+    if (parsedArgs.autoSaveInterval > 0) {
+        autoSave = std::filesystem::path(parsedArgs.workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
         // Check if autosave_ is part of the input filename, if yes, generate a new input file without the prefix
@@ -444,15 +408,15 @@ std::string Initializer::getAutosaveFile() {
             std::search(autoSave.begin(), autoSave.begin() + autoSavePrefix.size(), autoSavePrefix.begin(),
                         autoSavePrefix.end()) == autoSave.begin()) {
             // TODO: Revisit wether input/output is acceptable here
-            autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
-            SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            Log::console_msg_master(2, "Using autosave file {} for {}\n", autoSave, SettingsIO::inputFile);
+            autoSave = std::filesystem::path(parsedArgs.workPath).append(parsedArgs.workFile).filename().string();
+            parsedArgs.inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
+            Log::console_msg_master(2, "Using autosave file {} for {}\n", autoSave, parsedArgs.inputFile);
         } else {
             // create autosavefile from copy of original
-            autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
+            autoSave = std::filesystem::path(parsedArgs.workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
-                if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile))
-                    std::filesystem::copy_file(SettingsIO::workFile, autoSave,
+                if(!parsedArgs.workFile.empty() && std::filesystem::exists(parsedArgs.workFile))
+                    std::filesystem::copy_file(parsedArgs.workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
                 Log::console_error("Could not copy file to create autosave file: {}\n", e.what());

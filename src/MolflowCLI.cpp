@@ -113,10 +113,11 @@ int main(int argc, char** argv) {
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState simuState{};
     MolflowUserSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
+    SettingsIO::CLIArguments parsedArgs;
 
     // Parse arguments
     try {
-        Initializer::initFromArgv(argc, argv, &simManager, model);
+        parsedArgs = Initializer::initFromArgv(argc, argv, simManager, model);
     } catch (Error& err) {
         Log::console_error(err.what());
         ShutdownMPI();
@@ -133,7 +134,7 @@ int main(int argc, char** argv) {
     Log::console_msg(1, "done.\n");
 
     try {
-        auto loadedModel = Initializer::initFromFile(&simManager, model, &simuState, persistentUserSettings);
+        auto loadedModel = Initializer::initFromFile(simManager, model, &simuState, persistentUserSettings, parsedArgs);
         model = loadedModel;
     }
     catch (std::exception& err) {
@@ -142,7 +143,7 @@ int main(int argc, char** argv) {
         return 42;
     }
 
-    if(CLIArguments::simDuration == 0 && model->otfParams.desorptionLimit == 0){
+    if(parsedArgs.simDuration == 0 && model->otfParams.desorptionLimit == 0){
         Log::console_error("Neither a time limit nor a desorption limit has been set.\n");
         return 44;
     }
@@ -150,10 +151,10 @@ int main(int argc, char** argv) {
     size_t oldDesNb = simuState.globalStats.globalHits.nbDesorbed;
     RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
-    std::string autoSave = Initializer::getAutosaveFile();
+    std::string autoSave = Initializer::getAutosaveFile(parsedArgs);
 
-    if (CLIArguments::simDuration > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), CLIArguments::simDuration, simuState.globalStats.globalHits.nbDesorbed);
+    if (parsedArgs.simDuration > 0) {
+        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), parsedArgs.simDuration, simuState.globalStats.globalHits.nbDesorbed);
     }
     else if (model->otfParams.desorptionLimit > 0) {
         Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, simuState.globalStats.globalHits.nbDesorbed);
@@ -170,7 +171,7 @@ int main(int argc, char** argv) {
     }
     catch (const std::exception& e) {
         Log::console_error("[{}] ERROR: Starting simulation: {}\n",MFMPI::world_rank, e.what());
-        Log::console_error("[{}] File folder {} -- {}\n",MFMPI::world_rank,SettingsIO::workPath, SettingsIO::workFile);
+        Log::console_error("[{}] File folder {} -- {}\n",MFMPI::world_rank,parsedArgs.workPath, parsedArgs.workFile);
         ShutdownMPI();
         return 43;
     }
@@ -180,7 +181,7 @@ int main(int argc, char** argv) {
     double elapsedTime = 0.0;
 
     CLIMainLoop(elapsedTime, simTimer, model, simuState,
-        simManager, persistentUserSettings, autoSave, printer);
+        simManager, persistentUserSettings, autoSave, printer, parsedArgs);
 
     simTimer.Stop();
     elapsedTime = simTimer.Elapsed();
@@ -231,19 +232,19 @@ int main(int argc, char** argv) {
     }
 
     if(MFMPI::world_rank == 0){
-        if(SettingsIO::outputFacetDetails) {
-            FlowIO::Exporter::export_facet_details(&simuState, model.get());
+        if(parsedArgs.outputFacetDetails) {
+            FlowIO::Exporter::export_facet_details(&simuState, model.get(), parsedArgs.workPath);
 
         }
-        if(SettingsIO::outputFacetQuantities) {
-            FlowIO::Exporter::export_facet_quantities(&simuState, model.get());
+        if(parsedArgs.outputFacetQuantities) {
+            FlowIO::Exporter::export_facet_quantities(&simuState, model.get(), parsedArgs.workPath);
         }
 
-        WriteResults(model, simuState, simManager, persistentUserSettings, autoSave);
+        WriteResults(model, simuState, simManager, persistentUserSettings, autoSave, parsedArgs);
     }
 
     // Cleanup
-    SettingsIO::cleanup_files();
+    SettingsIO::cleanup_files(parsedArgs);
 
     return 0; //success
 }
@@ -255,7 +256,7 @@ void ShutdownMPI() {
 }
 
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
     Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
@@ -268,11 +269,11 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
 
         if (endCondition) {
             // if there is a next des limit, handle that
-            if (!CLIArguments::desLimit.empty()) {
-                HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition);
+            if (!parsedArgs.desLimit.empty()) {
+                HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition, parsedArgs);
             }
         }
-        else if (CLIArguments::autoSaveInterval && (uint64_t)(elapsedTime) % CLIArguments::autoSaveInterval == 0) { // autosave every x seconds
+        else if (parsedArgs.autoSaveInterval && (uint64_t)(elapsedTime) % parsedArgs.autoSaveInterval == 0) { // autosave every x seconds
             // Autosave
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
             prg.noProgress = simManager.noProgress;
@@ -280,40 +281,40 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
             writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
         }
 
-        if (CLIArguments::outputInterval && (uint64_t)(elapsedTime) % CLIArguments::outputInterval == 0) { // autosave every x seconds
+        if (parsedArgs.outputInterval && (uint64_t)(elapsedTime) % parsedArgs.outputInterval == 0) { // autosave every x seconds
             // Print runtime stats
-            if ((uint64_t)elapsedTime / CLIArguments::outputInterval <= 1) {
+            if ((uint64_t)elapsedTime / parsedArgs.outputInterval <= 1) {
                 printer.PrintHeader();
             }
             printer.Print(elapsedTime, simuState);
         }
 
         // Check for potential time end
-        if (CLIArguments::simDuration > 0) {
-            endCondition |= (elapsedTime >= (double)CLIArguments::simDuration);
+        if (parsedArgs.simDuration > 0) {
+            endCondition |= (elapsedTime >= (double)parsedArgs.simDuration);
         }
     } while (!endCondition);
 }
 
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs) {
     // Export results
         //  a) Use existing autosave as base
         //  b) Create copy of input file
         // update geometry info (in case of param sweep)
         // and simply update simulation results
-    bool createZip = std::filesystem::path(SettingsIO::outputFile).extension() == ".zip";
-    SettingsIO::outputFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".xml").string();
+    bool createZip = std::filesystem::path(parsedArgs.outputFile).extension() == ".zip";
+    parsedArgs.outputFile = std::filesystem::path(parsedArgs.outputFile).replace_extension(".xml").string();
 
-    std::string fullOutFile = std::filesystem::path(SettingsIO::outputPath).append(SettingsIO::outputFile).string();
+    std::string fullOutFile = std::filesystem::path(parsedArgs.outputPath).append(parsedArgs.outputFile).string();
     if (std::filesystem::exists(autoSave)) {
         std::filesystem::rename(autoSave, fullOutFile);
     }
-    else if (!SettingsIO::overwrite) {
+    else if (!parsedArgs.overwrite) {
         // Copy full file description first, in case outputFile is different
-        if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+        if (!parsedArgs.workFile.empty() && std::filesystem::exists(parsedArgs.workFile)) {
             try {
-                std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
+                std::filesystem::copy_file(parsedArgs.workFile, fullOutFile,
                     std::filesystem::copy_options::overwrite_existing);
             }
             catch (std::filesystem::filesystem_error& e) {
@@ -363,14 +364,14 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
 }
 
 void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition) {
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs) {
     // First write an intermediate output file
                 // 1. Get file name
-    std::string outFile = std::filesystem::path(SettingsIO::outputPath)
+    std::string outFile = std::filesystem::path(parsedArgs.outputPath)
         .append("desorbed_")
         .concat(std::to_string(model->otfParams.desorptionLimit))
         .concat("_")
-        .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
+        .concat(std::filesystem::path(parsedArgs.outputFile).filename().string()).string();
 
     try {
         GLProgress_CLI prg(fmt::format("Saving intermediate results... {}", outFile));
@@ -378,9 +379,9 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
         // 2. Write XML file, use existing file as base or create new file
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings; //keep from loaded file
-        if (!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+        if (!parsedArgs.workFile.empty() && std::filesystem::exists(parsedArgs.workFile)) {
             try {
-                std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                std::filesystem::copy_file(parsedArgs.workFile, outFile,
                     std::filesystem::copy_options::overwrite_existing);
             }
             catch (std::filesystem::filesystem_error& e) {
@@ -400,8 +401,8 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
     }
     // Next choose the next desorption limit and start
 
-    model->otfParams.desorptionLimit = CLIArguments::desLimit.front();
-    CLIArguments::desLimit.pop_front();
+    model->otfParams.desorptionLimit = parsedArgs.desLimit.front();
+    parsedArgs.desLimit.pop_front();
     simManager.ForwardOtfParams(&model->otfParams);
     endCondition = false;
     Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);

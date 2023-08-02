@@ -463,11 +463,11 @@ namespace FlowIO {
         return n_elements;
     }
 
-    void Exporter::export_facet_details(GlobalSimuState* glob, MolflowSimulationModel* model){
+    void Exporter::export_facet_details(GlobalSimuState* glob, MolflowSimulationModel* model, std::string& workPath){
         //Could use SettingsIO::outputFile instead of fixed name
         //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
         std::string csvFile = "facet_details.csv";
-        csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
+        csvFile = std::filesystem::path(workPath).append(csvFile).string();
 
         if (FlowIO::CSVExporter::ExportAllFacetDetails(csvFile, glob, model)) {
             Log::console_error("Could not write facet details to CSV file {}\n", csvFile);
@@ -476,11 +476,11 @@ namespace FlowIO {
         }
     }
 
-    void Exporter::export_facet_quantities(GlobalSimuState* glob, MolflowSimulationModel* model){
+    void Exporter::export_facet_quantities(GlobalSimuState* glob, MolflowSimulationModel* model, std::string& workPath){
         //Could use SettingsIO::outputFile instead of fixed name
         //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
         std::string csvFile = "facet_physics.csv";
-        csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
+        csvFile = std::filesystem::path(workPath).append(csvFile).string();
 
         if (FlowIO::CSVExporter::ExportPhysicalQuantitiesForFacets(csvFile, glob, model)) {
             Log::console_error("Could not write facet quantities to CSV file {}\n", csvFile);

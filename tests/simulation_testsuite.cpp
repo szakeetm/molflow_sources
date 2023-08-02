@@ -64,6 +64,13 @@ char** ConvertToCStyleArgv(const std::vector<std::string>& arguments) {
     return argv;
 }
 
+void CleanupOutputPath(const std::string& outPath) {
+    //Cleanup
+    SettingsIO::CLIArguments cleanupArgs;
+    cleanupArgs.outputPath = outPath;
+    SettingsIO::cleanup_files(cleanupArgs);
+}
+
 namespace {
 
     class SimulationFixture : public ::testing::TestWithParam<std::tuple<std::string,size_t>> {
@@ -82,8 +89,6 @@ namespace {
         }
 
         void TearDown() override {
-            if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-                std::filesystem::remove_all(SettingsIO::workPath);
             // Code here will be called immediately after each test (right
             // before the destructor).
         }
@@ -212,24 +217,24 @@ namespace {
         const size_t keepNEntries = 20;
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
-            SimulationManager simManager{0};
+            SimulationManager simManager;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             MolflowUserSettings persistentUserSettings;
-
+            SettingsIO::CLIArguments parsedArgs;
             
                 std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
                                                  "--file", testFile,
                                                  "--outputPath", outPath, "--noProgress" };
                 try {
-                    Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+                    parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
                 }
                 catch (Error& err) {
                     Log::console_error(err.what());
                     exit(41);
                 }            
                 try {
-                    model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                    model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings,parsedArgs);
                 }
                 catch (std::exception& err) {
                     Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -252,8 +257,8 @@ namespace {
                 if (model->otfParams.desorptionLimit != 0)
                     endCondition = globState.globalStats.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
                 // Check for potential time end
-                if (CLIArguments::simDuration > 0) {
-                    endCondition |= elapsedTime >= CLIArguments::simDuration;
+                if (parsedArgs.simDuration > 0) {
+                    endCondition |= elapsedTime >= parsedArgs.simDuration;
                 }
             } while (!endCondition);
             simTimer.Stop();
@@ -269,6 +274,8 @@ namespace {
             EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
 
             Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
+
+            
         };
 
         // Compare to old performance values here
@@ -339,6 +346,8 @@ namespace {
                 }
             }
         }
+        
+        CleanupOutputPath(outPath);
     }
 
 
@@ -359,22 +368,24 @@ namespace {
 
         //First load reference results
         {
-            SimulationManager simManager{ 0 }; //start master process
+            SimulationManager simManager;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             MolflowUserSettings persistentUserSettings;
+            SettingsIO::CLIArguments parsedArgs;
+            
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 
             Log::console_msg(1, "Loading reference results for parsing...\n");
             std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", testFile, "--noProgress", "--outputPath", outPath }; //default init with input file=result
             try {
-                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+                parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
             } catch (Error& err) {
                 Log::console_error(err.what());
                 exit(41);
             }
             try {
-                model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings,parsedArgs);
             }
             catch (std::exception& err) {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -413,24 +424,25 @@ namespace {
 
             //Parse results
 
-            SimulationManager simManager{ 0 }; //start master process
+            SimulationManager simManager;
             std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
             MolflowUserSettings persistentUserSettings;
             TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
+            SettingsIO::CLIArguments parsedArgs;
 
             Log::console_msg(1, "Loading results for parsing...\n");
             
             std::vector<std::string> argv = { "dummy", "-t", "123456789","--file", resultFile,"--noProgress", "--outputPath", outPath }; //default init with input file=result
             try {
-                Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+                parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
             }
             catch (Error& err) {
                 Log::console_error(err.what());
                 exit(41);
             }
             try {
-                model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+                model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
             }
             catch (std::exception& err) {
                 Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -463,6 +475,8 @@ namespace {
             runId++;
         }
 
+        CleanupOutputPath(outPath);
+
         //Test case pass or fail
         if (nbFailed > maxFail) {
             Log::console_msg(1, "This test case failed as there were {} failed runs.\n", maxFail);
@@ -480,17 +494,18 @@ namespace {
         size_t nbSuccess = 0;
         const size_t nRuns = 15;
 
-        std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
+        SimulationManager simManager;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120","--noProgress",
                                          "--file", testFile,
                                          "--outputPath", outPath, "--noProgress" };
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
@@ -498,7 +513,7 @@ namespace {
         }
         TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
         try {
-            model = Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -518,10 +533,10 @@ namespace {
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             if (runNb != 0) {
                 // Reset simulation for a fresh start
-                simManager = std::make_shared<SimulationManager>();
+                SimulationManager simManager;
                 model = std::make_shared<MolflowSimulationModel>();
                 try {
-                    Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager.get(), model);
+                    parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
                 }
                 catch (Error& err) {
                     Log::console_error(err.what());
@@ -529,7 +544,7 @@ namespace {
                 }
                 TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
                 try {
-                    model = Initializer::initFromFile(simManager.get(), model, &globState, persistentUserSettings);
+                    model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
                 }
                 catch (std::exception& err) {
                     Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -538,23 +553,23 @@ namespace {
             }
             // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
-            CLIArguments::desLimit.clear();
-            CLIArguments::desLimit.emplace_back(300);
-            Initializer::initDesLimit(model, globState);
+            parsedArgs.desLimit.clear();
+            parsedArgs.desLimit.emplace_back(300);
+            Initializer::initDesLimit(model, globState, parsedArgs);
 
             //simManager.RefreshRNGSeed(false);
-            simManager->ResetSimulations();
-            simManager->InitSimulation(model, &globState);
+            simManager.ResetSimulations();
+            simManager.InitSimulation(model, &globState);
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
             EXPECT_EQ(0, globState.globalStats.globalHits.nbDesorbed);
             EXPECT_EQ(0, globState.globalStats.globalHits.nbMCHit);
 
-            EXPECT_NO_THROW(simManager->StartSimulation());
+            EXPECT_NO_THROW(simManager.StartSimulation());
 
             // Stop and copy results
-            simManager->StopSimulation();
+            simManager.StopSimulation();
 
             EXPECT_LT(0, globState.globalStats.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalStats.globalHits.nbMCHit);
@@ -579,7 +594,6 @@ namespace {
                 EXPECT_NE(0, diff_glob);
             else
                 EXPECT_NE(0, diff_loc);*/
-
             if (diff_glob <= 0)
                 fmt::print(stdout, "[{}][Info] No global differences found.\n", runNb);
             if (diff_loc <= 0)
@@ -599,6 +613,7 @@ namespace {
                                "{} out of {} runs were correct\n",
                        nbSuccess, nRuns);
         }
+        CleanupOutputPath(outPath);
     }
 
     // Tests factorial of positive numbers.
@@ -641,23 +656,24 @@ namespace {
 
     TEST(InputOutput, DefaultInput) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress"};
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  
         try {
-            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -667,31 +683,31 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
-        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(parsedArgs.outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
+        EXPECT_TRUE(parsedArgs.outputFile == "out_B01-lr1000_pipe.zip");
 
         // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -700,17 +716,17 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(parsedArgs.workPath);
     }
 
     TEST(InputOutput, Outputpath) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
         // generate hash name for tmp working file
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -718,14 +734,14 @@ namespace {
                                          "--outputPath", outPath, "--noProgress" };
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  
         try {
-            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -735,32 +751,32 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
-        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputPath == outPath);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_FALSE(parsedArgs.outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputPath == outPath);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
+        EXPECT_TRUE(parsedArgs.outputFile == "out_B01-lr1000_pipe.zip");
 
 // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -769,17 +785,17 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(outPath);
     }
 
     TEST(InputOutput, OutputpathAndFile) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -787,13 +803,13 @@ namespace {
                                          "--outputPath", outPath, "-o", outFile, "--noProgress" };
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  try {
-            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -803,32 +819,32 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
-        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputPath == outPath);
-        EXPECT_TRUE(SettingsIO::outputFile == outFile);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_FALSE(parsedArgs.outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputPath == outPath);
+        EXPECT_TRUE(parsedArgs.outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
         // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(),parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -837,31 +853,31 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(outPath);
     }
 
     TEST(InputOutput, Outputfile) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outFile, "--noProgress" };
     
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  
         try {
-            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -871,30 +887,30 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
-        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputFile == outFile);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(parsedArgs.outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
         // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -903,20 +919,19 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        // cleanup
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(parsedArgs.outputPath);
     }
 
     TEST(InputOutput, OutputfileWithPath) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
-        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(parsedArgs.workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -925,14 +940,14 @@ namespace {
                                          "-o", outPath + "/" + outFile, "--noProgress" };
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  
         try {
-            model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+            model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
         }
         catch (std::exception& err) {
             Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -942,31 +957,31 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::outputFile;
+        std::string fullFileName = parsedArgs.outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
-        EXPECT_TRUE(SettingsIO::outputPath.empty());
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.workPath));
+        EXPECT_TRUE(parsedArgs.outputPath.empty());
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
         writer.SaveGeometry(newDoc, model, prg);
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+        EXPECT_TRUE(parsedArgs.workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputFile.find(outFile) != std::string::npos);
 
         // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -975,19 +990,19 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(outPath);
     }
 
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
-        SimulationManager simManager{0};
+        SimulationManager simManager;
         simManager.asyncMode=false;
         std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
         MolflowUserSettings persistentUserSettings;
+        SettingsIO::CLIArguments parsedArgs;
 
-        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(parsedArgs.workPath.find("gtest_relpath") != std::string::npos);
         EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -997,14 +1012,14 @@ namespace {
                                          "--outputPath", outPath, "-o", outPathF + "/" + outFile, "--noProgress" };
         
         try {
-            Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), &simManager, model);
+            parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
         }
         catch (Error& err) {
             Log::console_error(err.what());
             exit(41);
         }  
 		try {
-			model = Initializer::initFromFile(&simManager, model, &globState, persistentUserSettings);
+			model = Initializer::initFromFile(simManager, model, &globState, persistentUserSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -1014,15 +1029,15 @@ namespace {
         FlowIO::XmlWriter writer;
         writer.userSettings = persistentUserSettings;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::workPath + "/" + SettingsIO::outputFile;
+        std::string fullFileName = parsedArgs.workPath + "/" + parsedArgs.outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
-        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(parsedArgs.workPath) / "autosave_B01-lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile(parsedArgs));
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
-        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
-        EXPECT_TRUE(SettingsIO::outputPath == outPath);
-        EXPECT_TRUE(SettingsIO::workPath == outPath);
+        EXPECT_TRUE(Initializer::getAutosaveFile(parsedArgs).find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(parsedArgs.workPath));
+        EXPECT_TRUE(parsedArgs.outputPath == outPath);
+        EXPECT_TRUE(parsedArgs.workPath == outPath);
         newDoc.load_file(fullFileName.c_str());
         GLProgress_CLI prg("Saving file...");
         prg.noProgress = simManager.noProgress;
@@ -1030,18 +1045,18 @@ namespace {
         writer.SaveSimulationState(newDoc, model, prg, globState);
         writer.WriteXMLToFile(newDoc, fullFileName);
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);
-        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+        EXPECT_TRUE(parsedArgs.workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputFile.find(outPathF) != std::string::npos);
+        EXPECT_TRUE(parsedArgs.outputFile.find(outFile) != std::string::npos);
 
         // CSV: check first whether files don't exist yet before generating and comparing them
-        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
-        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        auto f_details = std::filesystem::path(parsedArgs.workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        FlowIO::Exporter::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get(), parsedArgs.workPath);
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -1050,8 +1065,7 @@ namespace {
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
 
-        if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
-            std::filesystem::remove_all(SettingsIO::workPath);
+        CleanupOutputPath(outPath);
     }
 
     TEST(ParameterParsing, ParameterChangeFile) {

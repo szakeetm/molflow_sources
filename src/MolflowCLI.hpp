@@ -17,9 +17,10 @@ public:
 
 void ShutdownMPI();
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer);void CleanUpMPI();
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs);
+void CleanUpMPI();
 void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave);
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs);
 void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition);
+    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs);
 void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState);

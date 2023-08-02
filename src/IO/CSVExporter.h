@@ -86,9 +86,9 @@ namespace FlowIO {
 
     // export utility functions
     struct Exporter {
-        static void export_facet_details(GlobalSimuState* globPtr, MolflowSimulationModel* model);
+        static void export_facet_details(GlobalSimuState* globPtr, MolflowSimulationModel* model, std::string& workPath);
 
-        static void export_facet_quantities(GlobalSimuState* globPtr, MolflowSimulationModel* model);
+        static void export_facet_quantities(GlobalSimuState* globPtr, MolflowSimulationModel* model, std::string& workPath);
     };
 }
 
