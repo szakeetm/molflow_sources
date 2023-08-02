@@ -51,7 +51,7 @@ bool result = 0;
         particleTracer.tmpParticleLog.clear();
         particleTracer.tmpParticleLog.pLog.shrink_to_fit();
         if (model->otfParams.enableLogging) {
-           particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
+           particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit);
         }
         particleTracer.tmpParticleLog.particleLogMutex.unlock();
     }

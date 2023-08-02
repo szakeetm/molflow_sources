@@ -1140,7 +1140,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	prg.SetVisible(true);
 
 	if (!sendOnly) {
-		if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
+		if (nbProcess == 0 && !geom->IsLoaded()) {
 			return;
 		}
 

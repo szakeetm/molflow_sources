@@ -407,15 +407,6 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     size_t i = 0, j = 0;
     int nbTry = 0;
 
-    // Check end of simulation
-    /*if (model->otfParams.desorptionLimit > 0) {
-        if (tmpState.globalStats.globalStats.hit.nbDesorbed >=
-            model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
-            //lastHitFacet = nullptr; // reset full particle status or go on from where we left
-            return false;
-        }
-    }*/
-
     // Select source
     srcRnd = ray.rng->rnd() * model->wp.totalDesorbedMolecules;
 

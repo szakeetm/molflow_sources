@@ -131,7 +131,6 @@ SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, Simula
 
     simManager.nbThreads = parsedArgs.nbThreads;
     simManager.noProgress = parsedArgs.noProgress;
-    model->otfParams.nbProcess = simManager.nbThreads;
     model->otfParams.timeLimit = (double)parsedArgs.simDuration;
 
     if (simManager.SetUpSimulation()) { //currently only calls CreateCPUHandle()

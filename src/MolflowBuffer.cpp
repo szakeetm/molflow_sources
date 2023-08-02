@@ -37,7 +37,6 @@ WorkerParams::WorkerParams(){
 }
 
 OntheflySimulationParams::OntheflySimulationParams(){
-    nbProcess = 0;
     enableLogging = false;
     desorptionLimit = 0;
     lowFluxCutoff = 1.0E-7;
