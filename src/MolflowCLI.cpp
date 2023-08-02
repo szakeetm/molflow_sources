@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 
 #if defined(USE_MPI)
     // Start to transfer simulation data to other nodes via broadcast
-    MFMPI::mpi_transfer_simu();
+    MFMPI::mpi_transfer_simu(parsedArgs);
 #endif
 
     Log::console_msg(1,"Loading parameters from parameter_catalog folder...");
