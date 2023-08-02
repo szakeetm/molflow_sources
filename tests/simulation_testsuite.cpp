@@ -786,6 +786,8 @@ namespace {
 
 	TEST(InputOutput, OutputpathAndFile) {
 
+		std::this_thread::sleep_for(std::chrono::seconds(1)); //So results dir has unique name
+
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
@@ -853,6 +855,8 @@ namespace {
 	}
 
 	TEST(InputOutput, Outputfile) {
+
+		std::this_thread::sleep_for(std::chrono::seconds(1)); //So results dir has unique name
 
 		SimulationManager simManager;
 		simManager.asyncMode = false;
@@ -990,6 +994,8 @@ namespace {
 	}
 
 	TEST(InputOutput, OutputpathAndOutputfileWithPath) {
+
+		std::this_thread::sleep_for(std::chrono::seconds(1)); //So results dir has unique name
 
 		SimulationManager simManager;
 		simManager.asyncMode = false;
@@ -1191,5 +1197,5 @@ namespace {
 
 int main(int argc, char** argv) {
 	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+	auto result = RUN_ALL_TESTS();
 }
