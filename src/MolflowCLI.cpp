@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
-    SettingsIO::cleanup_files(parsedArgs);
+    SettingsIO::cleanup_files(parsedArgs.outputPath,parsedArgs.workPath);
 
     return 0; //success
 }
@@ -273,20 +273,22 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
                 HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition, parsedArgs);
             }
         }
-        else if (parsedArgs.autoSaveInterval && (uint64_t)(elapsedTime) % parsedArgs.autoSaveInterval == 0) { // autosave every x seconds
+        else if (parsedArgs.autoSaveInterval && simTimer.SecondsSinceLastAutosave() > parsedArgs.autoSaveInterval) { // autosave every x seconds
             // Autosave
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
             prg.noProgress = simManager.noProgress;
             FlowIO::XmlWriter writer;
             writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
+            simTimer.UpdateLastAutoSave();
         }
 
-        if (parsedArgs.outputInterval && (uint64_t)(elapsedTime) % parsedArgs.outputInterval == 0) { // autosave every x seconds
+        if (parsedArgs.statprintInterval && simTimer.SecondsSinceLastStatprint() > parsedArgs.statprintInterval) { // autosave every x seconds
             // Print runtime stats
-            if ((uint64_t)elapsedTime / parsedArgs.outputInterval <= 1) {
+            if ((uint64_t)elapsedTime / parsedArgs.statprintInterval <= 1) {
                 printer.PrintHeader();
             }
             printer.Print(elapsedTime, simuState);
+            simTimer.UpdateLastStatprintTime();
         }
 
         // Check for potential time end

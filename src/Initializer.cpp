@@ -68,7 +68,7 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
     CLI::Option *optOpath = app.add_option("--outputPath", parsedArgs.outputPath,
                                            "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-s,--outputInterval", parsedArgs.outputInterval, "Seconds between each stat output, zero=disabled");
+    app.add_option("-s,--statprintInterval", parsedArgs.statprintInterval, "Seconds between each stat output, zero=disabled");
     app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, "Autosave interval in seconds, zero=disabled)");
     app.add_flag("--writeFacetDetails", parsedArgs.outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
