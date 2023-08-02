@@ -1140,7 +1140,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	prg.SetVisible(true);
 
 	if (!sendOnly) {
-		if (nbProcess == 0 && !geom->IsLoaded()) {
+		if (simManager.nbThreads == 0 && !geom->IsLoaded()) {
 			return;
 		}
 
