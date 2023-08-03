@@ -179,7 +179,7 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
     simManager.simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units...\n");
     try {
-        simManager.InitSimulation(loadedModel, globStatePtr);
+        simManager.InitSimulation(loadedModel, globStatePtr); //shares model and globStatePtr with simManager
     }
     catch (std::exception &ex) {
         Log::console_error("Failed Initializing simulation units:\n{}\n", ex.what());

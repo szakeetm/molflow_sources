@@ -528,7 +528,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
-				simManager.SetGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ShareGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
 				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 			}
 			else { //insert
@@ -672,7 +672,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				if (version >= 8)
 					geom->LoadProfileGEO(*file, globalState, version);
 
-				simManager.SetGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ShareGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
 				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 				SendAngleMaps();
 
@@ -813,7 +813,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					if (ext == "xml" || ext == "zip")
 						prg.SetMessage("Restoring simulation state...");
 
-					simManager.SetGlobalCounter(&globalState, &particleLog);
+					simManager.ShareGlobalCounter(&globalState, &particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
 						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
@@ -826,7 +826,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					// actually loads all caches
 					UpdateFacetCaches(); //So interface gets histogram data for disp.moment right after loadin
-					//simManager.SetGlobalCounter(&globalState, &particleLog);
+					//simManager.ShareGlobalCounter(&globalState, &particleLog);
 					SendAngleMaps();
 
 					RebuildTextures();
