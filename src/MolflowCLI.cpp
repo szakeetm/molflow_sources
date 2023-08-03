@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
-    simManager.noProgress = false;
+    simManager.asyncMode = false;
 #endif
 
     // Start async simulation run, check state in following loop

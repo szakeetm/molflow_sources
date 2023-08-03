@@ -81,7 +81,7 @@
       "name": "x64-Debug-MPI",
       "generator": "Ninja",
       "configurationType": "Debug",
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "buildRoot": "${projectDir}\\out\\build_${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "-DUSE_MPI=ON -DNO_INTERFACE=ON",
       "buildCommandArgs": "",
