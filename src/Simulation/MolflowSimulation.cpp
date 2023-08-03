@@ -208,7 +208,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
         Log::console_msg_master(5, "  Seed for {}: {}\n", particleTracer.particleTracerId, particleTracer.randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: {:.2f} ms\n", timer.ElapsedMs());
     
-    procInfo.UpdateControllerStatus(ControllerState::Ready,"", loadStatus);
+    //procInfo.UpdateControllerStatus(ControllerState::Ready,"", loadStatus);
     return 0;
 }
 
