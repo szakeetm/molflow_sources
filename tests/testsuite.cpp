@@ -214,7 +214,7 @@ namespace {
 		for (size_t runNb = 0; runNb < nRuns; ++runNb) {
 			SimulationManager simManager;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-			std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 			MolflowUserSettings persistentUserSettings;
 			SettingsIO::CLIArguments parsedArgs;
 
@@ -358,7 +358,7 @@ namespace {
 		size_t correctStreak = 0;
 		const size_t correctStreakForSuccess = 2; //Pass if this number of runs correct in a row
 
-		std::shared_ptr<GlobalSimuState> referenceState;
+		std::shared_ptr<GlobalSimuState> referenceState=std::make_shared<GlobalSimuState>();
 
 		//First load reference results
 		{
@@ -417,7 +417,7 @@ namespace {
 
 			SimulationManager simManager;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-			std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 			MolflowUserSettings persistentUserSettings;
 			TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 			SettingsIO::CLIArguments parsedArgs;
@@ -521,11 +521,12 @@ namespace {
 		// Next, check for errors due to short run time
 		// - this will prevent false positives for ResultsOkay tests
 		for (size_t runNb = 0; runNb < nRuns; ++runNb) {
+			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 			if (runNb != 0) {
 				// Reset simulation for a fresh start
 				SimulationManager simManager;
 				model = std::make_shared<MolflowSimulationModel>();
-				std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+				
 				try {
 					parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
 				}
@@ -650,7 +651,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -696,9 +697,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
@@ -715,7 +716,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -765,9 +766,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
@@ -786,7 +787,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -835,9 +836,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
@@ -856,7 +857,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -903,9 +904,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
@@ -922,7 +923,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -974,9 +975,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
@@ -995,7 +996,7 @@ namespace {
 		SimulationManager simManager;
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-		std::shared_ptr<GlobalSimuState> globalState = std::shared_ptr<GlobalSimuState>();
+		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 		MolflowUserSettings persistentUserSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
@@ -1051,9 +1052,9 @@ namespace {
 		auto f_physics = std::filesystem::path(parsedArgs.workPath).append("facet_physics.csv");
 		EXPECT_FALSE(std::filesystem::exists(f_details));
 		EXPECT_FALSE(std::filesystem::exists(f_physics));
-		FlowIO::Exporter::export_facet_details(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_details));
-		FlowIO::Exporter::export_facet_quantities(globalState, model.get(), parsedArgs.workPath);
+		FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
 		EXPECT_TRUE(std::filesystem::exists(f_physics));
 		if (std::filesystem::exists(f_details)) {
 			EXPECT_LT(0, FlowIO::CSVExporter::ValidateCSVFile(f_details.string()));
