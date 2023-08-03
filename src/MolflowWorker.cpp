@@ -825,7 +825,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					CalculateTextureLimits(); // Load texture limits on init
 
 					// actually loads all caches
-					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
+					UpdateFacetCaches(); //So interface gets histogram data for disp.moment right after loadin
 					simManager.SetGlobalCounter(&globalState, &particleLog);
 					SendAngleMaps();
 
