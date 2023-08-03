@@ -49,7 +49,7 @@ extern SynRad*mApp;
 * \param renderDirectionTexture bool value
 * \param sMode which simulation mode was used (monte carlo / angular coefficient)
 */
-void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture,
+void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> globalState, bool renderRegularTexture,
                                          bool renderDirectionTexture) {
 	
 	Worker *w = &(mApp->worker);
@@ -69,7 +69,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 
 	if (renderRegularTexture) {
         {
-		    const GlobalHitBuffer& globHit = globState.globalStats;
+		    const GlobalHitBuffer& globHit = globalState->globalStats;
 			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.nbDesorbed * mApp->worker.model->wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
 			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.nbDesorbed;
 			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.nbDesorbed;
@@ -128,7 +128,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 			}
 
 			// Retrieve texture from shared memory (every seconds)
-			f->BuildTexture(globState.facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
+			f->BuildTexture(globalState->facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 
@@ -143,7 +143,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 			*/
 
 
-			const std::vector<DirectionCell>& dirs = globState.facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
+			const std::vector<DirectionCell>& dirs = globalState->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
 			for (size_t j = 0; j < nbElem; j++) {
 				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
 				f->dirCache[j].dir = dirs[j].dir * denominator;

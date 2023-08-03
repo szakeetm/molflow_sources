@@ -100,15 +100,7 @@ extern SynRad* mApp;
 * \brief Default constructor for a worker
 */
 Worker::Worker() : simManager(0) {
-
-	model = std::make_shared<MolflowSimulationModel>();
-	needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
-	abortRequested = false;
-	displayedMoment = 0; //By default, steady-state is displayed
-
-	ResetWorkerStats();
 	geom = new MolflowGeometry();
-
 	simuTimer.ReInit();
 }
 
@@ -528,7 +520,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
-				simManager.ShareGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ShareGlobalCounter(globalState, particleLog); //Global hit counters and hit/leak cache
 				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 			}
 			else { //insert
@@ -672,7 +664,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				if (version >= 8)
 					geom->LoadProfileGEO(*file, globalState, version);
 
-				simManager.ShareGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				simManager.ShareGlobalCounter(globalState, particleLog); //Global hit counters and hit/leak cache
 				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 				SendAngleMaps();
 
@@ -813,10 +805,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					if (ext == "xml" || ext == "zip")
 						prg.SetMessage("Restoring simulation state...");
 
-					simManager.ShareGlobalCounter(&globalState, &particleLog);
+					simManager.ShareGlobalCounter(globalState, particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
-						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
+						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, globalState, prg);
 						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->appFormulas->convergenceData, prg);
 					}
 					simManager.simulationChanged = true; //mark for loading
@@ -826,7 +818,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					// actually loads all caches
 					UpdateFacetCaches(); //So interface gets histogram data for disp.moment right after loadin
-					//simManager.ShareGlobalCounter(&globalState, &particleLog);
+					//simManager.ShareGlobalCounter(globalState, particleLog);
 					SendAngleMaps();
 
 					RebuildTextures();
@@ -877,7 +869,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		//CalcTotalOutgassing(); RealReload()->ReloadSim()->PrepareToRun() already called it
 	}
 
-	globalStatCache = globalState.globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
+	globalStatCache = globalState->globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
 	if (insert) {
 		mApp->UpdateFacetlistSelected();
 		mApp->UpdateViewers();
@@ -979,15 +971,15 @@ int Worker::SendAngleMaps() {
 		angleMapCaches.push_back(f->angleMapCache);
 	}
 
-	if (globalState.facetStates.size() != angleMapCaches.size())
+	if (globalState->facetStates.size() != angleMapCaches.size())
 		return 1;
-	auto lock = GetHitLock(&globalState, 10000);
+	auto lock = GetHitLock(globalState.get(), 10000);
 	if (!lock) return 1;
 
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
 		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
 		if (mfFac->sh.anglemapParams.record)
-			globalState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+			globalState->facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
 		mfFac->angleMap.pdf = angleMapCaches[i];
 	}
@@ -1165,7 +1157,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			prg.SetMessage("Asking subprocesses to clear geometry...");
 			simManager.ResetSimulations();
 			prg.SetMessage("Clearing Logger...");
-			particleLog.clear();
+			particleLog->clear();
 		}
 		catch (const std::exception& e) {
 			std::stringstream err;
@@ -1176,7 +1168,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 		if (model->otfParams.enableLogging) {
 			try {
-				particleLog.resize(model->otfParams.logLimit);
+				particleLog->resize(model->otfParams.logLimit);
 			}
 			catch (...) {
 				throw Error(
@@ -1211,12 +1203,8 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 * Reset function mainly used for initialisation / reload procedures
 */
 void Worker::ResetWorkerStats() {
-
-	globalState.Reset();
-	particleLog.clear();
-	//memset(&globalState.globalStats, 0, sizeof(GlobalHitBuffer));
-
-
+	globalState->Reset();
+	particleLog->clear();
 }
 
 /**
@@ -1241,7 +1229,7 @@ void Worker::Start() {
 	if (model->wp.totalDesorbedMolecules <= 0.0)
 		throw std::runtime_error("Total outgassing is zero.");
 
-	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globalState.globalStats.globalHits.nbDesorbed)
+	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globalState->globalStats.globalHits.nbDesorbed)
 		throw std::runtime_error("Desorption limit has already been reached.");
 
 	try {

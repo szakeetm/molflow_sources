@@ -636,7 +636,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 * \param crashSave prevents profile from being saved?
 * TODO: Function doesn't seem to cancel properly
 */
-void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState& globState, int super, bool saveSelected, bool crashSave) {
+void MolflowGeometry::SaveProfileGEO(FileWriter& file, const std::shared_ptr<GlobalSimuState> globalState, int super, bool saveSelected, bool crashSave) {
 
 	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
 	file.Write("profiles {\n");
@@ -662,7 +662,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState& globStat
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
 				InterfaceFacet* f = GetFacet(profileFacet[i]);
-				const std::vector<ProfileSlice>& pr = globState.facetStates[profileFacet[i]].momentResults[m].profile;
+				const std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacet[i]].momentResults[m].profile;
 				//char tmp2[128];
 				file.Write(static_cast<size_t>(pr[j].countEquiv), "\t"); //Backwards compatibility
 				file.Write(pr[j].sum_1_per_ort_velocity, "\t");
@@ -684,7 +684,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, GlobalSimuState& globStat
 * \param results results from the simulation
 * \param version version of the GEO description
 */
-void MolflowGeometry::LoadProfileGEO(FileReader& file, GlobalSimuState& globState, int version) {
+void MolflowGeometry::LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version) {
 
 	file.ReadKeyword("profiles"); file.ReadKeyword("{");
 	// Profiles
@@ -708,7 +708,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, GlobalSimuState& globStat
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
 				InterfaceFacet* f = GetFacet(profileFacet[i]);
-				std::vector<ProfileSlice>& pr = globState.facetStates[profileFacet[i]].momentResults[m].profile;
+				std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacet[i]].momentResults[m].profile;
 				pr[j].countEquiv = static_cast<double>(file.ReadSizeT());
 				if (version >= 13) pr[j].sum_1_per_ort_velocity = file.ReadDouble();
 				if (version >= 13) pr[j].sum_v_ort = file.ReadDouble();
@@ -745,18 +745,18 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	worker->globalState.globalStats.globalHits.nbMCHit = file.ReadSizeT();
-	worker->globalState.globalStats.globalHits.nbHitEquiv = static_cast<double>(worker->globalState.globalStats.globalHits.nbMCHit);
+	worker->globalState->globalStats.globalHits.nbMCHit = file.ReadSizeT();
+	worker->globalState->globalStats.globalHits.nbHitEquiv = static_cast<double>(worker->globalState->globalStats.globalHits.nbMCHit);
 
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	worker->globalState.globalStats.globalHits.nbDesorbed = file.ReadSizeT();
+	worker->globalState->globalStats.globalHits.nbDesorbed = file.ReadSizeT();
 
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->globalState.globalStats.nbLeakTotal = file.ReadSizeT();
+	worker->globalState->globalStats.nbLeakTotal = file.ReadSizeT();
 
 	if (*version >= 12) {
 		file.ReadKeyword("totalAbs"); file.ReadKeyword(":");
-		worker->globalState.globalStats.globalHits.nbAbsEquiv = (double)file.ReadSizeT();
+		worker->globalState->globalStats.globalHits.nbAbsEquiv = (double)file.ReadSizeT();
 		if (*version >= 15) {
 			file.ReadKeyword("totalDist_total");
 		}
@@ -764,16 +764,16 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			file.ReadKeyword("totalDist");
 		}
 		file.ReadKeyword(":");
-		worker->globalState.globalStats.distTraveled_total = file.ReadDouble();
+		worker->globalState->globalStats.distTraveled_total = file.ReadDouble();
 		if (*version >= 15) {
 			file.ReadKeyword("totalDist_fullHitsOnly"); file.ReadKeyword(":");
-			worker->globalState.globalStats.distTraveledTotal_fullHitsOnly = file.ReadDouble();
+			worker->globalState->globalStats.distTraveledTotal_fullHitsOnly = file.ReadDouble();
 		}
 	}
 	else {
-		worker->globalState.globalStats.globalHits.nbAbsEquiv = 0.0;
-		worker->globalState.globalStats.distTraveled_total = 0.0;
-		worker->globalState.globalStats.distTraveledTotal_fullHitsOnly = 0.0;
+		worker->globalState->globalStats.globalHits.nbAbsEquiv = 0.0;
+		worker->globalState->globalStats.distTraveled_total = 0.0;
+		worker->globalState->globalStats.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
 	worker->model->otfParams.desorptionLimit = file.ReadSizeT();
@@ -944,18 +944,18 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		// Read leaks
 		file.ReadKeyword("leaks"); file.ReadKeyword("{");
 		file.ReadKeyword("nbLeak"); file.ReadKeyword(":");
-		worker->globalState.globalStats.leakCacheSize = file.ReadInt();
-		for (int i = 0; i < worker->globalState.globalStats.leakCacheSize; i++) {
+		worker->globalState->globalStats.leakCacheSize = file.ReadInt();
+		for (int i = 0; i < worker->globalState->globalStats.leakCacheSize; i++) {
 			int idx = file.ReadInt();
 			if (idx != i) throw Error(file.MakeError("Wrong leak index !"));
 			if (i < LEAKCACHESIZE) {
-				worker->globalState.globalStats.leakCache[i].pos.x = file.ReadDouble();
-				worker->globalState.globalStats.leakCache[i].pos.y = file.ReadDouble();
-				worker->globalState.globalStats.leakCache[i].pos.z = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].pos.x = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].pos.y = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].pos.z = file.ReadDouble();
 
-				worker->globalState.globalStats.leakCache[i].dir.x = file.ReadDouble();
-				worker->globalState.globalStats.leakCache[i].dir.y = file.ReadDouble();
-				worker->globalState.globalStats.leakCache[i].dir.z = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].dir.x = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].dir.y = file.ReadDouble();
+				worker->globalState->globalStats.leakCache[i].dir.z = file.ReadDouble();
 			}
 			else { //Saved file has more leaks than we could load
 				for (int skipIndex = 0; skipIndex < 6; skipIndex++)
@@ -967,16 +967,16 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		// Read hit cache
 		file.ReadKeyword("hits"); file.ReadKeyword("{");
 		file.ReadKeyword("nbHHit"); file.ReadKeyword(":");
-		worker->globalState.globalStats.hitCacheSize = file.ReadInt();
-		for (int i = 0; i < worker->globalState.globalStats.hitCacheSize; i++) {
+		worker->globalState->globalStats.hitCacheSize = file.ReadInt();
+		for (int i = 0; i < worker->globalState->globalStats.hitCacheSize; i++) {
 			int idx = file.ReadInt();
 			if (idx != i) throw Error(file.MakeError("Wrong hit cache index !"));
 			if (i < HITCACHESIZE) {
-				worker->globalState.globalStats.hitCache[i].pos.x = file.ReadDouble();
-				worker->globalState.globalStats.hitCache[i].pos.y = file.ReadDouble();
-				worker->globalState.globalStats.hitCache[i].pos.z = file.ReadDouble();
+				worker->globalState->globalStats.hitCache[i].pos.x = file.ReadDouble();
+				worker->globalState->globalStats.hitCache[i].pos.y = file.ReadDouble();
+				worker->globalState->globalStats.hitCache[i].pos.z = file.ReadDouble();
 
-				worker->globalState.globalStats.hitCache[i].type = file.ReadInt();
+				worker->globalState->globalStats.hitCache[i].type = file.ReadInt();
 			}
 			else { //Saved file has more hits than we could load
 				for (int i = 0; i < 3; i++)
@@ -1070,22 +1070,22 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	worker->globalState.globalStats.globalHits.nbMCHit = 0;
-	worker->globalState.globalStats.globalHits.nbHitEquiv = 0.0;
+	worker->globalState->globalStats.globalHits.nbMCHit = 0;
+	worker->globalState->globalStats.globalHits.nbHitEquiv = 0.0;
 	file.ReadSizeT();
 	if (*version >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	worker->globalState.globalStats.globalHits.nbDesorbed = 0;
+	worker->globalState->globalStats.globalHits.nbDesorbed = 0;
 	file.ReadSizeT();
 	if (*version >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		/*loaded_no_scans = */file.ReadDouble();
 	}
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->globalState.globalStats.nbLeakTotal = 0; file.ReadSizeT();
+	worker->globalState->globalStats.nbLeakTotal = 0; file.ReadSizeT();
 	if (*version > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -1302,7 +1302,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 * \param results simulation results describing the texture
 * \param version version of the GEO description
 */
-bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, GlobalSimuState& globState, int version) {
+bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, int version) {
 
 	if (file.SeekFor("{textures}")) {
 		char tmp[256];
@@ -1388,7 +1388,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 						size_t h = f->sh.texHeight;
 						size_t w = f->sh.texWidth;
 
-						std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
+						std::vector<TextureCell>& texture = globalState->facetStates[i].momentResults[m].texture;
 
 						size_t texWidth_file, texHeight_file;
 						//In case of rounding errors, the file might contain different texture dimensions than expected.
@@ -1452,14 +1452,14 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 * \param saveSelected if a selection is to be saved
 * \param crashSave if crash save is enabled
 */
-void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, GlobalSimuState& globState, Worker* worker,
+void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, Worker* worker,
 	bool saveSelected, bool crashSave) {
 
 	prg.SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
-	auto lock = GetHitLock(&globState, 10000);
+	auto lock = GetHitLock(globalState.get(), 10000);
 	if (!lock) return;
 
 	double dCoef = 1.0;
@@ -1467,12 +1467,12 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 
 	prg.SetMessage("Writing geometry details...");
 	file.Write("version:"); file.Write(GEOVERSION, "\n");
-	file.Write("totalHit:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.globalHits.nbMCHit : 0, "\n");
-	file.Write("totalDes:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.globalHits.nbDesorbed : 0, "\n");
-	file.Write("totalLeak:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.nbLeakTotal : 0, "\n");
-	file.Write("totalAbs:"); file.Write((!crashSave && !saveSelected) ? (size_t)globState.globalStats.globalHits.nbAbsEquiv : 0, "\n");
-	file.Write("totalDist_total:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.distTraveled_total : 0, "\n");
-	file.Write("totalDist_fullHitsOnly:"); file.Write((!crashSave && !saveSelected) ? globState.globalStats.distTraveledTotal_fullHitsOnly : 0, "\n");
+	file.Write("totalHit:"); file.Write((!crashSave && !saveSelected) ? globalState->globalStats.globalHits.nbMCHit : 0, "\n");
+	file.Write("totalDes:"); file.Write((!crashSave && !saveSelected) ? globalState->globalStats.globalHits.nbDesorbed : 0, "\n");
+	file.Write("totalLeak:"); file.Write((!crashSave && !saveSelected) ? globalState->globalStats.nbLeakTotal : 0, "\n");
+	file.Write("totalAbs:"); file.Write((!crashSave && !saveSelected) ? (size_t)globalState->globalStats.globalHits.nbAbsEquiv : 0, "\n");
+	file.Write("totalDist_total:"); file.Write((!crashSave && !saveSelected) ? globalState->globalStats.distTraveled_total : 0, "\n");
+	file.Write("totalDist_fullHitsOnly:"); file.Write((!crashSave && !saveSelected) ? globalState->globalStats.distTraveledTotal_fullHitsOnly : 0, "\n");
 	file.Write("maxDes:"); file.Write((!crashSave && !saveSelected) ? worker->model->otfParams.desorptionLimit : 0, "\n");
 
 	auto selectedFacets = GetSelectedFacets();
@@ -1572,18 +1572,18 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	//leaks
 	prg.SetMessage("Writing leaks...");
 	file.Write("leaks {\n");
-	file.Write("  nbLeak:"); file.Write((!crashSave && !saveSelected) ? worker->globalState.globalStats.leakCacheSize : 0, "\n");
-	for (int i = 0; (i < worker->globalState.globalStats.leakCacheSize) && (!crashSave && !saveSelected); i++) {
+	file.Write("  nbLeak:"); file.Write((!crashSave && !saveSelected) ? worker->globalState->globalStats.leakCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->globalState->globalStats.leakCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file.Write("  ");
 		file.Write(i, " ");
-		file.Write(worker->globalState.globalStats.leakCache[i].pos.x, " ");
-		file.Write(worker->globalState.globalStats.leakCache[i].pos.y, " ");
-		file.Write(worker->globalState.globalStats.leakCache[i].pos.z, " ");
+		file.Write(worker->globalState->globalStats.leakCache[i].pos.x, " ");
+		file.Write(worker->globalState->globalStats.leakCache[i].pos.y, " ");
+		file.Write(worker->globalState->globalStats.leakCache[i].pos.z, " ");
 
-		file.Write(worker->globalState.globalStats.leakCache[i].dir.x, " ");
-		file.Write(worker->globalState.globalStats.leakCache[i].dir.y, " ");
-		file.Write(worker->globalState.globalStats.leakCache[i].dir.z, "\n");
+		file.Write(worker->globalState->globalStats.leakCache[i].dir.x, " ");
+		file.Write(worker->globalState->globalStats.leakCache[i].dir.y, " ");
+		file.Write(worker->globalState->globalStats.leakCache[i].dir.z, "\n");
 	}
 
 	file.Write("}\n");
@@ -1592,16 +1592,16 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	prg.SetMessage("Writing hit cache...");
 
 	file.Write("hits {\n");
-	file.Write("  nbHHit:"); file.Write((!crashSave && !saveSelected) ? worker->globalState.globalStats.hitCacheSize : 0, "\n");
-	for (int i = 0; (i < worker->globalState.globalStats.hitCacheSize) && (!crashSave && !saveSelected); i++) {
+	file.Write("  nbHHit:"); file.Write((!crashSave && !saveSelected) ? worker->globalState->globalStats.hitCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->globalState->globalStats.hitCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file.Write("  ");
 		file.Write(i, " ");
-		file.Write(worker->globalState.globalStats.hitCache[i].pos.x, " ");
-		file.Write(worker->globalState.globalStats.hitCache[i].pos.y, " ");
-		file.Write(worker->globalState.globalStats.hitCache[i].pos.z, " ");
+		file.Write(worker->globalState->globalStats.hitCache[i].pos.x, " ");
+		file.Write(worker->globalState->globalStats.hitCache[i].pos.y, " ");
+		file.Write(worker->globalState->globalStats.hitCache[i].pos.z, " ");
 
-		file.Write(worker->globalState.globalStats.hitCache[i].type, "\n");
+		file.Write(worker->globalState->globalStats.hitCache[i].type, "\n");
 	}
 
 	file.Write("}\n");
@@ -1618,7 +1618,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 	}
 
 	prg.SetMessage("Writing profiles...");
-	SaveProfileGEO(file, globState, -1, saveSelected, crashSave);
+	SaveProfileGEO(file, globalState, -1, saveSelected, crashSave);
 
 	///Save textures, for GEO file version 3+
 
@@ -1669,7 +1669,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 					size_t h = f->sh.texHeight;
 					size_t w = f->sh.texWidth;
 					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + (int)mApp->worker.interfaceMomentCache.size())) : 0;
-					const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
+					const std::vector<TextureCell>& texture = globalState->facetStates[i].momentResults[m].texture;
 
 					//char tmp[256];
 					sprintf(tmp, "texture_facet %zd {\n", k); //Starts from 1, not 0, first element is k=1
@@ -1701,7 +1701,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, Global
 * \param results simulation results describing the texture
 * \param saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState& globState, bool saveSelected) {
+void MolflowGeometry::SaveTXT(FileWriter& file, const std::shared_ptr<GlobalSimuState> globalState, bool saveSelected) {
 
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
@@ -1711,10 +1711,10 @@ void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState& globState, bool
 	// Globals
 
 	// Unused
-	file.Write(globState.globalStats.globalHits.nbMCHit, "\n");
-	file.Write(globState.globalStats.nbLeakTotal, "\n");
+	file.Write(globalState->globalStats.globalHits.nbMCHit, "\n");
+	file.Write(globalState->globalStats.nbLeakTotal, "\n");
 
-	file.Write(globState.globalStats.globalHits.nbDesorbed, "\n");
+	file.Write(globalState->globalStats.globalHits.nbDesorbed, "\n");
 	file.Write(0, "\n"); //Desorption limit
 
 	file.Write(sh.nbVertex, "\n");
@@ -1777,9 +1777,9 @@ void MolflowGeometry::SaveTXT(FileWriter& file, GlobalSimuState& globState, bool
 * \param sMode simulation mode
 */
 void
-MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuState& globState, bool saveSelected) {
+MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, const std::shared_ptr<GlobalSimuState> globalState, bool saveSelected) {
 
-	auto lock = GetHitLock(&(mApp->worker.globalState), 1000);
+	auto lock = GetHitLock(globalState.get(), 1000);
 	if (!lock) return;
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
@@ -1798,7 +1798,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 
 					char tmp[256];
 					char out[512];
-					if (!globState.initialized) return;
+					if (!globalState->initialized) return;
 					size_t nbMoments = mApp->worker.interfaceMomentCache.size();
 					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + nbMoments)) : 0;
 					size_t w = f->sh.texWidth;
@@ -1806,9 +1806,9 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, GlobalSimuSt
 					size_t tSize = w * h * sizeof(TextureCell);
 					size_t dSize = w * h * sizeof(DirectionCell);
 
-					const auto& facetSnapshot = globState.facetStates[fInd].momentResults[m];
-					const std::vector<TextureCell>& texture = globState.facetStates[fInd].momentResults[m].texture;
-					const std::vector<DirectionCell>& dirs = globState.facetStates[fInd].momentResults[m].direction;
+					const auto& facetSnapshot = globalState->facetStates[fInd].momentResults[m];
+					const std::vector<TextureCell>& texture = globalState->facetStates[fInd].momentResults[m].texture;
+					const std::vector<DirectionCell>& dirs = globalState->facetStates[fInd].momentResults[m].direction;
 
 					for (size_t r = 0; r < h; r++) {
 						for (size_t c = 0; c < w; c++) {
@@ -1985,7 +1985,7 @@ void MolflowGeometry::ExportProfiles(FILE* file, int isTXT, Worker* worker) {
 					double dCoef = 1.0;
 					//double nbDes = (shGHit->globalStats.hit.nbDesorbed > 0) ? (double)shGHit->globalStats.hit.nbDesorbed : 1.0;
 					size_t profOffset = PROFILE_SIZE * sizeof(ProfileSlice) * m;
-					const std::vector<ProfileSlice>& prof = worker->globalState.facetStates[i].momentResults[m].profile;
+					const std::vector<ProfileSlice>& prof = worker->globalState->facetStates[i].momentResults[m].profile;
 					double scaleX, scaleY;
 					switch (f->sh.profileType) {
 					case PROFILE_U:
@@ -2649,10 +2649,10 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 * \return bool if saving is successfull (always is here)
 */
 /*
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSimuState& globState, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, const std::shared_ptr<GlobalSimuState> globalState, GLProgress_Abstract& prg, bool saveSelected) { //scheduled to be removed
 	xml_node rootNode;
 	//Lock during writing
-	std::unique_lock<std::timed_mutex> lock(globState.particleLogMutex, std::chrono::seconds(10));
+	std::unique_lock<std::timed_mutex> lock(globalState->particleLogMutex, std::chrono::seconds(10));
 	if (!lock.owns_lock()) {
 		return false;
 	}
@@ -2689,38 +2689,38 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			xml_node globalNode = newMoment.append_child("Global");
 
 			xml_node hitsNode = globalNode.append_child("Hits");
-			hitsNode.append_attribute("totalHit") = globState.globalStats.globalHits.nbMCHit;
-			hitsNode.append_attribute("totalHitEquiv") = globState.globalStats.globalHits.nbHitEquiv;
-			hitsNode.append_attribute("totalDes") = globState.globalStats.globalHits.nbDesorbed;
-			hitsNode.append_attribute("totalAbsEquiv") = globState.globalStats.globalHits.nbAbsEquiv;
-			hitsNode.append_attribute("totalDist_total") = globState.globalStats.distTraveled_total;
-			hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalStats.distTraveledTotal_fullHitsOnly;
-			hitsNode.append_attribute("totalLeak") = globState.globalStats.nbLeakTotal;
+			hitsNode.append_attribute("totalHit") = globalState->globalStats.globalHits.nbMCHit;
+			hitsNode.append_attribute("totalHitEquiv") = globalState->globalStats.globalHits.nbHitEquiv;
+			hitsNode.append_attribute("totalDes") = globalState->globalStats.globalHits.nbDesorbed;
+			hitsNode.append_attribute("totalAbsEquiv") = globalState->globalStats.globalHits.nbAbsEquiv;
+			hitsNode.append_attribute("totalDist_total") = globalState->globalStats.distTraveled_total;
+			hitsNode.append_attribute("totalDist_fullHitsOnly") = globalState->globalStats.distTraveledTotal_fullHitsOnly;
+			hitsNode.append_attribute("totalLeak") = globalState->globalStats.nbLeakTotal;
 			hitsNode.append_attribute("maxDesorption") = work->model->otfParams.desorptionLimit;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-			hitCacheNode.append_attribute("nb") = work->globalState.globalStats.hitCacheSize;
+			hitCacheNode.append_attribute("nb") = work->globalState->globalStats.hitCacheSize;
 
-			for (int i = 0; i < work->globalState.globalStats.hitCacheSize; i++) {
+			for (int i = 0; i < work->globalState->globalStats.hitCacheSize; i++) {
 				xml_node newHit = hitCacheNode.append_child("Hit");
 				newHit.append_attribute("id") = i;
-				newHit.append_attribute("posX") = work->globalState.globalStats.hitCache[i].pos.x;
-				newHit.append_attribute("posY") = work->globalState.globalStats.hitCache[i].pos.y;
-				newHit.append_attribute("posZ") = work->globalState.globalStats.hitCache[i].pos.z;
-				newHit.append_attribute("type") = work->globalState.globalStats.hitCache[i].type;
+				newHit.append_attribute("posX") = work->globalState->globalStats.hitCache[i].pos.x;
+				newHit.append_attribute("posY") = work->globalState->globalStats.hitCache[i].pos.y;
+				newHit.append_attribute("posZ") = work->globalState->globalStats.hitCache[i].pos.z;
+				newHit.append_attribute("type") = work->globalState->globalStats.hitCache[i].type;
 			}
 
 			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-			leakCacheNode.append_attribute("nb") = work->globalState.globalStats.leakCacheSize;
-			for (int i = 0; i < work->globalState.globalStats.leakCacheSize; i++) {
+			leakCacheNode.append_attribute("nb") = work->globalState->globalStats.leakCacheSize;
+			for (int i = 0; i < work->globalState->globalStats.leakCacheSize; i++) {
 				xml_node newLeak = leakCacheNode.append_child("Leak");
 				newLeak.append_attribute("id") = i;
-				newLeak.append_attribute("posX") = work->globalState.globalStats.leakCache[i].pos.x;
-				newLeak.append_attribute("posY") = work->globalState.globalStats.leakCache[i].pos.y;
-				newLeak.append_attribute("posZ") = work->globalState.globalStats.leakCache[i].pos.z;
-				newLeak.append_attribute("dirX") = work->globalState.globalStats.leakCache[i].dir.x;
-				newLeak.append_attribute("dirY") = work->globalState.globalStats.leakCache[i].dir.y;
-				newLeak.append_attribute("dirZ") = work->globalState.globalStats.leakCache[i].dir.z;
+				newLeak.append_attribute("posX") = work->globalState->globalStats.leakCache[i].pos.x;
+				newLeak.append_attribute("posY") = work->globalState->globalStats.leakCache[i].pos.y;
+				newLeak.append_attribute("posZ") = work->globalState->globalStats.leakCache[i].pos.z;
+				newLeak.append_attribute("dirX") = work->globalState->globalStats.leakCache[i].dir.x;
+				newLeak.append_attribute("dirY") = work->globalState->globalStats.leakCache[i].dir.y;
+				newLeak.append_attribute("dirZ") = work->globalState->globalStats.leakCache[i].dir.z;
 			}
 		} //end global node
 
@@ -2732,7 +2732,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 		if (hasHistogram) {
 			xml_node histNode = newMoment.append_child("Histograms");
 			//Retrieve histogram map from hits dp
-			auto& globalHist = work->globalState.globalHistograms[m];
+			auto& globalHist = work->globalState->globalHistograms[m];
 			if (work->model->wp.globalHistogramParams.recordBounce) {
 				auto& nbHitsHistogram = globalHist.nbHitsHistogram;
 				xml_node hist = histNode.append_child("Bounces");
@@ -2788,7 +2788,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			newFacetResult.append_attribute("id") = i;
 
 			xml_node facetHitNode = newFacetResult.append_child("Hits");
-			const FacetHitBuffer& facetCounter = globState.facetStates[i].momentResults[m].hits;
+			const FacetHitBuffer& facetCounter = globalState->facetStates[i].momentResults[m].hits;
 			facetHitNode.append_attribute("nbHit") = facetCounter.nbMCHit;
 			facetHitNode.append_attribute("nbHitEquiv") = facetCounter.nbHitEquiv;
 			facetHitNode.append_attribute("nbDes") = facetCounter.nbDesorbed;
@@ -2821,8 +2821,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
 				profileNode.append_attribute("size") = PROFILE_SIZE;
-				const std::vector<ProfileSlice>& pr = globState.facetStates[i].momentResults[m].profile;
-				for (size_t p = 0; p < std::min(PROFILE_SIZE, globState.facetStates[i].momentResults[m].profile.size()); p++) {
+				const std::vector<ProfileSlice>& pr = globalState->facetStates[i].momentResults[m].profile;
+				for (size_t p = 0; p < std::min(PROFILE_SIZE, globalState->facetStates[i].momentResults[m].profile.size()); p++) {
 					xml_node slice = profileNode.append_child("Slice");
 					slice.append_attribute("id") = p;
 					slice.append_attribute("countEquiv") = pr[p].countEquiv;
@@ -2842,7 +2842,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 				textureNode.append_attribute("width") = f->sh.texWidth;
 				textureNode.append_attribute("height") = f->sh.texHeight;
 
-				const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
+				const std::vector<TextureCell>& texture = globalState->facetStates[i].momentResults[m].texture;
 				std::stringstream countText, sum1perText, sumvortText;
 				countText << '\n'; //better readability in file
 				sum1perText << std::setprecision(8) << '\n';
@@ -2871,7 +2871,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-				const std::vector<DirectionCell>& dirs = globState.facetStates[i].momentResults[m].direction;
+				const std::vector<DirectionCell>& dirs = globalState->facetStates[i].momentResults[m].direction;
 
 				std::stringstream dirText, dirCountText;
 				dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -2905,7 +2905,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, GlobalSi
 			if (hasHistogram) {
 				xml_node histNode = newFacetResult.append_child("Histograms");
 				//Retrieve histogram map from hits dp
-				auto& histogram = globState.facetStates[i].momentResults[m].histogram;
+				auto& histogram = globalState->facetStates[i].momentResults[m].histogram;
 				if (f->sh.facetHistogramParams.recordBounce) {
 					auto& nbHitsHistogram = histogram.nbHitsHistogram;
 					xml_node hist = histNode.append_child("Bounces");

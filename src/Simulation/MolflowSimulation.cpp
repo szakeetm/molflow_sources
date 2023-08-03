@@ -30,8 +30,8 @@ MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
 
     hasVolatile =  o.hasVolatile;
 
-    globStatePtr = o.globStatePtr;
-    globParticleLogPtr = o.globParticleLogPtr;
+    globalState = o.globalState;
+    globParticleLog = o.globParticleLog;
 
 }
 */
@@ -122,10 +122,10 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
         errLog.push_back(tmp);
     }
 
-    if(!globStatePtr){
+    if(!globalState){
         errLog.push_back("No global simulation state set\n");
     }
-    else if(!globStatePtr->initialized){
+    else if(!globalState->initialized){
         errLog.push_back("Global simulation state not initialized\n");
     }
 
@@ -141,7 +141,7 @@ int MolflowSimulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globStatePtr, AccelType::BVH, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globalState, AccelType::BVH, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particleTracer : particleTracers)

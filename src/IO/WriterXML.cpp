@@ -81,7 +81,7 @@ xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
     return rootNode;
 }
 
-void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model,
+void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model,
             GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave) {
     xml_node rootNode = GetRootNode(saveDoc);
 
@@ -313,11 +313,11 @@ bool XmlWriter::WriteXMLToFile(xml_document &saveDoc, const std::string &outputF
 }
 
 // Directly append to file (load + save)
-bool XmlWriter::AppendSimulationStateToFile(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
+bool XmlWriter::AppendSimulationStateToFile(const std::string& outputFileName, const std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState) {                                
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
-    SaveSimulationState(saveDoc, model, prg, globState);
+    SaveSimulationState(saveDoc, model, prg, globalState);
 
     if (!saveDoc.save_file(outputFileName.c_str())) {
         std::cerr << "Error writing XML file." << std::endl; //successful save
@@ -327,9 +327,9 @@ bool XmlWriter::AppendSimulationStateToFile(const std::string &outputFileName, s
 }
 
 // Append to open XML node
-bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, GlobalSimuState &globState) {
+bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState) {
 
-    auto lock = GetHitLock(&globState, 10000);
+    auto lock = GetHitLock(globalState.get(), 10000);
     if (!lock) return false;
 
     xml_node rootNode = GetRootNode(saveDoc);
@@ -357,38 +357,38 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
             xml_node globalNode = newMoment.append_child("Global");
 
             xml_node hitsNode = globalNode.append_child("Hits");
-            hitsNode.append_attribute("totalHit") = globState.globalStats.globalHits.nbMCHit;
-            hitsNode.append_attribute("totalHitEquiv") = globState.globalStats.globalHits.nbHitEquiv;
-            hitsNode.append_attribute("totalDes") = globState.globalStats.globalHits.nbDesorbed;
-            hitsNode.append_attribute("totalAbsEquiv") = globState.globalStats.globalHits.nbAbsEquiv;
-            hitsNode.append_attribute("totalDist_total") = globState.globalStats.distTraveled_total;
-            hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalStats.distTraveledTotal_fullHitsOnly;
-            hitsNode.append_attribute("totalLeak") = globState.globalStats.nbLeakTotal;
+            hitsNode.append_attribute("totalHit") = globalState->globalStats.globalHits.nbMCHit;
+            hitsNode.append_attribute("totalHitEquiv") = globalState->globalStats.globalHits.nbHitEquiv;
+            hitsNode.append_attribute("totalDes") = globalState->globalStats.globalHits.nbDesorbed;
+            hitsNode.append_attribute("totalAbsEquiv") = globalState->globalStats.globalHits.nbAbsEquiv;
+            hitsNode.append_attribute("totalDist_total") = globalState->globalStats.distTraveled_total;
+            hitsNode.append_attribute("totalDist_fullHitsOnly") = globalState->globalStats.distTraveledTotal_fullHitsOnly;
+            hitsNode.append_attribute("totalLeak") = globalState->globalStats.nbLeakTotal;
             hitsNode.append_attribute("maxDesorption") = model->otfParams.desorptionLimit;
 
             xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-            hitCacheNode.append_attribute("nb") = globState.globalStats.hitCacheSize;
+            hitCacheNode.append_attribute("nb") = globalState->globalStats.hitCacheSize;
 
-            for (size_t i = 0; i < globState.globalStats.hitCacheSize; i++) {
+            for (size_t i = 0; i < globalState->globalStats.hitCacheSize; i++) {
                 xml_node newHit = hitCacheNode.append_child("Hit");
                 newHit.append_attribute("id") = i;
-                newHit.append_attribute("posX") = globState.globalStats.hitCache[i].pos.x;
-                newHit.append_attribute("posY") = globState.globalStats.hitCache[i].pos.y;
-                newHit.append_attribute("posZ") = globState.globalStats.hitCache[i].pos.z;
-                newHit.append_attribute("type") = globState.globalStats.hitCache[i].type;
+                newHit.append_attribute("posX") = globalState->globalStats.hitCache[i].pos.x;
+                newHit.append_attribute("posY") = globalState->globalStats.hitCache[i].pos.y;
+                newHit.append_attribute("posZ") = globalState->globalStats.hitCache[i].pos.z;
+                newHit.append_attribute("type") = globalState->globalStats.hitCache[i].type;
             }
 
             xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-            leakCacheNode.append_attribute("nb") = globState.globalStats.leakCacheSize;
-            for (size_t i = 0; i < globState.globalStats.leakCacheSize; i++) {
+            leakCacheNode.append_attribute("nb") = globalState->globalStats.leakCacheSize;
+            for (size_t i = 0; i < globalState->globalStats.leakCacheSize; i++) {
                 xml_node newLeak = leakCacheNode.append_child("Leak");
                 newLeak.append_attribute("id") = i;
-                newLeak.append_attribute("posX") = globState.globalStats.leakCache[i].pos.x;
-                newLeak.append_attribute("posY") = globState.globalStats.leakCache[i].pos.y;
-                newLeak.append_attribute("posZ") = globState.globalStats.leakCache[i].pos.z;
-                newLeak.append_attribute("dirX") = globState.globalStats.leakCache[i].dir.x;
-                newLeak.append_attribute("dirY") = globState.globalStats.leakCache[i].dir.y;
-                newLeak.append_attribute("dirZ") = globState.globalStats.leakCache[i].dir.z;
+                newLeak.append_attribute("posX") = globalState->globalStats.leakCache[i].pos.x;
+                newLeak.append_attribute("posY") = globalState->globalStats.leakCache[i].pos.y;
+                newLeak.append_attribute("posZ") = globalState->globalStats.leakCache[i].pos.z;
+                newLeak.append_attribute("dirX") = globalState->globalStats.leakCache[i].dir.x;
+                newLeak.append_attribute("dirY") = globalState->globalStats.leakCache[i].dir.y;
+                newLeak.append_attribute("dirZ") = globalState->globalStats.leakCache[i].dir.z;
             }
         } //end global node
 
@@ -400,7 +400,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
         if (hasHistogram) {
             xml_node histNode = newMoment.append_child("Histograms");
             //Retrieve histogram map from hits dp
-            auto &globalHist = globState.globalHistograms[m];
+            auto &globalHist = globalState->globalHistograms[m];
             if (model->wp.globalHistogramParams.recordBounce) {
                 auto &nbHitsHistogram = globalHist.nbHitsHistogram;
                 xml_node hist = histNode.append_child("Bounces");
@@ -464,7 +464,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
 
             xml_node facetHitNode = newFacetResult.append_child("Hits");
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + sFac.sh.hitOffset + m * sizeof(FacetHitBuffer));
-            const auto &facetCounter = globState.facetStates[sFac.globalId].momentResults[m].hits;
+            const auto &facetCounter = globalState->facetStates[sFac.globalId].momentResults[m].hits;
 
             facetHitNode.append_attribute("nbHit") = facetCounter.nbMCHit;
             facetHitNode.append_attribute("nbHitEquiv") = facetCounter.nbHitEquiv;
@@ -499,7 +499,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
                 xml_node profileNode = newFacetResult.append_child("Profile");
                 profileNode.append_attribute("size") = PROFILE_SIZE;
                 //ProfileSlice *pr = (ProfileSlice *)(buffer + sFac.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
-                const auto &pr = globState.facetStates[sFac.globalId].momentResults[m].profile;
+                const auto &pr = globalState->facetStates[sFac.globalId].momentResults[m].profile;
 
                 for (int p = 0; p < PROFILE_SIZE; p++) {
                     xml_node slice = profileNode.append_child("Slice");
@@ -520,7 +520,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
                 textureNode.append_attribute("height") = sFac.sh.texHeight;
 
                 //TextureCell *texture = (TextureCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
-                const auto &texture = globState.facetStates[sFac.globalId].momentResults[m].texture;
+                const auto &texture = globalState->facetStates[sFac.globalId].momentResults[m].texture;
 
                 std::stringstream countText, sum1perText, sumvortText;
                 countText << '\n'; //better readability in file
@@ -548,7 +548,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
                 dirNode.append_attribute("width") = sFac.sh.texWidth;
                 dirNode.append_attribute("height") = sFac.sh.texHeight;
 
-                const auto &dirs = globState.facetStates[sFac.globalId].momentResults[m].direction;
+                const auto &dirs = globalState->facetStates[sFac.globalId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
                 dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -578,7 +578,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Molfl
             if (hasFHistogram) {
                 xml_node histNode = newFacetResult.append_child("Histograms");
                 //Retrieve histogram map from hits dp
-                auto &histogram = globState.facetStates[sFac.globalId].momentResults[m].histogram;
+                auto &histogram = globalState->facetStates[sFac.globalId].momentResults[m].histogram;
                 if (sFac.sh.facetHistogramParams.recordBounce) {
                     auto &nbHitsHistogram = histogram.nbHitsHistogram;
                     xml_node hist = histNode.append_child("Bounces");

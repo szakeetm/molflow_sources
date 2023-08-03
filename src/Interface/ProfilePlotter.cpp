@@ -357,7 +357,7 @@ void ProfilePlotter::refreshViews() {
 
 	// Lock during update
 	if (!worker->ReloadIfNeeded()) return;
-	auto lock = GetHitLock(&worker->globalState, 10000);
+	auto lock = GetHitLock(worker->globalState.get(), 10000);
 	if (!lock) return;
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
@@ -373,7 +373,7 @@ void ProfilePlotter::refreshViews() {
 			InterfaceFacet *f = geom->GetFacet(v->userData1);
 
 			v->Reset();
-			const std::vector<ProfileSlice>& profile = worker->globalState.facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
+			const std::vector<ProfileSlice>& profile = worker->globalState->facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
 
 		if (worker->globalStatCache.globalHits.nbDesorbed > 0){
 
@@ -468,14 +468,14 @@ void ProfilePlotter::refreshViews() {
 				for (size_t j = 0; j < nb; j++) {
 					InterfaceFacet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
-					    const FacetHitBuffer& fCount = worker->globalState.facetStates[j].momentResults[worker->displayedMoment].hits;
+					    const FacetHitBuffer& fCount = worker->globalState->facetStates[j].momentResults[worker->displayedMoment].hits;
 						double z = geom->GetVertex(f->indices[0])->z;
 						v->Add(z,fCount.nbAbsEquiv / worker->globalStatCache.globalHits.nbDesorbed, false);
 					}
 				}
 				// Last
 				InterfaceFacet *f = geom->GetFacet(28);
-                const FacetHitBuffer& fCount = worker->globalState.facetStates[28].momentResults[worker->displayedMoment].hits;
+                const FacetHitBuffer& fCount = worker->globalState->facetStates[28].momentResults[worker->displayedMoment].hits;
 				double fnbAbs = fCount.nbAbsEquiv;
 				v->Add(1000.0, fnbAbs / worker->globalStatCache.globalHits.nbDesorbed, false);
 				v->CommitChange();

@@ -334,8 +334,8 @@ std::vector<SelectionGroup> XmlLoader::LoadSelections(const std::string& inputFi
 
 */
 
-int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
-                                   GlobalSimuState *globState, GLProgress_Abstract& prg) {
+int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::shared_ptr<MolflowSimulationModel> model,
+    const std::shared_ptr<GlobalSimuState> globalState, GLProgress_Abstract& prg) {
 
     try {
         xml_document loadXML;
@@ -351,7 +351,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
         if (!rootNode.child("MolflowResults"))
             return 1; //simu state not saved with file
 
-        auto lock = GetHitLock(globState, 10000);
+        auto lock = GetHitLock(globalState.get(), 10000);
         if (!lock) return 1;
 
         xml_node resultNode = rootNode.child("MolflowResults");
@@ -365,64 +365,64 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                 prg.SetMessage(fmt::format("Loading global results...",m));
                 xml_node globalNode = newMoment.child("Global");
                 xml_node hitsNode = globalNode.child("Hits");
-                globState->globalStats.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+                globalState->globalStats.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
                 if (hitsNode.attribute("totalHitEquiv")) {
-                    globState->globalStats.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+                    globalState->globalStats.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
                 } else {
                     //Backward compatibility
-                    globState->globalStats.globalHits.nbHitEquiv = static_cast<double>(globState->globalStats.globalHits.nbMCHit);
+                    globalState->globalStats.globalHits.nbHitEquiv = static_cast<double>(globalState->globalStats.globalHits.nbMCHit);
                 }
-                globState->globalStats.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+                globalState->globalStats.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
                 if (hitsNode.attribute("totalAbsEquiv")) {
-                    globState->globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+                    globalState->globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
                 } else {
                     //Backward compatibility
-                    globState->globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+                    globalState->globalStats.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
                 }
                 if (hitsNode.attribute(
                         "totalDist_total")) { //if it's in the new format where total/partial are separated
-                    globState->globalStats.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
-                    globState->globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
+                    globalState->globalStats.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+                    globalState->globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
                             "totalDist_fullHitsOnly").as_double();
                 } else
-                    globState->globalStats.distTraveled_total = globState->globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
+                    globalState->globalStats.distTraveled_total = globalState->globalStats.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
                             "totalDist").as_double();
-                globState->globalStats.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+                globalState->globalStats.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
                 //work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
 
-                globState->globalStats.hitCacheSize = 0;
+                globalState->globalStats.hitCacheSize = 0;
                 xml_node hitCacheNode = globalNode.child("Hit_Cache");
                 for (xml_node newHit: hitCacheNode.children("Hit")) {
-                    if (globState->globalStats.hitCacheSize < HITCACHESIZE) {
-                        globState->globalStats.hitCache[globState->globalStats.hitCacheSize].pos.x = newHit.attribute(
+                    if (globalState->globalStats.hitCacheSize < HITCACHESIZE) {
+                        globalState->globalStats.hitCache[globalState->globalStats.hitCacheSize].pos.x = newHit.attribute(
                                 "posX").as_double();
-                        globState->globalStats.hitCache[globState->globalStats.hitCacheSize].pos.y = newHit.attribute(
+                        globalState->globalStats.hitCache[globalState->globalStats.hitCacheSize].pos.y = newHit.attribute(
                                 "posY").as_double();
-                        globState->globalStats.hitCache[globState->globalStats.hitCacheSize].pos.z = newHit.attribute(
+                        globalState->globalStats.hitCache[globalState->globalStats.hitCacheSize].pos.z = newHit.attribute(
                                 "posZ").as_double();
-                        globState->globalStats.hitCache[globState->globalStats.hitCacheSize].type = newHit.attribute(
+                        globalState->globalStats.hitCache[globalState->globalStats.hitCacheSize].type = newHit.attribute(
                                 "type").as_int();
-                        globState->globalStats.hitCacheSize++;
+                        globalState->globalStats.hitCacheSize++;
                     }
                 }
 
-                globState->globalStats.leakCacheSize = 0;
+                globalState->globalStats.leakCacheSize = 0;
                 xml_node leakCacheNode = globalNode.child("Leak_Cache");
                 for (xml_node newLeak: leakCacheNode.children("Leak")) {
-                    if (globState->globalStats.leakCacheSize < LEAKCACHESIZE) {
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].pos.x = newLeak.attribute(
+                    if (globalState->globalStats.leakCacheSize < LEAKCACHESIZE) {
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].pos.x = newLeak.attribute(
                                 "posX").as_double();
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].pos.y = newLeak.attribute(
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].pos.y = newLeak.attribute(
                                 "posY").as_double();
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].pos.z = newLeak.attribute(
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].pos.z = newLeak.attribute(
                                 "posZ").as_double();
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].dir.x = newLeak.attribute(
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].dir.x = newLeak.attribute(
                                 "dirX").as_double();
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].dir.y = newLeak.attribute(
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].dir.y = newLeak.attribute(
                                 "dirY").as_double();
-                        globState->globalStats.leakCache[globState->globalStats.leakCacheSize].dir.z = newLeak.attribute(
+                        globalState->globalStats.leakCache[globalState->globalStats.leakCacheSize].dir.z = newLeak.attribute(
                                 "dirZ").as_double();
-                        globState->globalStats.leakCacheSize++;
+                        globalState->globalStats.leakCacheSize++;
                     }
                 }
             } //end global node
@@ -437,7 +437,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                 xml_node histNode = newMoment.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
-                    auto &globalHistogram = globState->globalHistograms[m];
+                    auto &globalHistogram = globalState->globalHistograms[m];
                     if (model->wp.globalHistogramParams.recordBounce) {
                         auto &nbHitsHistogram = globalHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
@@ -516,31 +516,31 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                 auto sFac = model->facets[facetId];
                 xml_node facetHitNode = newFacetResult.child("Hits");
                 //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
-                FacetHitBuffer *facetCounter = &globState->facetStates[facetId].momentResults[m].hits;
+                FacetHitBuffer& facetCounter = globalState->facetStates[facetId].momentResults[m].hits;
                 if (facetHitNode) { //If there are hit results for the current moment
-                    facetCounter->nbMCHit = facetHitNode.attribute("nbHit").as_llong();
+                    facetCounter.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
                     if (facetHitNode.attribute("nbHitEquiv")) {
-                        facetCounter->nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
+                        facetCounter.nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
                     } else {
                         //Backward compatibility
-                        facetCounter->nbHitEquiv = static_cast<double>(facetCounter->nbMCHit);
+                        facetCounter.nbHitEquiv = static_cast<double>(facetCounter.nbMCHit);
                     }
-                    facetCounter->nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+                    facetCounter.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
                     if (facetHitNode.attribute("nbAbsEquiv")) {
-                        facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
+                        facetCounter.nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
                     } else {
                         //Backward compatibility
-                        facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+                        facetCounter.nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
                     }
-                    facetCounter->sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
-                    facetCounter->sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+                    facetCounter.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+                    facetCounter.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
                     if (facetHitNode.attribute("sum_v")) {
-                        facetCounter->sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
+                        facetCounter.sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
                     } else {
                         //Backward compatibility
-                        facetCounter->sum_1_per_velocity =
-                                4.0 * Square(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) /
-                                facetCounter->sum_1_per_ort_velocity;
+                        facetCounter.sum_1_per_velocity =
+                                4.0 * Square(facetCounter.nbHitEquiv + static_cast<double>(facetCounter.nbDesorbed)) /
+                                facetCounter.sum_1_per_ort_velocity;
                     }
                     auto forcesNode = newFacetResult.child("Forces");
 
@@ -548,56 +548,56 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
 
                         auto impulseNode = forcesNode.child("Impulse");
                         if (impulseNode) {
-                            facetCounter->impulse = Vector3d(
+                            facetCounter.impulse = Vector3d(
                                 impulseNode.attribute("x").as_double(),
                                 impulseNode.attribute("y").as_double(),
                                 impulseNode.attribute("z").as_double()
                             );
                         }
                         else {
-                            facetCounter->impulse = Vector3d(0.0, 0.0, 0.0);
+                            facetCounter.impulse = Vector3d(0.0, 0.0, 0.0);
                         }
                         auto impulse_sqr_Node = forcesNode.child("Impulse_square");
                         if (impulse_sqr_Node) {
-                            facetCounter->impulse_square = Vector3d(
+                            facetCounter.impulse_square = Vector3d(
                                 impulse_sqr_Node.attribute("x").as_double(),
                                 impulse_sqr_Node.attribute("y").as_double(),
                                 impulse_sqr_Node.attribute("z").as_double()
                             );
                         }
                         else {
-                            facetCounter->impulse_square = Vector3d(0.0, 0.0, 0.0);
+                            facetCounter.impulse_square = Vector3d(0.0, 0.0, 0.0);
                         }
                         auto impulse_momentum_Node = forcesNode.child("Impulse_momentum");
                         if (impulse_momentum_Node) {
-                            facetCounter->impulse_momentum = Vector3d(
+                            facetCounter.impulse_momentum = Vector3d(
                                 impulse_momentum_Node.attribute("x").as_double(),
                                 impulse_momentum_Node.attribute("y").as_double(),
                                 impulse_momentum_Node.attribute("z").as_double()
                             );
                         }
                         else {
-                            facetCounter->impulse_momentum = Vector3d(0.0, 0.0, 0.0);
+                            facetCounter.impulse_momentum = Vector3d(0.0, 0.0, 0.0);
                         }
                     }
 
                     // Do this after XML load
                     /*if (loadModel->displayedMoment == m) { //For immediate display in facet hits list and facet counter
-                        facet.facetHitCache.hit = facetCounter->hit;
+                        facet.facetHitCache.hit = facetCounter.hit;
                     }*/
                 } else { //No hit information, so set to 0
-					facetCounter->nbMCHit =
-						facetCounter->nbDesorbed =
+					facetCounter.nbMCHit =
+						facetCounter.nbDesorbed =
 						0;
-					facetCounter->sum_v_ort =
-						facetCounter->nbHitEquiv =
-						facetCounter->sum_1_per_ort_velocity =
-						facetCounter->sum_1_per_velocity =
-						facetCounter->nbAbsEquiv =
+					facetCounter.sum_v_ort =
+						facetCounter.nbHitEquiv =
+						facetCounter.sum_1_per_ort_velocity =
+						facetCounter.sum_1_per_velocity =
+						facetCounter.nbAbsEquiv =
 						0.0;
-					facetCounter->impulse =
-                        facetCounter->impulse_square =
-                        facetCounter->impulse_momentum =
+					facetCounter.impulse =
+                        facetCounter.impulse_square =
+                        facetCounter.impulse_momentum =
                         Vector3d(0.0, 0.0, 0.0);
                 }
 
@@ -605,7 +605,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                 if (sFac->sh.isProfile) {
                     xml_node profileNode = newFacetResult.child("Profile");
                     //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
-                    std::vector<ProfileSlice> &profilePtr = globState->facetStates[facetId].momentResults[m].profile;
+                    std::vector<ProfileSlice> &profilePtr = globalState->facetStates[facetId].momentResults[m].profile;
 
                     size_t id = 0;
                     for (xml_node slice: profileNode.children("Slice")) {
@@ -627,7 +627,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                     size_t texWidth_file = textureNode.attribute("width").as_llong();
                     size_t texHeight_file = textureNode.attribute("height").as_llong();
 
-                    std::vector<TextureCell> &texture = globState->facetStates[facetId].momentResults[m].texture;
+                    std::vector<TextureCell> &texture = globalState->facetStates[facetId].momentResults[m].texture;
 
                     std::stringstream countText, sum1perText, sumvortText;
                     if (textureNode.child("countEquiv")) {
@@ -685,7 +685,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
 
                     }
                     
-                    std::vector<DirectionCell> &dirs = globState->facetStates[facetId].momentResults[m].direction;
+                    std::vector<DirectionCell> &dirs = globalState->facetStates[facetId].momentResults[m].direction;
 
                     std::stringstream dirText, dirCountText;
                     dirText << dirNode.child_value("vel.vectors");
@@ -714,7 +714,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, std::shared
                     xml_node histNode = newFacetResult.child("Histograms");
                     if (histNode) { //Versions before 2.8 didn't save histograms
                         //Retrieve histogram map from hits dp
-                        auto &facetHistogram = globState->facetStates[facetId].momentResults[m].histogram;
+                        auto &facetHistogram = globalState->facetStates[facetId].momentResults[m].histogram;
                         if (sFac->sh.facetHistogramParams.recordBounce) {
                             auto &nbHitsHistogram = facetHistogram.nbHitsHistogram;
                             xml_node hist = histNode.child("Bounces");

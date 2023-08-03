@@ -22,6 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Buffer_shared.h"
 #include "Simulation/MolflowSimGeom.h"
 #include <Helper/MathTools.h>
+#include <fmt/core.h>
 #include <cfloat> // DBL_EPSILON
 #include <sstream>
 #include <fstream>
@@ -73,15 +74,15 @@ namespace FlowIO {
 
     static const char *ynStr[] = {"No", "Yes"};
 
-    double GetMoleculesPerTP(size_t moment, MolflowSimulationModel *modelPtr,
-                             GlobalSimuState* globPtr) {
-        if (globPtr->globalStats.globalHits.nbDesorbed == 0)
+    double GetMoleculesPerTP(size_t moment, const std::shared_ptr<MolflowSimulationModel> model,
+        const std::shared_ptr<GlobalSimuState> globalState) {
+        if (globalState->globalStats.globalHits.nbDesorbed == 0)
             return 0; // avoid division by 0
         if (moment == 0) {
             // Constant flow
             // Each test particle represents a certain real molecule influx per second
-            return modelPtr->wp.finalOutgassingRate /
-                   (double)globPtr->globalStats.globalHits.nbDesorbed;
+            return model->wp.finalOutgassingRate /
+                   (double)globalState->globalStats.globalHits.nbDesorbed;
         } else {
             // Time-dependent mode
             // Each test particle represents a certain absolute number of real
@@ -90,8 +91,8 @@ namespace FlowIO {
             // if dt=0.1s, we have collected only 1/10th of what would happen during a
             // second. Hence we DIVIDE by the time window length, even if it's
             // uninuitional.
-            return (modelPtr->wp.totalDesorbedMolecules / modelPtr->tdParams.moments[moment - 1].window) /
-                   (double)globPtr->globalStats.globalHits.nbDesorbed;
+            return (model->wp.totalDesorbedMolecules / model->tdParams.moments[moment - 1].window) /
+                   (double)globalState->globalStats.globalHits.nbDesorbed;
         }
     }
 
@@ -165,17 +166,17 @@ namespace FlowIO {
  * \param mode which kind of value has to be evaluated and printed
  * \return char pointer taking a string with the count value(s)
  */
-    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState* globPtr,
-                                        MolflowSimulationModel* modelPtr) {
+    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model) {
         std::string ret;
 
         // Maybe validate globsimustate/model sanity (same nb facets etc) before
-        if (modelPtr->facets.size() <= idx || globPtr->facetStates.size() <= idx)
+        if (model->facets.size() <= idx || globalState->facetStates.size() <= idx)
             return ret;
 
-        auto *facet = modelPtr->facets[idx].get();
+        auto *facet = model->facets[idx].get();
         auto moment = 0;
-        auto &fHit = globPtr->facetStates[idx].momentResults[moment].hits;
+        auto &fHit = globalState->facetStates[idx].momentResults[moment].hits;
 
         switch (mode) {
             case FDetail::F_ID:
@@ -268,7 +269,7 @@ namespace FlowIO {
                 break;
             case FDetail::F_PLANARITY: {
                 // Facet planarity
-                Vector3d p0 = modelPtr->vertices3[facet->indices[0]];
+                Vector3d p0 = model->vertices3[facet->indices[0]];
                 double A = facet->sh.N.x;
                 double B = facet->sh.N.y;
                 double C = facet->sh.N.z;
@@ -277,7 +278,7 @@ namespace FlowIO {
                 double planarityError = 0.0;
                 for (size_t i = 3; i < facet->sh.nbIndex;
                      i++) { // First 3 vertices are by def on a plane
-                    const Vector3d &p = modelPtr->vertices3[facet->indices[i]];
+                    const Vector3d &p = model->vertices3[facet->indices[i]];
                     double d = A * p.x + B * p.y + C * p.z + D;
                     planarityError = std::max(abs(d), planarityError);
                 }
@@ -290,7 +291,7 @@ namespace FlowIO {
             case FDetail::F_IMPINGEMENT: // imp.rate
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+                        1E4 * GetMoleculesPerTP(moment, model, globalState); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
                 ret = fmt::format("{}", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
                 // 11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
                 break;
@@ -298,7 +299,7 @@ namespace FlowIO {
             case FDetail::F_DENSITY1P: // particle density
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
+                        1E4 * GetMoleculesPerTP(moment, model, globalState) *
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
@@ -309,19 +310,19 @@ namespace FlowIO {
             case FDetail::F_DENSITYKGP: // gas density
             {
                 double dCoef =
-                        1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
+                        1E4 * GetMoleculesPerTP(moment, model, globalState) *
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
                 ret = fmt::format("{}",
                         fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef *
-                        modelPtr->wp.gasMass / 1000.0 / 6E23);
+                        model->wp.gasMass / 1000.0 / 6E23);
                 break;
             }
             case FDetail::F_PRESSURE: // avg.pressure
             {
-                double dCoef = 1E4 * GetMoleculesPerTP(moment, modelPtr, globPtr) *
-                               (modelPtr->wp.gasMass / 1000 / 6E23) *
+                double dCoef = 1E4 * GetMoleculesPerTP(moment, model, globalState) *
+                               (model->wp.gasMass / 1000 / 6E23) *
                                0.0100; // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
                 ret = fmt::format("{}", fHit.sum_v_ort * dCoef / GetArea(*facet));
@@ -371,10 +372,11 @@ namespace FlowIO {
     std::string
     CSVExporter::GetLineForFacet(size_t idx,
                                  const std::vector<FDetail> &selectedValues,
-                                 GlobalSimuState* globPtr, MolflowSimulationModel* model) {
+        const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model) {
         std::string buffer;
         for (auto &mode: selectedValues) {
-            buffer.append(FormatCell(mode, idx, globPtr, model));
+            buffer.append(FormatCell(mode, idx, globalState, model));
             buffer.append(",");
         }
         if (!selectedValues.empty() && !buffer.empty())
@@ -383,20 +385,20 @@ namespace FlowIO {
         return buffer;
     }
 
-    std::string CSVExporter::GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState* globPtr,
-                                                MolflowSimulationModel* model) {
+    std::string CSVExporter::GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model) {
         std::string buffer;
         buffer.append(GetHeader(selectedValues));
         for (int idx = 0; idx < model->facets.size(); ++idx) {
-            buffer.append(GetLineForFacet(idx, selectedValues, globPtr, model));
+            buffer.append(GetLineForFacet(idx, selectedValues, globalState, model));
             buffer.append("\n");
         }
 
         return buffer;
     }
 
-    int CSVExporter::ExportAllFacetDetails(const std::string &fileName, GlobalSimuState* globPtr,
-                                           MolflowSimulationModel* model) {
+    int CSVExporter::ExportAllFacetDetails(const std::string &fileName, const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model) {
 
 // Generate list of all modes
         std::vector<FDetail> selectedValues;
@@ -405,7 +407,7 @@ namespace FlowIO {
             selectedValues.push_back(entry.first);
         }
         std::sort(selectedValues.begin(), selectedValues.end());
-        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globPtr, model);
+        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globalState, model);
 
         try {
             std::ofstream ofs(fileName);
@@ -419,8 +421,8 @@ namespace FlowIO {
         return 0;
     }
 
-    int CSVExporter::ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState* globPtr,
-                                                       MolflowSimulationModel* model) {
+    int CSVExporter::ExportPhysicalQuantitiesForFacets(const std::string &fileName, const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model) {
 
         // Generate list of all physical modes
         std::vector<FDetail> selectedValues;
@@ -431,7 +433,7 @@ namespace FlowIO {
         selectedValues.push_back(FDetail::F_DENSITYKGP);
         selectedValues.push_back(FDetail::F_AVGSPEED);
 
-        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globPtr, model);
+        std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, globalState, model);
 
         try {
             std::ofstream ofs(fileName);
@@ -463,26 +465,28 @@ namespace FlowIO {
         return n_elements;
     }
 
-    void Exporter::export_facet_details(GlobalSimuState* glob, MolflowSimulationModel* model, std::string& workPath){
+    void Exporter::export_facet_details(const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model, std::string& workPath){
         //Could use SettingsIO::outputFile instead of fixed name
         //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
         std::string csvFile = "facet_details.csv";
         csvFile = std::filesystem::path(workPath).append(csvFile).string();
 
-        if (FlowIO::CSVExporter::ExportAllFacetDetails(csvFile, glob, model)) {
+        if (FlowIO::CSVExporter::ExportAllFacetDetails(csvFile, globalState, model)) {
             Log::console_error("Could not write facet details to CSV file {}\n", csvFile);
         } else {
             Log::console_msg_master(3, "Successfully wrote facet details to CSV file {}\n", csvFile);
         }
     }
 
-    void Exporter::export_facet_quantities(GlobalSimuState* glob, MolflowSimulationModel* model, std::string& workPath){
+    void Exporter::export_facet_quantities(const std::shared_ptr<GlobalSimuState> globalState,
+        const std::shared_ptr<MolflowSimulationModel> model, std::string& workPath){
         //Could use SettingsIO::outputFile instead of fixed name
         //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
         std::string csvFile = "facet_physics.csv";
         csvFile = std::filesystem::path(workPath).append(csvFile).string();
 
-        if (FlowIO::CSVExporter::ExportPhysicalQuantitiesForFacets(csvFile, glob, model)) {
+        if (FlowIO::CSVExporter::ExportPhysicalQuantitiesForFacets(csvFile, globalState, model)) {
             Log::console_error("Could not write facet quantities to CSV file {}\n", csvFile);
         } else {
             Log::console_msg_master(3, "Successfully wrote facet quantities to CSV file {}\n", csvFile);

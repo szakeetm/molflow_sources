@@ -1395,8 +1395,8 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		//ClearFacetParams();
-		//nbDesStart = worker.globalState.globalStats.globalStats.hit.nbDesorbed;
-		//nbHitStart = worker.globalState.globalStats.globalStats.hit.nbMC;
+		//nbDesStart = worker.globalState->globalStats.globalStats.hit.nbDesorbed;
+		//nbHitStart = worker.globalState->globalStats.globalStats.hit.nbMC;
 		AddRecent(filePath);
 		geom->viewStruct = -1;
 
@@ -1911,7 +1911,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		ResetSimulation(false);
 		return;
 	}
-	//worker.globalState.globalStats.globalStats.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
+	//worker.globalState->globalStats.globalStats.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetCurrentFileName("");
 	nbDesStart = 0;

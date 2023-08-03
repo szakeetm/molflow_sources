@@ -18,12 +18,12 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_CSVEXPORTER_H
-#define MOLFLOW_PROJ_CSVEXPORTER_H
+#pragma once
 
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <memory>
 
 class GlobalSimuState;
 class MolflowSimulationModel;
@@ -64,32 +64,30 @@ namespace FlowIO {
     };
 
     struct CSVExporter {
-        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState* globPtr, MolflowSimulationModel* model);
+        static std::string FormatCell(FDetail mode, size_t idx, const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> model);
 
         static std::string
-        GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, GlobalSimuState* globPtr,
-                        MolflowSimulationModel* model);
+        GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,
+            const std::shared_ptr<MolflowSimulationModel> model);
 
-        static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState* globPtr,
-                                              MolflowSimulationModel* model);
+        static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,
+                                              const std::shared_ptr<MolflowSimulationModel> model);
 
         static std::string
         GetHeader(const std::vector<FDetail> &selectedValues);
 
-        static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState* globPtr, MolflowSimulationModel* model);
+        static int ExportAllFacetDetails(const std::string &fileName, const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> model);
 
         static int
-        ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState* globPtr, MolflowSimulationModel* model);
+        ExportPhysicalQuantitiesForFacets(const std::string &fileName, const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> model);
 
         static int ValidateCSVFile(const std::string &fileName);
     };
 
     // export utility functions
     struct Exporter {
-        static void export_facet_details(GlobalSimuState* globPtr, MolflowSimulationModel* model, std::string& workPath);
+        static void export_facet_details(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> mode, std::string& workPath);
 
-        static void export_facet_quantities(GlobalSimuState* globPtr, MolflowSimulationModel* model, std::string& workPath);
+        static void export_facet_quantities(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> mode, std::string& workPath);
     };
 }
-
-#endif //MOLFLOW_PROJ_CSVEXPORTER_H

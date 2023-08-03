@@ -217,7 +217,7 @@ void PressureEvolution::refreshChart() {
 
 	// Lock during update
 	if (!worker->ReloadIfNeeded()) return;
-	auto lock = GetHitLock(&worker->globalState, 10000);
+	auto lock = GetHitLock(worker->globalState.get(), 10000);
 	if (!lock) return;
 
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
@@ -234,7 +234,7 @@ void PressureEvolution::refreshChart() {
 			InterfaceFacet *f = geom->GetFacet(v->userData1);
 			v->Reset();
 
-			auto& facetHits = worker->globalState.facetStates[v->userData1].momentResults;
+			auto& facetHits = worker->globalState->facetStates[v->userData1].momentResults;
 			
 			for (size_t i = 0; i < displayModes.size(); i++) {
 				yScaleCombo->SetValueAt(i, displayModes[i]);

@@ -44,7 +44,7 @@ public:
 	// Load
 	void LoadGEO(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker);
 	void LoadSYN(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker);
-	bool LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, GlobalSimuState &globState, int version);
+	bool LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, int version);
 	//void ImportDesorption_DES(FileReader& file); //Deprecated
 	void ImportDesorption_SYN(FileReader& synFile, const size_t source, const double time,
 		const size_t mode, const double eta0, const double alpha, const double cutoffdose,
@@ -57,23 +57,19 @@ public:
 	void InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool newStr);
 
 	// Save
-	void SaveTXT(FileWriter& file, GlobalSimuState &globState, bool saveSelected);
-	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected);
+	void SaveTXT(FileWriter& file, const std::shared_ptr<GlobalSimuState> globalState, bool saveSelected);
+	void ExportTextures(FILE *file, int grouping, int mode, const std::shared_ptr<GlobalSimuState> globalState, bool saveSelected);
 	void ExportProfiles(FILE *file, int isTXT, Worker *worker);
-	void SaveGEO(FileWriter& file, GLProgress_Abstract& prg, GlobalSimuState &globState, Worker *worker,
+	void SaveGEO(FileWriter& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
-	//void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress_Abstract& prg, bool saveSelected);
-	//bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress_Abstract& prg, bool saveSelected);
-	//void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr);
-	//bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress_Abstract& prg);
-    bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
+	bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
                               const std::string &fileName_out, double cmpThreshold) override;
 	// Geometry
     void     BuildPipe(double L, double R, double s, int step);
     void     BuildPrisma(double L, double R, double angle, double s, int step);
-	void     LoadProfileGEO(FileReader& file, GlobalSimuState &globState, int version);
+	void     LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version);
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
@@ -92,7 +88,7 @@ public:
 	
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture);
+	void BuildFacetTextures(const std::shared_ptr<GlobalSimuState> globalState, bool renderRegularTexture, bool renderDirectionTexture);
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
@@ -103,6 +99,6 @@ public:
 private:
 
 	void InsertSYNGeom(FileReader& file, size_t strIdx = 0, bool newStruct = false);
-	void SaveProfileGEO(FileWriter& file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
+	void SaveProfileGEO(FileWriter& file, const std::shared_ptr<GlobalSimuState> globalState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };

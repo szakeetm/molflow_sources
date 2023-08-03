@@ -35,14 +35,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 using namespace MFSim;
 
-bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, 
+bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, size_t nbMoments, 
     std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
 
     statusMutex.lock();
     myStatus = "Waiting to access global hit counter...";
     statusMutex.unlock();
 
-    auto lock = GetHitLock(&globSimuState, timeout_ms);
+    auto lock = GetHitLock(globalState.get(), timeout_ms);
     if (!lock) return false;
 
     statusMutex.lock();
@@ -50,41 +50,41 @@ bool ParticleTracer::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMomen
     statusMutex.unlock();
 
     //Global hits
-    globSimuState.globalStats.globalHits += tmpState.globalStats.globalHits;
-    globSimuState.globalStats.distTraveled_total += tmpState.globalStats.distTraveled_total;
-    globSimuState.globalStats.distTraveledTotal_fullHitsOnly += tmpState.globalStats.distTraveledTotal_fullHitsOnly;
+    globalState->globalStats.globalHits += tmpState.globalStats.globalHits;
+    globalState->globalStats.distTraveled_total += tmpState.globalStats.distTraveled_total;
+    globalState->globalStats.distTraveledTotal_fullHitsOnly += tmpState.globalStats.distTraveledTotal_fullHitsOnly;
     totalDesorbed += tmpState.globalStats.globalHits.nbDesorbed;
 
     //Leaks
     for (size_t leakIndex = 0; leakIndex < tmpState.globalStats.leakCacheSize; leakIndex++)
-        globSimuState.globalStats.leakCache[(leakIndex + globSimuState.globalStats.lastLeakIndex) %
+        globalState->globalStats.leakCache[(leakIndex + globalState->globalStats.lastLeakIndex) %
                                             LEAKCACHESIZE] = tmpState.globalStats.leakCache[leakIndex];
-    globSimuState.globalStats.nbLeakTotal += tmpState.globalStats.nbLeakTotal;
-    globSimuState.globalStats.lastLeakIndex =
-            (globSimuState.globalStats.lastLeakIndex + tmpState.globalStats.leakCacheSize) % LEAKCACHESIZE;
-    globSimuState.globalStats.leakCacheSize = std::min(LEAKCACHESIZE, globSimuState.globalStats.leakCacheSize +
+    globalState->globalStats.nbLeakTotal += tmpState.globalStats.nbLeakTotal;
+    globalState->globalStats.lastLeakIndex =
+            (globalState->globalStats.lastLeakIndex + tmpState.globalStats.leakCacheSize) % LEAKCACHESIZE;
+    globalState->globalStats.leakCacheSize = std::min(LEAKCACHESIZE, globalState->globalStats.leakCacheSize +
                                                                 tmpState.globalStats.leakCacheSize);
 
     // HHit (Only prIdx 0)
     if (particleTracerId == 0) {
         for (size_t hitIndex = 0; hitIndex < tmpState.globalStats.hitCacheSize; hitIndex++)
-            globSimuState.globalStats.hitCache[(hitIndex + globSimuState.globalStats.lastHitIndex) %
+            globalState->globalStats.hitCache[(hitIndex + globalState->globalStats.lastHitIndex) %
                                                 HITCACHESIZE] = tmpState.globalStats.hitCache[hitIndex];
 
         if (tmpState.globalStats.hitCacheSize > 0) {
-            globSimuState.globalStats.lastHitIndex =
-                    (globSimuState.globalStats.lastHitIndex + tmpState.globalStats.hitCacheSize) % HITCACHESIZE;
-            globSimuState.globalStats.hitCache[globSimuState.globalStats.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-            globSimuState.globalStats.hitCacheSize = std::min(HITCACHESIZE, globSimuState.globalStats.hitCacheSize +
+            globalState->globalStats.lastHitIndex =
+                    (globalState->globalStats.lastHitIndex + tmpState.globalStats.hitCacheSize) % HITCACHESIZE;
+            globalState->globalStats.hitCache[globalState->globalStats.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+            globalState->globalStats.hitCacheSize = std::min(HITCACHESIZE, globalState->globalStats.hitCacheSize +
                                                                         tmpState.globalStats.hitCacheSize);
         }
     }
 
     //Global histograms
-    globSimuState.globalHistograms += tmpState.globalHistograms;
+    globalState->globalHistograms += tmpState.globalHistograms;
 
     // Facets
-    globSimuState.facetStates += tmpState.facetStates;
+    globalState->facetStates += tmpState.facetStates;
 
     return true;
 }
@@ -1257,10 +1257,10 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog,
+bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
     std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
 
-    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), 
+    bool lastHitUpdateOK = UpdateMCHits(globalState, model->tdParams.moments.size(), 
         myStatus, statusMutex, timeout_ms);
     
     // only 1, so no reduce necessary
@@ -1275,7 +1275,7 @@ bool ParticleTracer::UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *p
     return lastHitUpdateOK;
 }
 
-bool ParticleTracer::UpdateLog(ParticleLog *globalLog, 
+bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
     std::string& myStatus, std::mutex& statusMutex, size_t timeout){
     if (!tmpParticleLog.pLog.empty()) {
         statusMutex.lock();

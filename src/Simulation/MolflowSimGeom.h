@@ -129,7 +129,7 @@ public:
     void PrepareToRun() override;
 
     //! Construct acceleration structure with a given splitting method
-    int BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
+    int BuildAccelStructure(const std::shared_ptr<GlobalSimuState> globalState, AccelType accel_type, BVHAccel::SplitMethod split,
                             int maxPrimsInNode) override;
 
     //int InitializeFacets();
@@ -227,27 +227,21 @@ FacetState operator+(const FacetState& lhs,const FacetState& rhs);
 /*!
  * @brief Object containing all simulation results, global and per facet
  */
-class GlobalSimuState { //replaces old hits dataport
+class GlobalSimuState {
 public:
-    GlobalSimuState &operator=(const GlobalSimuState &src);
-    GlobalSimuState &operator+=(const GlobalSimuState &src);
+    GlobalSimuState &operator=(const std::shared_ptr<GlobalSimuState> src);
+    GlobalSimuState &operator+=(const std::shared_ptr<GlobalSimuState> src);
 
-    GlobalSimuState(GlobalSimuState &&rhs) noexcept: simuStateMutex() {
+    GlobalSimuState() = default; //so a vector can be made of this for particletracer local results
+    GlobalSimuState(GlobalSimuState &&rhs) noexcept {
         globalHistograms = std::move(rhs.globalHistograms);
         facetStates = std::move(rhs.facetStates);
         globalStats = rhs.globalStats;
         initialized = rhs.initialized;
     };
 
-    GlobalSimuState(const GlobalSimuState &rhs) {
-        globalStats = rhs.globalStats;
-        globalHistograms = rhs.globalHistograms;
-        facetStates = rhs.facetStates;
-        initialized = rhs.initialized;
-    };
-
-    GlobalSimuState() : globalStats(), simuStateMutex() {
-
+    GlobalSimuState(const std::shared_ptr<GlobalSimuState> rhs) {
+        *this = rhs; //Uses overloaded operator=
     };
 
     bool initialized = false;
@@ -259,7 +253,7 @@ public:
     void Reset();
 
     static std::tuple<size_t, size_t, size_t>
-    Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
+    Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
             double locThreshold);
 
 #if defined(MOLFLOW)

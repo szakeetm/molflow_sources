@@ -72,7 +72,7 @@ void RuntimeStatPrinter::PrintHeader() const{
     }
     Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-'));
 }
-void RuntimeStatPrinter::Print(double elapsedTime, GlobalSimuState& globState, bool printSum) const{
+void RuntimeStatPrinter::Print(double elapsedTime, const std::shared_ptr<GlobalSimuState> globalState, bool printSum) const{
     if(printSum) {
         Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'='));
         Log::console_msg_master(1, "{:<6} ", "x");
@@ -83,11 +83,11 @@ void RuntimeStatPrinter::Print(double elapsedTime, GlobalSimuState& globState, b
 
     Log::console_msg(1,"{:<14.2f} {:<20} {:<20} {:<20.2f} {:<20} {:<20} {:<20.2f}\n",
                         elapsedTime,
-                        globState.globalStats.globalHits.nbMCHit - oldHitsNb, globState.globalStats.globalHits.nbMCHit,
-                        (double) (globState.globalStats.globalHits.nbMCHit - oldHitsNb) /
+                        globalState->globalStats.globalHits.nbMCHit - oldHitsNb, globalState->globalStats.globalHits.nbMCHit,
+                        (double) (globalState->globalStats.globalHits.nbMCHit - oldHitsNb) /
                         (elapsedTime),
-                        globState.globalStats.globalHits.nbDesorbed - oldDesNb, globState.globalStats.globalHits.nbDesorbed,
-                        (double) (globState.globalStats.globalHits.nbDesorbed - oldDesNb) /
+                        globalState->globalStats.globalHits.nbDesorbed - oldDesNb, globalState->globalStats.globalHits.nbDesorbed,
+                        (double) (globalState->globalStats.globalHits.nbDesorbed - oldDesNb) /
                         (elapsedTime));
 }
 
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-    GlobalSimuState simuState{};
+    std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
     MolflowUserSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
     SettingsIO::CLIArguments parsedArgs;
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
     Log::console_msg(1, "done.\n");
 
     try {
-        auto loadedModel = Initializer::initFromFile(simManager, model, &simuState, persistentUserSettings, parsedArgs);
+        auto loadedModel = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
         model = loadedModel;
     }
     catch (std::exception& err) {
@@ -147,17 +147,17 @@ int main(int argc, char** argv) {
         Log::console_error("Neither a time limit nor a desorption limit has been set.\n");
         return 44;
     }
-    size_t oldHitsNb = simuState.globalStats.globalHits.nbMCHit;
-    size_t oldDesNb = simuState.globalStats.globalHits.nbDesorbed;
+    size_t oldHitsNb = globalState->globalStats.globalHits.nbMCHit;
+    size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
     RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile(parsedArgs);
 
     if (parsedArgs.simDuration > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), parsedArgs.simDuration, simuState.globalStats.globalHits.nbDesorbed);
+        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), parsedArgs.simDuration, globalState->globalStats.globalHits.nbDesorbed);
     }
     else if (model->otfParams.desorptionLimit > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, simuState.globalStats.globalHits.nbDesorbed);
+        Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globalState->globalStats.globalHits.nbDesorbed);
     }
 
 #if defined(USE_MPI)
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
     simTimer.Start();
     double elapsedTime = 0.0;
 
-    CLIMainLoop(elapsedTime, simTimer, model, simuState,
+    CLIMainLoop(elapsedTime, simTimer, model, globalState,
         simManager, persistentUserSettings, autoSave, printer, parsedArgs);
 
     simTimer.Stop();
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     // Terminate simulation
     simManager.StopSimulation();
     simManager.KillSimulation();
-    GatherAngleMapRecordings(*model, simuState);
+    GatherAngleMapRecordings(model, globalState);
     Log::console_msg(1,"[{}][{}] Simulation finished.\n", MFMPI::world_rank, Util::getTimepointString());
 
 #if defined(USE_MPI)
@@ -203,12 +203,12 @@ int main(int argc, char** argv) {
     //TODO: Send output to master node for ordered output
     if(elapsedTime > 1e-4) {
         // Global result print --> TODO: ()
-        printer.Print(elapsedTime, simuState);
+        printer.Print(elapsedTime, globalState);
     }
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
-    MFMPI::mpi_receive_states(model, simuState);
+    MFMPI::mpi_receive_states(model, globalState);
     if (MFMPI::world_rank != 0) {
         // Cleanup all files from nodes tmp path
         if (parsedArgs.outputPath.find("tmp") != std::string::npos) {
@@ -228,19 +228,19 @@ int main(int argc, char** argv) {
     //Print sum
     if(elapsedTime > 1e-4) {
         if(MFMPI::world_size > 1)
-            printer.Print(elapsedTime, simuState, true);
+            printer.Print(elapsedTime, globalState, true);
     }
 
     if(MFMPI::world_rank == 0){
         if(parsedArgs.outputFacetDetails) {
-            FlowIO::Exporter::export_facet_details(&simuState, model.get(), parsedArgs.workPath);
+            FlowIO::Exporter::export_facet_details(globalState, model, parsedArgs.workPath);
 
         }
         if(parsedArgs.outputFacetQuantities) {
-            FlowIO::Exporter::export_facet_quantities(&simuState, model.get(), parsedArgs.workPath);
+            FlowIO::Exporter::export_facet_quantities(globalState, model, parsedArgs.workPath);
         }
 
-        WriteResults(model, simuState, simManager, persistentUserSettings, autoSave, parsedArgs);
+        WriteResults(model, globalState, simManager, persistentUserSettings, autoSave, parsedArgs);
     }
 
     // Cleanup
@@ -255,7 +255,7 @@ void ShutdownMPI() {
 #endif
 }
 
-void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
     SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
@@ -265,12 +265,12 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
 
         elapsedTime = simTimer.Elapsed();
         if (model->otfParams.desorptionLimit != 0)
-            endCondition = simuState.globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
+            endCondition = globalState->globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
 
         if (endCondition) {
             // if there is a next des limit, handle that
             if (!parsedArgs.desLimit.empty()) {
-                HandleIntermediateDesLimit(model, simuState, simManager, persistentUserSettings, endCondition, parsedArgs);
+                HandleIntermediateDesLimit(model, globalState, simManager, persistentUserSettings, endCondition, parsedArgs);
             }
         }
         else if (parsedArgs.autoSaveInterval && simTimer.SecondsSinceLastAutosave() > parsedArgs.autoSaveInterval) { // autosave every x seconds
@@ -278,7 +278,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
             GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
             prg.noProgress = simManager.noProgress;
             FlowIO::XmlWriter writer;
-            writer.AppendSimulationStateToFile(autoSave, model, prg, simuState);
+            writer.AppendSimulationStateToFile(autoSave, model, prg, globalState);
             simTimer.UpdateLastAutoSave();
         }
 
@@ -287,7 +287,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
             if ((uint64_t)elapsedTime / parsedArgs.statprintInterval <= 1) {
                 printer.PrintHeader();
             }
-            printer.Print(elapsedTime, simuState);
+            printer.Print(elapsedTime, globalState);
             simTimer.UpdateLastStatprintTime();
         }
 
@@ -298,7 +298,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, std::shared_ptr<Mol
     } while (!endCondition);
 }
 
-void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
     SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs) {
     // Export results
         //  a) Use existing autosave as base
@@ -331,7 +331,7 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
     pugi::xml_document newDoc;
     newDoc.load_file(fullOutFile.c_str());
     writer.SaveGeometry(newDoc, model, prg);
-    writer.SaveSimulationState(newDoc, model, prg, simuState);
+    writer.SaveSimulationState(newDoc, model, prg, globalState);
     writer.WriteXMLToFile(newDoc, fullOutFile);
 
     if (createZip) {
@@ -365,7 +365,7 @@ void WriteResults(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState
     }
 }
 
-void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& simuState,
+void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
     SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs) {
     // First write an intermediate output file
                 // 1. Get file name
@@ -396,7 +396,7 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
             writer.WriteXMLToFile(newDoc, outFile);
         }
         // 3. append updated results
-        writer.AppendSimulationStateToFile(outFile, model, prg, simuState);
+        writer.AppendSimulationStateToFile(outFile, model, prg, globalState);
     }
     catch (std::filesystem::filesystem_error& e) {
         Log::console_error("Warning: Could not create file: {}\n", e.what());
@@ -420,13 +420,13 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
 }
 
 //Transfers recorded angle maps from "simulation state" to "model"
-void GatherAngleMapRecordings(MolflowSimulationModel& model, GlobalSimuState& globSimState) {
-    for (int i = 0; i < model.facets.size(); i++) {
+void GatherAngleMapRecordings(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState) {
+    for (int i = 0; i < model->facets.size(); i++) {
 #if defined(MOLFLOW)
-        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
+        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
         if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
             //Retrieve angle map from hits dp
-            f->angleMap.pdf = globSimState.facetStates[i].recordedAngleMapPdf;
+            f->angleMap.pdf = globalState->facetStates[i].recordedAngleMapPdf;
         }
 #endif
     }

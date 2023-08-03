@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <set>
 #include <sstream>
 #include <filesystem>
+#include <memory>
 
 #include "Helper/MathTools.h"
 #include "CDFGeneration.h"
@@ -169,13 +170,13 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
 
 /**
 * \brief Builds ADS given certain parameters
-* \param globStatePtr global simulation state for splitting techniques requiring statistical data
+* \param globalState global simulation state for splitting techniques requiring statistical data
 * \param accel_type BVH or KD tree
 * \param split splitting technique corresponding to the selected AccelType
 * \param bvh_width for BVH, the amount of leaves per end node
  * \return 0> for error codes, 0 when no problems
 */
-int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
+int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimuState> globalState, AccelType accel_type, BVHAccel::SplitMethod split,
                                                 int bvh_width) {
 
     initialized = false;
@@ -232,13 +233,13 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
     }
 
     this->accel.clear();
-    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalStats.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != this->facets.size())
+    if(BVHAccel::SplitMethod::ProbSplit == split && globalState && globalState->initialized && globalState->globalStats.globalHits.nbDesorbed > 0){
+        if(globalState->facetStates.size() != this->facets.size())
             return 1;
         std::vector<double> probabilities;
-        probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
-            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalStats.globalHits.nbHitEquiv);
+        probabilities.reserve(globalState->facetStates.size());
+        for(auto& state : globalState->facetStates) {
+            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globalState->globalStats.globalHits.nbHitEquiv);
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
@@ -419,12 +420,12 @@ size_t MolflowSimulationModel::size() {
 * \param src reference to source object
 * \return address of this
 */
-GlobalSimuState& GlobalSimuState::operator=(const GlobalSimuState & src) {
+GlobalSimuState& GlobalSimuState::operator=(const std::shared_ptr<GlobalSimuState>  src) {
     //Copy all but mutex
-    facetStates = src.facetStates;
-    globalHistograms = src.globalHistograms;
-    globalStats = src.globalStats;
-    initialized = src.initialized;
+    facetStates = src->facetStates;
+    globalHistograms = src->globalHistograms;
+    globalStats = src->globalStats;
+    initialized = src->initialized;
     return *this;
 }
 
@@ -433,17 +434,18 @@ GlobalSimuState& GlobalSimuState::operator=(const GlobalSimuState & src) {
 * \param src reference to source object
 * \return address of this
 */
-GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState & src) {
+GlobalSimuState& GlobalSimuState::operator+=(const std::shared_ptr<GlobalSimuState> src) {
     //Copy all but mutex
-    facetStates += src.facetStates;
-    globalHistograms += src.globalHistograms;
-    globalStats += src.globalStats;
+    facetStates += src->facetStates;
+    globalHistograms += src->globalHistograms;
+    globalStats += src->globalStats;
     return *this;
 }
 
 /**
 * \brief Clears simulation state
 */
+
 void GlobalSimuState::Clear() {
     auto lock = GetHitLock(this, 10000);
     if (!lock) return;
@@ -530,7 +532,7 @@ void GlobalSimuState::Reset() {
  * @return a tuple containing the number of global, local (facet), and fine (facet profile/texture) errors
  */
 std::tuple<size_t, size_t, size_t>
-GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
+GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
                          double locThreshold) {
 
     const double velocityThresholdFactor = 40.0;
@@ -551,15 +553,15 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 
     // Sanity check
     {
-        if(lhsGlobHit.globalStats.globalHits.nbDesorbed == 0 && rhsGlobHit.globalStats.globalHits.nbDesorbed == 0){
+        if(lhsGlobHit->globalStats.globalHits.nbDesorbed == 0 && rhsGlobHit->globalStats.globalHits.nbDesorbed == 0){
             cmpFile += fmt::format("[Global][desorp] Neither state has recorded desorptions\n");
             ++globalErrNb;
         }
-        else if (lhsGlobHit.globalStats.globalHits.nbDesorbed == 0){
+        else if (lhsGlobHit->globalStats.globalHits.nbDesorbed == 0){
             cmpFile += fmt::format("[Global][desorp] First state has no recorded desorptions\n");
             ++globalErrNb;
         }
-        else if (rhsGlobHit.globalStats.globalHits.nbDesorbed == 0){
+        else if (rhsGlobHit->globalStats.globalHits.nbDesorbed == 0){
             cmpFile += fmt::format("[Global][desorp] Second state has no recorded desorptions\n");
             ++globalErrNb;
         }
@@ -571,61 +573,61 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     }
 
     {
-        double absRatio = lhsGlobHit.globalStats.globalHits.nbAbsEquiv / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbDesorbed);
-        double absRatio_rhs = rhsGlobHit.globalStats.globalHits.nbAbsEquiv / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbDesorbed);
+        double absRatio = lhsGlobHit->globalStats.globalHits.nbAbsEquiv / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbDesorbed);
+        double absRatio_rhs = rhsGlobHit->globalStats.globalHits.nbAbsEquiv / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbDesorbed);
         if (!IsEqual(absRatio, absRatio_rhs, globThreshold)) {
             cmpFile += fmt::format("[Global][absRatio abs/des] has large difference: {} vs {}\n"
                                    "    {}abs / {}des vs {}abs / {}des\n",
                                    absRatio, absRatio_rhs,
-                                lhsGlobHit.globalStats.globalHits.nbAbsEquiv,lhsGlobHit.globalStats.globalHits.nbDesorbed,
-                                rhsGlobHit.globalStats.globalHits.nbAbsEquiv,rhsGlobHit.globalStats.globalHits.nbDesorbed);
+                                lhsGlobHit->globalStats.globalHits.nbAbsEquiv,lhsGlobHit->globalStats.globalHits.nbDesorbed,
+                                rhsGlobHit->globalStats.globalHits.nbAbsEquiv,rhsGlobHit->globalStats.globalHits.nbDesorbed);
             ++globalErrNb;
         }
     }
 
     {
-        double hitRatio = static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit) / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbDesorbed);
-        double hitRatio_rhs = static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit) / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbDesorbed);
+        double hitRatio = static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit) / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbDesorbed);
+        double hitRatio_rhs = static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit) / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbDesorbed);
         if (!IsEqual(hitRatio, hitRatio_rhs, globThreshold)) {
             cmpFile += fmt::format("[Global][hits/des] has large difference: {} vs {}\n"
                                    "    {}hit / {}des vs {}hit / {}des\n",
                                    hitRatio,hitRatio_rhs,
-                                   lhsGlobHit.globalStats.globalHits.nbMCHit, lhsGlobHit.globalStats.globalHits.nbDesorbed,
-                                   rhsGlobHit.globalStats.globalHits.nbMCHit, rhsGlobHit.globalStats.globalHits.nbDesorbed);
+                                   lhsGlobHit->globalStats.globalHits.nbMCHit, lhsGlobHit->globalStats.globalHits.nbDesorbed,
+                                   rhsGlobHit->globalStats.globalHits.nbMCHit, rhsGlobHit->globalStats.globalHits.nbDesorbed);
 
             ++globalErrNb;
         }
     }
 
-    if (!IsEqual(lhsGlobHit.globalStats.globalHits.sum_v_ort, rhsGlobHit.globalStats.globalHits.sum_v_ort, globThreshold)) {
+    if (!IsEqual(lhsGlobHit->globalStats.globalHits.sum_v_ort, rhsGlobHit->globalStats.globalHits.sum_v_ort, globThreshold)) {
         cmpFile += fmt::format("[Global][sum_v_ort] has large difference: {} vs {}\n",
-                               lhsGlobHit.globalStats.globalHits.sum_v_ort, rhsGlobHit.globalStats.globalHits.sum_v_ort);
+                               lhsGlobHit->globalStats.globalHits.sum_v_ort, rhsGlobHit->globalStats.globalHits.sum_v_ort);
         ++globalErrNb;
     }
-    if (!IsEqual(lhsGlobHit.globalStats.globalHits.sum_1_per_velocity, rhsGlobHit.globalStats.globalHits.sum_1_per_velocity, globThreshold)) {
+    if (!IsEqual(lhsGlobHit->globalStats.globalHits.sum_1_per_velocity, rhsGlobHit->globalStats.globalHits.sum_1_per_velocity, globThreshold)) {
         cmpFile += fmt::format("[Global][sum_1_per_velocity] has large difference: {} vs {}\n",
-                               lhsGlobHit.globalStats.globalHits.sum_1_per_velocity, rhsGlobHit.globalStats.globalHits.sum_1_per_velocity);
+                               lhsGlobHit->globalStats.globalHits.sum_1_per_velocity, rhsGlobHit->globalStats.globalHits.sum_1_per_velocity);
         ++globalErrNb;
     }
-    if (!IsEqual(lhsGlobHit.globalStats.globalHits.sum_1_per_ort_velocity, rhsGlobHit.globalStats.globalHits.sum_1_per_ort_velocity, globThreshold)) {
+    if (!IsEqual(lhsGlobHit->globalStats.globalHits.sum_1_per_ort_velocity, rhsGlobHit->globalStats.globalHits.sum_1_per_ort_velocity, globThreshold)) {
         cmpFile += fmt::format("[Global][sum_1_per_ort_velocity] has large difference: {} vs {}\n",
-                               lhsGlobHit.globalStats.globalHits.sum_1_per_ort_velocity, rhsGlobHit.globalStats.globalHits.sum_1_per_ort_velocity);
+                               lhsGlobHit->globalStats.globalHits.sum_1_per_ort_velocity, rhsGlobHit->globalStats.globalHits.sum_1_per_ort_velocity);
         ++globalErrNb;
     }
 
 
     // Histogram
     {
-        auto& hist_lhs = lhsGlobHit.globalHistograms;
-        auto& hist_rhs = rhsGlobHit.globalHistograms;
+        auto& hist_lhs = lhsGlobHit->globalHistograms;
+        auto& hist_rhs = rhsGlobHit->globalHistograms;
         for(size_t tHist = 0; tHist < hist_lhs.size(); tHist++) {
             for (size_t hIndex = 0; hIndex < hist_lhs[tHist].nbHitsHistogram.size(); ++hIndex) {
                 if(std::sqrt(std::max(1.0,std::min(hist_lhs[tHist].nbHitsHistogram[hIndex], hist_rhs[tHist].nbHitsHistogram[hIndex]))) < 80) {
                     // Sample size not large enough
                     continue;
                 }
-                double lhRatio = hist_lhs[tHist].nbHitsHistogram[hIndex] / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit);
-                double rhRatio =  hist_rhs[tHist].nbHitsHistogram[hIndex] / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit);
+                double lhRatio = hist_lhs[tHist].nbHitsHistogram[hIndex] / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit);
+                double rhRatio =  hist_rhs[tHist].nbHitsHistogram[hIndex] / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit);
                 if (!IsEqual(lhRatio, rhRatio, locThreshold)) {
                     cmpFile += fmt::format("[Global][Hist][Bounces/global hits][Moment={}] has large difference: {} vs {}\n",
                                            hIndex, lhRatio, rhRatio);
@@ -637,9 +639,9 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     // Sample size not large enough
                     continue;
                 }
-                if (!IsEqual(hist_lhs[tHist].distanceHistogram[hIndex] / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit), hist_rhs[tHist].distanceHistogram[hIndex] / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit), locThreshold)) {
+                if (!IsEqual(hist_lhs[tHist].distanceHistogram[hIndex] / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit), hist_rhs[tHist].distanceHistogram[hIndex] / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit), locThreshold)) {
                     cmpFile += fmt::format("[Global][Hist][Dist][Ind={}] has large difference: {}\n",
-                                           hIndex, std::abs(hist_lhs[tHist].distanceHistogram[hIndex] / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit) - hist_rhs[tHist].distanceHistogram[hIndex] / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit)));
+                                           hIndex, std::abs(hist_lhs[tHist].distanceHistogram[hIndex] / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit) - hist_rhs[tHist].distanceHistogram[hIndex] / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit)));
                     ++globalErrNb;
                 }
             }
@@ -648,9 +650,9 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     // Sample size not large enough
                     continue;
                 }
-                if (!IsEqual(hist_lhs[tHist].timeHistogram[hIndex] / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit), hist_rhs[tHist].timeHistogram[hIndex] / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit), locThreshold)) {
+                if (!IsEqual(hist_lhs[tHist].timeHistogram[hIndex] / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit), hist_rhs[tHist].timeHistogram[hIndex] / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit), locThreshold)) {
                     cmpFile += fmt::format("[Global][Hist][Time][Ind={}] has large difference: {}\n",
-                                           hIndex, std::abs(hist_lhs[tHist].timeHistogram[hIndex] / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbMCHit) - hist_rhs[tHist].timeHistogram[hIndex] / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbMCHit)));
+                                           hIndex, std::abs(hist_lhs[tHist].timeHistogram[hIndex] / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbMCHit) - hist_rhs[tHist].timeHistogram[hIndex] / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbMCHit)));
 
                     ++globalErrNb;
                 }
@@ -660,23 +662,23 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     // facets
 
     auto locThreshold_bak = locThreshold;
-    if (lhsGlobHit.facetStates.size() != rhsGlobHit.facetStates.size()) {
-        cmpFile += fmt::format("[FacetStates] Different number of facet states: {} vs {}\n", lhsGlobHit.facetStates.size(), rhsGlobHit.facetStates.size());
+    if (lhsGlobHit->facetStates.size() != rhsGlobHit->facetStates.size()) {
+        cmpFile += fmt::format("[FacetStates] Different number of facet states: {} vs {}\n", lhsGlobHit->facetStates.size(), rhsGlobHit->facetStates.size());
         ++facetErrNb;
     }
 
-    size_t nbCmp = std::min(lhsGlobHit.facetStates.size(), rhsGlobHit.facetStates.size());
+    size_t nbCmp = std::min(lhsGlobHit->facetStates.size(), rhsGlobHit->facetStates.size());
     for(int facetId = 0; facetId < nbCmp; ++facetId)
     {//cmp
-        if(lhsGlobHit.facetStates[facetId].momentResults.size() != rhsGlobHit.facetStates[facetId].momentResults.size()){
-            cmpFile += fmt::format("[Facet][{}] Different amount of moments for each state: {} vs {}\n", facetId, lhsGlobHit.facetStates[facetId].momentResults.size(), rhsGlobHit.facetStates[facetId].momentResults.size());
+        if(lhsGlobHit->facetStates[facetId].momentResults.size() != rhsGlobHit->facetStates[facetId].momentResults.size()){
+            cmpFile += fmt::format("[Facet][{}] Different amount of moments for each state: {} vs {}\n", facetId, lhsGlobHit->facetStates[facetId].momentResults.size(), rhsGlobHit->facetStates[facetId].momentResults.size());
             ++facetErrNb;
             continue;
         }
 
-        for(int m = 0; m < lhsGlobHit.facetStates[facetId].momentResults.size(); ++m) {
-            auto &facetCounter_lhs = lhsGlobHit.facetStates[facetId].momentResults[m];
-            auto &facetCounter_rhs = rhsGlobHit.facetStates[facetId].momentResults[m];
+        for(int m = 0; m < lhsGlobHit->facetStates[facetId].momentResults.size(); ++m) {
+            auto &facetCounter_lhs = lhsGlobHit->facetStates[facetId].momentResults[m];
+            auto &facetCounter_rhs = rhsGlobHit->facetStates[facetId].momentResults[m];
 
             // If one facet doesn't have any hits recorded, comparison is pointless, so just skip to next facet
             if ((facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit == 0)
@@ -698,15 +700,15 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 
             // Adjust threshold to reasonable limit for moments due to lower amount of hits
             if(m >= 0){
-                auto nMC = std::min(lhsGlobHit.facetStates[facetId].momentResults[m].hits.nbMCHit, rhsGlobHit.facetStates[facetId].momentResults[m].hits.nbMCHit);
+                auto nMC = std::min(lhsGlobHit->facetStates[facetId].momentResults[m].hits.nbMCHit, rhsGlobHit->facetStates[facetId].momentResults[m].hits.nbMCHit);
                 locThreshold = std::max(locThreshold_bak, 1.0 / std::sqrt(nMC));
             }
             else{
                 locThreshold = locThreshold_bak;
             }
 
-            double scale = 1.0 / static_cast<double>(lhsGlobHit.globalStats.globalHits.nbDesorbed); // getmolpertp
-            double scale_rhs = 1.0 / static_cast<double>(rhsGlobHit.globalStats.globalHits.nbDesorbed);
+            double scale = 1.0 / static_cast<double>(lhsGlobHit->globalStats.globalHits.nbDesorbed); // getmolpertp
+            double scale_rhs = 1.0 / static_cast<double>(rhsGlobHit->globalStats.globalHits.nbDesorbed);
             double fullScale = 1.0;
 
             // density correction value for scale
@@ -733,14 +735,14 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             fullScale *= scale;
             fullScale_rhs *= scale_rhs;
 
-            scale = 1.0 / lhsGlobHit.globalStats.globalHits.nbHitEquiv;
-            scale_rhs = 1.0 / rhsGlobHit.globalStats.globalHits.nbHitEquiv;
+            scale = 1.0 / lhsGlobHit->globalStats.globalHits.nbHitEquiv;
+            scale_rhs = 1.0 / rhsGlobHit->globalStats.globalHits.nbHitEquiv;
             fullScale = 1.0 /
-                        (lhsGlobHit.globalStats.globalHits.nbHitEquiv + lhsGlobHit.globalStats.globalHits.nbAbsEquiv +
-                         static_cast<double>(lhsGlobHit.globalStats.globalHits.nbDesorbed));
+                        (lhsGlobHit->globalStats.globalHits.nbHitEquiv + lhsGlobHit->globalStats.globalHits.nbAbsEquiv +
+                         static_cast<double>(lhsGlobHit->globalStats.globalHits.nbDesorbed));
             fullScale_rhs = 1.0 /
-                            (rhsGlobHit.globalStats.globalHits.nbHitEquiv + rhsGlobHit.globalStats.globalHits.nbAbsEquiv +
-                             static_cast<double>(rhsGlobHit.globalStats.globalHits.nbDesorbed));
+                            (rhsGlobHit->globalStats.globalHits.nbHitEquiv + rhsGlobHit->globalStats.globalHits.nbAbsEquiv +
+                             static_cast<double>(rhsGlobHit->globalStats.globalHits.nbDesorbed));
             double sumHitDes = facetCounter_lhs.hits.nbHitEquiv + static_cast<double>(facetCounter_lhs.hits.nbDesorbed);
             double sumHitDes_rhs =
                     facetCounter_rhs.hits.nbHitEquiv + static_cast<double>(facetCounter_rhs.hits.nbDesorbed);
@@ -755,8 +757,8 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                                            "    {}fh / {}gh vs {}fh / {}gh\n",
                                            facetId, m,
                                            hitRatio,hitRatio_rhs,
-                                           facetCounter_lhs.hits.nbHitEquiv, lhsGlobHit.globalStats.globalHits.nbHitEquiv,
-                                           facetCounter_rhs.hits.nbHitEquiv, lhsGlobHit.globalStats.globalHits.nbHitEquiv);
+                                           facetCounter_lhs.hits.nbHitEquiv, lhsGlobHit->globalStats.globalHits.nbHitEquiv,
+                                           facetCounter_rhs.hits.nbHitEquiv, lhsGlobHit->globalStats.globalHits.nbHitEquiv);
                     ++facetErrNb;
                 }
                 if (!IsEqual(facetCounter_lhs.hits.sum_v_ort * scale, facetCounter_rhs.hits.sum_v_ort * scale_rhs,
@@ -765,8 +767,8 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                                            "    {}fv / {}gh vs {}fv / {}gh\n",
                                            facetId, m,
                                            facetCounter_lhs.hits.sum_v_ort * scale, facetCounter_rhs.hits.sum_v_ort * scale_rhs,
-                                           facetCounter_lhs.hits.sum_v_ort, lhsGlobHit.globalStats.globalHits.nbHitEquiv,
-                                           facetCounter_rhs.hits.sum_v_ort, lhsGlobHit.globalStats.globalHits.nbHitEquiv);
+                                           facetCounter_lhs.hits.sum_v_ort, lhsGlobHit->globalStats.globalHits.nbHitEquiv,
+                                           facetCounter_rhs.hits.sum_v_ort, lhsGlobHit->globalStats.globalHits.nbHitEquiv);
                     ++facetErrNb;
                 }
                 if (!IsEqual(facetCounter_lhs.hits.sum_1_per_velocity * fullScale,
@@ -1191,7 +1193,7 @@ DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
 //Constructs a lock guard for timed mutex
 //Returns false if lock not successful
 //Otherwise returns the unique_lock that auto-unlocks the mutex when destroyed
-[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs)
+[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs) //not shared_ptr as called from within class as well
 {
     std::unique_lock<std::timed_mutex> lock(simStatePtr->simuStateMutex, std::chrono::milliseconds(waitMs));
     if (!lock.owns_lock()) {

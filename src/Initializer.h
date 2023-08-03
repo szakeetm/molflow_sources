@@ -29,20 +29,20 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 class Initializer {
 private:
     static SettingsIO::CLIArguments parseArguments(int argc, char** argv);
-    static std::shared_ptr<MolflowSimulationModel> CLILoadFromXML(const std::string &fileName, bool loadSimulationState, std::shared_ptr<MolflowSimulationModel> model,
-                           GlobalSimuState *globState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs);
-    static int initSimModel(std::shared_ptr<MolflowSimulationModel> model);
+    static std::shared_ptr<MolflowSimulationModel> CLILoadFromXML(const std::string &fileName, bool loadSimulationState, const std::shared_ptr<MolflowSimulationModel> model,
+        const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs);
+    static int initSimModel(const std::shared_ptr<MolflowSimulationModel> model);
 public:
     static std::string getAutosaveFile(SettingsIO::CLIArguments& parsedArgs);
-    static std::shared_ptr<MolflowSimulationModel> initFromFile(SimulationManager& simManager, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState *globState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs);
+    static std::shared_ptr<MolflowSimulationModel> initFromFile(SimulationManager& simManager, const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs);
     
-    static int initDesLimit(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState& globState, SettingsIO::CLIArguments& parsedArgs);
+    static int initDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState, SettingsIO::CLIArguments& parsedArgs);
 
-    [[nodiscard]] static SettingsIO::CLIArguments initFromArgv(int argc, char **argv, SimulationManager& simManager, std::shared_ptr<MolflowSimulationModel> model);
+    [[nodiscard]] static SettingsIO::CLIArguments initFromArgv(int argc, char **argv, SimulationManager& simManager, const std::shared_ptr<MolflowSimulationModel> model);
 
-    static int initTimeLimit(std::shared_ptr<MolflowSimulationModel> model, SettingsIO::CLIArguments& parsedArgs);
+    static int initTimeLimit(const std::shared_ptr<MolflowSimulationModel> model, SettingsIO::CLIArguments& parsedArgs);
 
     static int
-    loadFromGeneration(std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState *globState, double ratio,
+    loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState, double ratio,
                        int step, double angle);
 };

@@ -45,7 +45,7 @@ namespace MFSim {
 
         bool StartFromSource(Ray& ray);
 
-        bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments,
+        bool UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, size_t nbMoments,
             std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
 
         void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
@@ -80,9 +80,9 @@ namespace MFSim {
 
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
-        bool UpdateHitsAndLog(GlobalSimuState *globState, ParticleLog *particleLog, 
+        bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
             std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
-        bool UpdateLog(ParticleLog *globalLog, 
+        bool UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
             std::string& myStatus, std::mutex& statusMutex, size_t timeout);
 
         void Reset();
