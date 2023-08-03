@@ -347,7 +347,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 
 		if (FileUtils::Exist(compressorName)) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
 			std::ostringstream tmp;
-			tmp << compressorName << " \"" << fileNameWithGeo << "\" InterfaceGeometry.geo";
+			tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
 #ifdef _WIN32
 			char* command[1];
 			command[0] = new char[512];
@@ -483,7 +483,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			RealReload();
 		}
 		catch (const std::exception& e) {
-			GLMessageBox::Display(e.what(), "Error (Reloading InterfaceGeometry)", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display(e.what(), "Error (Reloading Geometry)", GLDLG_OK, GLDLG_ICONERROR);
 		}
 	}
 	//char CWD[MAX_PATH];
@@ -607,7 +607,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (ext == "syn7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 			}
 			else {
 				file=std::make_unique<FileReader>(fileName);  //original file opened
@@ -640,7 +640,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (ext == "geo7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.geo");
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.geo");
 			}
 			else { //not geo7z
 				file=std::make_unique<FileReader>(fileName); //geo file, open it directly
@@ -1102,7 +1102,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 		if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
 			((sFac.sh.superDest - 1) >= mf_model->sh.nbSuper || sFac.sh.superDest < 0)) {
-			// InterfaceGeometry error
+			//Geometry error
 			//ClearSimulation();
 			//ReleaseDataport(loader);
 			std::ostringstream err;
@@ -1127,7 +1127,7 @@ bool Worker::InterfaceGeomToSimModel() {
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 	GLProgress_GUI prg("Performing preliminary calculations on geometry...",
-		"Passing InterfaceGeometry to workers");
+		"Passing Geometry to workers");
 	prg.SetVisible(true);
 
 	if (!sendOnly) {
@@ -1305,7 +1305,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 
 	if (isSYN || isSYN7Z) {
 		if (isSYN7Z) {
-			file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else {
 			file=std::make_unique<FileReader>(fileName);  //original file opened
@@ -1342,7 +1342,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 		if (isSYN7Z) {
 			//decompress file
 			prg.SetMessage("Decompressing file...");
-			file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 		}
 		else { //syn
 			file=std::make_unique<FileReader>(fileName);  //original file opened
