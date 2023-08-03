@@ -258,7 +258,7 @@ Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> mo
 std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, const std::shared_ptr<MolflowSimulationModel> model,
     const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
 
-    std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
+    std::shared_ptr<MolflowSimulationModel> loadedModel;
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
     prg.noProgress = parsedArgs.noProgress; //Suppress percentages if ran in script
 

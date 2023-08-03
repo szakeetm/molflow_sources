@@ -2443,7 +2443,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 		rootNode.attribute("type") = "molflow";
 		rootNode.append_attribute("version") = appVersionId;
 	}
-	xml_node geomNode = rootNode.append_child("InterfaceGeometry");
+	xml_node geomNode = rootNode.append_child("Geometry");
 
 	prg.SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
@@ -3018,7 +3018,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	if (structId == -1) structId = 0;
 	UnselectAll();
 
-	xml_node geomNode = loadXML.child("InterfaceGeometry");
+	xml_node geomNode = loadXML.child("Geometry");
 	//Vertices
 	size_t nbNewVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 	size_t nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
