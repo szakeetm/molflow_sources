@@ -827,7 +827,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					// actually loads all caches
 					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
 					simManager.SetGlobalCounter(&globalState, &particleLog);
-					FacetHitCacheToSimModel(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendAngleMaps();
 
 					RebuildTextures();
