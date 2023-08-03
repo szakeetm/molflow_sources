@@ -180,7 +180,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   RestoreDeviceObjects();
 
-  guiGeom = NULL;
+  interfGeom = NULL;
 
 }
 
@@ -207,7 +207,7 @@ void Viewer3DSettings::Refresh(InterfaceGeometry *s,GeometryViewer *v) {
 
   char tmp[128];
 
-  guiGeom = s;
+  interfGeom = s;
   viewer = v;
   showMode->SetSelectedIndex(viewer->showBack);
   hiddenEdge->SetState(viewer->showHidden);
@@ -230,10 +230,10 @@ void Viewer3DSettings::Refresh(InterfaceGeometry *s,GeometryViewer *v) {
 
   sprintf(tmp,"Viewer #%d",viewer->GetId()+1);
   panel->SetTitle(tmp);
-  sprintf(tmp,"%g",guiGeom->GetNormeRatio());
+  sprintf(tmp,"%g",interfGeom->GetNormeRatio());
   dirNormeText->SetText(tmp);
-  dirNormalizeToggle->SetState( guiGeom->GetAutoNorme() );
-  dirCenterToggle->SetState( guiGeom->GetCenterNorme() );
+  dirNormalizeToggle->SetState( interfGeom->GetAutoNorme() );
+  dirCenterToggle->SetState( interfGeom->GetCenterNorme() );
 
   bool suppressDetails = (viewer->hideLot != -1);
   hideLotselected->SetState(suppressDetails);
@@ -305,9 +305,9 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
-      guiGeom->SetNormeRatio((float)nratio);
-      guiGeom->SetAutoNorme(dirNormalizeToggle->GetState());
-      guiGeom->SetCenterNorme(dirCenterToggle->GetState());
+      interfGeom->SetNormeRatio((float)nratio);
+      interfGeom->SetAutoNorme(dirNormalizeToggle->GetState());
+      interfGeom->SetCenterNorme(dirCenterToggle->GetState());
 
 	  viewer->hideLot = hideLotselected->GetState() ? lotofFacets : -1;
 
@@ -317,10 +317,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  bool needsMesh = mApp->needsMesh;
 
 	  if (!needsMesh && neededMesh) { //We just disabled mesh
-		  guiGeom->ClearFacetMeshLists();
+		  interfGeom->ClearFacetMeshLists();
 	  }
 	  else if (needsMesh && !neededMesh) { //We just enabled mesh
-		  guiGeom->BuildFacetMeshLists();
+		  interfGeom->BuildFacetMeshLists();
 	  }
 
 	  GLWindow::ProcessMessage(NULL, MSG_CLOSE);

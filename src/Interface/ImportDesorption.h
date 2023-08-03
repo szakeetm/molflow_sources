@@ -50,7 +50,7 @@ private:
 	void    LoadConvFile(const char* fileName);
 	void   EnableDisableComponents();
 
-  InterfaceGeometry      *guiGeom;
+  InterfaceGeometry      *interfGeom;
   Worker	    *work;
 
   GLTitledPanel *filePanel;

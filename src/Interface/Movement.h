@@ -44,7 +44,7 @@ class Movement : public GLWindow {
 
 public:
   // Construction
-	Movement(InterfaceGeometry *guiGeom, Worker *work);
+	Movement(InterfaceGeometry *interfGeom, Worker *work);
   void ProcessMessage(GLComponent *src,int message) override;
   void Update();
 
@@ -96,7 +96,7 @@ private:
 
   int mode;
 
-  InterfaceGeometry     *guiGeom;
+  InterfaceGeometry     *interfGeom;
   Worker	   *work;
 
 };

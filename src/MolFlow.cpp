@@ -562,8 +562,8 @@ void MolFlow::ClearFacetParams() {
 
 void MolFlow::ApplyFacetParams() {
 
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
-	size_t nbFacet = guiGeom->GetNbFacet();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
+	size_t nbFacet = interfGeom->GetNbFacet();
 
 	// Sticking
 	double sticking;
@@ -719,7 +719,7 @@ void MolFlow::ApplyFacetParams() {
 
 	// Update facets (local)
 	for (int i = 0; i < nbFacet; i++) {
-		InterfaceFacet* f = guiGeom->GetFacet(i);
+		InterfaceFacet* f = interfGeom->GetFacet(i);
 		if (f->selected) {
 			if (doSticking) {
 				if (!stickingNotNumber) {
@@ -788,9 +788,9 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	char tmp[256];
 
 	// Update params
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
 	// Get list of selected facet
-	auto selectedFacets = guiGeom->GetSelectedFacets();
+	auto selectedFacets = interfGeom->GetSelectedFacets();
 	size_t nbSel = selectedFacets.size();
 
 	if (nbSel > 0) {
@@ -800,7 +800,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 
 
 
-		f0 = guiGeom->GetFacet(selectedFacets[0]);
+		f0 = interfGeom->GetFacet(selectedFacets[0]);
 
 		double f0Area = f0->GetArea();
 		double sumArea = f0Area; //sum facet area
@@ -816,7 +816,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		bool is2sidedE = true;
 
 		for (size_t sel = 1; sel < selectedFacets.size(); sel++) {
-			f = guiGeom->GetFacet(selectedFacets[sel]);
+			f = interfGeom->GetFacet(selectedFacets[sel]);
 			double fArea = f->GetArea();
 			stickingE = stickingE && (f0->userSticking == f->userSticking) && IsEqual(f0->sh.sticking, f->sh.sticking);
 			opacityE = opacityE && (f0->userOpacity == f->userOpacity) && IsEqual(f0->sh.opacity, f->sh.opacity);
@@ -922,7 +922,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		if (facetAdvParams) facetAdvParams->Refresh(selectedFacets); //Refresh advanced facet parameters panel
 		if (updateSelection) {
 
-			if (nbSel > 1000 || guiGeom->GetNbFacet() > 50000) { //If it would take too much time to look up every selected facet in the list
+			if (nbSel > 1000 || interfGeom->GetNbFacet() > 50000) { //If it would take too much time to look up every selected facet in the list
 				facetList->ReOrder();
 				facetList->SetSelectedRows(selectedFacets, false);
 			}
@@ -1065,8 +1065,8 @@ int MolFlow::InvalidateDeviceObjects()
 
 void MolFlow::ExportProfiles() {
 
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
-	if (guiGeom->GetNbSelectedFacets() == 0) {
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
+	if (interfGeom->GetNbSelectedFacets() == 0) {
 		GLMessageBox::Display("Empty selection", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
@@ -1141,11 +1141,11 @@ void MolFlow::ImportAngleMaps() {
 
 void MolFlow::CopyAngleMapToClipboard()
 {
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
 	size_t angleMapFacetIndex;
 	bool found = false;
-	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
-		InterfaceFacet* f = guiGeom->GetFacet(i);
+	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
+		InterfaceFacet* f = interfGeom->GetFacet(i);
 		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1167,7 +1167,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	}*/
 
 	try {
-		std::string map = guiGeom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
+		std::string map = interfGeom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
 		if (map.length() > (10 * 1024 * 1024)) {
 			if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
 				return;
@@ -1182,9 +1182,9 @@ void MolFlow::CopyAngleMapToClipboard()
 }
 
 void MolFlow::ClearAngleMapsOnSelection() {
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
-	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
-		InterfaceFacet* f = guiGeom->GetFacet(i);
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
+	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
+		InterfaceFacet* f = interfGeom->GetFacet(i);
 		if (f->selected && !f->angleMapCache.empty()) {
 			f->angleMapCache.clear();
 		}
@@ -1277,7 +1277,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 
 		worker.LoadGeometry(filePath);
 
-		InterfaceGeometry* guiGeom = worker.GetGeometry();
+		InterfaceGeometry* interfGeom = worker.GetGeometry();
 
 
 		// Default initialisation
@@ -1293,16 +1293,16 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	nbDesStart = worker.globalStatCache.globalHits.nbDesorbed;
 		nbHitStart = worker.globalStatCache.globalHits.nbMCHit;
 			AddRecent(filePath);
-		guiGeom->viewStruct = -1;
+		interfGeom->viewStruct = -1;
 
 		UpdateStructMenu();
 
 		// Check non simple polygon
 		prg.SetMessage("Checking for non simple polygons...");
 
-		guiGeom->CheckCollinear();
-		//guiGeom->CheckNonSimple();
-		guiGeom->CheckIsolatedVertex();
+		interfGeom->CheckCollinear();
+		//interfGeom->CheckNonSimple();
+		interfGeom->CheckIsolatedVertex();
 		// Set up view
 		// Default
 		viewer[0]->SetProjection(ORTHOGRAPHIC_PROJ);
@@ -1380,7 +1380,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//worker.InsertGeometry(newStr, fullName);
 		worker.LoadGeometry(filePath, true, newStr);
 
-		InterfaceGeometry* guiGeom = worker.GetGeometry();
+		InterfaceGeometry* interfGeom = worker.GetGeometry();
 		worker.PrepareToRun();
 		worker.CalcTotalOutgassing();
 
@@ -1398,14 +1398,14 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//nbDesStart = worker.globalState->globalStats.globalStats.hit.nbDesorbed;
 		//nbHitStart = worker.globalState->globalStats.globalStats.hit.nbMC;
 		AddRecent(filePath);
-		guiGeom->viewStruct = -1;
+		interfGeom->viewStruct = -1;
 
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
 
-		guiGeom->CheckCollinear();
-		//guiGeom->CheckNonSimple();
-		guiGeom->CheckIsolatedVertex();
+		interfGeom->CheckCollinear();
+		//interfGeom->CheckNonSimple();
+		interfGeom->CheckIsolatedVertex();
 
 		/*
 		// Set up view
@@ -1485,7 +1485,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 
 	if (ProcessMessage_shared(src, message)) return; //Already processed by common interface
 
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
 	switch (message) {
 
 		//MENU --------------------------------------------------------------------
@@ -1494,9 +1494,9 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 
 		case MENU_FILE_IMPORTDES_SYN:
 
-			if (guiGeom->IsLoaded()) {
+			if (interfGeom->IsLoaded()) {
 				if (!importDesorption) importDesorption = new ImportDesorption();
-				importDesorption->SetGeometry(guiGeom, &worker);
+				importDesorption->SetGeometry(interfGeom, &worker);
 				importDesorption->SetVisible(true);
 			}
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
@@ -1549,13 +1549,13 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			break;
 
 		case MENU_TOOLS_MOVINGPARTS:
-			if (!movement) movement = new Movement(guiGeom, &worker);
+			if (!movement) movement = new Movement(interfGeom, &worker);
 			movement->Update();
 			movement->SetVisible(true);
 			break;
 
 		case MENU_TOOLS_MEASUREFORCE:
-			if (!measureForces) measureForces = new MeasureForce(guiGeom, &worker);
+			if (!measureForces) measureForces = new MeasureForce(interfGeom, &worker);
 			measureForces->Update();
 			measureForces->SetVisible(true);
 			break;
@@ -1598,14 +1598,14 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			break;
 		case MENU_FACET_REMOVESEL:
 		{
-			auto selectedFacets = guiGeom->GetSelectedFacets();
+			auto selectedFacets = interfGeom->GetSelectedFacets();
 			if (selectedFacets.empty()) return; //Nothing selected
 			if (GLMessageBox::Display("Remove selected facets?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 				if (AskToReset()) {
 					if (worker.IsRunning()) worker.Stop_Public();
-					guiGeom->RemoveFacets(selectedFacets);
+					interfGeom->RemoveFacets(selectedFacets);
 					worker.CalcTotalOutgassing();
-					//guiGeom->CheckIsolatedVertex();
+					//interfGeom->CheckIsolatedVertex();
 					UpdateModelParams();
 					RefreshPlotterCombos();
 					//UpdatePlotters();
@@ -1618,48 +1618,48 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			break;
 		}
 		case MENU_FACET_SELECTSTICK:
-			guiGeom->UnselectAll();
-			for (int i = 0; i < guiGeom->GetNbFacet(); i++)
-				if (guiGeom->GetFacet(i)->sh.sticking_paramId != -1 || (guiGeom->GetFacet(i)->sh.sticking != 0.0 && !guiGeom->GetFacet(i)->IsTXTLinkFacet()))
-					guiGeom->SelectFacet(i);
-			guiGeom->UpdateSelection();
+			interfGeom->UnselectAll();
+			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
+				if (interfGeom->GetFacet(i)->sh.sticking_paramId != -1 || (interfGeom->GetFacet(i)->sh.sticking != 0.0 && !interfGeom->GetFacet(i)->IsTXTLinkFacet()))
+					interfGeom->SelectFacet(i);
+			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
 
 		case MENU_FACET_SELECTREFL:
-			guiGeom->UnselectAll();
-			for (int i = 0; i < guiGeom->GetNbFacet(); i++) {
-				InterfaceFacet* f = guiGeom->GetFacet(i);
+			interfGeom->UnselectAll();
+			for (int i = 0; i < interfGeom->GetNbFacet(); i++) {
+				InterfaceFacet* f = interfGeom->GetFacet(i);
 				if (f->sh.desorbType == DES_NONE && f->sh.sticking == 0.0 && f->sh.opacity > 0.0)
-					guiGeom->SelectFacet(i);
+					interfGeom->SelectFacet(i);
 			}
-			guiGeom->UpdateSelection();
+			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
 
 		case MENU_FACET_SELECTVOL:
-			guiGeom->UnselectAll();
-			for (int i = 0; i < guiGeom->GetNbFacet(); i++)
-				if (guiGeom->GetFacet(i)->sh.isVolatile)
-					guiGeom->SelectFacet(i);
-			guiGeom->UpdateSelection();
+			interfGeom->UnselectAll();
+			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
+				if (interfGeom->GetFacet(i)->sh.isVolatile)
+					interfGeom->SelectFacet(i);
+			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
 
 		case MENU_FACET_SELECTDES:
-			guiGeom->UnselectAll();
-			for (int i = 0; i < guiGeom->GetNbFacet(); i++)
-				if (guiGeom->GetFacet(i)->sh.desorbType != DES_NONE)
-					guiGeom->SelectFacet(i);
-			guiGeom->UpdateSelection();
+			interfGeom->UnselectAll();
+			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
+				if (interfGeom->GetFacet(i)->sh.desorbType != DES_NONE)
+					interfGeom->SelectFacet(i);
+			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
 		case MENU_SELECT_HASDESFILE:
-			guiGeom->UnselectAll();
-			for (int i = 0; i < guiGeom->GetNbFacet(); i++)
-				if (guiGeom->GetFacet(i)->hasOutgassingFile)
-					guiGeom->SelectFacet(i);
-			guiGeom->UpdateSelection();
+			interfGeom->UnselectAll();
+			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
+				if (interfGeom->GetFacet(i)->hasOutgassingFile)
+					interfGeom->SelectFacet(i);
+			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
 
@@ -1684,13 +1684,13 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			timewisePlotter->Display(&worker);
 			break;
 		case MENU_VERTEX_REMOVE:
-			if (guiGeom->IsLoaded()) {
+			if (interfGeom->IsLoaded()) {
 				if (GLMessageBox::Display("Remove Selected vertices?\nNote: It will also affect facets that contain them!", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 					if (AskToReset()) {
 						if (worker.IsRunning()) worker.Stop_Public();
-						guiGeom->RemoveSelectedVertex();
+						interfGeom->RemoveSelectedVertex();
 						worker.CalcTotalOutgassing();
-						guiGeom->Rebuild(); //Will recalculate facet parameters
+						interfGeom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1820,7 +1820,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			if (!viewer3DSettings)	viewer3DSettings = new Viewer3DSettings();
 			viewer3DSettings->SetVisible(!viewer3DSettings->IsVisible());
 			viewer3DSettings->Reposition();
-			viewer3DSettings->Refresh(guiGeom, viewer[curViewer]);
+			viewer3DSettings->Refresh(interfGeom, viewer[curViewer]);
 
 		}
 		else if (src == textureScalingBtn) {
@@ -1857,7 +1857,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		else if (src == facetAdvParamsBtn) {
 			if (!facetAdvParams) {
 				facetAdvParams = new FacetAdvParams(&worker);
-				facetAdvParams->Refresh(guiGeom->GetSelectedFacets());
+				facetAdvParams->Refresh(interfGeom->GetSelectedFacets());
 			}
 			facetAdvParams->SetVisible(!facetAdvParams->IsVisible());
 			facetAdvParams->Reposition();
@@ -1875,7 +1875,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 void MolFlow::BuildPipe(double ratio, int steps) {
 
 	char tmp[256];
-	MolflowGeometry* guiGeom = worker.GetMolflowGeometry();
+	MolflowGeometry* interfGeom = worker.GetMolflowGeometry();
 
 	double R = 1.0;
 	double L = ratio * R;
@@ -1893,10 +1893,10 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	}
 	std::ostringstream temp;
 	temp << "PIPE" << L / R;
-	guiGeom->UpdateName(temp.str().c_str());
+	interfGeom->UpdateName(temp.str().c_str());
 
 	try {
-		guiGeom->BuildPipe(L, R, 0, step);
+		interfGeom->BuildPipe(L, R, 0, step);
 		worker.needsReload = true;
 
 		worker.CalcTotalOutgassing();
@@ -1907,7 +1907,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	}
 	catch (const std::exception& e) {
 		GLMessageBox::Display((char*)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
-		guiGeom->Clear();
+		interfGeom->Clear();
 		ResetSimulation(false);
 		return;
 	}
@@ -1964,11 +1964,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 void MolFlow::EmptyGeometry() {
 
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
 	ResetSimulation(false);
 
 	try {
-		guiGeom->EmptyGeometry();
+		interfGeom->EmptyGeometry();
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.model->wp = WorkerParams(); //reset to default
@@ -1976,7 +1976,7 @@ void MolFlow::EmptyGeometry() {
 	}
 	catch (const std::exception& e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
-		guiGeom->Clear();
+		interfGeom->Clear();
 		return;
 	}
 	worker.SetCurrentFileName("");
@@ -2039,7 +2039,7 @@ void MolFlow::LoadConfig() {
 	try {
 
 		auto file = FileReader("molflow.cfg");
-		MolflowGeometry* guiGeom = worker.GetMolflowGeometry();
+		MolflowGeometry* interfGeom = worker.GetMolflowGeometry();
 
 		file.ReadKeyword("showRules"); file.ReadKeyword(":");
 		for (auto& view : viewer)
@@ -2109,45 +2109,45 @@ void MolFlow::LoadConfig() {
 		for (auto& view : viewer)
 			view->showDir = file.ReadInt();
 		file.ReadKeyword("dirNorme"); file.ReadKeyword(":");
-		guiGeom->SetNormeRatio((float)file.ReadDouble());
+		interfGeom->SetNormeRatio((float)file.ReadDouble());
 		file.ReadKeyword("dirAutoNormalize"); file.ReadKeyword(":");
-		guiGeom->SetAutoNorme(file.ReadInt());
+		interfGeom->SetAutoNorme(file.ReadInt());
 		file.ReadKeyword("dirCenter"); file.ReadKeyword(":");
-		guiGeom->SetCenterNorme(file.ReadInt());
+		interfGeom->SetCenterNorme(file.ReadInt());
 		file.ReadKeyword("angle"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->angleStep = file.ReadDouble();
 		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
-		guiGeom->texAutoScale = file.ReadInt();
+		interfGeom->texAutoScale = file.ReadInt();
 		file.ReadKeyword("autoScale_include_constant_flow"); file.ReadKeyword(":");
-		guiGeom->texAutoScaleIncludeConstantFlow = (short)file.ReadInt();
+		interfGeom->texAutoScaleIncludeConstantFlow = (short)file.ReadInt();
 
 		file.ReadKeyword("textures_min_pressure_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[0].autoscale.min.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[0].autoscale.min.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_min_pressure_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[0].autoscale.min.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[0].autoscale.min.moments_only = file.ReadDouble();
 		file.ReadKeyword("textures_max_pressure_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[0].autoscale.max.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[0].autoscale.max.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_max_pressure_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[0].autoscale.max.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[0].autoscale.max.moments_only = file.ReadDouble();
 
 		file.ReadKeyword("textures_min_impingement_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[1].autoscale.min.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[1].autoscale.min.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_min_impingement_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[1].autoscale.min.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[1].autoscale.min.moments_only = file.ReadDouble();
 		file.ReadKeyword("textures_max_impingement_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[1].autoscale.max.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[1].autoscale.max.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_max_impingement_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[1].autoscale.max.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[1].autoscale.max.moments_only = file.ReadDouble();
 
 		file.ReadKeyword("textures_min_density_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[2].autoscale.min.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[2].autoscale.min.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_min_density_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[2].autoscale.min.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[2].autoscale.min.moments_only = file.ReadDouble();
 		file.ReadKeyword("textures_max_density_all"); file.ReadKeyword(":");
-		guiGeom->texture_limits[2].autoscale.max.steady_state = file.ReadDouble();
+		interfGeom->texture_limits[2].autoscale.max.steady_state = file.ReadDouble();
 		file.ReadKeyword("textures_max_density_moments_only"); file.ReadKeyword(":");
-		guiGeom->texture_limits[2].autoscale.max.moments_only = file.ReadDouble();
+		interfGeom->texture_limits[2].autoscale.max.moments_only = file.ReadDouble();
 
 		file.ReadKeyword("processNum"); file.ReadKeyword(":");
 		nbProc = file.ReadSizeT();
@@ -2162,11 +2162,11 @@ void MolFlow::LoadConfig() {
 			path = file.ReadString();
 		}
 		file.ReadKeyword("autonorme"); file.ReadKeyword(":");
-		guiGeom->SetAutoNorme(file.ReadInt());
+		interfGeom->SetAutoNorme(file.ReadInt());
 		file.ReadKeyword("centernorme"); file.ReadKeyword(":");
-		guiGeom->SetCenterNorme(file.ReadInt());
+		interfGeom->SetCenterNorme(file.ReadInt());
 		file.ReadKeyword("normeratio"); file.ReadKeyword(":");
-		guiGeom->SetNormeRatio((float)(file.ReadDouble()));
+		interfGeom->SetNormeRatio((float)(file.ReadDouble()));
 		file.ReadKeyword("autoSaveFrequency"); file.ReadKeyword(":");
 		autoSaveFrequency = file.ReadDouble();
 		file.ReadKeyword("autoSaveSimuOnly"); file.ReadKeyword(":");
@@ -2191,7 +2191,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("lowFluxCutoff"); file.ReadKeyword(":");
 		worker.model->otfParams.lowFluxCutoff = file.ReadDouble();
 		file.ReadKeyword("textureLogScale"); file.ReadKeyword(":");
-		guiGeom->texLogScale = file.ReadInt();
+		interfGeom->texLogScale = file.ReadInt();
 		file.ReadKeyword("leftHandedView"); file.ReadKeyword(":");
 		leftHandedView = file.ReadInt();
 		file.ReadKeyword("highlightNonplanarFacets"); file.ReadKeyword(":");
@@ -2237,7 +2237,7 @@ void MolFlow::SaveConfig() {
 	try {
 
 		auto file = FileWriter("molflow.cfg");
-		MolflowGeometry* guiGeom = worker.GetMolflowGeometry();
+		MolflowGeometry* interfGeom = worker.GetMolflowGeometry();
 
 		// Save flags
 		WRITEI("showRules", showRule);
@@ -2263,41 +2263,41 @@ void MolFlow::SaveConfig() {
 		WRITEI("dispNumLines", dispNumHits);
 		WRITEI("dispNumLeaks", dispNumLeaks);
 		WRITEI("dirShow", showDir);
-		file.Write("dirNorme:"); file.Write(guiGeom->GetNormeRatio(), "\n");
-		file.Write("dirAutoNormalize:"); file.Write(guiGeom->GetAutoNorme(), "\n");
-		file.Write("dirCenter:"); file.Write(guiGeom->GetCenterNorme(), "\n");
+		file.Write("dirNorme:"); file.Write(interfGeom->GetNormeRatio(), "\n");
+		file.Write("dirAutoNormalize:"); file.Write(interfGeom->GetAutoNorme(), "\n");
+		file.Write("dirCenter:"); file.Write(interfGeom->GetCenterNorme(), "\n");
 
 		WRITED("angle", angleStep);
-		file.Write("autoScale:"); file.Write(guiGeom->texAutoScale, "\n");
-		file.Write("autoScale_include_constant_flow:"); file.Write(guiGeom->texAutoScaleIncludeConstantFlow, "\n");
+		file.Write("autoScale:"); file.Write(interfGeom->texAutoScale, "\n");
+		file.Write("autoScale_include_constant_flow:"); file.Write(interfGeom->texAutoScaleIncludeConstantFlow, "\n");
 
 		file.Write("textures_min_pressure_all:");
-		file.Write(guiGeom->texture_limits[0].autoscale.min.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[0].autoscale.min.steady_state, "\n");
 		file.Write("textures_min_pressure_moments_only:");
-		file.Write(guiGeom->texture_limits[0].autoscale.min.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[0].autoscale.min.moments_only, "\n");
 		file.Write("textures_max_pressure_all:");
-		file.Write(guiGeom->texture_limits[0].autoscale.max.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[0].autoscale.max.steady_state, "\n");
 		file.Write("textures_max_pressure_moments_only:");
-		file.Write(guiGeom->texture_limits[0].autoscale.max.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[0].autoscale.max.moments_only, "\n");
 
 		file.Write("textures_min_impingement_all:");
-		file.Write(guiGeom->texture_limits[1].autoscale.min.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[1].autoscale.min.steady_state, "\n");
 
 		file.Write("textures_min_impingement_moments_only:");
-		file.Write(guiGeom->texture_limits[1].autoscale.min.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[1].autoscale.min.moments_only, "\n");
 		file.Write("textures_max_impingement_all:");
-		file.Write(guiGeom->texture_limits[1].autoscale.max.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[1].autoscale.max.steady_state, "\n");
 		file.Write("textures_max_impingement_moments_only:");
-		file.Write(guiGeom->texture_limits[1].autoscale.max.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[1].autoscale.max.moments_only, "\n");
 
 		file.Write("textures_min_density_all:");
-		file.Write(guiGeom->texture_limits[2].autoscale.min.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[2].autoscale.min.steady_state, "\n");
 		file.Write("textures_min_density_moments_only:");
-		file.Write(guiGeom->texture_limits[2].autoscale.min.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[2].autoscale.min.moments_only, "\n");
 		file.Write("textures_max_density_all:");
-		file.Write(guiGeom->texture_limits[2].autoscale.max.steady_state, "\n");
+		file.Write(interfGeom->texture_limits[2].autoscale.max.steady_state, "\n");
 		file.Write("textures_max_density_moments_only:");
-		file.Write(guiGeom->texture_limits[2].autoscale.max.moments_only, "\n");
+		file.Write(interfGeom->texture_limits[2].autoscale.max.moments_only, "\n");
 
 #if defined(_DEBUG)
 		file.Write("processNum:"); file.Write(numCPU, "\n");
@@ -2312,9 +2312,9 @@ void MolFlow::SaveConfig() {
 		}
 		file.Write("}\n");
 
-		file.Write("autonorme:"); file.Write(guiGeom->GetAutoNorme(), "\n");
-		file.Write("centernorme:"); file.Write(guiGeom->GetCenterNorme(), "\n");
-		file.Write("normeratio:"); file.Write((double)(guiGeom->GetNormeRatio()), "\n");
+		file.Write("autonorme:"); file.Write(interfGeom->GetAutoNorme(), "\n");
+		file.Write("centernorme:"); file.Write(interfGeom->GetCenterNorme(), "\n");
+		file.Write("normeratio:"); file.Write((double)(interfGeom->GetNormeRatio()), "\n");
 
 		file.Write("autoSaveFrequency:"); file.Write(autoSaveFrequency, "\n");
 		file.Write("autoSaveSimuOnly:"); file.Write(autoSaveSimuOnly, "\n");
@@ -2327,7 +2327,7 @@ void MolFlow::SaveConfig() {
 		WRITEI("hideLot", hideLot);
 		file.Write("lowFluxMode:"); file.Write(worker.model->otfParams.lowFluxMode, "\n");
 		file.Write("lowFluxCutoff:"); file.Write(worker.model->otfParams.lowFluxCutoff, "\n");
-		file.Write("textureLogScale:"); file.Write(guiGeom->texLogScale, "\n");
+		file.Write("textureLogScale:"); file.Write(interfGeom->texLogScale, "\n");
 		file.Write("leftHandedView:"); file.Write(leftHandedView, "\n");
 		file.Write("highlightNonplanarFacets:"); file.Write(highlightNonplanarFacets, "\n");
 		file.Write("highlightSelection:"); file.Write(highlightSelection, "\n");
@@ -2408,11 +2408,11 @@ void MolFlow::RefreshPlotterCombos() {
 
 void MolFlow::UpdateFacetHits(bool allRows) {
 	char tmp[256];
-	InterfaceGeometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* interfGeom = worker.GetGeometry();
 
 	try {
 		// Facet list
-		if (guiGeom->IsLoaded()) {
+		if (interfGeom->IsLoaded()) {
 
 			int sR, eR;
 			if (allRows)
@@ -2438,14 +2438,14 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 			for (int i = sR; i <= eR; i++) {
 				int facetId = facetList->GetValueInt(i, 0) - 1;
 				if (facetId == -2) facetId = (int)i;
-				if (i >= guiGeom->GetNbFacet()) {
+				if (i >= interfGeom->GetNbFacet()) {
 					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, guiGeom->GetNbFacet());
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, interfGeom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
 					throw std::runtime_error(errMsg);
 				}
-				InterfaceFacet* f = guiGeom->GetFacet(facetId);
+				InterfaceFacet* f = interfGeom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);
 				facetList->SetValueAt(0, i, tmp);
 

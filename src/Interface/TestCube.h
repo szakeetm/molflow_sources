@@ -21,14 +21,14 @@ class TestCube : public GLWindow {
 public:
 
   // Construction
-  TestCube(InterfaceGeometry *guiGeom,Worker *work);
+  TestCube(InterfaceGeometry *interfGeom,Worker *work);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message) override;
 
 private:
 
-  InterfaceGeometry     *guiGeom;
+  InterfaceGeometry     *interfGeom;
   Worker	   *work;
 
   GLButton    *buildButton;

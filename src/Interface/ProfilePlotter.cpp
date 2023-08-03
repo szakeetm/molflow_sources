@@ -206,11 +206,11 @@ void ProfilePlotter::Refresh() {
 	if (!worker) return;
 
 	//Rebuild selection combo box
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
-	size_t nb = guiGeom->GetNbFacet();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
+	size_t nb = interfGeom->GetNbFacet();
 	size_t nbProf = 1; // minimum 1 for custom input
 	for (size_t i = 0; i < nb; i++)
-		if (guiGeom->GetFacet(i)->sh.isProfile) nbProf++;
+		if (interfGeom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
     nbProf = 0;
@@ -223,7 +223,7 @@ void ProfilePlotter::Refresh() {
     selFacInput->SetText(facetInputText.str());
     nbProf = 1;
     for (size_t i = 0; i < nb; i++) {
-		InterfaceFacet *f = guiGeom->GetFacet(i);
+		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
 			tmp << "F#" << (i + 1) << " " << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
@@ -234,7 +234,7 @@ void ProfilePlotter::Refresh() {
 	profCombo->SetSelectedIndex(nbProf ? 0 : -1);
 	//Remove profiles that aren't present anymore
 	for (int v = nbView - 1; v >= 0; v--) { //int because it can be -1, nbView is also int
-		if (views[v]->userData1 >= guiGeom->GetNbFacet() || !guiGeom->GetFacet(views[v]->userData1)->sh.isProfile) {
+		if (views[v]->userData1 >= interfGeom->GetNbFacet() || !interfGeom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
 			for (size_t j = v; j < nbView - 1; j++) views[j] = views[j + 1];
@@ -361,7 +361,7 @@ void ProfilePlotter::refreshViews() {
 	if (!lock) return;
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
 	double scaleY;
 
@@ -369,8 +369,8 @@ void ProfilePlotter::refreshViews() {
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
-		if (v->userData1 >= 0 && v->userData1 < guiGeom->GetNbFacet()) {
-			InterfaceFacet *f = guiGeom->GetFacet(v->userData1);
+		if (v->userData1 >= 0 && v->userData1 < interfGeom->GetNbFacet()) {
+			InterfaceFacet *f = interfGeom->GetFacet(v->userData1);
 
 			v->Reset();
 			const std::vector<ProfileSlice>& profile = worker->globalState->facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
@@ -464,17 +464,17 @@ void ProfilePlotter::refreshViews() {
 
 				// Volatile profile
 				v->Reset();
-				size_t nb = guiGeom->GetNbFacet();
+				size_t nb = interfGeom->GetNbFacet();
 				for (size_t j = 0; j < nb; j++) {
-					InterfaceFacet *f = guiGeom->GetFacet(j);
+					InterfaceFacet *f = interfGeom->GetFacet(j);
 					if (f->sh.isVolatile) {
 					    const FacetHitBuffer& fCount = worker->globalState->facetStates[j].momentResults[worker->displayedMoment].hits;
-						double z = guiGeom->GetVertex(f->indices[0])->z;
+						double z = interfGeom->GetVertex(f->indices[0])->z;
 						v->Add(z,fCount.nbAbsEquiv / worker->globalStatCache.globalHits.nbDesorbed, false);
 					}
 				}
 				// Last
-				InterfaceFacet *f = guiGeom->GetFacet(28);
+				InterfaceFacet *f = interfGeom->GetFacet(28);
                 const FacetHitBuffer& fCount = worker->globalState->facetStates[28].momentResults[worker->displayedMoment].hits;
 				double fnbAbs = fCount.nbAbsEquiv;
 				v->Add(1000.0, fnbAbs / worker->globalStatCache.globalHits.nbDesorbed, false);
@@ -590,7 +590,7 @@ void ProfilePlotter::ResetHighlighting() {
 * \param message Type of the source (button)
 */
 void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
 	switch (message) {
 	case MSG_BUTTON:
@@ -600,17 +600,17 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if(idx >= 0) {
-                guiGeom->UnselectAll();
+                interfGeom->UnselectAll();
                 size_t facetRow;
                 if (idx > 0) { //Something selected, facets start with idx==1, custom input is idx==0 (not -1)
                     int facetId = profCombo->GetUserValueAt(idx);
-                    guiGeom->GetFacet(facetId)->selected = true;
+                    interfGeom->GetFacet(facetId)->selected = true;
                     mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
                     facetRow = profCombo->GetUserValueAt(idx);
                 } else {
                     std::vector<size_t> facetIds;
                     try {
-                        splitFacetList(facetIds, selFacInput->GetText(), guiGeom->GetNbFacet());
+                        splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                         if(facetIds.empty())
                             return;
                     }
@@ -624,13 +624,13 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     }
 
                     for (const auto facetId : facetIds) {
-                        guiGeom->GetFacet(facetId)->selected = Contains({selButton, addButton}, src);
+                        interfGeom->GetFacet(facetId)->selected = Contains({selButton, addButton}, src);
                     }
 
                     facetRow = facetIds.back();
                 }
 
-                guiGeom->UpdateSelection();
+                interfGeom->UpdateSelection();
                 mApp->UpdateFacetParams(true);
                 mApp->UpdateFacetlistSelected();
                 mApp->facetList->ScrollToVisible(facetRow, 1, true);
@@ -646,7 +646,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			    else {
                     std::vector<size_t> facetIds;
                     try {
-                        splitFacetList(facetIds, selFacInput->GetText(), guiGeom->GetNbFacet());
+                        splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                     }
                     catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -655,7 +655,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
                     bool warnedOnce = false;
                     for (const auto facetId : facetIds) {
-                        if(guiGeom->GetFacet(facetId)->sh.isProfile) {
+                        if(interfGeom->GetFacet(facetId)->sh.isProfile) {
                             if(addView(facetId) && !warnedOnce) {
                                 warnedOnce = true;
                                 GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
@@ -679,7 +679,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 else {
                     std::vector<size_t> facetIds;
                     try {
-                        splitFacetList(facetIds, selFacInput->GetText(), guiGeom->GetNbFacet());
+                        splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                     }
                     catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -720,8 +720,8 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 GLDataView *v = views[viewId];
 				plottedFacetIds.push_back(v->userData1);
 			}
-			guiGeom->UnselectAll();
-			guiGeom->SetSelection(plottedFacetIds,false,false);
+			interfGeom->UnselectAll();
+			interfGeom->SetSelection(plottedFacetIds,false,false);
 		}
 		break;
 	case MSG_COMBO:
@@ -772,7 +772,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_CLOSE:
 		SetVisible(false);
-		guiGeom->UpdateSelection(); //Hide color highlighting
+		interfGeom->UpdateSelection(); //Hide color highlighting
     default:
         break;
 	}
@@ -844,12 +844,12 @@ std::map<int,GLColor> ProfilePlotter::GetIDColorPairs() const {
 * \brief Applies or removes facet highlighting
 */
 void ProfilePlotter::applyFacetHighlighting() const {
-    auto guiGeom = this->worker->GetGeometry();
+    auto interfGeom = this->worker->GetGeometry();
     if(useProfColToggle->GetState()){
-        guiGeom->SetPlottedFacets(plottedFacets);
+        interfGeom->SetPlottedFacets(plottedFacets);
     }
     else {
-        guiGeom->SetPlottedFacets(std::map<int, GLColor>());
+        interfGeom->SetPlottedFacets(std::map<int, GLColor>());
     }
-    guiGeom->UpdateSelection();
+    interfGeom->UpdateSelection();
 }

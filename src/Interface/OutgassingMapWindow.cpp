@@ -149,12 +149,12 @@ void OutgassingMapWindow::GetSelected() {
 
   if(!worker) return;
 
-  InterfaceGeometry *guiGeom = worker->GetGeometry();
+  InterfaceGeometry *interfGeom = worker->GetGeometry();
   selFacet = NULL;
   int i = 0;
-  size_t nb = guiGeom->GetNbFacet();
+  size_t nb = interfGeom->GetNbFacet();
   while(!selFacet && i<nb) {
-    if( guiGeom->GetFacet(i)->selected ) selFacet = guiGeom->GetFacet(i);
+    if( interfGeom->GetFacet(i)->selected ) selFacet = interfGeom->GetFacet(i);
     if(!selFacet) i++;
   }
 

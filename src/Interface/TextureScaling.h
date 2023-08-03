@@ -51,7 +51,7 @@ private:
 	void UpdateSize();
 
 	Worker         *worker;
-	MolflowGeometry       *guiGeom;
+	MolflowGeometry       *interfGeom;
 	GeometryViewer **viewers;
 
 	GLToggle      *texAutoScale;

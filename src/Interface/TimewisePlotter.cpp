@@ -169,16 +169,16 @@ void TimewisePlotter::Refresh() {
 	Reset();
 	if (!worker) return;
 	if (!ParseMoments()) return;
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
-	size_t nb = guiGeom->GetNbFacet();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
+	size_t nb = interfGeom->GetNbFacet();
 	size_t nbProf = 0;
 	for (size_t i = 0; i < nb; i++)
-		if (guiGeom->GetFacet(i)->sh.isProfile) nbProf++;
+		if (interfGeom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
     for (size_t i = 0; i < nb; i++) {
-		InterfaceFacet *f = guiGeom->GetFacet(i);
+		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
 			tmp << "F#" << (i + 1) << " " << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
@@ -190,7 +190,7 @@ void TimewisePlotter::Refresh() {
 	if (nbProf>0 && nbView == 0) addView(profCombo->GetUserValueAt(0));
 	//Remove profiles that aren't present anymore
 	if (nbView>0)
-		if (views[0]->userData1 >= guiGeom->GetNbFacet() || !guiGeom->GetFacet(views[0]->userData1)->sh.isProfile) {
+		if (views[0]->userData1 >= interfGeom->GetNbFacet() || !interfGeom->GetFacet(views[0]->userData1)->sh.isProfile) {
 			Reset();
 		}
 	refreshViews();
@@ -252,7 +252,7 @@ void TimewisePlotter::refreshViews() {
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
 	double scaleY;
 
@@ -264,7 +264,7 @@ void TimewisePlotter::refreshViews() {
 		if (v->userData1<0 || v->userData1>worker->interfaceMomentCache.size()) continue; //invalid moment
 		int idx = profCombo->GetSelectedIndex();
 		if (idx < 0) return;
-		InterfaceFacet *f = guiGeom->GetFacet(profCombo->GetUserValueAt(idx));
+		InterfaceFacet *f = interfGeom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
 		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 		//double fnbHit = (double)fCount->hit.nbMCHit;
@@ -368,9 +368,9 @@ void TimewisePlotter::refreshViews() {
 void TimewisePlotter::addView(int facet) {
 
 	char tmp[128];
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
-	InterfaceFacet *f = guiGeom->GetFacet(facet);
+	InterfaceFacet *f = interfGeom->GetFacet(facet);
 
 	if (constantFlowToggle->GetState()) { //add constant flow
 		GLDataView *v = new GLDataView();
@@ -409,7 +409,7 @@ void TimewisePlotter::addView(int facet) {
 */
 void TimewisePlotter::remView(int facet) {
 
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
 	bool found = false;
 	int i = 0;
@@ -445,7 +445,7 @@ void TimewisePlotter::Reset() {
 * \param message Type of the source (button)
 */
 void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {
@@ -453,10 +453,10 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			if (idx >= 0 && idx < guiGeom->GetNbFacet()) {
-				guiGeom->UnselectAll();
-				guiGeom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
-				guiGeom->UpdateSelection();
+			if (idx >= 0 && idx < interfGeom->GetNbFacet()) {
+				interfGeom->UnselectAll();
+				interfGeom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
+				interfGeom->UpdateSelection();
 				mApp->UpdateFacetParams(true);
 				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
 				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);

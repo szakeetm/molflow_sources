@@ -100,7 +100,7 @@ extern SynRad* mApp;
 * \brief Default constructor for a worker
 */
 Worker::Worker() : simManager(0) {
-	guiGeom = new MolflowGeometry();
+	interfGeom = new MolflowGeometry();
 	simuTimer.ReInit();
 }
 
@@ -109,7 +109,7 @@ Worker::Worker() : simManager(0) {
 * \return pointer of the geometry object
 */
 MolflowGeometry* Worker::GetMolflowGeometry() {
-	return guiGeom;
+	return interfGeom;
 }
 
 /**
@@ -202,7 +202,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 	if (!ok) return;
 
 		if (isSTR) {
-			guiGeom->SaveSTR(saveSelected);
+			interfGeom->SaveSTR(saveSelected);
 		}
 		else {
 			try {
@@ -215,13 +215,13 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					toOpen = fileName; //Txt, stl, geo, etc...
 					auto file = FileWriter(toOpen);//We first write a GEO file, then compress it to GEO7Z later
 					if (isTXT) {
-						guiGeom->SaveTXT(file, globalState, saveSelected);
+						interfGeom->SaveTXT(file, globalState, saveSelected);
 					}
 					else if (isGEO || isGEO7Z) {
-						guiGeom->SaveGEO(file, prg, globalState, this, saveSelected, crashSave);
+						interfGeom->SaveGEO(file, prg, globalState, this, saveSelected, crashSave);
 					}
 					else if (isSTL) {
-						guiGeom->SaveSTL(file, prg);
+						interfGeom->SaveSTL(file, prg);
 					}
 				}
 				else if (isXML || isXMLzip) {
@@ -404,7 +404,7 @@ void Worker::ExportProfiles(const char* fn) {
 		sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
 		throw std::runtime_error(tmp);
 	}
-	guiGeom->ExportProfiles(f, isTXT, this);
+	interfGeom->ExportProfiles(f, isTXT, this);
 	fclose(f);
 
 }
@@ -419,10 +419,10 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 	//returns false if cancelled or error, vector of file name to export otherwise, empty vector if no sleected facets have angle map
 	bool overwriteAll = false;
 
-	//InterfaceGeometry *guiGeom = GetGeometry();
+	//InterfaceGeometry *interfGeom = GetGeometry();
 	std::vector<size_t> angleMapFacetIndices;
-	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
-		InterfaceFacet* f = guiGeom->GetFacet(i);
+	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
+		InterfaceFacet* f = interfGeom->GetFacet(i);
 		// saveAll facets e.g. when auto saving or just when selected
 		if ((saveAll || f->selected) && !f->angleMapCache.empty()) {
 			angleMapFacetIndices.push_back(i);
@@ -460,7 +460,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 			std::string tmp = "Cannot open file for writing " + saveFileName;
 			throw std::runtime_error(tmp.c_str());
 		}
-		file << guiGeom->GetFacet(facetIndex)->GetAngleMap(isTXT ? 2 : 1);
+		file << interfGeom->GetFacet(facetIndex)->GetAngleMap(isTXT ? 2 : 1);
 		file.close();
 		listOfFiles.push_back(saveFileName);
 	}
@@ -516,7 +516,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			auto file = FileReader(fileName);
 
 			if (!insert) {
-				guiGeom->LoadTXT(file, prg, this);
+				interfGeom->LoadTXT(file, prg, this);
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
@@ -525,13 +525,13 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 			else { //insert
 
-				guiGeom->InsertTXT(file, prg, newStr);
+				interfGeom->InsertTXT(file, prg, newStr);
 				MarkToReload();
 			}
 		}
 
 		catch (const std::exception&) {
-			if (!insert) guiGeom->Clear();
+			if (!insert) interfGeom->Clear();
 			throw;
 		}
 
@@ -563,21 +563,21 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 			if (ret != GLDLG_CANCEL_U) {
 				if (!insert) {
-					guiGeom->LoadSTL(fileName, prg, scaleFactor, false);
+					interfGeom->LoadSTL(fileName, prg, scaleFactor, false);
 					fullFileName = fileName;
 				}
 				else { //insert
-					int targetStructId = guiGeom->viewStruct;
+					int targetStructId = interfGeom->viewStruct;
 					if (targetStructId == -1) targetStructId = 0;
 					mApp->changedSinceSave = true;
-					guiGeom->LoadSTL(fileName, prg, scaleFactor, true, newStr, targetStructId);
+					interfGeom->LoadSTL(fileName, prg, scaleFactor, true, newStr, targetStructId);
 					MarkToReload();
 				}
 				mApp->DisplayCollapseDialog();
 			}
 		}
 		catch (const std::exception&) {
-			if (!insert) guiGeom->Clear();
+			if (!insert) interfGeom->Clear();
 			throw;
 		}
 
@@ -587,14 +587,14 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		try {
 			auto file = FileReader(fileName);
 			prg.SetVisible(true);
-			guiGeom->LoadSTR(file, prg);
+			interfGeom->LoadSTR(file, prg);
 			//RealReload();
 
 			fullFileName = fileName;
 		}
 
 		catch (const std::exception&) {
-			guiGeom->Clear();
+			interfGeom->Clear();
 			throw;
 		}
 
@@ -614,11 +614,11 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 
 			if (!insert) {
-				guiGeom->LoadSYN(*file, prg, &version, this);
+				interfGeom->LoadSYN(*file, prg, &version, this);
 				model->otfParams.desorptionLimit = 0;
 			}
 			else { //insert
-				guiGeom->InsertSYN(*file, prg, newStr);
+				interfGeom->InsertSYN(*file, prg, newStr);
 			}
 
 			prg.SetMessage("Reloading worker with new geometry...");
@@ -627,7 +627,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		}
 
 		catch (const std::exception&) {
-			if (!insert) guiGeom->Clear();
+			if (!insert) interfGeom->Clear();
 			throw;
 		}
 
@@ -648,7 +648,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 			if (!insert) {
 
-				guiGeom->LoadGEO(*file, prg, &version, this);
+				interfGeom->LoadGEO(*file, prg, &version, this);
 				// Add moments only after user Moments are completely initialized
 				try {
 					TimeMoments::ParseAndCheckUserMoments(interfaceMomentCache, userMoments, prg);
@@ -662,7 +662,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				RealReload(); //for the loading of textures
 
 				if (version >= 8)
-					guiGeom->LoadProfileGEO(*file, globalState, version);
+					interfGeom->LoadProfileGEO(*file, globalState, version);
 
 				simManager.ShareGlobalCounter(globalState, particleLog); //Global hit counters and hit/leak cache
 				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
@@ -674,13 +674,13 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			}
 			else { //insert
 				mApp->changedSinceSave = true;
-				guiGeom->InsertGEO(*file, prg, newStr);
+				interfGeom->InsertGEO(*file, prg, newStr);
 				MarkToReload();
 			}
 		}
 
 		catch (const std::exception&) {
-			if (!insert) guiGeom->Clear();
+			if (!insert) interfGeom->Clear();
 			throw;
 		}
 
@@ -744,7 +744,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 			if (!insert) {
 
-				guiGeom->Clear();
+				interfGeom->Clear();
 				FlowIO::XmlLoader loader;
 				std::shared_ptr<MolflowSimulationModel> mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 				{
@@ -773,30 +773,30 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
-				guiGeom->InitializeGeometry();
+				interfGeom->InitializeGeometry();
 
 				prg.SetMessage("Building mesh...");
-				auto nbFacet = guiGeom->GetNbFacet();
+				auto nbFacet = interfGeom->GetNbFacet();
 
 
 				for (size_t i = 0; i < nbFacet; i++) {
 					double p = (double)i / (double)nbFacet;
 
 					prg.SetProgress(p);
-					auto f = guiGeom->GetFacet(i);
+					auto f = interfGeom->GetFacet(i);
 					f->InitVisibleEdge();
 					if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 						char errMsg[512];
 						sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 						throw Error(errMsg);
 					}
-					guiGeom->BuildFacetList(f);
+					interfGeom->BuildFacetList(f);
 
 				}
 				prg.SetMessage("Calculating OpenGL render data...");
-				guiGeom->InitializeInterfaceGeometry();
+				interfGeom->InitializeInterfaceGeometry();
 
-				guiGeom->UpdateName(fileName.c_str());
+				interfGeom->UpdateName(fileName.c_str());
 
 				prg.SetMessage("Reloading worker with new geometry...");
 				try {
@@ -839,8 +839,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 			}
 			else { //insert
-				guiGeom->InsertXML(rootNode, this, prg, newStr);
-				model->sh = *guiGeom->GetGeomProperties();
+				interfGeom->InsertXML(rootNode, this, prg, newStr);
+				model->sh = *interfGeom->GetGeomProperties();
 				mApp->changedSinceSave = true;
 				ResetWorkerStats();
 
@@ -849,7 +849,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		}
 		catch (const std::exception& e) {
 			if (!insert) {
-				guiGeom->Clear();
+				interfGeom->Clear();
 
 			}
 			throw e;
@@ -878,16 +878,16 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 void Worker::SimModelToInterfaceGeom() {
 
-	*guiGeom->GetGeomProperties() = model->sh;
+	*interfGeom->GetGeomProperties() = model->sh;
 
 	bool hasVolatile = false;
 
 	for (int i = 0; i < model->structures.size(); i++) {
-		guiGeom->SetStructureName(i, model->structures[i].name);
+		interfGeom->SetStructureName(i, model->structures[i].name);
 	}
 
-	guiGeom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
-	guiGeom->SetInterfaceFacets(model->facets, this);
+	interfGeom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
+	interfGeom->SetInterfaceFacets(model->facets, this);
 }
 
 void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings, GLProgress_GUI& prg)
@@ -907,9 +907,9 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 	}
 	
 	//Apply facet view settings that don't exist in MolflowSimFacet, only InterfaceFacet
-	if (userSettings.facetViewSettings.size() == guiGeom->GetNbFacet()) {
-		for (size_t facetId = 0; facetId < guiGeom->GetNbFacet(); facetId++) {
-			auto facet = guiGeom->GetFacet(facetId);
+	if (userSettings.facetViewSettings.size() == interfGeom->GetNbFacet()) {
+		for (size_t facetId = 0; facetId < interfGeom->GetNbFacet(); facetId++) {
+			auto facet = interfGeom->GetFacet(facetId);
 			facet->viewSettings.textureVisible = userSettings.facetViewSettings[facetId].textureVisible;
 			facet->viewSettings.volumeVisible = userSettings.facetViewSettings[facetId].volumeVisible;
 		}
@@ -948,7 +948,7 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 	auto prg = GLProgress_GUI("Loading textures", "Please wait");
 	try {
 		prg.SetVisible(true);
-		guiGeom->LoadTexturesGEO(f, prg, globalState, version);
+		interfGeom->LoadTexturesGEO(f, prg, globalState, version);
 		RebuildTextures();
 	}
 	catch (const std::exception& e) {
@@ -964,10 +964,10 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 * \brief Saves current AngleMap from cache to results
 */
 int Worker::SendAngleMaps() {
-	size_t nbFacet = guiGeom->GetNbFacet();
+	size_t nbFacet = interfGeom->GetNbFacet();
 	std::vector<std::vector<size_t>> angleMapCaches;
 	for (size_t i = 0; i < nbFacet; i++) {
-		InterfaceFacet* f = guiGeom->GetFacet(i);
+		InterfaceFacet* f = interfGeom->GetFacet(i);
 		angleMapCaches.push_back(f->angleMapCache);
 	}
 
@@ -994,7 +994,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	//cellPropertiesIds->textIncVector
 	//etc.   
 
-	//auto guiGeom = GetMolflowGeometry();
+	//auto interfGeom = GetMolflowGeometry();
 	// TODO: Proper clear call before for Real reload?
 	//TODO: return model, just like LoadGeometry()
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
@@ -1003,8 +1003,8 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->vertices3.clear();
 	mf_model->tdParams.moments = interfaceMomentCache;
 
-	for (size_t nbV = 0; nbV < guiGeom->GetNbVertex(); ++nbV) {
-		mf_model->vertices3.emplace_back(*guiGeom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
+	for (size_t nbV = 0; nbV < interfGeom->GetNbVertex(); ++nbV) {
+		mf_model->vertices3.emplace_back(*interfGeom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
 	}
 
 	mf_model->maxwell_CDF_1K.clear();
@@ -1015,11 +1015,11 @@ bool Worker::InterfaceGeomToSimModel() {
 	for (auto& param : this->interfaceParameterCache)
 		mf_model->tdParams.parameters.emplace_back(param);
 
-	mf_model->sh = *guiGeom->GetGeomProperties();
+	mf_model->sh = *interfGeom->GetGeomProperties();
 
 	mf_model->structures.resize(mf_model->sh.nbSuper); //Create structures
 	for (int i = 0; i < mf_model->sh.nbSuper; i++) {
-		mf_model->structures[i].name = guiGeom->GetStructureName(i);
+		mf_model->structures[i].name = interfGeom->GetStructureName(i);
 	}
 
 	bool hasVolatile = false;
@@ -1027,7 +1027,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	for (size_t facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
 		MolflowSimFacet sFac;
 		{
-			InterfaceFacet* facet = guiGeom->GetFacet(facIdx);
+			InterfaceFacet* facet = interfGeom->GetFacet(facIdx);
 
 			//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
 			//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
@@ -1131,7 +1131,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	prg.SetVisible(true);
 
 	if (!sendOnly) {
-		if (simManager.nbThreads == 0 && !guiGeom->IsLoaded()) {
+		if (simManager.nbThreads == 0 && !interfGeom->IsLoaded()) {
 			return;
 		}
 
@@ -1147,7 +1147,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	}
 
 	prg.SetMessage("Reloading structures for simulation unit...");
-	ReloadSim(sendOnly, prg); //Convert interf. guiGeom to worker::mode and construct global counters, then copy to simManager.simulation
+	ReloadSim(sendOnly, prg); //Convert interf. interfGeom to worker::mode and construct global counters, then copy to simManager.simulation
 	
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 	//mf_model->CalcTotalOutgassing(); // ReloadSim() / PrepareToRun() already called it
@@ -1216,10 +1216,10 @@ void Worker::Start() {
 	if (model->wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
 		// Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
 		bool found = false;
-		size_t nbF = guiGeom->GetNbFacet();
+		size_t nbF = interfGeom->GetNbFacet();
 		size_t i = 0;
 		while (i < nbF && !found) {
-			found = (guiGeom->GetFacet(i)->sh.desorbType != DES_NONE);
+			found = (interfGeom->GetFacet(i)->sh.desorbType != DES_NONE);
 			if (!found) i++;
 		}
 
@@ -1311,7 +1311,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 			file=std::make_unique<FileReader>(fileName);  //original file opened
 		}
 
-		guiGeom->ImportDesorption_SYN(*file, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
+		interfGeom->ImportDesorption_SYN(*file, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
 		CalcTotalOutgassing();
 	}
 }
@@ -1347,7 +1347,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 		else { //syn
 			file=std::make_unique<FileReader>(fileName);  //original file opened
 		}
-		guiGeom->AnalyzeSYNfile(*file, prg, nbFacet, nbTextured, nbDifferent);
+		interfGeom->AnalyzeSYNfile(*file, prg, nbFacet, nbTextured, nbDifferent);
 	}
 }
 
@@ -1482,9 +1482,9 @@ MolflowUserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<Simulati
 	result.selections = mApp->selections;
 	result.views = mApp->views;
 
-	auto nbFacet = guiGeom->GetNbFacet();
+	auto nbFacet = interfGeom->GetNbFacet();
 	for (size_t facetId = 0; facetId < nbFacet; facetId++) {
-		auto facet = guiGeom->GetFacet(facetId);
+		auto facet = interfGeom->GetFacet(facetId);
 		FacetViewSetting vs;
 		vs.textureVisible = facet->viewSettings.textureVisible;
 		vs.volumeVisible = facet->viewSettings.volumeVisible;

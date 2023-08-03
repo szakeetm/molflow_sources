@@ -154,7 +154,7 @@ TextureScaling::TextureScaling():GLWindow() {
 
 	RestoreDeviceObjects();
 
-	guiGeom = NULL;
+	interfGeom = NULL;
 
 }
 
@@ -164,9 +164,9 @@ TextureScaling::TextureScaling():GLWindow() {
 void TextureScaling::UpdateSize() {
 
 	size_t swap = 0;
-	size_t nbFacet = guiGeom->GetNbFacet();
+	size_t nbFacet = interfGeom->GetNbFacet();
 	for(size_t i=0;i<nbFacet;i++) {
-		InterfaceFacet *f = guiGeom->GetFacet(i);
+		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if(f->sh.isTextured) {
 			swap += f->GetTexSwapSize(colormapBtn->GetState());
 		}
@@ -185,31 +185,31 @@ void TextureScaling::Update() {
 	char tmp[128];
 	/*
 	//Manual minimum label
-	sprintf(tmp, "%.3E", guiGeom->texture_limits[guiGeom->textureMode].manual.min.all);
+	sprintf(tmp, "%.3E", interfGeom->texture_limits[interfGeom->textureMode].manual.min.all);
 	texMinText->SetText(tmp);
 	//Manual maximum label
-	sprintf(tmp, "%.3E", guiGeom->texture_limits[guiGeom->textureMode].manual.max.all);
+	sprintf(tmp, "%.3E", interfGeom->texture_limits[interfGeom->textureMode].manual.max.all);
 	texMaxText->SetText(tmp);
 	*/
 
 	//Set autoscale minimum label
 	double minScale = 0.0;
     double maxScale = 0.0;
-    if(guiGeom->texAutoScaleIncludeConstantFlow == 0){
+    if(interfGeom->texAutoScaleIncludeConstantFlow == 0){
         minScale=
-                guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only;
+                interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
         maxScale=
-                guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only;
-    } else if(guiGeom->texAutoScaleIncludeConstantFlow == 1){
+                interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
+    } else if(interfGeom->texAutoScaleIncludeConstantFlow == 1){
         minScale=
-                std::min(guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.steady_state, guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only);
+                std::min(interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state, interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only);
         maxScale=
-                std::max(guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.steady_state, guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only);
+                std::max(interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state, interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only);
     } else { // == 2
         minScale=
-                guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.steady_state;
+                interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state;
         maxScale=
-                guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.steady_state;
+                interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state;
     }
 
 	sprintf(tmp,"%.3E",minScale);
@@ -218,42 +218,42 @@ void TextureScaling::Update() {
 	sprintf(tmp,"%.3E",maxScale);
 	texCMaxText->SetText(tmp);
 
-	texAutoScale->SetState(guiGeom->texAutoScale);
-	includeConstantFlow->SetVisible(guiGeom->texAutoScale);
-	includeConstantFlow->SetSelectedIndex(guiGeom->texAutoScaleIncludeConstantFlow);
-	logBtn->SetState(guiGeom->texLogScale);
-	gradient->SetScale(guiGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
-	if( !guiGeom->texAutoScale ) { // Set manual texture scaling
+	texAutoScale->SetState(interfGeom->texAutoScale);
+	includeConstantFlow->SetVisible(interfGeom->texAutoScale);
+	includeConstantFlow->SetSelectedIndex(interfGeom->texAutoScaleIncludeConstantFlow);
+	logBtn->SetState(interfGeom->texLogScale);
+	gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
+	if( !interfGeom->texAutoScale ) { // Set manual texture scaling
 		gradient->SetMinMax(
-			guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state,
-			guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state
+			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state,
+			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state
 			);
 	} else { //Set auto texture scaling
 	    // Has been previously calculated
         /*double minScale = 0.0;
         double maxScale = 0.0;
-        if(guiGeom->texAutoScaleIncludeConstantFlow == 0){
+        if(interfGeom->texAutoScaleIncludeConstantFlow == 0){
             minScale=
-                    guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only;
+                    interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
             maxScale=
-                    guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only;
-        } else if(guiGeom->texAutoScaleIncludeConstantFlow == 1){
+                    interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
+        } else if(interfGeom->texAutoScaleIncludeConstantFlow == 1){
             minScale=
-                    std::min(guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.all, guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only);
+                    std::min(interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.all, interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only);
             maxScale=
-                    std::max(guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.all, guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only);
+                    std::max(interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.all, interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only);
         } else { // == 2
             minScale=
-                    guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.all;
+                    interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.all;
             maxScale=
-                    guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.all;
+                    interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.all;
         }*/
 		gradient->SetMinMax(minScale, maxScale);
 	}
 	//colormapBtn->SetThreadStates(viewers[0]->showColormap);
-	colormapBtn->SetState(guiGeom->texColormap);
-	gradient->SetType(guiGeom->texColormap /*viewers[0]->showColormap*/?GRADIENT_COLOR:GRADIENT_BW );
-	modeCombo->SetSelectedIndex(guiGeom->textureMode);
+	colormapBtn->SetState(interfGeom->texColormap);
+	gradient->SetType(interfGeom->texColormap /*viewers[0]->showColormap*/?GRADIENT_COLOR:GRADIENT_BW );
+	modeCombo->SetSelectedIndex(interfGeom->textureMode);
 	UpdateSize();
 
 }
@@ -266,9 +266,9 @@ void TextureScaling::Update() {
 void TextureScaling::Display(Worker *w,GeometryViewer **v) {
 
 	worker = w;
-	guiGeom = w->GetMolflowGeometry();
+	interfGeom = w->GetMolflowGeometry();
 	viewers = v;
-	if(!guiGeom->IsLoaded()) {
+	if(!interfGeom->IsLoaded()) {
 		GLMessageBox::Display("No geometry loaded.","No geometry",GLDLG_OK,GLDLG_ICONERROR);
 		return;
 	}
@@ -276,9 +276,9 @@ void TextureScaling::Display(Worker *w,GeometryViewer **v) {
 	SetVisible(true);
 	Update();
 	char tmp[64];
-	sprintf(tmp, "%g", guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state);
+	sprintf(tmp, "%g", interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state);
 	texMinText->SetText(tmp);
-	sprintf(tmp, "%g", guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state);
+	sprintf(tmp, "%g", interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state);
 	texMaxText->SetText(tmp);
 }
 
@@ -311,10 +311,10 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 				Update();
 				return;
 			}
-			guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state = min;
-			guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state = max;
-			guiGeom->texAutoScale = texAutoScale->GetState();
-			guiGeom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetSelectedIndex();
+			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
+			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
+			interfGeom->texAutoScale = texAutoScale->GetState();
+			interfGeom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetSelectedIndex();
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
@@ -323,28 +323,28 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			Update();
 
 		} else if (src==setCurrentButton) {
-		    if(guiGeom->texAutoScaleIncludeConstantFlow == 0){
-                guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state=
-                        guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only;
-                guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state=
-                        guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only;
-		    } else if(guiGeom->texAutoScaleIncludeConstantFlow == 1){
-                guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state=
-                        std::min(guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.steady_state, guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.moments_only);
-                guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state=
-                        std::max(guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.steady_state, guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.moments_only);
+		    if(interfGeom->texAutoScaleIncludeConstantFlow == 0){
+                interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state=
+                        interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
+                interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state=
+                        interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
+		    } else if(interfGeom->texAutoScaleIncludeConstantFlow == 1){
+                interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state=
+                        std::min(interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state, interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only);
+                interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state=
+                        std::max(interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state, interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only);
 		    } else { // == 2
-                guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state=
-                        guiGeom->texture_limits[guiGeom->textureMode].autoscale.min.steady_state;
-                guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state=
-                        guiGeom->texture_limits[guiGeom->textureMode].autoscale.max.steady_state;
+                interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state=
+                        interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state;
+                interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state=
+                        interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state;
 		    }
 
 			texMinText->SetText(texCMinText->GetText());
 			texMaxText->SetText(texCMaxText->GetText());
 			texAutoScale->SetState(false);
 			includeConstantFlow->SetVisible(false);
-			guiGeom->texAutoScale=false;
+			interfGeom->texAutoScale=false;
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
@@ -357,20 +357,20 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 	case MSG_TOGGLE:
 		if (src==colormapBtn) {
 			//for(int i=0;i<MAX_VIEWER;i++) viewers[i]->showColormap = colormapBtn->GetState();
-			guiGeom->texColormap = colormapBtn->GetState();
+			interfGeom->texColormap = colormapBtn->GetState();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==texAutoScale) {
-			guiGeom->texAutoScale = texAutoScale->GetState();
+			interfGeom->texAutoScale = texAutoScale->GetState();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==this->includeConstantFlow) {
-			guiGeom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetSelectedIndex();
+			interfGeom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetSelectedIndex();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==logBtn) {
-			guiGeom->texLogScale = logBtn->GetState();
-			gradient->SetScale(guiGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
+			interfGeom->texLogScale = logBtn->GetState();
+			gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 			worker->Update(0.0f);
 			Update();
 		}
@@ -382,16 +382,16 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 
 	case MSG_COMBO:
 		if(src==modeCombo) {
-			guiGeom->textureMode=modeCombo->GetSelectedIndex();
+			interfGeom->textureMode=modeCombo->GetSelectedIndex();
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
 				GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			char tmp[256];
-			sprintf(tmp,"%g",guiGeom->texture_limits[guiGeom->textureMode].manual.min.steady_state);
+			sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state);
 			texMinText->SetText(tmp);
-			sprintf(tmp,"%g",guiGeom->texture_limits[guiGeom->textureMode].manual.max.steady_state);
+			sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state);
 			texMaxText->SetText(tmp);
 			Update();
 		}

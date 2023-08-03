@@ -156,15 +156,15 @@ void TexturePlotter::GetSelected() {
 
 	if (!worker) return;
 
-	InterfaceGeometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *interfGeom = worker->GetGeometry();
 	selFacetId = -1;
 	selFacet = NULL;
 	int i = 0;
-	size_t nb = guiGeom->GetNbFacet();
+	size_t nb = interfGeom->GetNbFacet();
 	while (selFacetId==-1 && i < nb) {
-		if (guiGeom->GetFacet(i)->selected) {
+		if (interfGeom->GetFacet(i)->selected) {
 			selFacetId = i;
-			selFacet = guiGeom->GetFacet(i);
+			selFacet = interfGeom->GetFacet(i);
 		}
 		else {
 			i++;

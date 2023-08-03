@@ -26,44 +26,44 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowGeometry.h"
 #include "Facet_shared.h"
 
-FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* guiGeom, std::vector<SelectionGroup>* sel){
+FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* interfGeom, std::vector<SelectionGroup>* sel){
     worker = w;
-    geometry = guiGeom;
+    geometry = interfGeom;
     selections = sel;
 }
 
 bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, const std::vector <std::pair<std::string, std::optional<double>>>& aboveFormulaValues) {
     bool ok = true;
-    InterfaceGeometry* guiGeom = worker->GetGeometry();
-    int nbFacet = guiGeom->GetNbFacet();
+    InterfaceGeometry* interfGeom = worker->GetGeometry();
+    int nbFacet = interfGeom->GetNbFacet();
     int idx;
 
 
     if ((idx = GetFacetIndex(v->varName, "A")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = guiGeom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
+        if (ok) v->value = interfGeom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
     }
     else if ((idx = GetFacetIndex(v->varName, "D")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = (double)guiGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed;
+        if (ok) v->value = (double)interfGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed;
     }
     else if ((idx = GetFacetIndex(v->varName, "MCH")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = (double)guiGeom->GetFacet(idx - 1)->facetHitCache.nbMCHit;
+        if (ok) v->value = (double)interfGeom->GetFacet(idx - 1)->facetHitCache.nbMCHit;
     }
     else if ((idx = GetFacetIndex(v->varName, "H")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = (double)guiGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv;
+        if (ok) v->value = (double)interfGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv;
     }
     else if ((idx = GetFacetIndex(v->varName, "P")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = guiGeom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / guiGeom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
+        if (ok) v->value = interfGeom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / interfGeom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetFacetIndex(v->varName, "DEN")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) {
-            InterfaceFacet *f = guiGeom->GetFacet(idx - 1);
+            InterfaceFacet *f = interfGeom->GetFacet(idx - 1);
             v->value = f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity /
                        f->GetArea() *
                        worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
@@ -71,28 +71,28 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if ((idx = GetFacetIndex(v->varName, "Z")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = guiGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv /
-                           guiGeom->GetFacet(idx - 1)->GetArea() *
+        if (ok) v->value = interfGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv /
+                           interfGeom->GetFacet(idx - 1)->GetArea() *
                            worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
     }
     else if ((idx = GetFacetIndex(v->varName, "V")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) /*v->value = 4.0*(double)(guiGeom->GetFacet(idx - 1)->facetHitCache.nbMCHit + guiGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed) /
-			guiGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_ort_velocity;*/
-            v->value = (guiGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv + static_cast<double>(guiGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed)) / guiGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_velocity;
+        if (ok) /*v->value = 4.0*(double)(interfGeom->GetFacet(idx - 1)->facetHitCache.nbMCHit + interfGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed) /
+			interfGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_ort_velocity;*/
+            v->value = (interfGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv + static_cast<double>(interfGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed)) / interfGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_velocity;
     }
     else if ((idx = GetFacetIndex(v->varName, "T")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = guiGeom->GetFacet(idx - 1)->sh.temperature;
+        if (ok) v->value = interfGeom->GetFacet(idx - 1)->sh.temperature;
     }
     else if ((idx = GetFacetIndex(v->varName, "AR")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = guiGeom->GetFacet(idx - 1)->sh.area;
+        if (ok) v->value = interfGeom->GetFacet(idx - 1)->sh.area;
     }
     else if ((idx = GetFacetIndex(v->varName, "Force")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) {
-            InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+            InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
             auto forceN = f->facetHitCache.impulse.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
             v->value = forceN;
         }
@@ -100,7 +100,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if ((idx = GetFacetIndex(v->varName, "ForceX")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) {
-            InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+            InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
             auto forceX = f->facetHitCache.impulse.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
             v->value = forceX;
         }
@@ -108,7 +108,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "ForceY")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto forceY = f->facetHitCache.impulse.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
 			v->value = forceY;
 		}
@@ -116,7 +116,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "ForceZ")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto forceZ = f->facetHitCache.impulse.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
 			v->value = forceZ;
 		}
@@ -124,7 +124,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if ((idx = GetFacetIndex(v->varName, "ForceSqr")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) {
-            InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+            InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
             auto force_sqrN = f->facetHitCache.impulse_square.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment)
                 * Square(worker->model->wp.gasMass / 1000 / 6E23);
             v->value = force_sqrN;
@@ -134,7 +134,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if ((idx = GetFacetIndex(v->varName, "ForceSqrX")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) {
-            InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+            InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
             auto force_sqrX = f->facetHitCache.impulse_square.x * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
             v->value = force_sqrX;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
@@ -143,7 +143,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "ForceSqrY")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto force_sqrY = f->facetHitCache.impulse_square.y * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
 			v->value = force_sqrY;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
@@ -152,7 +152,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "ForceSqrZ")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto force_sqrZ = f->facetHitCache.impulse_square.z * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
 			v->value = force_sqrZ;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
@@ -161,7 +161,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "Torque")) > 0) {
 	    ok = (idx <= nbFacet);
 	    if (ok) {
-		    InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+		    InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 		    auto torqueN = f->facetHitCache.impulse_momentum.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 		    v->value = torqueN;
 	    }
@@ -169,7 +169,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if ((idx = GetFacetIndex(v->varName, "TorqueX")) > 0) {
     ok = (idx <= nbFacet);
     if (ok) {
-        InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+        InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
         auto torqueX = f->facetHitCache.impulse_momentum.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
         v->value = torqueX;
     }
@@ -177,7 +177,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "TorqueY")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto torqueY = f->facetHitCache.impulse_momentum.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 			v->value = torqueY;
 		}
@@ -185,7 +185,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	else if ((idx = GetFacetIndex(v->varName, "TorqueZ")) > 0) {
 		ok = (idx <= nbFacet);
 		if (ok) {
-			InterfaceFacet* f = guiGeom->GetFacet(idx - 1);
+			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
 			auto torqueZ = f->facetHitCache.impulse_momentum.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 			v->value = torqueZ;
 		}
@@ -210,8 +210,8 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if (iequals(v->varName, "DESAR")) {
         double sumArea = 0.0;
-        for (size_t i2 = 0; i2 < guiGeom->GetNbFacet(); i2++) {
-            InterfaceFacet *f_tmp = guiGeom->GetFacet(i2);
+        for (size_t i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
+            InterfaceFacet *f_tmp = interfGeom->GetFacet(i2);
             if (f_tmp->sh.desorbType) sumArea += f_tmp->GetArea();
         }
         v->value = sumArea;
@@ -219,8 +219,8 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if (iequals(v->varName, "ABSAR")) {
         double sumArea = 0.0;
 
-        for (size_t i2 = 0; i2 < guiGeom->GetNbFacet(); i2++) {
-            InterfaceFacet *f_tmp = guiGeom->GetFacet(i2);
+        for (size_t i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
+            InterfaceFacet *f_tmp = interfGeom->GetFacet(i2);
             if (f_tmp->sh.sticking > 0.0) sumArea += f_tmp->GetArea()*f_tmp->sh.opacity;
         }
         v->value = sumArea;
@@ -288,8 +288,8 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         if (tokens.size() == 3) { // Like SUM(H,3,6) = H3 + H4 + H5 + H6
             size_t startId, endId, pos;
             try {
-                startId = std::stol(tokens[1], &pos); if (pos != tokens[1].size() || startId > guiGeom->GetNbFacet() || startId == 0) return false;
-                endId = std::stol(tokens[2], &pos); if (pos != tokens[2].size() || endId > guiGeom->GetNbFacet() || endId == 0) return false;
+                startId = std::stol(tokens[1], &pos); if (pos != tokens[1].size() || startId > interfGeom->GetNbFacet() || startId == 0) return false;
+                endId = std::stol(tokens[2], &pos); if (pos != tokens[2].size() || endId > interfGeom->GetNbFacet() || endId == 0) return false;
             }
             catch (...) {
                 return false;
@@ -302,7 +302,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
             if (!(beginsWith(uppercase(tokens[1]), "S"))) return false;
             std::string selIdString = tokens[1]; selIdString.erase(0, 1);
             if (iContains({ "EL" }, selIdString)) { //Current selections
-                facetsToSum = guiGeom->GetSelectedFacets();
+                facetsToSum = interfGeom->GetSelectedFacets();
             }
             else {
                 size_t selGroupId, pos;
@@ -320,65 +320,65 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         double sumArea = 0.0; //We average by area
         for (auto& sel : facetsToSum) {
             if (iequals("MCH",tokens[0])) {
-                sumLL+=guiGeom->GetFacet(sel)->facetHitCache.nbMCHit;
+                sumLL+=interfGeom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
             else if (Contains({ "H", "h" }, tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.nbHitEquiv;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
             else if (Contains({ "D", "d" }, tokens[0])) {
-                sumLL+=guiGeom->GetFacet(sel)->facetHitCache.nbDesorbed;
+                sumLL+=interfGeom->GetFacet(sel)->facetHitCache.nbDesorbed;
             } else if (Contains({ "A", "a" }, tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
             } else if (Contains({ "AR", "ar" }, tokens[0])) {
-                sumArea += guiGeom->GetFacet(sel)->GetArea();
+                sumArea += interfGeom->GetFacet(sel)->GetArea();
             }
             else if (Contains({ "P", "p" }, tokens[0])) {
-                sumD+= guiGeom->GetFacet(sel)->facetHitCache.sum_v_ort *
+                sumD+= interfGeom->GetFacet(sel)->facetHitCache.sum_v_ort *
                        (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
-                sumArea += guiGeom->GetFacet(sel)->GetArea();
+                sumArea += interfGeom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
-                InterfaceFacet *f = guiGeom->GetFacet(sel);
+                InterfaceFacet *f = interfGeom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
-                sumArea += guiGeom->GetFacet(sel)->GetArea();
+                sumArea += interfGeom->GetFacet(sel)->GetArea();
             } else if (Contains({ "Z", "z" }, tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.nbHitEquiv;
-                sumArea += guiGeom->GetFacet(sel)->GetArea();
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.nbHitEquiv;
+                sumArea += interfGeom->GetFacet(sel)->GetArea();
             }
             else if(iequals("Force", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse.Norme();
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse.Norme();
             }
             else if(iequals("ForceX", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse.x;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse.x;
             }
             else if (iequals("ForceY", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse.y;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse.y;
             }
             else if (iequals("ForceZ", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse.z;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse.z;
             }
             else if (iequals("ForceSqr", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_square.Norme();
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_square.Norme();
             }
             else if (iequals("ForceSqrX", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_square.x;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_square.x;
             }
             else if (iequals("ForceSqrY", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_square.y;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_square.y;
             }
             else if (iequals("ForceSqrZ", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_square.z;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_square.z;
             }
             else if (iequals("Torque", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_momentum.Norme();
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_momentum.Norme();
             }
             else if (iequals("TorqueX", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_momentum.x;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_momentum.x;
             }
             else if (iequals("TorqueY", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_momentum.y;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_momentum.y;
             }
             else if (iequals("TorqueZ", tokens[0])) {
-                sumD += guiGeom->GetFacet(sel)->facetHitCache.impulse_momentum.z;
+                sumD += interfGeom->GetFacet(sel)->facetHitCache.impulse_momentum.z;
             }
             else return false;
         }

@@ -75,7 +75,7 @@ TestCube::TestCube(InterfaceGeometry *g,Worker *w):GLWindow() {
 
 	RestoreDeviceObjects();
 
-	guiGeom = g;
+	interfGeom = g;
 	work = w;
 
 }
@@ -92,7 +92,7 @@ void TestCube::ProcessMessage(GLComponent *src,int message) {
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
 		} else if (src==moveButton || src==copyButton) {
-			if (guiGeom->GetNbSelected()==0) {
+			if (interfGeom->GetNbSelected()==0) {
 				GLMessageBox::Display("No facets selected","Nothing to move",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
@@ -110,7 +110,7 @@ void TestCube::ProcessMessage(GLComponent *src,int message) {
 			}
 			if (mApp->AskToReset()){
 
-				guiGeom->MoveSelectedFacets(dX,dY,dZ,src==copyButton,work);
+				interfGeom->MoveSelectedFacets(dX,dY,dZ,src==copyButton,work);
 				//theApp->UpdateModelParams();
 				work->MarkToReload(); 
 
