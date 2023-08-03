@@ -193,10 +193,10 @@ ImportDesorption::ImportDesorption():GLWindow() {
 
 /**
 * \brief Sets thread worker and geometry object to this window
-* \param s Geometry object
+* \param s InterfaceGeometry object
 * \param w Worker object
 */
-void ImportDesorption::SetGeometry(Geometry *s,Worker *w) {
+void ImportDesorption::SetGeometry(InterfaceGeometry *s,Worker *w) {
 
 	guiGeom = s;
 	work = w;

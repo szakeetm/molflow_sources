@@ -44,10 +44,10 @@ int    axisMode2;
 
 /**
 * \brief Constructor with basic initialisation for the movement window (Tools/moving parts)
-* \param g pointer to Geometry
+* \param g pointer to InterfaceGeometry
 * \param w pointer to Worker handler
 */
-Movement::Movement(Geometry *g,Worker *w):GLWindow() {
+Movement::Movement(InterfaceGeometry *g,Worker *w):GLWindow() {
 
 	int wD = 537;
 	int hD = 312;

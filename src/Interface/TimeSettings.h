@@ -30,7 +30,7 @@ class GLButton;
 class GLTextField;
 class GLLabel;
 
-class Geometry;
+class InterfaceGeometry;
 class Worker;
 
 class TimeSettings : public GLWindow {

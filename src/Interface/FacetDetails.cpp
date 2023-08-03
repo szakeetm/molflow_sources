@@ -447,7 +447,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 */
 void FacetDetails::UpdateTable() {
 
-  Geometry *guiGeom = worker->GetGeometry();
+  InterfaceGeometry *guiGeom = worker->GetGeometry();
   auto selectedFacets = guiGeom->GetSelectedFacets();
   static char ret[256];
   strcpy(ret,"");
@@ -498,7 +498,7 @@ void FacetDetails::Update() {
   if(!worker) return;
   if(!IsVisible()) return;
 
-  Geometry *s = worker->GetGeometry();
+  InterfaceGeometry *s = worker->GetGeometry();
   size_t nbS = s->GetNbSelectedFacets();
   
   if(nbS==0) {

@@ -347,7 +347,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 
 		if (FileUtils::Exist(compressorName)) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
 			std::ostringstream tmp;
-			tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
+			tmp << compressorName << " \"" << fileNameWithGeo << "\" InterfaceGeometry.geo";
 #ifdef _WIN32
 			char* command[1];
 			command[0] = new char[512];
@@ -419,7 +419,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 	//returns false if cancelled or error, vector of file name to export otherwise, empty vector if no sleected facets have angle map
 	bool overwriteAll = false;
 
-	//Geometry *guiGeom = GetGeometry();
+	//InterfaceGeometry *guiGeom = GetGeometry();
 	std::vector<size_t> angleMapFacetIndices;
 	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
 		InterfaceFacet* f = guiGeom->GetFacet(i);
@@ -483,7 +483,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			RealReload();
 		}
 		catch (const std::exception& e) {
-			GLMessageBox::Display(e.what(), "Error (Reloading Geometry)", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display(e.what(), "Error (Reloading InterfaceGeometry)", GLDLG_OK, GLDLG_ICONERROR);
 		}
 	}
 	//char CWD[MAX_PATH];
@@ -607,7 +607,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (ext == "syn7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
 			}
 			else {
 				file=std::make_unique<FileReader>(fileName);  //original file opened
@@ -640,7 +640,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			if (ext == "geo7z") {
 				//decompress file
 				prg.SetMessage("Decompressing file...");
-				file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.geo");
+				file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.geo");
 			}
 			else { //not geo7z
 				file=std::make_unique<FileReader>(fileName); //geo file, open it directly
@@ -1102,7 +1102,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 		if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
 			((sFac.sh.superDest - 1) >= mf_model->sh.nbSuper || sFac.sh.superDest < 0)) {
-			// Geometry error
+			// InterfaceGeometry error
 			//ClearSimulation();
 			//ReleaseDataport(loader);
 			std::ostringstream err;
@@ -1127,7 +1127,7 @@ bool Worker::InterfaceGeomToSimModel() {
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 	GLProgress_GUI prg("Performing preliminary calculations on geometry...",
-		"Passing Geometry to workers");
+		"Passing InterfaceGeometry to workers");
 	prg.SetVisible(true);
 
 	if (!sendOnly) {
@@ -1305,7 +1305,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 
 	if (isSYN || isSYN7Z) {
 		if (isSYN7Z) {
-			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
 		}
 		else {
 			file=std::make_unique<FileReader>(fileName);  //original file opened
@@ -1342,7 +1342,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 		if (isSYN7Z) {
 			//decompress file
 			prg.SetMessage("Decompressing file...");
-			file=FileReader::ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+			file=FileReader::ExtractFrom7zAndOpen(fileName, "InterfaceGeometry.syn");
 		}
 		else { //syn
 			file=std::make_unique<FileReader>(fileName);  //original file opened
@@ -1368,7 +1368,7 @@ void Worker::PrepareToRun() {
 		model->wp.latestMoment = model->wp.timeWindowSize * .5;
 	}
 
-	Geometry* g = GetGeometry();
+	InterfaceGeometry* g = GetGeometry();
 
 	bool needsAngleMapStatusRefresh = false;
 
@@ -1420,7 +1420,7 @@ void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facet
 	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
-	Geometry* g = GetGeometry();
+	InterfaceGeometry* g = GetGeometry();
 
 	for (size_t i = 0; i < g->GetNbFacet(); i++) {
 		InterfaceFacet* f = g->GetFacet(i);

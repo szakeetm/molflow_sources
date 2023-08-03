@@ -26,7 +26,7 @@ class GLList;
 class GLCombo;
 class GLLabel;
 class GLToggle;
-class Geometry;
+class InterfaceGeometry;
 class GeometryViewer;
 class Worker;
 class InterfaceFacet;

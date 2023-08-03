@@ -228,7 +228,7 @@ Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> mo
     double L = ratio * R;
     //int    step = 10;
     //1. Load Input File (regular XML)
-    // Geometry
+    // InterfaceGeometry
     model->BuildPrisma(L, R, angle, 0.0, step);
     // Settings
     // Previous results
@@ -266,7 +266,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
     {
         FlowIO::XmlLoader loader;
         // Easy if XML is split into multiple parts
-        // Geometry
+        // InterfaceGeometry
         // Settings
         // Previous results
         try {
@@ -483,7 +483,7 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
 
         if ((mfFac->sh.superDest || mfFac->sh.isVolatile) &&
             ((mfFac->sh.superDest - 1) >= model->sh.nbSuper || mfFac->sh.superDest < 0)) {
-            // Geometry error
+            // InterfaceGeometry error
             Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
             return 1;
         }

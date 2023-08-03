@@ -27,7 +27,7 @@ class GLLabel;
 class GLToggle;
 class GLCombo;
 class GLTitledPanel;
-class Geometry;
+class InterfaceGeometry;
 class GeometryViewer;
 
 class Viewer3DSettings : public GLWindow {
@@ -38,7 +38,7 @@ public:
   Viewer3DSettings();
 
   // Component methods
-  void Refresh(Geometry *s,GeometryViewer *v);
+  void Refresh(InterfaceGeometry *s,GeometryViewer *v);
   void Reposition(int wD = 0, int hD = 0);
 
   // Implementation
@@ -46,7 +46,7 @@ public:
 
 private:
 
-  Geometry       *guiGeom;
+  InterfaceGeometry       *guiGeom;
   GeometryViewer *viewer;
 
   GLTitledPanel *panel;

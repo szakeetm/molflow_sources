@@ -197,7 +197,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     timer.Stop();
 
     Log::console_msg_master(3, "  Load {} successful\n", simModelPtr->sh.name);
-    Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModelPtr->vertices3.size(), simModelPtr->sh.nbFacet);
+    Log::console_msg_master(3, "  InterfaceGeometry: {} vertex {} facets\n", simModelPtr->vertices3.size(), simModelPtr->sh.nbFacet);
 
     Log::console_msg_master(3, "  Geom size: {} bytes\n", simModelPtr->size());
     Log::console_msg_master(3, "  Number of structure: {}\n", simModelPtr->sh.nbSuper);

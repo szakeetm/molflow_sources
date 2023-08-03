@@ -203,7 +203,7 @@ void Viewer3DSettings :: Reposition(int wD, int hD) {
 * \param s geometry the data comes from
 * \param v geometry viewer the settings apply to
 */
-void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
+void Viewer3DSettings::Refresh(InterfaceGeometry *s,GeometryViewer *v) {
 
   char tmp[128];
 

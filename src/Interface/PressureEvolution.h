@@ -30,7 +30,7 @@ class GLDataView;
 class GLToggle;
 class GLTextField;
 class Worker;
-class Geometry;
+class InterfaceGeometry;
 
 
 class PressureEvolution : public GLWindow {

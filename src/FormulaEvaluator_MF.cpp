@@ -34,7 +34,7 @@ FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* guiGeom, st
 
 bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, const std::vector <std::pair<std::string, std::optional<double>>>& aboveFormulaValues) {
     bool ok = true;
-    Geometry* guiGeom = worker->GetGeometry();
+    InterfaceGeometry* guiGeom = worker->GetGeometry();
     int nbFacet = guiGeom->GetNbFacet();
     int idx;
 

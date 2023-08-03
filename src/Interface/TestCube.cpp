@@ -23,7 +23,7 @@ GNU General Public License for more details.
 
 extern MolFlow *theApp;
 
-TestCube::TestCube(Geometry *g,Worker *w):GLWindow() {
+TestCube::TestCube(InterfaceGeometry *g,Worker *w):GLWindow() {
 
 	int wD = 300;
 	int hD = 400;

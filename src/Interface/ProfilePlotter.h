@@ -33,7 +33,7 @@ class GLDataView;
 class GLToggle;
 class GLTextField;
 class Worker;
-class Geometry;
+class InterfaceGeometry;
 
 class ProfilePlotter : public GLWindow {
 

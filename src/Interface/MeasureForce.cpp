@@ -36,10 +36,10 @@ extern MolFlow* mApp;
 
 /**
 * \brief Constructor with basic initialisation for the measure forces window (Tools/Measure forces)
-* \param g pointer to Geometry
+* \param g pointer to InterfaceGeometry
 * \param w pointer to Worker handler
 */
-MeasureForce::MeasureForce(Geometry *g,Worker *w):GLWindow() {
+MeasureForce::MeasureForce(InterfaceGeometry *g,Worker *w):GLWindow() {
 
 	int wD = 380;
 	int hD = 160;

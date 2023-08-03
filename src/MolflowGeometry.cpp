@@ -2443,7 +2443,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node& saveDoc, Worker* work, GLProgre
 		rootNode.attribute("type") = "molflow";
 		rootNode.append_attribute("version") = appVersionId;
 	}
-	xml_node geomNode = rootNode.append_child("Geometry");
+	xml_node geomNode = rootNode.append_child("InterfaceGeometry");
 
 	prg.SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
@@ -3018,7 +3018,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 	if (structId == -1) structId = 0;
 	UnselectAll();
 
-	xml_node geomNode = loadXML.child("Geometry");
+	xml_node geomNode = loadXML.child("InterfaceGeometry");
 	//Vertices
 	size_t nbNewVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 	size_t nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
@@ -3245,7 +3245,7 @@ bool MolflowGeometry::CompareXML_simustate(const std::string& fileName_lhs, cons
 
 void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
 	//General Facets
-	Geometry::SetInterfaceFacets(sFacets, work);
+	InterfaceGeometry::SetInterfaceFacets(sFacets, work);
 
 	// Init Molflow properties
 	size_t index = 0;
@@ -3271,7 +3271,7 @@ void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationF
 	}
 }
 
-PhysicalValue Geometry::GetPhysicalValue(InterfaceFacet* f, const PhysicalMode& mode, const double moleculesPerTP, const double densityCorrection, const double gasMass, const int index, const FacetMomentSnapshot& facetSnap) {
+PhysicalValue InterfaceGeometry::GetPhysicalValue(InterfaceFacet* f, const PhysicalMode& mode, const double moleculesPerTP, const double densityCorrection, const double gasMass, const int index, const FacetMomentSnapshot& facetSnap) {
 
 	//if x==y==-1 and buffer=NULL then returns facet value, otherwise texture cell [x,y] value
 	//buff is either NULL or a (BYTE*) pointer to texture or direction buffer, must be locked by AccessDataport before call

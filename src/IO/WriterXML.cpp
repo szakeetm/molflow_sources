@@ -41,7 +41,7 @@ xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
         auto rootNode = saveDoc.document_element();
         if(!saveDoc.child("SimulationEnvironment")){
             rootNode = saveDoc.root();
-            if(rootNode.child("Geometry")){
+            if(rootNode.child("InterfaceGeometry")){
                 oldFormatUsed = true;
             }
         }
@@ -89,9 +89,9 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     bool saveAllFacets = selectionToSave.empty();
 
     if(updateRootNode)
-        rootNode.remove_child("Geometry");
+        rootNode.remove_child("InterfaceGeometry");
     prg.SetMessage("Saving vertices...");
-    xml_node geomNode = rootNode.prepend_child("Geometry");
+    xml_node geomNode = rootNode.prepend_child("InterfaceGeometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
     for (size_t i = 0; i < model->vertices3.size(); i++) {

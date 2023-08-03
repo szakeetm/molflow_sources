@@ -26,7 +26,7 @@ class GLToggle;
 class GLTitledPanel;
 class GLCombo;
 
-class Geometry;
+class InterfaceGeometry;
 class Worker;
 
 #ifndef _IMPORTDESORPTIONH_
@@ -40,7 +40,7 @@ public:
   ImportDesorption();
 
   // Component methods
-  void SetGeometry(Geometry *s,Worker *w);
+  void SetGeometry(InterfaceGeometry *s,Worker *w);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message) override;
@@ -50,7 +50,7 @@ private:
 	void    LoadConvFile(const char* fileName);
 	void   EnableDisableComponents();
 
-  Geometry      *guiGeom;
+  InterfaceGeometry      *guiGeom;
   Worker	    *work;
 
   GLTitledPanel *filePanel;

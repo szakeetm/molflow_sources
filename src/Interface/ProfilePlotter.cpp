@@ -206,7 +206,7 @@ void ProfilePlotter::Refresh() {
 	if (!worker) return;
 
 	//Rebuild selection combo box
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 	size_t nb = guiGeom->GetNbFacet();
 	size_t nbProf = 1; // minimum 1 for custom input
 	for (size_t i = 0; i < nb; i++)
@@ -361,7 +361,7 @@ void ProfilePlotter::refreshViews() {
 	if (!lock) return;
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	double scaleY;
 
@@ -590,7 +590,7 @@ void ProfilePlotter::ResetHighlighting() {
 * \param message Type of the source (button)
 */
 void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	switch (message) {
 	case MSG_BUTTON:

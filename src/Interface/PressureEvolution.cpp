@@ -165,7 +165,7 @@ void PressureEvolution::SetBounds(int x, int y, int w, int h) {
 void PressureEvolution::Refresh() {
 	//Rebuilds combo and calls refreshviews
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	//Remove views that aren't present anymore
 	for (auto i = views.begin();i!=views.end();) {
@@ -222,7 +222,7 @@ void PressureEvolution::refreshChart() {
 
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 	GlobalHitBuffer& gHits = worker->globalStatCache;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
@@ -286,7 +286,7 @@ void PressureEvolution::refreshChart() {
 */
 void PressureEvolution::addView(size_t facetId) {
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	// Check that view is not already added
 	{
@@ -348,7 +348,7 @@ void PressureEvolution::Reset() {
 * \param message Type of the source (button)
 */
 void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == selButton) {

@@ -34,7 +34,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class Worker;
 
-class MolflowGeometry: public Geometry {
+class MolflowGeometry: public InterfaceGeometry {
 
 public:
 
@@ -66,7 +66,7 @@ public:
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr);
 	bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
                               const std::string &fileName_out, double cmpThreshold) override;
-	// Geometry
+	// InterfaceGeometry
     void     BuildPipe(double L, double R, double s, int step);
     void     BuildPrisma(double L, double R, double angle, double s, int step);
 	void     LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version);

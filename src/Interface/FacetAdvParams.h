@@ -28,7 +28,7 @@ class GLTitledPanel;
 class GLLabel;
 class GLProgress_GUI;
 class GLCombo;
-class Geometry;
+class InterfaceGeometry;
 class Worker;
 
 class FacetAdvParams : public GLWindow {
@@ -60,7 +60,7 @@ private:
 	void ApplyDrawSettings(); //Apply View Settings without stopping the simulation
 
 	Worker   *worker;
-	Geometry *guiGeom;
+	InterfaceGeometry *guiGeom;
 	int       fIdx;
 	double sumArea, sumOutgassing;
 	size_t sumAngleMapSize;

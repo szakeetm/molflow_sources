@@ -169,7 +169,7 @@ void TimewisePlotter::Refresh() {
 	Reset();
 	if (!worker) return;
 	if (!ParseMoments()) return;
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 	size_t nb = guiGeom->GetNbFacet();
 	size_t nbProf = 0;
 	for (size_t i = 0; i < nb; i++)
@@ -252,7 +252,7 @@ void TimewisePlotter::refreshViews() {
 	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	double scaleY;
 
@@ -368,7 +368,7 @@ void TimewisePlotter::refreshViews() {
 void TimewisePlotter::addView(int facet) {
 
 	char tmp[128];
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	InterfaceFacet *f = guiGeom->GetFacet(facet);
 
@@ -409,7 +409,7 @@ void TimewisePlotter::addView(int facet) {
 */
 void TimewisePlotter::remView(int facet) {
 
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 
 	bool found = false;
 	int i = 0;
@@ -445,7 +445,7 @@ void TimewisePlotter::Reset() {
 * \param message Type of the source (button)
 */
 void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
-	Geometry *guiGeom = worker->GetGeometry();
+	InterfaceGeometry *guiGeom = worker->GetGeometry();
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {

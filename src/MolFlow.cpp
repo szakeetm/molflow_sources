@@ -562,7 +562,7 @@ void MolFlow::ClearFacetParams() {
 
 void MolFlow::ApplyFacetParams() {
 
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	size_t nbFacet = guiGeom->GetNbFacet();
 
 	// Sticking
@@ -788,7 +788,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	char tmp[256];
 
 	// Update params
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	// Get list of selected facet
 	auto selectedFacets = guiGeom->GetSelectedFacets();
 	size_t nbSel = selectedFacets.size();
@@ -1065,7 +1065,7 @@ int MolFlow::InvalidateDeviceObjects()
 
 void MolFlow::ExportProfiles() {
 
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	if (guiGeom->GetNbSelectedFacets() == 0) {
 		GLMessageBox::Display("Empty selection", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
@@ -1141,7 +1141,7 @@ void MolFlow::ImportAngleMaps() {
 
 void MolFlow::CopyAngleMapToClipboard()
 {
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	size_t angleMapFacetIndex;
 	bool found = false;
 	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
@@ -1182,7 +1182,7 @@ void MolFlow::CopyAngleMapToClipboard()
 }
 
 void MolFlow::ClearAngleMapsOnSelection() {
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	for (size_t i = 0; i < guiGeom->GetNbFacet(); i++) {
 		InterfaceFacet* f = guiGeom->GetFacet(i);
 		if (f->selected && !f->angleMapCache.empty()) {
@@ -1277,7 +1277,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 
 		worker.LoadGeometry(filePath);
 
-		Geometry* guiGeom = worker.GetGeometry();
+		InterfaceGeometry* guiGeom = worker.GetGeometry();
 
 
 		// Default initialisation
@@ -1380,7 +1380,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//worker.InsertGeometry(newStr, fullName);
 		worker.LoadGeometry(filePath, true, newStr);
 
-		Geometry* guiGeom = worker.GetGeometry();
+		InterfaceGeometry* guiGeom = worker.GetGeometry();
 		worker.PrepareToRun();
 		worker.CalcTotalOutgassing();
 
@@ -1485,7 +1485,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 
 	if (ProcessMessage_shared(src, message)) return; //Already processed by common interface
 
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	switch (message) {
 
 		//MENU --------------------------------------------------------------------
@@ -1964,7 +1964,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 void MolFlow::EmptyGeometry() {
 
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 	ResetSimulation(false);
 
 	try {
@@ -2408,7 +2408,7 @@ void MolFlow::RefreshPlotterCombos() {
 
 void MolFlow::UpdateFacetHits(bool allRows) {
 	char tmp[256];
-	Geometry* guiGeom = worker.GetGeometry();
+	InterfaceGeometry* guiGeom = worker.GetGeometry();
 
 	try {
 		// Facet list

@@ -33,7 +33,7 @@ class GLLabel;
 class GLToggle;
 class GLTitledPanel;
 
-class Geometry;
+class InterfaceGeometry;
 class Worker;
 
 #define MODE_NOMOVE 0
@@ -44,7 +44,7 @@ class Movement : public GLWindow {
 
 public:
   // Construction
-	Movement(Geometry *guiGeom, Worker *work);
+	Movement(InterfaceGeometry *guiGeom, Worker *work);
   void ProcessMessage(GLComponent *src,int message) override;
   void Update();
 
@@ -96,7 +96,7 @@ private:
 
   int mode;
 
-  Geometry     *guiGeom;
+  InterfaceGeometry     *guiGeom;
   Worker	   *work;
 
 };

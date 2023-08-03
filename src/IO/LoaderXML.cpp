@@ -50,7 +50,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     }
     loadModel->sh.name = FileUtils::GetFilename(inputFile);
 
-    xml_node geomNode = rootNode.child("Geometry");
+    xml_node geomNode = rootNode.child("InterfaceGeometry");
 
     prg.SetMessage("Loading vertices...");
     //Vertices
