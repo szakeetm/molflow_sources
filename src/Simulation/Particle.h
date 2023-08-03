@@ -81,7 +81,7 @@ namespace MFSim {
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
-            std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
+            ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
         bool UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
             std::string& myStatus, std::mutex& statusMutex, size_t timeout);
 

@@ -935,7 +935,7 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 
 std::string Worker::GetSimManagerStatus()
 {
-	return simManager.GetMasterStatus();
+	return simManager.GetControllerStatus();
 }
 
 

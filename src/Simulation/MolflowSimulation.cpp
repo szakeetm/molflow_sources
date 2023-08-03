@@ -158,10 +158,10 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     Chronometer timer;
     timer.Start();
 
-    procInfo.UpdateMasterStatus("Resetting simulation...", loadStatus);
+    procInfo.UpdateControllerStatus(ControllerState::Resetting,"Resetting simulation...", loadStatus);
     ResetSimulation();
     
-    procInfo.UpdateMasterStatus("Constructing thread hit counters...", loadStatus);
+    procInfo.UpdateControllerStatus(ControllerState::Loading,"Constructing thread hit counters...", loadStatus);
     auto* simModelPtr = (MolflowSimulationModel*) model.get();
 
     size_t finished = 0;
@@ -180,18 +180,17 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
 #pragma omp critical
         {
             finished++;
-            procInfo.UpdateMasterStatus(fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()), loadStatus);
+            procInfo.UpdateControllerStatus(fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()), loadStatus);
         }
     }
 
     //Reserve particle log
-    procInfo.UpdateMasterStatus("Setting up particle logs...", loadStatus);
+    procInfo.UpdateControllerStatus("Setting up particle logs...", loadStatus);
     ReinitializeParticleLog();
 
     // Build ADS
-    procInfo.UpdateMasterStatus("Building ray-tracing accel. structure...", loadStatus);
+    procInfo.UpdateControllerStatus("Building ray-tracing accel. structure...", loadStatus);
     RebuildAccelStructure();
-    procInfo.UpdateMasterStatus("", loadStatus);
 
     // Initialize simulation
     timer.Stop();
@@ -208,7 +207,8 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     for(auto& particleTracer : particleTracers)
         Log::console_msg_master(5, "  Seed for {}: {}\n", particleTracer.particleTracerId, particleTracer.randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: {:.2f} ms\n", timer.ElapsedMs());
-
+    
+    procInfo.UpdateControllerStatus(ControllerState::Ready,"", loadStatus);
     return 0;
 }
 
