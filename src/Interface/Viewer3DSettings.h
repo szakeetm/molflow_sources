@@ -46,7 +46,7 @@ public:
 
 private:
 
-  Geometry       *geom;
+  Geometry       *guiGeom;
   GeometryViewer *viewer;
 
   GLTitledPanel *panel;

@@ -149,12 +149,12 @@ void OutgassingMapWindow::GetSelected() {
 
   if(!worker) return;
 
-  Geometry *geom = worker->GetGeometry();
+  Geometry *guiGeom = worker->GetGeometry();
   selFacet = NULL;
   int i = 0;
-  size_t nb = geom->GetNbFacet();
+  size_t nb = guiGeom->GetNbFacet();
   while(!selFacet && i<nb) {
-    if( geom->GetFacet(i)->selected ) selFacet = geom->GetFacet(i);
+    if( guiGeom->GetFacet(i)->selected ) selFacet = guiGeom->GetFacet(i);
     if(!selFacet) i++;
   }
 

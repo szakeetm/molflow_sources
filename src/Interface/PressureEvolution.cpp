@@ -165,11 +165,11 @@ void PressureEvolution::SetBounds(int x, int y, int w, int h) {
 void PressureEvolution::Refresh() {
 	//Rebuilds combo and calls refreshviews
 
-	Geometry *geom = worker->GetGeometry();
+	Geometry *guiGeom = worker->GetGeometry();
 
 	//Remove views that aren't present anymore
 	for (auto i = views.begin();i!=views.end();) {
-		if ((*i)->userData1 >= geom->GetNbFacet()) { //If pointing to non-existent facet
+		if ((*i)->userData1 >= guiGeom->GetNbFacet()) { //If pointing to non-existent facet
 			chart->GetY1Axis()->RemoveDataView(*i);
 			SAFE_DELETE(*i);
 			i=views.erase(i);
@@ -222,7 +222,7 @@ void PressureEvolution::refreshChart() {
 
 	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
-	Geometry *geom = worker->GetGeometry();
+	Geometry *guiGeom = worker->GetGeometry();
 	GlobalHitBuffer& gHits = worker->globalStatCache;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
@@ -230,8 +230,8 @@ void PressureEvolution::refreshChart() {
 
 	for (auto& v : views) {
 
-		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
-			InterfaceFacet *f = geom->GetFacet(v->userData1);
+		if (v->userData1 >= 0 && v->userData1 < guiGeom->GetNbFacet()) {
+			InterfaceFacet *f = guiGeom->GetFacet(v->userData1);
 			v->Reset();
 
 			auto& facetHits = worker->globalState->facetStates[v->userData1].momentResults;
@@ -286,7 +286,7 @@ void PressureEvolution::refreshChart() {
 */
 void PressureEvolution::addView(size_t facetId) {
 
-	Geometry *geom = worker->GetGeometry();
+	Geometry *guiGeom = worker->GetGeometry();
 
 	// Check that view is not already added
 	{
@@ -348,17 +348,17 @@ void PressureEvolution::Reset() {
 * \param message Type of the source (button)
 */
 void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
-	Geometry *geom = worker->GetGeometry();
+	Geometry *guiGeom = worker->GetGeometry();
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if (idx >= 0) {
 				size_t facetId = profCombo->GetUserValueAt(idx);
-				if (facetId >= 0 && facetId < geom->GetNbFacet()) {
-					geom->UnselectAll();
-					geom->GetFacet(facetId)->selected = true;
-					geom->UpdateSelection();
+				if (facetId >= 0 && facetId < guiGeom->GetNbFacet()) {
+					guiGeom->UnselectAll();
+					guiGeom->GetFacet(facetId)->selected = true;
+					guiGeom->UpdateSelection();
 					mApp->UpdateFacetParams(true);
 					mApp->facetList->SetSelectedRow((int)facetId);
 					mApp->facetList->ScrollToVisible(facetId, 1, true);
@@ -366,7 +366,7 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 			}
 		}
 		else if (src == addButton) {
-			auto selFacets = geom->GetSelectedFacets();
+			auto selFacets = guiGeom->GetSelectedFacets();
 			if (selFacets.size() != 1) {
 				GLMessageBox::Display("Select exactly one facet", "Add selected facet to chart", { "Sorry!" }, GLDLG_ICONERROR);
 				return;

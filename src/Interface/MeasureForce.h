@@ -39,7 +39,7 @@ class MeasureForce : public GLWindow {
 
 public:
   // Construction
-	MeasureForce(Geometry *geom, Worker *work);
+	MeasureForce(Geometry *guiGeom, Worker *work);
 	void ProcessMessage(GLComponent *src,int message) override;
 	void UpdateToggle(GLComponent* src);
 	void Update();
@@ -52,7 +52,7 @@ private:
   GLTextField *x0Text, *y0Text, *z0Text;
   GLToggle* enableMeasureCheckbox;
   
-  Geometry     *geom;
+  Geometry     *guiGeom;
   Worker	   *work;
 
 };

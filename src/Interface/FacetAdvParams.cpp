@@ -62,7 +62,7 @@ extern SynRad*mApp;
 FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 
 	worker = w;
-	geom = w->GetGeometry();
+	guiGeom = w->GetGeometry();
 
 	SetIconfiable(true);
 
@@ -454,12 +454,12 @@ void FacetAdvParams::UpdateSize() {
 
 		size_t ram = 0;
 		size_t cell = 0;
-		size_t nbFacet = geom->GetNbFacet();
+		size_t nbFacet = guiGeom->GetNbFacet();
 
 		if (recordACBtn->GetState()) {
 
 			for (size_t i = 0; i < nbFacet; i++) {
-				InterfaceFacet *f = geom->GetFacet(i);
+				InterfaceFacet *f = guiGeom->GetFacet(i);
 				if (f->sh.opacity == 1.0) {
                     auto nbCells = f->GetNbCell();
                     cell += (size_t)(nbCells.first * nbCells.second);
@@ -472,7 +472,7 @@ void FacetAdvParams::UpdateSize() {
 		else {
 
 			for (size_t i = 0; i < nbFacet; i++) {
-				InterfaceFacet *f = geom->GetFacet(i);
+				InterfaceFacet *f = guiGeom->GetFacet(i);
                 auto nbCells = f->GetNbCell();
                 cell += (size_t)(nbCells.first * nbCells.second);
 				ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
@@ -498,7 +498,7 @@ void FacetAdvParams::UpdateSize() {
 * \return void
 */
 void FacetAdvParams::UpdateSizeForRatio() {
-	if (!geom->IsLoaded()) return;
+	if (!guiGeom->IsLoaded()) return;
 	double ratioU = 0.0;
 	double ratioV = 0.0;
 	char tmp[64];
@@ -519,11 +519,11 @@ void FacetAdvParams::UpdateSizeForRatio() {
 
 	size_t ram = 0;
 	size_t cell = 0;
-	size_t nbFacet = geom->GetNbFacet();
+	size_t nbFacet = guiGeom->GetNbFacet();
 	if (recordACBtn->GetState()) {
 
 		for (size_t i = 0; i < nbFacet; i++) {
-			InterfaceFacet *f = geom->GetFacet(i);
+			InterfaceFacet *f = guiGeom->GetFacet(i);
 			//if(f->wp.opacity==1.0) {
 			if (f->selected) {
 			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
@@ -543,7 +543,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	else {
 
 		for (size_t i = 0; i < nbFacet; i++) {
-			InterfaceFacet *f = geom->GetFacet(i);
+			InterfaceFacet *f = guiGeom->GetFacet(i);
 			if (f->selected) {
                 auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
                 cell += (size_t)(nbCells.first * nbCells.second);
@@ -574,11 +574,11 @@ std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size
 
     double ratioU = 0.0;
     double ratioV = 0.0;
-    auto selFacets = geom->GetSelectedFacets();
+    auto selFacets = guiGeom->GetSelectedFacets();
 
     if(selFacets.size() == 1) {
         for (auto &sel : selFacets) {
-            InterfaceFacet *f = geom->GetFacet(sel);
+            InterfaceFacet *f = guiGeom->GetFacet(sel);
             if (f->selected) {
                 double nU = f->sh.U.Norme();
                 double nV = f->sh.V.Norme();
@@ -640,7 +640,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	sojournFreq->SetEditable(somethingSelected);
 	sojournE->SetEditable(somethingSelected);
 
-	if (!geom->IsLoaded()) return;
+	if (!guiGeom->IsLoaded()) return;
 
 	if (!somethingSelected) { //Empty selection, clear
 		enableBtn->SetState(0);
@@ -683,7 +683,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		return;
 	}
 
-	InterfaceFacet* f0 = geom->GetFacet(selection[0]);
+	InterfaceFacet* f0 = guiGeom->GetFacet(selection[0]);
 
 	bool isEnabledE = true;
 	bool isBoundE = true;
@@ -730,7 +730,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
     sumAngleMapSize = !f0->angleMapCache.empty() ? f0->sh.anglemapParams.GetRecordedMapSize() : 0;
 
     for (size_t i = 1; i < selection.size(); i++) {
-        InterfaceFacet *f = geom->GetFacet(selection[i]);
+        InterfaceFacet *f = guiGeom->GetFacet(selection[i]);
         double fArea = f->GetArea();
         sumArea += fArea;
         sumOutgassing += f->sh.totalOutgassing;
@@ -1075,7 +1075,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	bool boundMap = true; // boundaryBtn->GetState();
 	double ratioU = 0.0;
     double ratioV = 0.0;
-    auto selectedFacets = geom->GetSelectedFacets();
+    auto selectedFacets = guiGeom->GetSelectedFacets();
 	int nbPerformed = 0;
 	bool doRatio = false;
 
@@ -1108,7 +1108,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	prg.SetVisible(true);
 	int count = 0;
 	for (auto& sel : selectedFacets) {
-		InterfaceFacet *f = geom->GetFacet(sel);
+		InterfaceFacet *f = guiGeom->GetFacet(sel);
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
 
@@ -1134,9 +1134,9 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		//set textures
 		try {
 			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection)
-			        || (doRatio && ((!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) || (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV))));
+			        || (doRatio && ((!IsZero(guiGeom->GetFacet(sel)->tRatioU - ratioU)) || (!IsZero(guiGeom->GetFacet(sel)->tRatioV - ratioV))));
 			if (needsRemeshing) {
-                geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
+                guiGeom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
                                       hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
                       hasAnyTexture ? boundMap : false);
 			}
@@ -1171,7 +1171,7 @@ bool FacetAdvParams::IsAngleMapRecording() {
 * \return bool value 0 if it didnt work 1 if it did
 */
 bool FacetAdvParams::Apply() {
-	auto selectedFacets=geom->GetSelectedFacets();
+	auto selectedFacets=guiGeom->GetSelectedFacets();
 	int nbPerformed = 0;
 	/*
 	bool boundMap = true; // boundaryBtn->GetState();
@@ -1221,7 +1221,7 @@ bool FacetAdvParams::Apply() {
 		try {
 			superStruct = std::stoi(ssText);
 			superStruct--; //Internally numbered from 0
-			if (superStruct < 0 || superStruct >= geom->GetNbStructure()) {
+			if (superStruct < 0 || superStruct >= guiGeom->GetNbStructure()) {
 				throw std::invalid_argument("Invalid superstructure number");
 			}
 			doSuperStruct = true;
@@ -1244,7 +1244,7 @@ bool FacetAdvParams::Apply() {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
-		else if (superDest < 0 || superDest > geom->GetNbStructure()) {
+		else if (superDest < 0 || superDest > guiGeom->GetNbStructure()) {
 			GLMessageBox::Display("Link destination points to a structure that doesn't exist", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
@@ -1262,11 +1262,11 @@ bool FacetAdvParams::Apply() {
 	bool doTeleport = false;
 
 	if (facetTeleport->GetNumberInt(&teleport)) {
-		if (teleport<-1 || teleport>geom->GetNbFacet()) {
+		if (teleport<-1 || teleport>guiGeom->GetNbFacet()) {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
-		else if (teleport > 0 && geom->GetFacet(teleport - 1)->selected) {
+		else if (teleport > 0 && guiGeom->GetFacet(teleport - 1)->selected) {
 			char tmp[256];
 			sprintf(tmp, "The teleport destination of facet #%d can't be itself!", teleport);
 			GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1309,8 +1309,8 @@ bool FacetAdvParams::Apply() {
 		bool missingMap = false;
 		int missingMapId;
 		if (useMapA) {
-			for (int i = 0; i < geom->GetNbFacet(); i++) {
-				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingFile) {
+			for (int i = 0; i < guiGeom->GetNbFacet(); i++) {
+				if (guiGeom->GetFacet(i)->selected && !guiGeom->GetFacet(i)->hasOutgassingFile) {
 					missingMap = true;
 					missingMapId = i;
 				}
@@ -1489,7 +1489,7 @@ bool FacetAdvParams::Apply() {
 	int angleMapState = angleMapRecordCheckbox->GetState();
 	if (angleMapState < 2) {
 		for (auto& sel:selectedFacets) {
-			geom->GetFacet(sel)->sh.anglemapParams.record=angleMapState;
+			guiGeom->GetFacet(sel)->sh.anglemapParams.record=angleMapState;
 		}
 	}
 	
@@ -1498,7 +1498,7 @@ bool FacetAdvParams::Apply() {
 	prg.SetVisible(true);
 	int count = 0;
 	for (auto& sel:selectedFacets) {
-		InterfaceFacet *f = geom->GetFacet(sel);
+		InterfaceFacet *f = guiGeom->GetFacet(sel);
 		/*
 		bool hadAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
 		bool hadDirCount = f->wp.countDirection;
@@ -1576,8 +1576,8 @@ bool FacetAdvParams::Apply() {
 		/*
 		//set textures
 		try {
-			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->wp.countDirection) || (doRatio && (!IsEqual(geom->GetFacet(sel)->tRatio , ratio)));
-			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
+			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->wp.countDirection) || (doRatio && (!IsEqual(guiGeom->GetFacet(sel)->tRatio , ratio)));
+			if (needsRemeshing) guiGeom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1594,7 +1594,7 @@ bool FacetAdvParams::Apply() {
 		nbPerformed++;
 		prg.SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
-	if (structChanged) geom->BuildGLList(); //Re-render facets
+	if (structChanged) guiGeom->BuildGLList(); //Re-render facets
 
 	return ApplyTexture(); //Finally, apply textures
 }
@@ -1605,12 +1605,12 @@ bool FacetAdvParams::Apply() {
 void FacetAdvParams::ApplyDrawSettings() {
 	//Apply view settings without stopping the simulation
 
-	double nbSelected = (double)geom->GetNbSelectedFacets();
+	double nbSelected = (double)guiGeom->GetNbSelectedFacets();
 	double nbPerformed = 0.0;
 
-	for (int i = 0; i < geom->GetNbFacet(); i++) {
+	for (int i = 0; i < guiGeom->GetNbFacet(); i++) {
 
-		InterfaceFacet *f = geom->GetFacet(i);
+		InterfaceFacet *f = guiGeom->GetFacet(i);
 		if (f->selected) {
 
 			if (showTexture->GetState() < 2) f->viewSettings.textureVisible = showTexture->GetState();
@@ -1620,7 +1620,7 @@ void FacetAdvParams::ApplyDrawSettings() {
 		}
 
 	}
-	geom->BuildGLList(); //Re-render facets
+	guiGeom->BuildGLList(); //Re-render facets
 }
 
 void FacetAdvParams::UpdateSquaredCells(int aspectState) {
@@ -1641,7 +1641,7 @@ void FacetAdvParams::UpdateSquaredCells(int aspectState) {
     }
 
     auto enableState = enableBtn->GetState();
-    auto sel = geom->GetSelectedFacets();
+    auto sel = guiGeom->GetSelectedFacets();
     if(!sel.empty()) {
         resolutionText2->SetEditable(!aspectState);
         lengthText2->SetEditable(!aspectState);
@@ -1787,11 +1787,11 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 		}
 		else if (src == angleMapReleaseButton) {
 			mApp->ClearAngleMapsOnSelection();
-			Refresh(geom->GetSelectedFacets());
+			Refresh(guiGeom->GetSelectedFacets());
 		}
 		else if (src == angleMapImportButton) {
 			mApp->ImportAngleMaps();
-			Refresh(geom->GetSelectedFacets());
+			Refresh(guiGeom->GetSelectedFacets());
 		}
 		else if (src == remeshButton) {
 			ApplyTexture(true);
@@ -1822,10 +1822,10 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			}
 
 			// Calculate and display the number of actualy texels for each direction
-			auto selFacets = geom->GetSelectedFacets();
+			auto selFacets = guiGeom->GetSelectedFacets();
 			if(selFacets.size() == 1) {
                 resolutionText2->GetNumber(&resV);
-                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(res, resV);
+                auto nbCells = guiGeom->GetFacet(selFacets.front())->GetNbCellForRatio(res, resV);
                 cellsU->SetText(nbCells.first);
                 cellsV->SetText(nbCells.second);
             }
@@ -1845,11 +1845,11 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 lengthText2->SetText("");
 
             // Calculate and display the number of actualy texels for each direction
-            auto selFacets = geom->GetSelectedFacets();
+            auto selFacets = guiGeom->GetSelectedFacets();
             if(selFacets.size() == 1) {
                 double resU;
                 resolutionText->GetNumber(&resU);
-                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, res);
+                auto nbCells = guiGeom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, res);
                 cellsU->SetText(nbCells.first);
                 cellsV->SetText(nbCells.second);
             }
@@ -1877,13 +1877,13 @@ from C. Benvenutti http://cds.cern.ch/record/454180
             }
 
             // Calculate and display the number of actualy texels for each direction
-            auto selFacets = geom->GetSelectedFacets();
+            auto selFacets = guiGeom->GetSelectedFacets();
             if(selFacets.size() == 1) {
                 double resU;
                 double resV;
                 resolutionText->GetNumber(&resU);
                 resolutionText2->GetNumber(&resV);
-                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                auto nbCells = guiGeom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
                 cellsU->SetText(nbCells.first);
                 cellsV->SetText(nbCells.second);
             }
@@ -1902,13 +1902,13 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 resolutionText2->SetText("");
 
             // Calculate and display the number of actualy texels for each direction
-            auto selFacets = geom->GetSelectedFacets();
+            auto selFacets = guiGeom->GetSelectedFacets();
             if(selFacets.size() == 1) {
                 double resU;
                 double resV;
                 resolutionText->GetNumber(&resU);
                 resolutionText2->GetNumber(&resV);
-                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                auto nbCells = guiGeom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
                 cellsU->SetText(nbCells.first);
                 cellsV->SetText(nbCells.second);
             }
@@ -1924,11 +1924,11 @@ from C. Benvenutti http://cds.cern.ch/record/454180
             int nbCellsV = 0;
             if (cellsU->GetNumberInt(&nbCellsU) && nbCellsU != 0) {
                 if(aspectRatioBtn->GetState() == 1) {
-                    auto selected = geom->GetSelectedFacets();
+                    auto selected = guiGeom->GetSelectedFacets();
                     if(selected.size() == 1) {
                         //apply same ratio for both cells
                         auto ratio = GetRatioForNbCell(nbCellsU, nbCellsU);
-                        InterfaceFacet* fac = geom->GetFacet(selected.front());
+                        InterfaceFacet* fac = guiGeom->GetFacet(selected.front());
                         auto nbCells = fac->GetNbCellForRatio(ratio.first,ratio.first);
                         cellsV->SetText(nbCells.second);
                     }

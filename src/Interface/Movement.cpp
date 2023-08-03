@@ -220,7 +220,7 @@ Movement::Movement(Geometry *g,Worker *w):GLWindow() {
 	int yD = (hS - hD) / 2;
 	SetBounds(xD, yD, wD, hD);
 
-	geom = g;
+	guiGeom = g;
 	work = w;
 	mode = MODE_NOMOVE;
 
@@ -336,7 +336,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 		}
 		else if (src == button1){ //Use selected vertex as base
-			size_t nbs = geom->GetNbSelectedVertex();
+			size_t nbs = guiGeom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";
@@ -345,18 +345,18 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 			else {
 				UpdateToggle(checkBox3);
-				for (int i = 0; i < geom->GetNbVertex(); i++) {
-					if (geom->GetVertex(i)->selected) {
-						axText->SetText(geom->GetVertex(i)->x);
-						ayText->SetText(geom->GetVertex(i)->y);
-						azText->SetText(geom->GetVertex(i)->z);
+				for (int i = 0; i < guiGeom->GetNbVertex(); i++) {
+					if (guiGeom->GetVertex(i)->selected) {
+						axText->SetText(guiGeom->GetVertex(i)->x);
+						ayText->SetText(guiGeom->GetVertex(i)->y);
+						azText->SetText(guiGeom->GetVertex(i)->z);
 						break;
 					}
 				}
 			}
 		}
 		else if (src == button2) {
-			size_t nbs = geom->GetNbSelectedVertex();
+			size_t nbs = guiGeom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";
@@ -378,11 +378,11 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 					GLMessageBox::Display("Wrong az value", "Can't use vertex as direction", GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
-				for (int i = 0; i < geom->GetNbVertex(); i++) {
-					if (geom->GetVertex(i)->selected) {
-						rxText->SetText(geom->GetVertex(i)->x-ax);
-						ryText->SetText(geom->GetVertex(i)->y-ay);
-						rzText->SetText(geom->GetVertex(i)->z-az);
+				for (int i = 0; i < guiGeom->GetNbVertex(); i++) {
+					if (guiGeom->GetVertex(i)->selected) {
+						rxText->SetText(guiGeom->GetVertex(i)->x-ax);
+						ryText->SetText(guiGeom->GetVertex(i)->y-ay);
+						rzText->SetText(guiGeom->GetVertex(i)->z-az);
 						break;
 					}
 				}

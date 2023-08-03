@@ -447,8 +447,8 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 */
 void FacetDetails::UpdateTable() {
 
-  Geometry *geom = worker->GetGeometry();
-  auto selectedFacets = geom->GetSelectedFacets();
+  Geometry *guiGeom = worker->GetGeometry();
+  auto selectedFacets = guiGeom->GetSelectedFacets();
   static char ret[256];
   strcpy(ret,"");
 
@@ -483,7 +483,7 @@ void FacetDetails::UpdateTable() {
 
   size_t nbS = 0;
   for(auto& sel:selectedFacets) {
-    InterfaceFacet *f = geom->GetFacet(sel);
+    InterfaceFacet *f = guiGeom->GetFacet(sel);
     for(size_t j=0;j<nbCol;j++)
         facetListD->SetValueAt(j,nbS,FormatCell(sel,f,shown[j]));
 	nbS++;

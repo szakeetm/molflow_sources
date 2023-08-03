@@ -187,7 +187,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 
 	RestoreDeviceObjects();
 
-	geom = NULL;
+	guiGeom = NULL;
 
 }
 
@@ -198,7 +198,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 */
 void ImportDesorption::SetGeometry(Geometry *s,Worker *w) {
 
-	geom = s;
+	guiGeom = s;
 	work = w;
 
 }

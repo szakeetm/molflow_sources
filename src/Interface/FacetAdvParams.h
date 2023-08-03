@@ -60,7 +60,7 @@ private:
 	void ApplyDrawSettings(); //Apply View Settings without stopping the simulation
 
 	Worker   *worker;
-	Geometry *geom;
+	Geometry *guiGeom;
 	int       fIdx;
 	double sumArea, sumOutgassing;
 	size_t sumAngleMapSize;

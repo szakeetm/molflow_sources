@@ -180,7 +180,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   RestoreDeviceObjects();
 
-  geom = NULL;
+  guiGeom = NULL;
 
 }
 
@@ -207,7 +207,7 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
   char tmp[128];
 
-  geom = s;
+  guiGeom = s;
   viewer = v;
   showMode->SetSelectedIndex(viewer->showBack);
   hiddenEdge->SetState(viewer->showHidden);
@@ -230,10 +230,10 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
   sprintf(tmp,"Viewer #%d",viewer->GetId()+1);
   panel->SetTitle(tmp);
-  sprintf(tmp,"%g",geom->GetNormeRatio());
+  sprintf(tmp,"%g",guiGeom->GetNormeRatio());
   dirNormeText->SetText(tmp);
-  dirNormalizeToggle->SetState( geom->GetAutoNorme() );
-  dirCenterToggle->SetState( geom->GetCenterNorme() );
+  dirNormalizeToggle->SetState( guiGeom->GetAutoNorme() );
+  dirCenterToggle->SetState( guiGeom->GetCenterNorme() );
 
   bool suppressDetails = (viewer->hideLot != -1);
   hideLotselected->SetState(suppressDetails);
@@ -305,9 +305,9 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
-      geom->SetNormeRatio((float)nratio);
-      geom->SetAutoNorme(dirNormalizeToggle->GetState());
-      geom->SetCenterNorme(dirCenterToggle->GetState());
+      guiGeom->SetNormeRatio((float)nratio);
+      guiGeom->SetAutoNorme(dirNormalizeToggle->GetState());
+      guiGeom->SetCenterNorme(dirCenterToggle->GetState());
 
 	  viewer->hideLot = hideLotselected->GetState() ? lotofFacets : -1;
 
@@ -317,10 +317,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  bool needsMesh = mApp->needsMesh;
 
 	  if (!needsMesh && neededMesh) { //We just disabled mesh
-		  geom->ClearFacetMeshLists();
+		  guiGeom->ClearFacetMeshLists();
 	  }
 	  else if (needsMesh && !neededMesh) { //We just enabled mesh
-		  geom->BuildFacetMeshLists();
+		  guiGeom->BuildFacetMeshLists();
 	  }
 
 	  GLWindow::ProcessMessage(NULL, MSG_CLOSE);
