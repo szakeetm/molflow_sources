@@ -405,7 +405,7 @@ void HandleIntermediateDesLimit(std::shared_ptr<MolflowSimulationModel> model, G
 
     model->otfParams.desorptionLimit = parsedArgs.desLimit.front();
     parsedArgs.desLimit.pop_front();
-    simManager.ForwardOtfParams(&model->otfParams);
+    simManager.SetOntheflyParams(&model->otfParams);
     endCondition = false;
     Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
 

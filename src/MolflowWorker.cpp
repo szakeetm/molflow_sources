@@ -528,8 +528,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				//RealReload();
 				fullFileName = fileName;
 				RealReload();
-				simManager.ForwardGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
-				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
+				simManager.SetGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 			}
 			else { //insert
 
@@ -672,8 +672,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				if (version >= 8)
 					geom->LoadProfileGEO(*file, globalState, version);
 
-				simManager.ForwardGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
-				SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
+				simManager.SetGlobalCounter(&globalState, &particleLog); //Global hit counters and hit/leak cache
+				FacetHitCacheToSimModel(); // From facetHitCache to dpHit's const.flow counter
 				SendAngleMaps();
 
 				prg.SetMessage("Loading textures...");
@@ -813,7 +813,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					if (ext == "xml" || ext == "zip")
 						prg.SetMessage("Restoring simulation state...");
 
-					simManager.ForwardGlobalCounter(&globalState, &particleLog);
+					simManager.SetGlobalCounter(&globalState, &particleLog);
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
 						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, &globalState, prg);
@@ -826,8 +826,8 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					// actually loads all caches
 					RetrieveHistogramCacheAndFacetHitCache(); //So interface gets histogram data for disp.moment right after loadin
-					simManager.ForwardGlobalCounter(&globalState, &particleLog);
-					SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+					simManager.SetGlobalCounter(&globalState, &particleLog);
+					FacetHitCacheToSimModel(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					SendAngleMaps();
 
 					RebuildTextures();
