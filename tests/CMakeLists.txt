@@ -59,7 +59,7 @@ set(EXTRA_SRC
         )
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
+add_executable(testsuite testsuite.cpp ${EXTRA_SRC})
 
 
 #[[set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")

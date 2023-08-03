@@ -161,8 +161,8 @@ namespace {
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, Stats const& r) {
-			return os << r.commitHash << "\t" << std::scientific << std::setprecision(8) << r.max << "\t" << r.min
-				<< "\t" << r.med << "\t" << r.avg;
+			return os << r.commitHash << "\t" << std::scientific << std::setprecision(8) << "max: "<< r.max << "\t" << "min: " << r.min
+				<< "\t" << "median: " << r.med << "\t" << "avg: " << r.avg;
 		}
 
 		bool operator<(Stats const& other) const {
@@ -270,7 +270,7 @@ namespace {
 
 			SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
 
-			Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
+			Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb+1, nRuns, perfTimes.back());
 		};
 
 		// Compare to old performance values here
