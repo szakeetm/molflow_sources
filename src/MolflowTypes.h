@@ -171,17 +171,33 @@ TextureCell operator+(const TextureCell& lhs,const TextureCell& rhs); //non-memb
  struct TEXTURE_MOMENT_TYPE{
 	double steady_state;
 	double moments_only;
-} ;
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(
+			CEREAL_NVP(steady_state),
+			CEREAL_NVP(moments_only)
+		);
+	}
+};
 
  struct TEXTURE_MIN_MAX{
 	TEXTURE_MOMENT_TYPE min;
 	TEXTURE_MOMENT_TYPE max;
-} ;
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(
+			CEREAL_NVP(min),
+			CEREAL_NVP(max)
+		);
+	}
+};
 
  struct TEXTURE_SCALE_TYPE{
 	TEXTURE_MIN_MAX manual;
 	TEXTURE_MIN_MAX autoscale;
-} ;
+};
 
 class AnglemapParams {
 public:

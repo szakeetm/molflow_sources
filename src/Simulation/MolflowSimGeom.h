@@ -229,8 +229,8 @@ FacetState operator+(const FacetState& lhs,const FacetState& rhs);
  */
 class GlobalSimuState {
 public:
-    GlobalSimuState &operator=(const std::shared_ptr<GlobalSimuState> src);
-    GlobalSimuState &operator+=(const std::shared_ptr<GlobalSimuState> src);
+    GlobalSimuState &operator=(const GlobalSimuState& src);
+    GlobalSimuState &operator+=(const GlobalSimuState& rhs);
 
     GlobalSimuState() = default; //so a vector can be made of this for particletracer local results
     GlobalSimuState(GlobalSimuState &&rhs) noexcept {

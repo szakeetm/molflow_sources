@@ -420,12 +420,12 @@ size_t MolflowSimulationModel::size() {
 * \param src reference to source object
 * \return address of this
 */
-GlobalSimuState& GlobalSimuState::operator=(const std::shared_ptr<GlobalSimuState>  src) {
+GlobalSimuState& GlobalSimuState::operator=(const GlobalSimuState&  src) {
     //Copy all but mutex
-    facetStates = src->facetStates;
-    globalHistograms = src->globalHistograms;
-    globalStats = src->globalStats;
-    initialized = src->initialized;
+    facetStates = src.facetStates;
+    globalHistograms = src.globalHistograms;
+    globalStats = src.globalStats;
+    initialized = src.initialized;
     return *this;
 }
 
@@ -434,11 +434,11 @@ GlobalSimuState& GlobalSimuState::operator=(const std::shared_ptr<GlobalSimuStat
 * \param src reference to source object
 * \return address of this
 */
-GlobalSimuState& GlobalSimuState::operator+=(const std::shared_ptr<GlobalSimuState> src) {
+GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState& rhs) {
     //Copy all but mutex
-    facetStates += src->facetStates;
-    globalHistograms += src->globalHistograms;
-    globalStats += src->globalStats;
+    facetStates += rhs.facetStates;
+    globalHistograms += rhs.globalHistograms;
+    globalStats += rhs.globalStats;
     return *this;
 }
 
