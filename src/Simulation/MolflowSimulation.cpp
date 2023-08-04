@@ -158,10 +158,10 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     Chronometer timer;
     timer.Start();
 
-    procInfo.UpdateControllerStatus(ControllerState::Resetting,"Resetting simulation...", loadStatus);
+    procInfo.UpdateControllerStatus({ ControllerState::Resetting }, { "Resetting simulation..." }, loadStatus);
     ResetSimulation();
     
-    procInfo.UpdateControllerStatus(ControllerState::Loading,"Constructing thread hit counters...", loadStatus);
+    procInfo.UpdateControllerStatus({ ControllerState::Loading }, { "Constructing thread hit counters..." }, loadStatus);
     auto* simModelPtr = (MolflowSimulationModel*) model.get();
 
     size_t finished = 0;
@@ -180,16 +180,16 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
 #pragma omp critical
         {
             finished++;
-            procInfo.UpdateControllerStatus(fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()), loadStatus);
+            procInfo.UpdateControllerStatus(std::nullopt, { fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()) }, loadStatus);
         }
     }
 
     //Reserve particle log
-    procInfo.UpdateControllerStatus("Setting up particle logs...", loadStatus);
+    procInfo.UpdateControllerStatus(std::nullopt, { "Setting up particle logs..." }, loadStatus);
     ReinitializeParticleLog();
 
     // Build ADS
-    procInfo.UpdateControllerStatus("Building ray-tracing accel. structure...", loadStatus);
+    procInfo.UpdateControllerStatus(std::nullopt, { "Building ray-tracing accel. structure..." }, loadStatus);
     RebuildAccelStructure();
 
     // Initialize simulation
