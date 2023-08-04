@@ -274,6 +274,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         try {
             loadedModel = loader.LoadGeometry(fileName,
             TimeDependentParameters::GetCatalogParameters(model->tdParams.parameters), prg);
+            loadedModel->otfParams.timeLimit=model->otfParams.timeLimit;
         }
         catch (Error& err) {
             Log::console_error("Error loading file:\n{}", err.what());

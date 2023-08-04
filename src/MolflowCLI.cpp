@@ -135,7 +135,6 @@ int main(int argc, char** argv) {
 
     try {
         auto loadedModel = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
-        loadedModel->otfParams.timeLimit = model->otfParams.timeLimit; //as that came from initFromArgv
         model = loadedModel;
     }
     catch (std::exception& err) {

@@ -213,6 +213,7 @@ namespace {
 		std::vector<double> perfTimes;
 		for (size_t runNb = 0; runNb < nRuns; ++runNb) {
 			SimulationManager simManager;
+			simManager.asyncMode=true;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 			MolflowUserSettings persistentUserSettings;
@@ -244,18 +245,20 @@ namespace {
 			double elapsedTime;
 			
 			EXPECT_NO_THROW(simManager.StartSimulation());
-
-			bool endCondition = false;
-			do {
-				ProcessSleep(1000);
-				elapsedTime = simTimer.Elapsed();
-				if (model->otfParams.desorptionLimit != 0)
-					endCondition = globalState->globalStats.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
-				// Check for potential time end
-				if (parsedArgs.simDuration > 0) {
-					endCondition |= elapsedTime >= parsedArgs.simDuration;
-				}
-			} while (!endCondition);
+			
+			if (simManager.asyncMode) { //otherwise StartSimulation blocks until ready
+				bool endCondition = false;
+				do {
+					ProcessSleep(1000);
+					elapsedTime = simTimer.Elapsed();
+					if (model->otfParams.desorptionLimit != 0)
+						endCondition = globalState->globalStats.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
+					// Check for potential time end
+					if (parsedArgs.simDuration > 0) {
+						endCondition = endCondition || elapsedTime >= parsedArgs.simDuration;
+					}
+				} while (!endCondition);
+			}
 			simTimer.Stop();
 
 			// Stop and copy results
