@@ -222,7 +222,7 @@ size_t MolflowSimulation::GetHitsSize() {
 
 void MolflowSimulation::ResetSimulation() {
 
-//#pragma omp parallel for
+#pragma omp parallel for
 // New GlobalSimuState structure for threads
     for (int i = 0; i < particleTracers.size(); i++)
     {

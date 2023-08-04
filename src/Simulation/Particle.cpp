@@ -1259,9 +1259,11 @@ void ParticleTracer::Reset() {
 
 bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
     ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
+
     statusMutex.lock();
     myState = ThreadState::HitUpdate;
     statusMutex.unlock();
+
     bool lastHitUpdateOK = UpdateMCHits(globalState, model->tdParams.moments.size(), 
         myStatus, statusMutex, timeout_ms);
     
@@ -1269,10 +1271,13 @@ bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> glo
     if (particleLog) UpdateLog(particleLog, myStatus, statusMutex, timeout_ms);
 
     // At last delete tmpCache
-    statusMutex.lock();
-    myStatus = "Resetting temporary local results...";
-    statusMutex.unlock();
-    if(lastHitUpdateOK) tmpState.Reset();
+
+    if (lastHitUpdateOK) {
+        statusMutex.lock();
+        myStatus = "Resetting temporary local results...";
+        statusMutex.unlock();
+        tmpState.Reset();
+    }
     return lastHitUpdateOK;
 }
 
