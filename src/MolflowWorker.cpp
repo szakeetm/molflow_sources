@@ -1117,7 +1117,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 	if (!mf_model->facets.empty() && !mf_model->vertices3.empty())
 		mf_model->initialized = true;
-	mf_model->memSizeCache = mf_model->GetMemSize() / 1024 / 1024;
+	mf_model->memSizeCache = mf_model->GetMemSize();
 	return true;
 }
 

@@ -432,7 +432,7 @@ MolflowSimulationModel::~MolflowSimulationModel() = default;
 */
 size_t MolflowSimulationModel::GetMemSize() {
     size_t modelSize = 0;
-    modelSize += ((SimulationModel*)this)->GetMemSize(); //base class members
+    modelSize += SimulationModel::GetMemSize(); //base class members
     //Molflow-specific members:
     modelSize += tdParams.GetMemSize();
     modelSize += sizeof(Interval) * intervalCache.capacity();
