@@ -38,7 +38,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 class SimulationFacet;
-class GlobalSimuState;
 
 class ParameterSurface : public Surface {
     Parameter* timeDepParam; //time-dependent opacity distribution
@@ -78,6 +77,109 @@ struct TimeDependentParameters {
     }
 };
 
+/*!
+ * @brief One instance is the state for one facet for a single moment
+ */
+class FacetMomentSnapshot {
+public:
+    FacetMomentSnapshot();
+    FacetMomentSnapshot& operator+=(const FacetMomentSnapshot& rhs);
+
+    size_t GetMemSize() const;
+
+    FacetHitBuffer hits;
+    std::vector<ProfileSlice> profile;
+    std::vector<TextureCell> texture;
+    std::vector<DirectionCell> direction;
+    FacetHistogramBuffer histogram;
+
+    template<class Archive>
+    void serialize(Archive& archive) {
+        archive(
+            hits,
+            profile,
+            texture,
+            direction,
+            histogram
+        );
+    }
+};
+FacetMomentSnapshot operator+(const FacetMomentSnapshot& lhs, const FacetMomentSnapshot& rhs);
+
+/*!
+ * @brief Object containing all simulation results of an individual facet
+ */
+class FacetState {
+public:
+    FacetState& operator+=(const FacetState& rhs);
+
+    size_t GetMemSize() const;
+
+    std::vector<size_t> recordedAngleMapPdf; //Not time-dependent
+    std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
+    template<class Archive>
+    void serialize(Archive& archive) {
+        archive(
+            recordedAngleMapPdf,
+            momentResults
+        );
+    }
+};
+FacetState operator+(const FacetState& lhs, const FacetState& rhs);
+
+/*!
+ * @brief Object containing all simulation results, global and per facet
+ */
+class GlobalSimuState {
+public:
+    GlobalSimuState& operator=(const GlobalSimuState& src);
+    GlobalSimuState& operator+=(const GlobalSimuState& rhs);
+
+    GlobalSimuState() = default; //so a vector can be made of this for particletracer local results
+    GlobalSimuState(GlobalSimuState&& rhs) noexcept {
+        globalHistograms = std::move(rhs.globalHistograms);
+        facetStates = std::move(rhs.facetStates);
+        globalStats = rhs.globalStats;
+        initialized = rhs.initialized;
+    };
+
+    GlobalSimuState(const std::shared_ptr<GlobalSimuState> rhs) {
+        *this = rhs; //Uses overloaded operator=
+    };
+
+    //size_t memSizeCache=0;
+    bool initialized = false;
+
+    void Clear();
+
+    void Resize(std::shared_ptr<SimulationModel> model);
+
+    void Reset();
+
+    size_t GetMemSize() const;
+
+    static std::tuple<size_t, size_t, size_t>
+        Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
+            double locThreshold);
+
+#if defined(MOLFLOW)
+    GlobalHitBuffer globalStats;
+    std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
+    std::vector<FacetState> facetStates; //nbFacet
+#endif
+
+    template<class Archive>
+    void serialize(Archive& archive) {
+        archive(
+            CEREAL_NVP(globalStats),
+            CEREAL_NVP(globalHistograms),
+            CEREAL_NVP(facetStates)
+        );
+    }
+
+    mutable std::timed_mutex simuStateMutex;
+};
+
 // Local simulation structure for Molflow specific simulations
 // Appends general SimulationModel by time dependent parameters
 class MolflowSimulationModel : public SimulationModel {
@@ -92,7 +194,7 @@ public:
 
     MolflowSimulationModel(const MolflowSimulationModel &o);
     */
-    size_t size() override;
+    size_t GetMemSize() override;
     /*
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
@@ -141,28 +243,7 @@ public:
     * \param facet facet for which a Surface should be found or created
      * \return new or existing Surface corresponding to the chosen parameters of the facet
     */
-    std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override {
-
-        if (facet->sh.opacity_paramId == -1){ //constant sticking
-            return SimulationModel::GetSurface(facet); //simply based on opacity
-        }
-        else { //time-dependent opacity
-            auto opacity_paramId = facet->sh.opacity_paramId;
-            Parameter* parPtr = &(this->tdParams.parameters[facet->sh.opacity_paramId]);
-
-            double indexed_id = 10.0 + opacity_paramId;
-            if (!surfaces.empty()) {
-                auto surf = surfaces.find(indexed_id);
-                if (surf != surfaces.end())
-                    return surf->second;
-            }
-            //not found, make new
-            auto surface = std::make_shared<ParameterSurface>(parPtr);
-            surfaces.insert(std::make_pair(indexed_id, surface));
-            Log::console_msg_master(5, "Insert surface with param id: {}\n", indexed_id);
-            return surface;
-        }
-    };
+    std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override;
 
     // Sim functions
     double GetOpacityAt(SimulationFacet *f, double time) const;
@@ -176,103 +257,7 @@ public:
     void BuildPrisma(double L, double R, double angle, double s, int step);
 };
 
-/*!
- * @brief One instance is the state for one facet for a single moment
- */
-class FacetMomentSnapshot {
-public:
-    FacetMomentSnapshot();
-    FacetMomentSnapshot &operator+=(const FacetMomentSnapshot &rhs);
-   
 
-    FacetHitBuffer hits;
-    std::vector<ProfileSlice> profile;
-    std::vector<TextureCell> texture;
-    std::vector<DirectionCell> direction;
-    FacetHistogramBuffer histogram;
-
-    template<class Archive>
-    void serialize(Archive &archive) {
-        archive(
-                hits,
-                profile,
-                texture,
-                direction,
-                histogram
-        );
-    }
-};
-FacetMomentSnapshot operator+(const FacetMomentSnapshot &lhs,const FacetMomentSnapshot &rhs);
-
-/*!
- * @brief Object containing all simulation results of an individual facet
- */
-class FacetState {
-public:
-    FacetState &operator+=(const FacetState &rhs);
-    
-
-    std::vector<size_t> recordedAngleMapPdf; //Not time-dependent
-    std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
-    template<class Archive>
-    void serialize(Archive &archive) {
-        archive(
-                recordedAngleMapPdf,
-                momentResults
-        );
-    }
-};
-FacetState operator+(const FacetState& lhs,const FacetState& rhs);
-
-/*!
- * @brief Object containing all simulation results, global and per facet
- */
-class GlobalSimuState {
-public:
-    GlobalSimuState &operator=(const GlobalSimuState& src);
-    GlobalSimuState &operator+=(const GlobalSimuState& rhs);
-
-    GlobalSimuState() = default; //so a vector can be made of this for particletracer local results
-    GlobalSimuState(GlobalSimuState &&rhs) noexcept {
-        globalHistograms = std::move(rhs.globalHistograms);
-        facetStates = std::move(rhs.facetStates);
-        globalStats = rhs.globalStats;
-        initialized = rhs.initialized;
-    };
-
-    GlobalSimuState(const std::shared_ptr<GlobalSimuState> rhs) {
-        *this = rhs; //Uses overloaded operator=
-    };
-
-    bool initialized = false;
-
-    void Clear();
-
-    void Resize(std::shared_ptr<SimulationModel> model);
-
-    void Reset();
-
-    static std::tuple<size_t, size_t, size_t>
-    Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
-            double locThreshold);
-
-#if defined(MOLFLOW)
-    GlobalHitBuffer globalStats;
-    std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
-    std::vector<FacetState> facetStates; //nbFacet
-#endif
-
-    template<class Archive>
-    void serialize(Archive &archive) {
-        archive(
-                CEREAL_NVP(globalStats),
-                CEREAL_NVP(globalHistograms),
-                CEREAL_NVP(facetStates)
-        );
-    }
-
-    mutable std::timed_mutex simuStateMutex;
-};
 
 
 [[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs);

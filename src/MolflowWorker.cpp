@@ -939,6 +939,10 @@ std::string Worker::GetSimManagerStatus()
 	return simManager.GetControllerStatus();
 }
 
+std::vector<size_t> Worker::GetSimManagerThreadSizes()
+{
+	return simManager.GetThreadSizes();
+}
 
 /**
 * \brief Function for loading textures from a GEO file
@@ -1118,6 +1122,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
 	if (!mf_model->facets.empty() && !mf_model->vertices3.empty())
 		mf_model->initialized = true;
+	mf_model->memSizeCache = mf_model->GetMemSize() / 1024 / 1024;
 	return true;
 }
 

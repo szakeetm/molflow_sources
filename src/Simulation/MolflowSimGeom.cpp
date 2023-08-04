@@ -342,6 +342,29 @@ void MolflowSimulationModel::CalcIntervalCache() {
     }
 }
 
+std::shared_ptr<Surface> MolflowSimulationModel::GetSurface(std::shared_ptr<SimulationFacet> facet) override {
+
+    if (facet->sh.opacity_paramId == -1) { //constant sticking
+        return SimulationModel::GetSurface(facet); //simply based on opacity
+    }
+    else { //time-dependent opacity
+        auto opacity_paramId = facet->sh.opacity_paramId;
+        Parameter* parPtr = &(this->tdParams.parameters[facet->sh.opacity_paramId]);
+
+        double indexed_id = 10.0 + opacity_paramId;
+        if (!surfaces.empty()) {
+            auto surf = surfaces.find(indexed_id);
+            if (surf != surfaces.end())
+                return surf->second;
+        }
+        //not found, make new
+        auto surface = std::make_shared<ParameterSurface>(parPtr);
+        surfaces.insert(std::make_pair(indexed_id, surface));
+        Log::console_msg_master(5, "Insert surface with param id: {}\n", indexed_id);
+        return surface;
+    }
+};
+
 /**
 * \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
 */
@@ -407,11 +430,13 @@ MolflowSimulationModel::~MolflowSimulationModel() = default;
 * \brief Calculates the used memory used by the whole simulation model
  * \return memory size used by the whole simulation model
 */
-size_t MolflowSimulationModel::size() {
+size_t MolflowSimulationModel::GetMemSize() {
     size_t modelSize = 0;
-    modelSize += SimulationModel::size();
+    modelSize += ((SimulationModel*)this)->GetMemSize(); //base class members
+    //Molflow-specific members:
     modelSize += tdParams.GetMemSize();
-    modelSize += sizeof(Interval) * tdParams.moments.size();
+    modelSize += sizeof(Interval) * intervalCache.capacity();
+    modelSize += sizeof(IntegratedVelocityEntry) * maxwell_CDF_1K.capacity();
     return modelSize;
 }
 
@@ -440,6 +465,15 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState& rhs) {
     globalHistograms += rhs.globalHistograms;
     globalStats += rhs.globalStats;
     return *this;
+}
+
+size_t GlobalSimuState::GetMemSize() const
+{
+    size_t sum = 0;
+    sum += sizeof(globalStats); //plain old data
+    for (const auto& fs : facetStates) sum += fs.GetMemSize();
+    for (const auto& hist : globalHistograms) sum += hist.GetMemSize();
+    return sum;
 }
 
 /**
@@ -1159,6 +1193,17 @@ FacetMomentSnapshot& FacetMomentSnapshot::operator+=(const FacetMomentSnapshot &
     return *this;
 }
 
+size_t FacetMomentSnapshot::GetMemSize() const
+{
+    size_t sum = 0;
+    sum += sizeof(hits);
+    sum += profile.capacity() * sizeof(ProfileSlice);
+    sum += texture.capacity() * sizeof(TextureCell);
+    sum += direction.capacity() * sizeof(DirectionCell);
+    sum += histogram.GetMemSize();
+    return sum;
+}
+
 FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMomentSnapshot & rhs) {
     FacetMomentSnapshot result(lhs);
     result += rhs;
@@ -1170,6 +1215,14 @@ FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMoment
 * \param rhs reference object on the right hand
 * \return address of this (lhs)
 */
+size_t FacetState::GetMemSize() const
+{
+    size_t sum = 0;
+    sum += recordedAngleMapPdf.capacity() * sizeof(size_t);
+    for (const auto& facetSnapshot : momentResults) sum += facetSnapshot.GetMemSize();
+    return sum;
+}
+
 FacetState& FacetState::operator+=(const FacetState & rhs) {
     // Check in case simulation pdf is empty (record==false) but global pdf is not (hasRecorded==true)
     if(this->recordedAngleMapPdf.size() == rhs.recordedAngleMapPdf.size())

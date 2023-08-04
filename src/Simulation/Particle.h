@@ -18,8 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_PARTICLE_H
-#define MOLFLOW_PROJ_PARTICLE_H
+#pragma once
 
 
 #include "MolflowSimGeom.h"
@@ -27,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Random.h>
 
 struct SimulationFacetTempVar;
+class MolflowSimulationModel;
 
 /**
 * \brief Namespace containing various simulation only classes and methods
@@ -107,7 +107,7 @@ namespace MFSim {
         ParticleLog tmpParticleLog;
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
-        MolflowSimulationModel *model;
+        MolflowSimulationModel* model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
         std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 
@@ -120,5 +120,3 @@ namespace MFSim {
 
     };
 }
-
-#endif //MOLFLOW_PROJ_PARTICLE_H

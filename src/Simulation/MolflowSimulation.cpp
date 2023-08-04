@@ -174,7 +174,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
         tmpResults.Resize(model);
 
         // Init tmp vars per thread
-        particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
+        //particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
 
         // Update the progress string in a thread-safe manner
 #pragma omp critical
@@ -183,6 +183,12 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
             procInfo.UpdateControllerStatus(std::nullopt, { fmt::format("Constructing thread hit counters... [{}/{} done]",finished, particleTracers.size()) }, loadStatus);
         }
     }
+
+    std::vector<size_t> counterSizes;
+    for (const auto& pt : particleTracers) {
+        counterSizes.push_back(pt.tmpState.GetMemSize());
+    }
+    procInfo.UpdateThreadCounterSizes(counterSizes);
 
     //Reserve particle log
     procInfo.UpdateControllerStatus(std::nullopt, { "Setting up particle logs..." }, loadStatus);
