@@ -25,13 +25,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Random.h>
 #include <mutex>
 #include "RayTracing/Ray.h"
+#include "ProcessControl.h"
 
 struct SimulationFacetTempVar;
 class MolflowSimulationModel;
 class GlobalSimuState;
 struct ParticleLog;
 class SimulationFacet;
-enum ThreadState;
 
 
 /**
@@ -110,8 +110,8 @@ namespace MFSim {
         double velocity;
         double expectedDecayMoment; //for radioactive gases
         //size_t structureId;        // Current structure
-        std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state
-        std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>();
+        std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
+        std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
         MolflowSimulationModel* model;

@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "RayTracing/RTHelper.h"
 #include "MolflowSimFacet.h"
 #include "RayTracing/Ray.h"
+#include "ProcessControl.h"
 
 #include <Helper/Chronometer.h>
 #include <Helper/MathTools.h>
