@@ -25,7 +25,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Random.h>
 #include <mutex>
 #include "RayTracing/Ray.h"
-#include "ProcessControl.h"
 
 struct SimulationFacetTempVar;
 class MolflowSimulationModel;
@@ -33,6 +32,7 @@ class GlobalSimuState;
 struct ParticleLog;
 class SimulationFacet;
 
+enum ThreadState;
 
 /**
 * \brief Namespace containing various simulation only classes and methods
