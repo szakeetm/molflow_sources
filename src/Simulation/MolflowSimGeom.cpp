@@ -342,7 +342,7 @@ void MolflowSimulationModel::CalcIntervalCache() {
     }
 }
 
-std::shared_ptr<Surface> MolflowSimulationModel::GetSurface(std::shared_ptr<SimulationFacet> facet) override {
+std::shared_ptr<Surface> MolflowSimulationModel::GetSurface(std::shared_ptr<SimulationFacet> facet) {
 
     if (facet->sh.opacity_paramId == -1) { //constant sticking
         return SimulationModel::GetSurface(facet); //simply based on opacity

@@ -58,7 +58,7 @@ bool result = 0;
     return result;
 }
 
-ParticleTracer * MolflowSimulation::GetParticleTracerPtr(size_t i) {
+MFSim::ParticleTracer * MolflowSimulation::GetParticleTracerPtr(size_t i) {
     if(i < particleTracers.size())
         return &particleTracers.at(i);
     else
