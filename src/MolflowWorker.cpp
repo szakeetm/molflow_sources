@@ -100,6 +100,7 @@ extern SynRad* mApp;
 * \brief Default constructor for a worker
 */
 Worker::Worker() : simManager(0) {
+	simManager.asyncMode = true; //Non-blocking execution of commands
 	interfGeom = new MolflowGeometry();
 	simuTimer.ReInit();
 }
