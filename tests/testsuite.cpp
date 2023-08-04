@@ -239,11 +239,11 @@ namespace {
 			size_t oldHitsNb = globalState->globalStats.globalHits.nbMCHit;
 			size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
 
-			EXPECT_NO_THROW(simManager.StartSimulation());
-
 			Chronometer simTimer;
 			simTimer.Start();
 			double elapsedTime;
+			
+			EXPECT_NO_THROW(simManager.StartSimulation());
 
 			bool endCondition = false;
 			do {
