@@ -20,18 +20,25 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #pragma once
 
-
-#include "MolflowSimGeom.h"
-#include "SimulationUnit.h"
+//#include "MolflowSimGeom.h"
+//#include "SimulationUnit.h"
 #include <Random.h>
+#include <mutex>
+#include "RayTracing/Ray.h"
 
 struct SimulationFacetTempVar;
 class MolflowSimulationModel;
+class GlobalSimuState;
+struct ParticleLog;
+class SimulationFacet;
+enum ThreadState;
+
 
 /**
 * \brief Namespace containing various simulation only classes and methods
  */
 namespace MFSim {
+
 
 /**
 * \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
@@ -103,8 +110,8 @@ namespace MFSim {
         double velocity;
         double expectedDecayMoment; //for radioactive gases
         //size_t structureId;        // Current structure
-        GlobalSimuState tmpState; //Thread-local "unadded" results, that are reset to 0 when added to global state
-        ParticleLog tmpParticleLog;
+        std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state
+        std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>();
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
         MolflowSimulationModel* model;

@@ -939,11 +939,6 @@ std::string Worker::GetSimManagerStatus()
 	return simManager.GetControllerStatus();
 }
 
-std::vector<size_t> Worker::GetSimManagerThreadSizes()
-{
-	return simManager.GetThreadSizes();
-}
-
 /**
 * \brief Function for loading textures from a GEO file
 * \param f input file handle

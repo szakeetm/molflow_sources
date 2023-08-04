@@ -41,8 +41,9 @@ public:
     [[nodiscard]] static SettingsIO::CLIArguments initFromArgv(int argc, char **argv, SimulationManager& simManager, const std::shared_ptr<MolflowSimulationModel> model);
 
     static int initTimeLimit(const std::shared_ptr<MolflowSimulationModel> model, SettingsIO::CLIArguments& parsedArgs);
-
+    /*
     static int
     loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState, double ratio,
                        int step, double angle);
+                       */
 };

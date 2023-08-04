@@ -25,6 +25,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Physics.h"
 #include "RayTracing/RTHelper.h"
 #include "MolflowSimFacet.h"
+#include "RayTracing/Ray.h"
 
 #include <Helper/Chronometer.h>
 #include <Helper/MathTools.h>
@@ -50,41 +51,41 @@ bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalS
     statusMutex.unlock();
 
     //Global hits
-    globalState->globalStats.globalHits += tmpState.globalStats.globalHits;
-    globalState->globalStats.distTraveled_total += tmpState.globalStats.distTraveled_total;
-    globalState->globalStats.distTraveledTotal_fullHitsOnly += tmpState.globalStats.distTraveledTotal_fullHitsOnly;
-    totalDesorbed += tmpState.globalStats.globalHits.nbDesorbed;
+    globalState->globalStats.globalHits += tmpState->globalStats.globalHits;
+    globalState->globalStats.distTraveled_total += tmpState->globalStats.distTraveled_total;
+    globalState->globalStats.distTraveledTotal_fullHitsOnly += tmpState->globalStats.distTraveledTotal_fullHitsOnly;
+    totalDesorbed += tmpState->globalStats.globalHits.nbDesorbed;
 
     //Leaks
-    for (size_t leakIndex = 0; leakIndex < tmpState.globalStats.leakCacheSize; leakIndex++)
+    for (size_t leakIndex = 0; leakIndex < tmpState->globalStats.leakCacheSize; leakIndex++)
         globalState->globalStats.leakCache[(leakIndex + globalState->globalStats.lastLeakIndex) %
-                                            LEAKCACHESIZE] = tmpState.globalStats.leakCache[leakIndex];
-    globalState->globalStats.nbLeakTotal += tmpState.globalStats.nbLeakTotal;
+                                            LEAKCACHESIZE] = tmpState->globalStats.leakCache[leakIndex];
+    globalState->globalStats.nbLeakTotal += tmpState->globalStats.nbLeakTotal;
     globalState->globalStats.lastLeakIndex =
-            (globalState->globalStats.lastLeakIndex + tmpState.globalStats.leakCacheSize) % LEAKCACHESIZE;
+            (globalState->globalStats.lastLeakIndex + tmpState->globalStats.leakCacheSize) % LEAKCACHESIZE;
     globalState->globalStats.leakCacheSize = std::min(LEAKCACHESIZE, globalState->globalStats.leakCacheSize +
-                                                                tmpState.globalStats.leakCacheSize);
+                                                                tmpState->globalStats.leakCacheSize);
 
     // HHit (Only prIdx 0)
     if (particleTracerId == 0) {
-        for (size_t hitIndex = 0; hitIndex < tmpState.globalStats.hitCacheSize; hitIndex++)
+        for (size_t hitIndex = 0; hitIndex < tmpState->globalStats.hitCacheSize; hitIndex++)
             globalState->globalStats.hitCache[(hitIndex + globalState->globalStats.lastHitIndex) %
-                                                HITCACHESIZE] = tmpState.globalStats.hitCache[hitIndex];
+                                                HITCACHESIZE] = tmpState->globalStats.hitCache[hitIndex];
 
-        if (tmpState.globalStats.hitCacheSize > 0) {
+        if (tmpState->globalStats.hitCacheSize > 0) {
             globalState->globalStats.lastHitIndex =
-                    (globalState->globalStats.lastHitIndex + tmpState.globalStats.hitCacheSize) % HITCACHESIZE;
+                    (globalState->globalStats.lastHitIndex + tmpState->globalStats.hitCacheSize) % HITCACHESIZE;
             globalState->globalStats.hitCache[globalState->globalStats.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
             globalState->globalStats.hitCacheSize = std::min(HITCACHESIZE, globalState->globalStats.hitCacheSize +
-                                                                        tmpState.globalStats.hitCacheSize);
+                                                                        tmpState->globalStats.hitCacheSize);
         }
     }
 
     //Global histograms
-    globalState->globalHistograms += tmpState.globalHistograms;
+    globalState->globalHistograms += tmpState->globalHistograms;
 
     // Facets
-    globalState->facetStates += tmpState.facetStates;
+    globalState->facetStates += tmpState->facetStates;
 
     return true;
 }
@@ -325,7 +326,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                                                        std::min(model->wp.latestMoment - lastParticleTime,
                                                            expectedDecayMoment -
                                                                    lastParticleTime); //distance until the point in space where the particle decayed
-                    tmpState.globalStats.distTraveled_total += remainderFlightPath * oriRatio;
+                    tmpState->globalStats.distTraveled_total += remainderFlightPath * oriRatio;
                     if (particleTracerId == 0)RecordHit(HIT_LAST);
                     //distTraveledSinceUpdate += distanceTraveled;
                     insertNewParticle = true;
@@ -376,7 +377,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             } //end intersection found
             else {
                 // No intersection found: Leak
-                tmpState.globalStats.nbLeakTotal++;
+                tmpState->globalStats.nbLeakTotal++;
                 if (particleTracerId == 0)RecordLeakPos();
                 insertNewParticle = true;
                 ray.lastIntersected = -1;
@@ -390,8 +391,8 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 }
 
 void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {
-    tmpState.globalStats.distTraveled_total += distanceIncrement;
-    tmpState.globalStats.distTraveledTotal_fullHitsOnly += distanceIncrement;
+    tmpState->globalStats.distTraveled_total += distanceIncrement;
+    tmpState->globalStats.distTraveledTotal_fullHitsOnly += distanceIncrement;
     distanceTraveled += distanceIncrement;
 }
 
@@ -579,7 +580,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             break;
         case DES_ANGLEMAP: {
             auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
-            auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
+            auto [theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, mfSrc->angleMap, randomGenerator.rnd());
 
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
@@ -625,7 +626,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     {
         totalDesorbed++;
     }*/
-    tmpState.globalStats.globalHits.nbDesorbed++;
+    tmpState->globalStats.globalHits.nbDesorbed++;
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
@@ -682,8 +683,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     bool revert = false;
-    tmpState.globalStats.globalHits.nbMCHit++; //global
-    tmpState.globalStats.globalHits.nbHitEquiv += oriRatio;
+    tmpState->globalStats.globalHits.nbMCHit++; //global
+    tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
 
     // Handle super structure link facet. Can be
     if (iFacet->sh.superDest) {
@@ -867,9 +868,9 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 }*/
 
 void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
-    tmpState.globalStats.globalHits.nbMCHit++; //global
-    tmpState.globalStats.globalHits.nbHitEquiv += oriRatio;
-    tmpState.globalStats.globalHits.nbAbsEquiv += oriRatio;
+    tmpState->globalStats.globalHits.nbMCHit++; //global
+    tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
+    tmpState->globalStats.globalHits.nbAbsEquiv += oriRatio;
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
@@ -908,8 +909,8 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
     //Record in global and facet histograms
     size_t binIndex;
 
-    auto &tmpGlobalHistograms = tmpState.globalHistograms;
-    auto &facetHistogram = tmpState.facetStates[iFacet->globalId].momentResults;
+    auto &tmpGlobalHistograms = tmpState->globalHistograms;
+    auto &facetHistogram = tmpState->facetStates[iFacet->globalId].momentResults;
     auto &globHistParams = model->wp.globalHistogramParams;
     auto &facHistParams = iFacet->sh.facetHistogramParams;
 
@@ -965,7 +966,7 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 			f->sh.N)); //surface-orthogonal velocity component
 
 
-	TextureCell& texture = tmpState.facetStates[f->globalId].momentResults[0].texture[add];
+	TextureCell& texture = tmpState->facetStates[f->globalId].momentResults[0].texture[add];
 	if (countHit) texture.countEquiv += oriRatio;
 	texture.sum_1_per_ort_velocity +=
 		oriRatio * velocity_factor / ortVelocity;
@@ -973,7 +974,7 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 		f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
 
 	if (m > 0) {
-		TextureCell& texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
+		TextureCell& texture = tmpState->facetStates[f->globalId].momentResults[m].texture[add];
 		if (countHit) texture.countEquiv += oriRatio;
 		texture.sum_1_per_ort_velocity +=
 			oriRatio * velocity_factor / ortVelocity;
@@ -988,13 +989,13 @@ void ParticleTracer::RecordDirectionVector(const SimulationFacet *f, int m) {
     size_t add = tu + tv * (f->sh.texWidth);
 
     {
-        DirectionCell &dirCell = tmpState.facetStates[f->globalId].momentResults[0].direction[add];
+        DirectionCell &dirCell = tmpState->facetStates[f->globalId].momentResults[0].direction[add];
         dirCell.dir += oriRatio * ray.direction * velocity;
         dirCell.count++;
     }
     if (m > 0) {
         lastMomentIndex = m - 1;
-        DirectionCell &dirCell = tmpState.facetStates[f->globalId].momentResults[m].direction[add];
+        DirectionCell &dirCell = tmpState->facetStates[f->globalId].momentResults[m].direction[add];
         dirCell.dir += oriRatio * ray.direction * velocity;
         dirCell.count++;
     }
@@ -1012,9 +1013,9 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         size_t pos = (size_t) (theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
 
-        tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
+        tmpState->facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
         if (m > 0) {
-            tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
+            tmpState->facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
         size_t pos = (size_t) (
@@ -1022,7 +1023,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
                 (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
             {
-                ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[0].profile[pos];
+                ProfileSlice &profile = tmpState->facetStates[f->globalId].momentResults[0].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
                                      std::abs(Dot(f->sh.N, ray.direction));
@@ -1032,7 +1033,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
                                      (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
             if (m > 0) {
-                ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[m].profile[pos];
+                ProfileSlice &profile = tmpState->facetStates[f->globalId].momentResults[m].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
                                      std::abs(Dot(f->sh.N, ray.direction));
@@ -1055,9 +1056,9 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         size_t pos = (size_t) (dot * velocity / f->sh.maxSpeed *
                                (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
-            tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
+            tmpState->facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
             if (m > 0) {
-                tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
+                tmpState->facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
             }
         }
     }
@@ -1068,7 +1069,7 @@ ParticleTracer::LogHit(SimulationFacet *f) {
     //if(omp_get_thread_num() != 0) return; // only let 1 thread update
     if (model->otfParams.enableLogging &&
         model->otfParams.logFacetId == f->globalId &&
-        tmpParticleLog.pLog.size() < tmpParticleLog.pLog.capacity()) {
+        tmpParticleLog->pLog.size() < tmpParticleLog->pLog.capacity()) {
         ParticleLoggerItem log;
         log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(ray.direction, f->sh.nU, f->sh.nV, f->sh.N);
@@ -1076,7 +1077,7 @@ ParticleTracer::LogHit(SimulationFacet *f) {
         log.particleDecayMoment = expectedDecayMoment;
         log.time = ray.time;
         log.velocity = velocity;
-        tmpParticleLog.pLog.push_back(log);
+        tmpParticleLog->pLog.push_back(log);
     }
 }
 
@@ -1109,7 +1110,7 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
         size_t phiIndex = (size_t) ((inPhi + 3.1415926) / (2.0 * PI) *
                                     (double) collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
 
-        auto &angleMap = tmpState.facetStates[collidedFacet->globalId].recordedAngleMapPdf;
+        auto &angleMap = tmpState->facetStates[collidedFacet->globalId].recordedAngleMapPdf;
         angleMap[thetaIndex * collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
     }
 }
@@ -1170,7 +1171,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
         //Global hit counter
-        FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[0].hits;
+        FacetHitBuffer &hits = tmpState->facetStates[f->globalId].momentResults[0].hits;
         hits.nbMCHit += hit;
         hits.nbHitEquiv += hitEquiv;
         hits.nbDesorbed += desorb;
@@ -1186,7 +1187,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
     }
     if (m > 0) {
         //Moment-specific hit counter
-        FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
+        FacetHitBuffer &hits = tmpState->facetStates[f->globalId].momentResults[m].hits;
         hits.nbMCHit += hit;
         hits.nbHitEquiv += hitEquiv;
         hits.nbDesorbed += desorb;
@@ -1248,7 +1249,7 @@ void ParticleTracer::Reset() {
     velocity = 0.0;
     expectedDecayMoment = 0.0;
 
-    tmpState.Reset();
+    tmpState->Reset();
     lastHitFacet = nullptr;
     ray.lastIntersected = -1;
     //randomGenerator.SetSeed(randomGenerator.GetSeed());
@@ -1272,14 +1273,14 @@ bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> glo
         statusMutex.lock();
         myStatus = "Resetting temporary local results...";
         statusMutex.unlock();
-        tmpState.Reset();
+        tmpState->Reset();
     }
     return lastHitUpdateOK;
 }
 
 bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
     std::string& myStatus, std::mutex& statusMutex, size_t timeout){
-    if (!tmpParticleLog.pLog.empty()) {
+    if (!tmpParticleLog->pLog.empty()) {
         statusMutex.lock();
         myStatus = "Waiting to access global particle log...";
         statusMutex.unlock();
@@ -1290,21 +1291,21 @@ bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
         myStatus = "Adding local particle log to global...";
         statusMutex.unlock();
         size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
-        Saturate(writeNb, 0, tmpParticleLog.pLog.size());
-        globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog.pLog.begin(), tmpParticleLog.pLog.begin() + writeNb);
+        Saturate(writeNb, 0, tmpParticleLog->pLog.size());
+        globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog->pLog.begin(), tmpParticleLog->pLog.begin() + writeNb);
         globalLog->particleLogMutex.unlock();
-        tmpParticleLog.clear();
-        tmpParticleLog.pLog.shrink_to_fit();
-        tmpParticleLog.pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));
+        tmpParticleLog->clear();
+        tmpParticleLog->pLog.shrink_to_fit();
+        tmpParticleLog->pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));
     }
 
     return true;
 }
 void ParticleTracer::RecordHit(const int type) {
-    if (tmpState.globalStats.hitCacheSize < HITCACHESIZE) {
-        tmpState.globalStats.hitCache[tmpState.globalStats.hitCacheSize].pos = ray.origin;
-        tmpState.globalStats.hitCache[tmpState.globalStats.hitCacheSize].type = type;
-        ++tmpState.globalStats.hitCacheSize;
+    if (tmpState->globalStats.hitCacheSize < HITCACHESIZE) {
+        tmpState->globalStats.hitCache[tmpState->globalStats.hitCacheSize].pos = ray.origin;
+        tmpState->globalStats.hitCache[tmpState->globalStats.hitCacheSize].type = type;
+        ++tmpState->globalStats.hitCacheSize;
     }
 }
 
@@ -1313,10 +1314,10 @@ void ParticleTracer::RecordLeakPos() {
     // Record leak for debugging
     RecordHit(HIT_REF);
     RecordHit(HIT_LAST);
-    if (tmpState.globalStats.leakCacheSize < LEAKCACHESIZE) {
-        tmpState.globalStats.leakCache[tmpState.globalStats.leakCacheSize].pos = ray.origin;
-        tmpState.globalStats.leakCache[tmpState.globalStats.leakCacheSize].dir = ray.direction;
-        ++tmpState.globalStats.leakCacheSize;
+    if (tmpState->globalStats.leakCacheSize < LEAKCACHESIZE) {
+        tmpState->globalStats.leakCache[tmpState->globalStats.leakCacheSize].pos = ray.origin;
+        tmpState->globalStats.leakCache[tmpState->globalStats.leakCacheSize].dir = ray.direction;
+        ++tmpState->globalStats.leakCacheSize;
     }
 }
 

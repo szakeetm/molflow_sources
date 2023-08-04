@@ -44,21 +44,21 @@ bool result = 0;
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        if (!particleTracer.tmpParticleLog.particleLogMutex.try_lock_for(std::chrono::seconds(10))) {
+        if (!particleTracer.tmpParticleLog->particleLogMutex.try_lock_for(std::chrono::seconds(10))) {
 #pragma omp critical            
             result = -1;
         }
-        particleTracer.tmpParticleLog.clear();
-        particleTracer.tmpParticleLog.pLog.shrink_to_fit();
+        particleTracer.tmpParticleLog->clear();
+        particleTracer.tmpParticleLog->pLog.shrink_to_fit();
         if (model->otfParams.enableLogging) {
-           particleTracer.tmpParticleLog.pLog.reserve(model->otfParams.logLimit);
+           particleTracer.tmpParticleLog->pLog.reserve(model->otfParams.logLimit);
         }
-        particleTracer.tmpParticleLog.particleLogMutex.unlock();
+        particleTracer.tmpParticleLog->particleLogMutex.unlock();
     }
     return result;
 }
 
-MFSim::ParticleTracer * MolflowSimulation::GetParticleTracerPtr(size_t i) {
+ParticleTracer * MolflowSimulation::GetParticleTracerPtr(size_t i) {
     if(i < particleTracers.size())
         return &particleTracers.at(i);
     else
@@ -171,7 +171,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     {
         auto& particleTracer = particleTracers[i];
         auto& tmpResults = particleTracer.tmpState;
-        tmpResults.Resize(model);
+        tmpResults->Resize(model);
 
         // Init tmp vars per thread
         //particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
@@ -186,9 +186,9 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
 
     std::vector<size_t> counterSizes;
     for (const auto& pt : particleTracers) {
-        counterSizes.push_back(pt.tmpState.GetMemSize());
+        counterSizes.push_back(pt.tmpState->GetMemSize());
     }
-    procInfo.UpdateThreadCounterSizes(counterSizes);
+    procInfo.UpdateCounterSizes(counterSizes);
 
     //Reserve particle log
     procInfo.UpdateControllerStatus(std::nullopt, { "Setting up particle logs..." }, loadStatus);
@@ -204,7 +204,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     Log::console_msg_master(3, "  Load {} successful\n", simModelPtr->sh.name);
     Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModelPtr->vertices3.size(), simModelPtr->sh.nbFacet);
 
-    Log::console_msg_master(3, "  Geom size: {} bytes\n", simModelPtr->size());
+    Log::console_msg_master(3, "  Geom size: {} bytes\n", simModelPtr->memSizeCache);
     Log::console_msg_master(3, "  Number of structure: {}\n", simModelPtr->sh.nbSuper);
     Log::console_msg_master(3, "  Global Hit: {} bytes\n", sizeof(GlobalHitBuffer));
     Log::console_msg_master(3, "  Facet Hit : {} bytes\n", simModelPtr->sh.nbFacet * sizeof(FacetHitBuffer));
@@ -238,7 +238,7 @@ void MolflowSimulation::ResetSimulation() {
         particleTracer.model = (MolflowSimulationModel*) model.get();
         particleTracer.totalDesorbed = 0;
 
-        particleTracer.tmpParticleLog.clear();
+        particleTracer.tmpParticleLog->clear();
     }
     totalDesorbed = 0;
 }
@@ -259,7 +259,7 @@ void MolflowSimulation::ClearSimulation() {
         particleTracer.model = (MolflowSimulationModel*)model.get();
         particleTracer.totalDesorbed = 0;
 
-        particleTracer.tmpParticleLog.clear();
+        particleTracer.tmpParticleLog->clear();
 
     }
     totalDesorbed = 0;
