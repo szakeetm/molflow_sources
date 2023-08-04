@@ -1156,7 +1156,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	if (!sendOnly) {
 		try {
 			prg.SetMessage("Asking subprocesses to clear geometry...");
-			simManager.ResetSimulations();
+			LoadStatus loadStatus(this);
+			simManager.ResetSimulations(&loadStatus);
 			prg.SetMessage("Clearing Logger...");
 			particleLog->clear();
 		}

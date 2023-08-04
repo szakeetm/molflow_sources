@@ -167,7 +167,10 @@ int main(int argc, char** argv) {
 #endif
 
     // Start async simulation run, check state in following loop
-    try {
+    double elapsedTime = 0.0;
+    Chronometer simTimer;
+    simTimer.Start();
+    try {        
         simManager.StartSimulation();
     }
     catch (const std::exception& e) {
@@ -176,10 +179,6 @@ int main(int argc, char** argv) {
         ShutdownMPI();
         return 43;
     }
-
-    Chronometer simTimer;
-    simTimer.Start();
-    double elapsedTime = 0.0;
 
     CLIMainLoop(elapsedTime, simTimer, model, globalState,
         simManager, persistentUserSettings, autoSave, printer, parsedArgs);
@@ -260,7 +259,6 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_p
     SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
-    Log::console_msg_master(1, "[{}] Started simulation.\n", Util::getTimepointString());
     do {
         ProcessSleep(1000);
 
