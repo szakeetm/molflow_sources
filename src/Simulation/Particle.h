@@ -32,7 +32,7 @@ class GlobalSimuState;
 struct ParticleLog;
 class SimulationFacet;
 
-enum ThreadState;
+enum ThreadState:int;
 
 /**
 * \brief Namespace containing various simulation only classes and methods
