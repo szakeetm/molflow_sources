@@ -1260,10 +1260,6 @@ void ParticleTracer::Reset() {
 bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
     ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
 
-    statusMutex.lock();
-    myState = ThreadState::HitUpdate;
-    statusMutex.unlock();
-
     bool lastHitUpdateOK = UpdateMCHits(globalState, model->tdParams.moments.size(), 
         myStatus, statusMutex, timeout_ms);
     

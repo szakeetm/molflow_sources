@@ -155,10 +155,10 @@ int main(int argc, char** argv) {
     std::string autoSave = Initializer::getAutosaveFile(parsedArgs);
 
     if (parsedArgs.simDuration > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), parsedArgs.simDuration, globalState->globalStats.globalHits.nbDesorbed);
+        Log::console_msg_master(1, "[{}] Starting simulation for {} seconds from {} desorptions...\n", Util::getTimepointString(), parsedArgs.simDuration, globalState->globalStats.globalHits.nbDesorbed);
     }
     else if (model->otfParams.desorptionLimit > 0) {
-        Log::console_msg_master(1, "[{}] Preparing simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globalState->globalStats.globalHits.nbDesorbed);
+        Log::console_msg_master(1, "[{}] Starting simulation to {} desorptions from {} desorptions...\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globalState->globalStats.globalHits.nbDesorbed);
     }
 
 #if defined(USE_MPI)
