@@ -73,8 +73,8 @@ static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,AL
 GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 	worker = w;
-	int wD = 580;
-	int hD = 565;
+	int windowWidth = 580;
+	int windowHeight = 565;
 
 	const int checkboxHeight = 25;
 
@@ -213,17 +213,15 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(wD / 2 - 65, 298, 130, 19);
+	applyButton->SetBounds(windowWidth / 2 - 65, 298, 130, 19);
 	Add(applyButton);
 
 	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
 	chkNonIsothermal->SetBounds(315,125,100,19);
 	Add(chkNonIsothermal);*/
 
-	const int procControlPosY= 334;
-	auto *panel3 = new GLTitledPanel("Process control");
-	panel3->SetBounds(5, procControlPosY, wD - 10, hD - 310);
-	Add(panel3);
+	processPanel = new GLTitledPanel("Process control");
+	Add(processPanel);
 
 	processList = new GLList(0);
 	processList->SetHScrollVisible(true);
@@ -232,45 +230,39 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
 	processList->SetColumnLabelVisible(true);
-	processList->SetBounds(10, procControlPosY+20, wD - 20, hD - 433);
-	panel3->Add(processList);
+	processPanel->Add(processList);
 
 	char tmp[128];
 	sprintf(tmp, "Number of CPU cores:     %zd", mApp->numCPU);
-	auto *coreLabel = new GLLabel(tmp);
-	coreLabel->SetBounds(10, hD - 74, 120, 19);
-	panel3->Add(coreLabel);
+	coreLabel = new GLLabel(tmp);
+	processPanel->Add(coreLabel);
 
     /*prioToggle = new GLToggle(0, "Enable High Priority mode (can cause GUI lag)");
-    prioToggle->SetBounds(170, hD - 74, 240, 19);
+    prioToggle->SetBounds(170, windowHeight - 74, 240, 19);
     prioToggle->SetThreadStates(0);
-    panel3->Add(prioToggle);*/
+    procPanel->Add(prioToggle);*/
 
-	auto *l1 = new GLLabel("Number of subprocesses:");
-	l1->SetBounds(10, hD - 49, 120, 19);
-	panel3->Add(l1);
+	subProcLabel = new GLLabel("Number of subprocesses:");
+	processPanel->Add(subProcLabel);
 
 	nbProcText = new GLTextField(0, "");
 	nbProcText->SetEditable(true);
-	nbProcText->SetBounds(135, hD - 51, 30, 19);
-	panel3->Add(nbProcText);
+	processPanel->Add(nbProcText);
 
 	restartButton = new GLButton(0, "Apply and restart processes");
-	restartButton->SetBounds(170, hD - 51, 150, 19);
-	panel3->Add(restartButton);
+	processPanel->Add(restartButton);
 
-	maxButton = new GLButton(0, "Change MAX desorbed molecules");
-	maxButton->SetBounds(wD - 195, hD - 51, 180, 19);
-	panel3->Add(maxButton);
+	maxButton = new GLButton(0, "Change desorption limit");
+	processPanel->Add(maxButton);
 
-	
+	ResizeProcessPanel(windowWidth,windowHeight);
 
 	// Center dialog
-	int wS, hS;
-	GLToolkit::GetScreenSize(&wS, &hS);
-	int xD = (wS - wD) / 2;
-	int yD = (hS - hD) / 2;
-	GLWindow::SetBounds(xD, yD, wD, hD);
+	int screenWidth, screenHeight;
+	GLToolkit::GetScreenSize(&screenWidth, &screenHeight);
+	int topLeftX = (screenWidth - windowWidth) / 2;
+	int topLeftY = (screenHeight - windowHeight) / 2;
+	GLWindow::SetBounds(topLeftX, topLeftY, windowWidth, windowHeight);
 
     GLContainer::RestoreDeviceObjects();
 
@@ -397,4 +389,17 @@ void GlobalSettings::UpdateOutgassing() {
 	desorbedMoleculesLabel->SetText(tmp);
 	sprintf(tmp, "%.3E", worker->model->wp.totalDesorbedMolecules);
 	desorbedMoleculesText->SetText(tmp);
+}
+
+void GlobalSettings::ResizeProcessPanel(int windowWidth, int windowHeight) {
+
+	int processPanelHeight = windowHeight - 360;
+	processPanel->SetBounds(7, 334, windowWidth - 10, processPanelHeight);
+	processPanel->SetCompBounds(processList, 4, 18, windowWidth - 20, processPanelHeight - 73);
+
+	processPanel->SetCompBounds(coreLabel,10, processPanelHeight - 50, 120, 19);
+	processPanel->SetCompBounds(subProcLabel,10, processPanelHeight - 25, 120, 19);
+	processPanel->SetCompBounds(nbProcText,135, processPanelHeight - 27, 30, 19);
+	processPanel->SetCompBounds(restartButton,170, processPanelHeight - 27, 150, 19);
+	processPanel->SetCompBounds(maxButton,windowWidth - 195, processPanelHeight - 27, 180, 19);
 }

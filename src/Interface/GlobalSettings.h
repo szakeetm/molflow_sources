@@ -17,8 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _GLOBALSETTINGSH_
-#define _GLOBALSETTINGSH_
+#pragma once
 
 #include "GlobalSettings_shared.h"
 
@@ -33,10 +32,9 @@ public:
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
   void Update();
+  void ResizeProcessPanel(int windowWidth, int windowHeight);
 
 private:
-
-
 
   GLTextField *outgassingGasRateText;
   GLTextField *outgassingMoleculeRateText;
@@ -49,5 +47,3 @@ private:
   GLToggle* useOldXMLFormat;
 
 };
-
-#endif /* _GLOBALSETTINGSH_ */
