@@ -448,7 +448,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
-                    else value = h * model->wp.globalHistogramParams.timeBinsize;
+                    else value = (double)h * model->wp.globalHistogramParams.timeBinsize;
                     bin.append_attribute("count") = timeHistogram[h];
                 }
             }
@@ -626,7 +626,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
-                        else value = h * sFac.sh.facetHistogramParams.timeBinsize;
+                        else value = (double)h * sFac.sh.facetHistogramParams.timeBinsize;
                         bin.append_attribute("count") = timeHistogram[h];
                     }
                 }
