@@ -243,17 +243,17 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
-                this->rayTracingStructures.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+                this->rayTracingStructures.emplace_back(std::make_unique<KdTreeAccel>(primPointers[s], probabilities));
             else
-                this->rayTracingStructures.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
+                this->rayTracingStructures.emplace_back(std::make_unique<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
-                this->rayTracingStructures.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+                this->rayTracingStructures.emplace_back(std::make_unique<KdTreeAccel>(primPointers[s]));
             else
-                this->rayTracingStructures.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
+                this->rayTracingStructures.emplace_back(std::make_unique<BVHAccel>(primPointers[s], bvh_width, split));
         }
     }
 #endif // old_bvb
