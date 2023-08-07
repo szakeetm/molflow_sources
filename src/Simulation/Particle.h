@@ -94,6 +94,8 @@ namespace MFSim {
 
         void Reset();
 
+        size_t GetMemSize() const;
+
         Ray ray; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
@@ -114,7 +116,7 @@ namespace MFSim {
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
-        MolflowSimulationModel* model;
+        std::shared_ptr<MolflowSimulationModel> model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
         std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
 

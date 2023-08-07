@@ -32,8 +32,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ProcessControl.h"
 #include "SimulationController.h"
 #include "MolflowSimGeom.h"
-#include "Particle.h"
 #include "RayTracing/RTHelper.h"
+
+class ParticleTracer;
 
 // Local simulation structure
 class MolflowSimulation : public Simulation_Abstract {
@@ -53,11 +54,11 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    MFSim::ParticleTracer* GetParticleTracerPtr(size_t i) override;
+    std::shared_ptr<MFSim::ParticleTracer> GetParticleTracerPtr(size_t i) override;
     void ConstructParticleTracers(size_t n, bool fixedSeed) override;
     bool lastLogUpdateOK=true; // Last log update timeout
     bool hasVolatile=false;   // Contains volatile facet
-    std::vector<MFSim::ParticleTracer> particleTracers; //they have their own tmp counters
+    std::vector<std::shared_ptr<MFSim::ParticleTracer>> particleTracers; //they have their own tmp counters
     mutable std::timed_mutex simuStateMutex;
 
 };

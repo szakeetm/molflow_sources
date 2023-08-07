@@ -1259,6 +1259,14 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
+size_t ParticleTracer::GetMemSize() const {
+    size_t size = 0;
+    size += tmpState->GetMemSize(); //local counter
+    size += tmpFacetVars.capacity() * sizeof(SimulationFacetTempVar);
+    size += tmpParticleLog->pLog.capacity() * sizeof(ParticleLoggerItem);
+    return size;
+}
+
 bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
     ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
 

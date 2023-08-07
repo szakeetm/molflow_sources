@@ -33,7 +33,7 @@ public:
 
     static double GenerateRandomVelocity(const std::vector<IntegratedVelocityEntry>& maxwell_CDF_1K, const double sqrt_temperature, double rndVal);
 
-    static void TreatMovingFacet(MolflowSimulationModel* model, const Vector3d &position, Vector3d &direction, double &velocity);
+    static void TreatMovingFacet(std::shared_ptr<MolflowSimulationModel> model, const Vector3d &position, Vector3d &direction, double &velocity);
 };
 
 
