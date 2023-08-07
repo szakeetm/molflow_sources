@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.9.14 beta (2023-08-07)
+
+### Feature
+
+- Load status window for simulation-interface operations taking >0.5s
+- Possibility to abort simulation start/stop/reload if taking too long
+
+## Interface
+
+- Resizable Global Settings window (for long thread list)
+- Approximation for Sim.Manager and thread memory usage
+
 ## v2.9.13 beta (2023-07-21)
 
 ### Feature
