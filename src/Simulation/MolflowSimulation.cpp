@@ -67,10 +67,10 @@ std::shared_ptr<MFSim::ParticleTracer> MolflowSimulation::GetParticleTracerPtr(s
 }
 
 void MolflowSimulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
-    particleTracers.clear();
     particleTracers.resize(n);
     size_t pid = 0;
     for(auto& particleTracer : particleTracers){
+        particleTracer = std::make_shared<MFSim::ParticleTracer>(); //make new
         if(fixedSeed)
          particleTracer->randomGenerator.SetSeed(42424242 + pid);
         else
