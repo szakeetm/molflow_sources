@@ -232,7 +232,7 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
         sFac->surf = GetSurface(sFac);
     }
 
-    this->accel.clear();
+    this->rayTracingStructures.clear();
     if(BVHAccel::SplitMethod::ProbSplit == split && globalState && globalState->initialized && globalState->globalStats.globalHits.nbDesorbed > 0){
         if(globalState->facetStates.size() != this->facets.size())
             return 1;
@@ -243,17 +243,17 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+                this->rayTracingStructures.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
+                this->rayTracingStructures.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+                this->rayTracingStructures.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
+                this->rayTracingStructures.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
         }
     }
 #endif // old_bvb

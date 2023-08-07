@@ -200,7 +200,7 @@ public:
         facets = o.facets;
         structures = o.structures;
 
-        accel.insert(accel.begin(), o.accel.begin(), o.accel.end());
+        rayTracingStructures.insert(rayTracingStructures.begin(), o.rayTracingStructures.begin(), o.rayTracingStructures.end());
         vertices3 = o.vertices3;
         otfParams = o.otfParams;
         tdParams = o.tdParams;
@@ -215,7 +215,7 @@ public:
         facets = std::move(o.facets);
         structures = std::move(o.structures);
 
-        accel = std::move(o.accel);
+        rayTracingStructures = std::move(o.rayTracingStructures);
         vertices3 = std::move(o.vertices3);
         tdParams = std::move(o.tdParams);
         otfParams = o.otfParams;

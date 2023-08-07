@@ -271,7 +271,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 			{
 				ray.tMax = 1.0e99;
 
-				found = model->accel.at(ray.structure)->Intersect(ray);
+				found = model->rayTracingStructures.at(ray.structure)->Intersect(ray);
 				if (found) {
 
 					// first pass
