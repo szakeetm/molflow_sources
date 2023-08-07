@@ -399,6 +399,7 @@ void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {
 
 // Launch a ray from a source facet. The ray
 // particle.direction is chosen according to the desorption type.
+// returns false if no starting point found, true if success
 bool ParticleTracer::StartFromSource(Ray& ray) {
     bool found = false;
     bool foundInMap = false;
