@@ -43,6 +43,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "versionId.h"
 #include "Helper/GLProgress_CLI.hpp"
 #include "MolflowCLI.hpp"
+#include <CLI11/CLI11.hpp>
 
 //#if defined(MOLFLOW)
 #include <SettingsIO.h>
@@ -122,6 +123,8 @@ int main(int argc, char** argv) {
         Log::console_error(err.what());
         ShutdownMPI();
         return 41;
+    } catch (const CLI::ParseError& e) {
+        throw Error(fmt::format("Argument parse error:\n{}", e.what()));
     }
 
 #if defined(USE_MPI)

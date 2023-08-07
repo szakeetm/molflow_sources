@@ -59,10 +59,9 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
     app.add_option("-t,--time", parsedArgs.simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
 
-    auto group = app.add_option_group("subgroup");
-    group->add_option("-f,--file", parsedArgs.inputFile, "Required input file (XML/ZIP only)")
+    app.add_option("-f,--file", parsedArgs.inputFile, "Required input file (XML/ZIP only)")
+            ->required()
             ->check(CLI::ExistingFile);
-    group->require_option(1);
 
     CLI::Option *optOfile = app.add_option("-o,--output", parsedArgs.outputFile,
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
@@ -95,7 +94,8 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
         app.parse(argc,argv);
     }
     catch (const CLI::ParseError& e) {
-        throw Error(fmt::format("Argument parse error: {}", e.what()));
+        app.exit(e,std::cout,std::cerr);
+        throw Error("");//Command above printed error
     }
 
     if (verbose)
