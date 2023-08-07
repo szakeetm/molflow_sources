@@ -33,6 +33,7 @@ public:
   void ProcessMessage(GLComponent *src,int message);
   void Update();
   void ResizeProcessPanel(int windowWidth, int windowHeight);
+  void SetBounds(int x, int y, int width, int height) override;
 
 private:
 

@@ -62,7 +62,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-static const int   plWidth[] = { 60,40,70,70,335 };
+static const int   plWidth[] = { 60,40,70,70,295 };
 static const char *plName[] = { "#","PID","Mem Usage","Mem Peak",/*"CPU",*/"Status" };
 static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT };
 
@@ -74,7 +74,9 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 	worker = w;
 	int windowWidth = 580;
-	int windowHeight = 565;
+	int windowHeight = 600;
+	SetMinimumSize(windowWidth, windowHeight);
+	SetResizable(true);
 
 	const int checkboxHeight = 25;
 
@@ -216,20 +218,16 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	applyButton->SetBounds(windowWidth / 2 - 65, 298, 130, 19);
 	Add(applyButton);
 
-	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
-	chkNonIsothermal->SetBounds(315,125,100,19);
-	Add(chkNonIsothermal);*/
-
 	processPanel = new GLTitledPanel("Process control");
 	Add(processPanel);
 
 	processList = new GLList(0);
-	processList->SetHScrollVisible(true);
 	processList->SetSize(5, MAX_PROCESS+2);
 	processList->SetColumnWidths((int*)plWidth);
 	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
 	processList->SetColumnLabelVisible(true);
+	processList->SetHScrollVisible(false);
 	processPanel->Add(processList);
 
 	char tmp[128];
@@ -255,14 +253,12 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	maxButton = new GLButton(0, "Change desorption limit");
 	processPanel->Add(maxButton);
 
-	ResizeProcessPanel(windowWidth,windowHeight);
-
 	// Center dialog
 	int screenWidth, screenHeight;
 	GLToolkit::GetScreenSize(&screenWidth, &screenHeight);
 	int topLeftX = (screenWidth - windowWidth) / 2;
 	int topLeftY = (screenHeight - windowHeight) / 2;
-	GLWindow::SetBounds(topLeftX, topLeftY, windowWidth, windowHeight);
+	SetBounds(topLeftX, topLeftY, windowWidth, windowHeight);
 
     GLContainer::RestoreDeviceObjects();
 
@@ -402,4 +398,11 @@ void GlobalSettings::ResizeProcessPanel(int windowWidth, int windowHeight) {
 	processPanel->SetCompBounds(nbProcText,135, processPanelHeight - 27, 30, 19);
 	processPanel->SetCompBounds(restartButton,170, processPanelHeight - 27, 150, 19);
 	processPanel->SetCompBounds(maxButton,windowWidth - 195, processPanelHeight - 27, 180, 19);
+
+	processList->SetColumnWidth(4, windowWidth - 285);
+}
+
+void GlobalSettings::SetBounds(int x, int y, int width, int height) {
+	ResizeProcessPanel(width, height);
+	GLWindow::SetBounds(x, y, width, height);
 }
