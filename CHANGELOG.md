@@ -14,6 +14,7 @@
 
 ## Bugfix
 
+- Formula parsing fixed for consecutive multiplications/divisions
 - Convergence data saved again
 - Prevent crash if convergence data is expected but loaded file hasn't
 
