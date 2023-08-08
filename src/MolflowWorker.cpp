@@ -810,7 +810,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					{
 						FlowIO::XmlLoader::LoadSimulationState(parseFileName, mf_model, globalState, prg);
-						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->appFormulas->convergenceData, prg);
+						FlowIO::XmlLoader::LoadConvergenceValues(parseFileName, mApp->appFormulas, prg);
 					}
 					simManager.simulationChanged = true; //mark for loading
 

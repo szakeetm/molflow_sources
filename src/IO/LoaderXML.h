@@ -46,7 +46,7 @@ namespace FlowIO {
         static int LoadSimulationState(const std::string &inputFileName, const std::shared_ptr<MolflowSimulationModel> model,
             const std::shared_ptr<GlobalSimuState> globalState, GLProgress_Abstract& prg);
         static int
-        LoadConvergenceValues(const std::string &inputFileName, std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData, GLProgress_Abstract& prg);
+        LoadConvergenceValues(const std::string &inputFileName, const std::shared_ptr<Formulas> appFormulas, GLProgress_Abstract& prg);
         MolflowUserSettings userSettings; //Cache that will be passed on to Worker/model after loading
     };
 }
