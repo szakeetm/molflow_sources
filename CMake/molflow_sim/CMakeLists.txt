@@ -73,11 +73,13 @@ set(SRC_FILES
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
+        ${CPP_DIR_2}/GLApp/GLFormula.cpp
 
         ${CPP_DIR_1}/MolflowBuffer.cpp
 
         ${CPP_DIR_2}/Vector.cpp
         ${CPP_DIR_2}/Distributions.cpp
+        ${CPP_DIR_2}/GLApp/GLFormula.h
 
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
@@ -106,6 +108,7 @@ set(SRC_FILES
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
         ../../src_shared/RayTracing/Ray.cpp
+        ../../src_shared/GLApp/GLFormula.h
         
         ${HELPER_DIR}/GLProgress_CLI.cpp
         ${HELPER_DIR}/GLProgress_CLI.hpp

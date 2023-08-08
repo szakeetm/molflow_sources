@@ -31,6 +31,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation/MolflowSimFacet.h"
 #include <fmt/core.h>
 #include <Formulas.h>
+#include "GLApp/GLFormula.h"
 
 using namespace pugi;
 using namespace FlowIO;
