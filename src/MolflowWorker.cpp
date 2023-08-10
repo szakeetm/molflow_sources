@@ -1,5 +1,3 @@
-#include "Worker.h"
-#include "Worker.h"
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
@@ -1204,8 +1202,8 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 void Worker::ResetWorkerStats() {
 	globalState->Reset();
 	particleLog->clear();
+	mApp->appFormulas->ResetConvergenceData();
 }
-
 /**
 * \brief Starts the simulation process
 */
