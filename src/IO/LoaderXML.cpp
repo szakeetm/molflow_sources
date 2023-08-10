@@ -1085,7 +1085,7 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
             nbLines = nbEntriesAttr.as_int();
         }
         else {
-            nbLines = countLines(convText); //somewhat expensive
+            nbLines = countLines(convText,false); //somewhat expensive
         }
 
         for (size_t i = 0; i < nbLines; i++) {
