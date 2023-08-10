@@ -99,7 +99,7 @@ endif(MSVC)
 target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
 
-file(COPY ./simulation.cfg
+file(COPY
         ./TestCases
         ../copy_to_build/parameter_catalog
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
