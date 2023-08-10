@@ -261,7 +261,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
     const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
 
     std::shared_ptr<MolflowSimulationModel> loadedModel;
-    GLProgress_CLI prg(fmt::format("Loading geometry from file {}", fileName));
+    GLProgress_CLI prg(fmt::format("Loading geometry from file {}\n", fileName));
     prg.noProgress = parsedArgs.noProgress; //Suppress percentages if ran in script
 
     //1. Load Input File (regular XML)
