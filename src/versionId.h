@@ -2,11 +2,11 @@
 #include <string>
 
 #if defined(MOLFLOW)
-//Hard-coded identifiers, update these on new release and rebuild solution
+//Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 static const std::string appName = "Molflow";
-static const int appVersionId = 2914; //Compared with available updates. Global variable, so rebuild whole solution if changed.
-static const std::string appVersionName = "2.9.14 beta";
+static const int appVersionId = 2915; //Compared with available updates 
+static const std::string appVersionName = "2.9.15 beta";
 
 static const std::string appTitle = "Molflow+ " + appVersionName
 + " (" __DATE__ ")"

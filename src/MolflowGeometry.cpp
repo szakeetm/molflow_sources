@@ -32,7 +32,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ProfilePlotter.h"
 #include "ProfileModes.h"
 #include "ConvergencePlotter.h"
-#include "versionId.h"
+//#include "versionId.h"
 #include <iomanip>
 #include <cfloat> // DBL_EPSILON
 
