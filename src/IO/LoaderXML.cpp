@@ -664,7 +664,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                     }
                     for (int ie = 0; ie < texHeight_file -
                                           sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
-                        //Read extra cells ffrom file without doing anything
+                        //Read extra cells from file without doing anything
                         for (int iw = 0; iw < texWidth_file; iw++) {
                             size_t dummy_ll;
                             double dummy_d;
@@ -1060,9 +1060,9 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
 	xml_node convNode = resultNode.child("Convergence");
 
 	//convergenceData.clear();
-	for (auto& convVec : convNode.children()) {
+	for (auto& convDataNode : convNode.children()) {
         int formulaId = -1;
-        auto expressionAttr = convVec.attribute("Formula");
+        auto expressionAttr = convDataNode.attribute("Formula");
         if (expressionAttr) {
             std::string formulaExpression = expressionAttr.as_string();
             for (int i = 0; i < appFormulas->formulas.size(); i++) {
@@ -1078,41 +1078,35 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
 
 		std::stringstream convText;
 		std::vector<FormulaHistoryDatapoint> convData;
-		convText << convVec.child_value();
-		// get length of file:
-		convText.seekg(0, std::stringstream::end);
-		//int length = convText.tellg();
-		convText.seekg(0, std::stringstream::beg);
-		if (convText.peek() == '\n') {
-			char nl;
-			convText.get(nl);
-		}
-		std::string line;
-		while (!convText.eof()) {
-			std::getline(convText, line);
-			size_t posOfTab = line.find('\t');
-			//std::string second = pieces.substr(pos + 1);
+		convText << convDataNode.child_value();
+        size_t nbLines;
+        auto nbEntriesAttr = convDataNode.attribute("nbEntries"); //Since 2.9.15 beta
+        if (nbEntriesAttr) {
+            nbLines = nbEntriesAttr.as_int();
+        }
+        else {
+            nbLines = countLines(convText); //somewhat expensive
+        }
 
-			if (posOfTab == std::string::npos)
-				continue;
-			size_t nbDes = 0;
-			double convVal = 0.0;
-			try {
-				nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
-				convVal = stringToNumber<double>(line.substr(posOfTab + 1));
-			}
-			catch (const std::exception& e) {
-				// Just write an error and move to next line e.g. when fail on inf/nan
-				std::cerr << "[XML][Convergence] Parsing error: " << e.what() << std::endl;
-				continue;
-			}
-			convData.emplace_back(FormulaHistoryDatapoint(nbDes, convVal));
-		}
+        for (size_t i = 0; i < nbLines; i++) {
+            try {
+                size_t nbDes;
+			    double convVal;
+                convText >> nbDes;
+                convText >> convVal;
+                convData.emplace_back(FormulaHistoryDatapoint(nbDes, convVal));
+            }
+            catch (const std::exception& e) {
+                // Just write an error and move to next line e.g. when fail on inf/nan
+                std::cerr << "[XML][Convergence] Parsing error: " << e.what() << std::endl;
+                return 1;
+            }
+        }
 		appFormulas->convergenceData[formulaId]=convData;
 	}
-
     return 0;
 }
+
 /*
 void Loader::MoveFacetsToStructures(SimulationModel* loadModel) {
     loadModel->structures.resize(loadModel->sh.nbSuper);

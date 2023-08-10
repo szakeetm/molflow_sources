@@ -851,14 +851,14 @@ void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::v
     int formulaId = 0;
     for (const auto& formulaVec : convergenceData) {
         std::stringstream convText;
-        convText << std::setprecision(10) << '\n';
-        convText << std::scientific;
+        convText << std::setprecision(8) << '\n';
         for (const auto& convVal : formulaVec) {
             convText << convVal.nbDes << "\t" << convVal.value << "\n";
         }
         xml_node newFormulaNode = convNode.append_child("ConvData");
         if (userSettings.userFormulas.size() > formulaId) {
             newFormulaNode.append_attribute("Formula") = userSettings.userFormulas[formulaId].expression.c_str();
+            newFormulaNode.append_attribute("nbEntries") = formulaVec.size();
         }
         xml_node newConv = newFormulaNode.append_child(node_cdata);
         newConv.set_value(convText.str().c_str());
