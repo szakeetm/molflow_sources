@@ -721,27 +721,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 			}
 
-			prg.SetMessage("Reading and parsing XML file...");
-			// Parse zip file name or original
-			parseResult = loadXML.load_file(parseFileName.c_str()); //parse xml file directly
-
 			ResetWorkerStats();
-			if (!parseResult) {
-				//Parse error
-				std::stringstream err;
-				err << "XML parsed with errors.\n";
-				err << "Error description: " << parseResult.description() << "\n";
-				err << "Error offset: " << parseResult.offset << "\n";
-				throw std::runtime_error(err.str().c_str());
-			}
-
-			prg.SetMessage("Building geometry...");
-			xml_node rootNode = loadXML.root();
-			if (appVersionId >= 2680) {
-				xml_node envNode = loadXML.child("SimulationEnvironment");
-				if (!envNode.empty())
-					rootNode = envNode;
-			}
 
 			if (!insert) {
 
@@ -840,6 +820,26 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 			}
 			else { //insert
+				
+				prg.SetMessage("Reading and parsing XML file...");
+				// Parse zip file name or original
+				parseResult = loadXML.load_file(parseFileName.c_str()); //parse xml file directly
+				if (!parseResult) {
+					//Parse error
+					std::stringstream err;
+					err << "XML parsed with errors.\n";
+					err << "Error description: " << parseResult.description() << "\n";
+					err << "Error offset: " << parseResult.offset << "\n";
+					throw std::runtime_error(err.str().c_str());
+				}
+				prg.SetMessage("Building geometry...");
+				xml_node rootNode = loadXML.root();
+				if (appVersionId >= 2680) {
+					xml_node envNode = loadXML.child("SimulationEnvironment");
+					if (!envNode.empty())
+						rootNode = envNode;
+				}
+
 				interfGeom->InsertXML(rootNode, this, prg, newStr);
 				model->sh = *interfGeom->GetGeomProperties();
 				mApp->changedSinceSave = true;
@@ -851,11 +851,9 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		catch (const std::exception& e) {
 			if (!insert) {
 				interfGeom->Clear();
-
 			}
 			throw e;
 		}
-
 	}
 	else {
 		throw std::runtime_error(

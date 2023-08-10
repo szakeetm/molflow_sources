@@ -344,8 +344,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
         xml_node rootNode = loadXML.child("SimulationEnvironment");
 
         if (!rootNode) {
+            //Already printed error in LoadGeometry()
+            /*
             std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+"
-                      << std::endl;
+                      << std::endl;*/
+
             rootNode = loadXML.root();
         }
 
@@ -1042,8 +1045,11 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
 	xml_node rootNode = loadXML.child("SimulationEnvironment");
 
 	if (!rootNode) {
-		std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+"
+		//Already printed error in LoadGeometry()
+        /*
+        std::cerr << "Info: XML file seems to be of older format, you can upgrade by saving with Molflow 2.8+"
 			<< std::endl;
+            */
 		rootNode = loadXML.root();
 	}
 
