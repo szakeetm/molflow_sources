@@ -219,7 +219,7 @@ namespace {
 			MolflowUserSettings persistentUserSettings;
 			SettingsIO::CLIArguments parsedArgs;
 
-			std::vector<std::string> argv = { "tester", "--config", "simulation.cfg", "--reset",
+			std::vector<std::string> argv = { "tester", "--time", runForTSec, "--reset",
 											 "--file", testFile,
 											 "--outputPath", outPath, "--noProgress" };
 			try {
