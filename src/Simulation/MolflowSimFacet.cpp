@@ -246,7 +246,7 @@ int MolflowSimFacet::GetHitsSize(int nbMoments) const {
     + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 }
 
-size_t MolflowSimFacet::GetMemSize() const {
+int MolflowSimFacet::GetMemSize() const {
 
     // Init with base size
     int mem_size = SimulationFacet::GetMemSize();

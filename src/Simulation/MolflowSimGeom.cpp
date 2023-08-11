@@ -430,7 +430,7 @@ MolflowSimulationModel::~MolflowSimulationModel() = default;
 * \brief Calculates the used memory used by the whole simulation model
  * \return memory size used by the whole simulation model
 */
-size_t MolflowSimulationModel::GetMemSize() {
+int MolflowSimulationModel::GetMemSize() {
     int modelSize = 0;
     modelSize += SimulationModel::GetMemSize(); //base class members
     //Molflow-specific members:
@@ -467,7 +467,7 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState& rhs) {
     return *this;
 }
 
-size_t GlobalSimuState::GetMemSize() const
+int GlobalSimuState::GetMemSize() const
 {
     int sum = 0;
     sum += sizeof(globalStats); //plain old data
@@ -1193,7 +1193,7 @@ FacetMomentSnapshot& FacetMomentSnapshot::operator+=(const FacetMomentSnapshot &
     return *this;
 }
 
-size_t FacetMomentSnapshot::GetMemSize() const
+int FacetMomentSnapshot::GetMemSize() const
 {
     int sum = 0;
     sum += sizeof(hits);
@@ -1215,7 +1215,7 @@ FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMoment
 * \param rhs reference object on the right hand
 * \return address of this (lhs)
 */
-size_t FacetState::GetMemSize() const
+int FacetState::GetMemSize() const
 {
     int sum = 0;
     sum += recordedAngleMapPdf.capacity() * sizeof(int);

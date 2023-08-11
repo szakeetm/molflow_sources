@@ -64,7 +64,7 @@ struct TimeDependentParameters {
     static int InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
 
     
-    size_t GetMemSize() {
+    int GetMemSize() {
         int sum = 0;
         for (auto &par : parameters) {
             sum += par.GetMemSize();
@@ -85,7 +85,7 @@ public:
     FacetMomentSnapshot();
     FacetMomentSnapshot& operator+=(const FacetMomentSnapshot& rhs);
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
     FacetHitBuffer hits;
     std::vector<ProfileSlice> profile;
@@ -113,7 +113,7 @@ class FacetState {
 public:
     FacetState& operator+=(const FacetState& rhs);
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
     std::vector<int> recordedAngleMapPdf; //Not time-dependent
     std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
@@ -156,7 +156,7 @@ public:
 
     void Reset();
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
     static std::tuple<int, int, int>
         Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
@@ -194,7 +194,7 @@ public:
 
     MolflowSimulationModel(const MolflowSimulationModel &o);
     */
-    size_t GetMemSize() override;
+    int GetMemSize() override;
     /*
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
