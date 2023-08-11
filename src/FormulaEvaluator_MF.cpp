@@ -286,8 +286,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         }
         std::vector<int> facetsToSum;
         if (tokens.size() == 3) { // Like SUM(H,3,6) = H3 + H4 + H5 + H6
-            int startId, endId;
-            size_t pos;
+            int startId, endId, pos;
             try {
                 startId = std::stol(tokens[1], &pos); if (pos != tokens[1].size() || startId > interfGeom->GetNbFacet() || startId == 0) return false;
                 endId = std::stol(tokens[2], &pos); if (pos != tokens[2].size() || endId > interfGeom->GetNbFacet() || endId == 0) return false;
@@ -306,8 +305,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 facetsToSum = interfGeom->GetSelectedFacets();
             }
             else {
-                int selGroupId;
-                size_t pos;
+                int selGroupId, pos;
                 try {
                     selGroupId = std::stol(selIdString, &pos); if (pos != selIdString.size() || selGroupId > selections->size() || selGroupId == 0) return false;
                 }

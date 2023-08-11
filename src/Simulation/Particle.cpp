@@ -1306,7 +1306,7 @@ bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
         globalLog->particleLogMutex.unlock();
         tmpParticleLog->clear();
         tmpParticleLog->pLog.shrink_to_fit();
-        tmpParticleLog->pLog.reserve(std::max(model->otfParams.logLimit - (int)globalLog->pLog.size(), 0));
+        tmpParticleLog->pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (int)0u));
     }
 
     return true;

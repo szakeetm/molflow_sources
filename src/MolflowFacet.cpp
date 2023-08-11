@@ -1286,7 +1286,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 		double currentSpacing;
 		double previousVal;
 		for (int i = 1; i < table.size(); i++) { //skip first header row
-			double val; size_t sz;
+			double val; int sz;
 			try {
 				val = std::stod(table[i][0], &sz); //convert to double
 			}
@@ -1351,7 +1351,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
-				size_t cellSize;
+				int cellSize;
 				try {
 					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy + 1][ix + 1], &cellSize); //convert to double
 				}
@@ -1387,7 +1387,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
-				size_t cellSize;
+				int cellSize;
 				try {
 					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
 				}
