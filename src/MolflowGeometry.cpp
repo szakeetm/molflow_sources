@@ -426,20 +426,20 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version2 >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version2 >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		/*loaded_no_scans =*/ file.ReadDouble();
 	}
 
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version2 > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -453,22 +453,22 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 		file.ReadDouble();
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	file.ReadKeyword("nbVertex"); file.ReadKeyword(":");
-	int nbNewVertex = file.ReadInt();
+	int nbNewVertex = file.ReadSizeT();
 	file.ReadKeyword("nbFacet"); file.ReadKeyword(":");
-	int nbNewFacets = file.ReadInt();
+	int nbNewFacets = file.ReadSizeT();
 	file.ReadKeyword("nbSuper"); file.ReadKeyword(":");
-	int nbNewSuper = file.ReadInt();
+	int nbNewSuper = file.ReadSizeT();
 	file.ReadKeyword("nbFormula"); file.ReadKeyword(":");
-	int nbF = file.ReadInt();
+	int nbF = file.ReadSizeT();
 	file.ReadKeyword("nbView"); file.ReadKeyword(":");
-	int nbV = file.ReadInt();
+	int nbV = file.ReadSizeT();
 	file.ReadKeyword("nbSelection"); file.ReadKeyword(":");
-	int nbS = file.ReadInt();
+	int nbS = file.ReadSizeT();
 	if (version2 > 1) {
 		file.ReadKeyword("nbRegions"); file.ReadKeyword(":");
-		int nbR = file.ReadInt();
+		int nbR = file.ReadSizeT();
 		file.ReadKeyword("PARfiles"); file.ReadKeyword("{");
 		for (int i = 0; i < nbR; i++) {
 			file.ReadString();
@@ -514,7 +514,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 		char tmpName[256];
 		strcpy(tmpName, file.ReadString());
 		s.name = strdup(tmpName);
-		int nbSel = file.ReadInt();
+		int nbSel = file.ReadSizeT();
 		for (int j = 0; j < nbSel; j++) {
 			s.facetIds.push_back(file.ReadInt() + sh.nbFacet);
 		}
@@ -554,9 +554,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 	// Read leaks
 	file.ReadKeyword("leaks"); file.ReadKeyword("{");
 	file.ReadKeyword("nbLeak"); file.ReadKeyword(":");
-	int nbleak_local = file.ReadInt();
+	int nbleak_local = file.ReadSizeT();
 	for (int i = 0; i < nbleak_local; i++) {
-		int idx = file.ReadInt();
+		int idx = file.ReadSizeT();
 		//if( idx != i ) throw Error(file.MakeError("Wrong leak index !"));
 		file.ReadDouble();
 		file.ReadDouble();
@@ -571,9 +571,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 
 	file.ReadKeyword("hits"); file.ReadKeyword("{");
 	file.ReadKeyword("nbHHit"); file.ReadKeyword(":");
-	int nbHHit_local = file.ReadInt();
+	int nbHHit_local = file.ReadSizeT();
 	for (int i = 0; i < nbHHit_local; i++) {
-		int idx = file.ReadInt();
+		int idx = file.ReadSizeT();
 		//if( idx != i ) throw Error(file.MakeError("Wrong hit cache index !"));
 		file.ReadDouble(); //x
 		file.ReadDouble(); //y
@@ -588,12 +588,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 	for (int i = sh.nbFacet; i < (sh.nbFacet + nbNewFacets); i++) {
 		file.ReadKeyword("facet");
 		// Check idx
-		int idx = file.ReadInt();
+		int idx = file.ReadSizeT();
 		if (idx != i + 1 - sh.nbFacet) throw Error(file.MakeError("Wrong facet index !"));
 		file.ReadKeyword("{");
 		file.ReadKeyword("nbIndex");
 		file.ReadKeyword(":");
-		int nb = file.ReadInt();
+		int nb = file.ReadSizeT();
 
 		if (nb < 3) {
 			char errMsg[512];
@@ -709,7 +709,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, const std::shared_ptr<Glo
 			for (int i = 0; i < nbProfile; i++) {
 				InterfaceFacet* f = GetFacet(profileFacet[i]);
 				std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacet[i]].momentResults[m].profile;
-				pr[j].countEquiv = static_cast<double>(file.ReadInt());
+				pr[j].countEquiv = static_cast<double>(file.ReadSizeT());
 				if (version >= 13) pr[j].sum_1_per_ort_velocity = file.ReadDouble();
 				if (version >= 13) pr[j].sum_v_ort = file.ReadDouble();
 			}
@@ -745,18 +745,18 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	worker->globalState->globalStats.globalHits.nbMCHit = file.ReadInt();
+	worker->globalState->globalStats.globalHits.nbMCHit = file.ReadSizeT();
 	worker->globalState->globalStats.globalHits.nbHitEquiv = static_cast<double>(worker->globalState->globalStats.globalHits.nbMCHit);
 
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	worker->globalState->globalStats.globalHits.nbDesorbed = file.ReadInt();
+	worker->globalState->globalStats.globalHits.nbDesorbed = file.ReadSizeT();
 
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->globalState->globalStats.nbLeakTotal = file.ReadInt();
+	worker->globalState->globalStats.nbLeakTotal = file.ReadSizeT();
 
 	if (*version >= 12) {
 		file.ReadKeyword("totalAbs"); file.ReadKeyword(":");
-		worker->globalState->globalStats.globalHits.nbAbsEquiv = (double)file.ReadInt();
+		worker->globalState->globalStats.globalHits.nbAbsEquiv = (double)file.ReadSizeT();
 		if (*version >= 15) {
 			file.ReadKeyword("totalDist_total");
 		}
@@ -776,7 +776,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		worker->globalState->globalStats.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
-	worker->model->otfParams.desorptionLimit = file.ReadInt();
+	worker->model->otfParams.desorptionLimit = file.ReadSizeT();
 	file.ReadKeyword("nbVertex"); file.ReadKeyword(":");
 	sh.nbVertex = file.ReadInt();
 	file.ReadKeyword("nbFacet"); file.ReadKeyword(":");
@@ -1072,20 +1072,20 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
 	worker->globalState->globalStats.globalHits.nbMCHit = 0;
 	worker->globalState->globalStats.globalHits.nbHitEquiv = 0.0;
-	file.ReadInt();
+	file.ReadSizeT();
 	if (*version >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
 	worker->globalState->globalStats.globalHits.nbDesorbed = 0;
-	file.ReadInt();
+	file.ReadSizeT();
 	if (*version >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		/*loaded_no_scans = */file.ReadDouble();
 	}
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	worker->globalState->globalStats.nbLeakTotal = 0; file.ReadInt();
+	worker->globalState->globalStats.nbLeakTotal = 0; file.ReadSizeT();
 	if (*version > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -1099,7 +1099,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		file.ReadDouble();
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
-	worker->model->otfParams.desorptionLimit = 0; file.ReadInt();
+	worker->model->otfParams.desorptionLimit = 0; file.ReadSizeT();
 	file.ReadKeyword("nbVertex"); file.ReadKeyword(":");
 	sh.nbVertex = file.ReadInt();
 	file.ReadKeyword("nbFacet"); file.ReadKeyword(":");
@@ -1404,14 +1404,14 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 						for (iy = 0; iy < (std::min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 							for (ix = 0; ix < (std::min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 								int index = iy * f->sh.texWidth + ix;
-								texture[index].countEquiv = static_cast<double>(file.ReadInt());
+								texture[index].countEquiv = static_cast<double>(file.ReadSizeT());
 								texture[index].sum_1_per_ort_velocity = file.ReadDouble();
 								texture[index].sum_v_ort_per_area = file.ReadDouble();
 
 							}
 							for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
 								//Read extra cells from file without doing anything
-								file.ReadInt();
+								file.ReadSizeT();
 								file.ReadDouble();
 								file.ReadDouble();
 							}
@@ -1419,7 +1419,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg
 						for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
 							//Read extra cells ffrom file without doing anything
 							for (int iw = 0; iw < texWidth_file; iw++) {
-								file.ReadInt();
+								file.ReadSizeT();
 
 								file.ReadDouble();
 								file.ReadDouble();
@@ -2129,19 +2129,19 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 	//now read number of facets
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		no_scans = file.ReadDouble();
 	}
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -2156,7 +2156,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 		file.ReadDouble();
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	file.ReadKeyword("nbVertex"); file.ReadKeyword(":");
 	file.ReadInt();
 	file.ReadKeyword("nbFacet"); file.ReadKeyword(":");
@@ -2184,9 +2184,9 @@ void MolflowGeometry::ImportDesorption_SYN(
 	//read header
 	file.SeekFor("{textures}");
 	file.ReadKeyword("minHit_MC"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	file.ReadKeyword("maxHit_MC"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	file.ReadKeyword("minHit_flux"); file.ReadKeyword(":");
 	file.ReadDouble();
 	file.ReadKeyword("maxHit_flux"); file.ReadKeyword(":");
@@ -2248,7 +2248,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				for (ix = 0; ix < (std::min(f->ogMap.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 					int index = iy * f->ogMap.outgassingMapWidth + ix;
 					//Read original values
-					int MC = file.ReadInt();
+					int MC = file.ReadSizeT();
 					double cellArea = 1.0;
 					if (version >= 7) cellArea = file.ReadDouble();
 					if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
@@ -2294,7 +2294,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				for (int ie = 0; ie < texWidth_file - f->ogMap.outgassingMapWidth; ie++) {//Executed if file texture is bigger than expected texture
 					//Read extra cells from file without doing anything
 					//Read original values
-					file.ReadInt(); //MC
+					file.ReadSizeT(); //MC
 					if (version >= 7) file.ReadDouble(); //area
 					file.ReadDouble(); //flux
 					file.ReadDouble(); //power
@@ -2304,7 +2304,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				//Read extra cells ffrom file without doing anything
 				for (int iw = 0; iw < texWidth_file; iw++) {
 					//Read original values
-					file.ReadInt(); //MC
+					file.ReadSizeT(); //MC
 					if (version >= 7) file.ReadDouble(); //area
 					file.ReadDouble(); //flux
 					file.ReadDouble(); //power
@@ -2360,20 +2360,20 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader& file, GLProgress_Abstract& prg,
 
 	//now read number of facets
 	file.ReadKeyword("totalHit"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version >= 10) {
 		file.ReadKeyword("totalHitEquiv"); file.ReadKeyword(":");
 		file.ReadDouble();
 	}
 	file.ReadKeyword("totalDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version >= 6) {
 		file.ReadKeyword("no_scans"); file.ReadKeyword(":");
 		/*no_scans = */file.ReadDouble();
 
 	}
 	file.ReadKeyword("totalLeak"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	if (version > 2) {
 		file.ReadKeyword("totalFlux"); file.ReadKeyword(":");
 		file.ReadDouble();
@@ -2387,7 +2387,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader& file, GLProgress_Abstract& prg,
 		file.ReadDouble();
 	}
 	file.ReadKeyword("maxDes"); file.ReadKeyword(":");
-	file.ReadInt();
+	file.ReadSizeT();
 	file.ReadKeyword("nbVertex"); file.ReadKeyword(":");
 	file.ReadInt();
 	file.ReadKeyword("nbFacet"); file.ReadKeyword(":");
