@@ -93,14 +93,14 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
     }
     if(model->sh.nbFacet != model->facets.size()) {
         char tmp[256];
-        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %d / %zd\n", model->sh.nbFacet, model->facets.size());
+        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
         errLog.push_back(tmp);
     }
     for(auto& fac : model->facets){
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
             char tmp[256];
-            snprintf(tmp, 256, "[Fac #%d] Untextured facet with texture size\n", fac->globalId+1);
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId+1);
             errLog.push_back(tmp);
         }
         else if (!fac->sh.isTextured && (hasAnyTexture)) {
@@ -111,7 +111,7 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
             fac->sh.countACD = false;
             fac->sh.countDirection = false;
             char tmp[256];
-            snprintf(tmp, 256, "[Fac #%d] Untextured facet with texture counters\n", fac->globalId+1);
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId+1);
             errLog.push_back(tmp);
         }
     }
