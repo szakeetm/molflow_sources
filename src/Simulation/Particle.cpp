@@ -1260,7 +1260,7 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-int ParticleTracer::GetMemSize() const {
+size_t ParticleTracer::GetMemSize() const {
     int size = 0;
     size += tmpState->GetMemSize(); //local counter
     size += tmpFacetVars.capacity() * sizeof(SimulationFacetTempVar);

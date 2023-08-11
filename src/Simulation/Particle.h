@@ -94,7 +94,7 @@ namespace MFSim {
 
         void Reset();
 
-        int GetMemSize() const;
+        size_t GetMemSize() const;
 
         Ray ray; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
