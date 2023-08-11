@@ -53,6 +53,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "FlowMPI.h"
 #include "File.h"
 
+#include <limits>
+
 RuntimeStatPrinter::RuntimeStatPrinter(int n_hits, int n_des) {
     oldHitsNb = n_hits;
     oldDesNb = n_des;
@@ -94,6 +96,9 @@ void RuntimeStatPrinter::Print(double elapsedTime, const std::shared_ptr<GlobalS
 
 
 int main(int argc, char** argv) {
+
+    unsigned int max_val = std::numeric_limits<unsigned int>::max();
+    std::cout << "Max value of unsigned int: " << max_val << std::endl;
 
 // Set local to parse input files the same on all systems
 //duplicate, in case we called this function from the test suite and not from main()

@@ -1708,8 +1708,9 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
 		}
-
+		break;
 		//TEXT --------------------------------------------------------------------
+		
 	case MSG_TEXT_UPD:
 		if (src == facetSticking || src == facetTemperature) {
 			calcFlow();
@@ -2440,7 +2441,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				if (facetId == -2) facetId = (int)i;
 				if (i >= interfGeom->GetNbFacet()) {
 					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, interfGeom->GetNbFacet());
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%d) in list.\nMolflow will now autosave and crash.", i + 1, interfGeom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
 					throw std::runtime_error(errMsg);

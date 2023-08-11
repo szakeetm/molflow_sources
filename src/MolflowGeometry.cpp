@@ -644,16 +644,15 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, const std::shared_ptr<Glo
 	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
 	file.Write("profiles {\n");
 	// Profiles
-	int nbProfile = 0;
-	int* profileFacet = (int*)malloc((sh.nbFacet) * sizeof(int));
+	std::vector<int> profiledFacetIds;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if ((!saveSelected && !crashSave) && facets[i]->sh.isProfile)
-			profileFacet[nbProfile++] = i;
+			profiledFacetIds.push_back(i);
 
-	file.Write(" number: "); file.Write(nbProfile, "\n");
+	file.Write(" number: "); file.Write(profiledFacetIds.size(), "\n");
 	file.Write(" facets: ");
-	for (int i = 0; i < nbProfile; i++) //doesn't execute when crashSave or saveSelected...
-		file.Write(profileFacet[i], "\t");
+	for (const auto& pId : profiledFacetIds) //doesn't execute when crashSave or saveSelected...
+		file.Write(pId, "\t");
 
 	file.Write("\n");
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
@@ -663,9 +662,9 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, const std::shared_ptr<Glo
 		file.Write(tmp);
 
 		for (int j = 0; j < PROFILE_SIZE; j++) {
-			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
-				InterfaceFacet* f = GetFacet(profileFacet[i]);
-				const std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacet[i]].momentResults[m].profile;
+			for (int i = 0; i < (int)profiledFacetIds.size(); i++) { //doesn't execute when crashSave or saveSelected...
+				InterfaceFacet* f = GetFacet(profiledFacetIds[i]);
+				const std::vector<ProfileSlice>& pr = globalState->facetStates[profiledFacetIds[i]].momentResults[m].profile;
 				//char tmp2[128];
 				file.Write(static_cast<int>(pr[j].countEquiv), "\t"); //Backwards compatibility
 				file.Write(pr[j].sum_1_per_ort_velocity, "\t");
@@ -673,12 +672,11 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, const std::shared_ptr<Glo
 				file.Write("\t");
 			}
 
-			if (nbProfile > 0) file.Write("\n");
+			if (!profiledFacetIds.empty()) file.Write("\n");
 		}
 		file.Write(" }\n");
 	}
 	file.Write("}\n");
-	SAFE_FREE(profileFacet);
 }
 
 /**
@@ -691,12 +689,12 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, const std::shared_ptr<Glo
 
 	file.ReadKeyword("profiles"); file.ReadKeyword("{");
 	// Profiles
-	int nbProfile;
-	file.ReadKeyword("number"); file.ReadKeyword(":"); nbProfile = file.ReadInt();
-	int* profileFacet = (int*)malloc((nbProfile) * sizeof(int));
+	file.ReadKeyword("number"); file.ReadKeyword(":");
+	int nbProfile = file.ReadInt();
+	std::vector<int> profileFacetIds(nbProfile);
 	file.ReadKeyword("facets"); file.ReadKeyword(":");
 	for (int i = 0; i < nbProfile; i++)
-		profileFacet[i] = file.ReadInt();
+		profileFacetIds[i] = file.ReadInt();
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int m = 0; m <= mApp->worker.interfaceMomentCache.size() || (version < 10 && m == 0); m++) {
 		if (version >= 10) {
@@ -710,8 +708,8 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, const std::shared_ptr<Glo
 
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
-				InterfaceFacet* f = GetFacet(profileFacet[i]);
-				std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacet[i]].momentResults[m].profile;
+				InterfaceFacet* f = GetFacet(profileFacetIds[i]);
+				std::vector<ProfileSlice>& pr = globalState->facetStates[profileFacetIds[i]].momentResults[m].profile;
 				pr[j].countEquiv = static_cast<double>(file.ReadInt());
 				if (version >= 13) pr[j].sum_1_per_ort_velocity = file.ReadDouble();
 				if (version >= 13) pr[j].sum_v_ort = file.ReadDouble();
@@ -719,7 +717,6 @@ void MolflowGeometry::LoadProfileGEO(FileReader& file, const std::shared_ptr<Glo
 		}
 		if (version >= 10) file.ReadKeyword("}");
 	}
-	SAFE_FREE(profileFacet);
 }
 
 /**
@@ -1795,7 +1792,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, const std::s
 			InterfaceFacet* f = facets[fInd];
 
 			if (f->selected) {
-				if (grouping == 0) fprintf(file, "FACET%zu\n", fInd + 1u); //mode 10: special ANSYS export
+				if (grouping == 0) fprintf(file, "FACET%d\n", fInd + 1u); //mode 10: special ANSYS export
 
 				if (!f->cellPropertiesIds.empty() || f->sh.countDirection) {
 
