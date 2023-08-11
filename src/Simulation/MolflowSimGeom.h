@@ -61,11 +61,11 @@ struct TimeDependentParameters {
     static int LoadParameterCatalog(std::vector<Parameter>& parameters);
     static void ClearParameters(std::vector<Parameter>& parameters);
     static std::vector<Parameter> GetCatalogParameters(const std::vector<Parameter>& parameters);
-    static size_t InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
+    static int InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
 
     
-    size_t GetMemSize() {
-        size_t sum = 0;
+    int GetMemSize() {
+        int sum = 0;
         for (auto &par : parameters) {
             sum += par.GetMemSize();
         }
@@ -85,7 +85,7 @@ public:
     FacetMomentSnapshot();
     FacetMomentSnapshot& operator+=(const FacetMomentSnapshot& rhs);
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
     FacetHitBuffer hits;
     std::vector<ProfileSlice> profile;
@@ -113,9 +113,9 @@ class FacetState {
 public:
     FacetState& operator+=(const FacetState& rhs);
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
-    std::vector<size_t> recordedAngleMapPdf; //Not time-dependent
+    std::vector<int> recordedAngleMapPdf; //Not time-dependent
     std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
     template<class Archive>
     void serialize(Archive& archive) {
@@ -147,7 +147,7 @@ public:
         *this = rhs; //Uses overloaded operator=
     };
 
-    //size_t memSizeCache=0;
+    //int memSizeCache=0;
     bool initialized = false;
 
     void Clear();
@@ -156,9 +156,9 @@ public:
 
     void Reset();
 
-    size_t GetMemSize() const;
+    int GetMemSize() const;
 
-    static std::tuple<size_t, size_t, size_t>
+    static std::tuple<int, int, int>
         Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
             double locThreshold);
 
@@ -194,7 +194,7 @@ public:
 
     MolflowSimulationModel(const MolflowSimulationModel &o);
     */
-    size_t GetMemSize() override;
+    int GetMemSize() override;
     /*
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
@@ -260,7 +260,7 @@ public:
 
 
 
-[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs);
+[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, int waitMs);
 
 /*!
  * @brief Particle Log structure containing all individual log entries
@@ -283,7 +283,7 @@ public:
 
     ParticleLog() = default;
 
-    void resize(size_t nbLogs) {
+    void resize(int nbLogs) {
         std::vector<ParticleLoggerItem>(nbLogs).swap(pLog);
     };
 

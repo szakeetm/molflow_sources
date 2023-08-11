@@ -373,9 +373,9 @@ simuPanel->Add(statusSimu);
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetProfileCombo = new GLCombo(0);
-	size_t nbRecModes = (size_t)ProfileRecordModes::NUMITEMS;
+	int nbRecModes = (int)ProfileRecordModes::NUMITEMS;
 	facetProfileCombo->SetSize(nbRecModes);
-	for (size_t i = 0; i < nbRecModes; i++) {
+	for (int i = 0; i < nbRecModes; i++) {
 		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first); //long description
 	}
 	facetPanel->Add(facetProfileCombo);
@@ -563,7 +563,7 @@ void MolFlow::ClearFacetParams() {
 void MolFlow::ApplyFacetParams() {
 
 	InterfaceGeometry* interfGeom = worker.GetGeometry();
-	size_t nbFacet = interfGeom->GetNbFacet();
+	int nbFacet = interfGeom->GetNbFacet();
 
 	// Sticking
 	double sticking;
@@ -791,7 +791,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	InterfaceGeometry* interfGeom = worker.GetGeometry();
 	// Get list of selected facet
 	auto selectedFacets = interfGeom->GetSelectedFacets();
-	size_t nbSel = selectedFacets.size();
+	int nbSel = selectedFacets.size();
 
 	if (nbSel > 0) {
 
@@ -815,7 +815,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		bool recordE = true;
 		bool is2sidedE = true;
 
-		for (size_t sel = 1; sel < selectedFacets.size(); sel++) {
+		for (int sel = 1; sel < selectedFacets.size(); sel++) {
 			f = interfGeom->GetFacet(selectedFacets[sel]);
 			double fArea = f->GetArea();
 			stickingE = stickingE && (f0->userSticking == f->userSticking) && IsEqual(f0->sh.sticking, f->sh.sticking);
@@ -943,7 +943,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	}
 	else {
 		ClearFacetParams();
-		if (facetAdvParams) facetAdvParams->Refresh(std::vector<size_t>()); //Clear
+		if (facetAdvParams) facetAdvParams->Refresh(std::vector<int>()); //Clear
 		if (updateSelection) facetList->ClearSelection();
 	}
 
@@ -1122,7 +1122,7 @@ void MolFlow::ImportAngleMaps() {
 		GLMessageBox::Display("Select the same number of facets and files to import", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	for (size_t i = 0; i < fileNames.size(); i++) {
+	for (int i = 0; i < fileNames.size(); i++) {
 		try {
 			auto file = FileReader(fileNames[i]);
 			std::vector<std::vector<std::string>> table = file.ImportCSV_string();
@@ -1142,9 +1142,9 @@ void MolFlow::ImportAngleMaps() {
 void MolFlow::CopyAngleMapToClipboard()
 {
 	InterfaceGeometry* interfGeom = worker.GetGeometry();
-	size_t angleMapFacetIndex;
+	int angleMapFacetIndex;
 	bool found = false;
-	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
+	for (int i = 0; i < interfGeom->GetNbFacet(); i++) {
 		InterfaceFacet* f = interfGeom->GetFacet(i);
 		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
@@ -1183,7 +1183,7 @@ void MolFlow::CopyAngleMapToClipboard()
 
 void MolFlow::ClearAngleMapsOnSelection() {
 	InterfaceGeometry* interfGeom = worker.GetGeometry();
-	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
+	for (int i = 0; i < interfGeom->GetNbFacet(); i++) {
 		InterfaceFacet* f = interfGeom->GetFacet(i);
 		if (f->selected && !f->angleMapCache.empty()) {
 			f->angleMapCache.clear();
@@ -2217,7 +2217,7 @@ void MolFlow::LoadConfig() {
 #define WRITEI(name,var) {             \
 	file.Write(name);                      \
 	file.Write(":");                       \
-	for(size_t i=0;i<MAX_VIEWER;i++)        \
+	for(int i=0;i<MAX_VIEWER;i++)        \
 	file.Write(viewer[i]->var," ");   \
 	file.Write("\n");                      \
 }
@@ -2226,7 +2226,7 @@ void MolFlow::LoadConfig() {
 #define WRITED(name,var) {             \
 	file.Write(name);                      \
 	file.Write(":");                       \
-	for(size_t i=0;i<MAX_VIEWER;i++)        \
+	for(int i=0;i<MAX_VIEWER;i++)        \
 	file.Write(viewer[i]->var," ");\
 	file.Write("\n");                      \
 }

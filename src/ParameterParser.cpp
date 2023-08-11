@@ -29,7 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 namespace Parameters {
 
     //! Enum that describes the allowed facet parameters to change
-    enum FacetParam : size_t {
+    enum FacetParam : int {
         opacity,
         temperature,
         sticking,
@@ -37,7 +37,7 @@ namespace Parameters {
     };
 
     //! Enum that describes the allowed global simulation parameters to change
-    enum SimuParam : size_t {
+    enum SimuParam : int {
         mass,
         enableDecay,
         halfLife
@@ -56,7 +56,7 @@ namespace Parameters {
             {"enableDecay",SimuParam::enableDecay},
             {"halfLife",SimuParam::halfLife}
     };
-    std::vector<std::tuple<size_t, FacetParam, double>> facetParams;
+    std::vector<std::tuple<int, FacetParam, double>> facetParams;
     std::vector<std::tuple<SimuParam, double>> simuParams;
 }
 
@@ -69,7 +69,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
     std::getline(facetString, id_str, '.');
     std::getline(facetString, param_str, '=');
     std::getline(facetString, paramVal_str);
-    std::vector<size_t> id_range;
+    std::vector<int> id_range;
 
     bool fromSelection = false; // for corresponding output message
     if(id_str.find('\"') != std::string::npos){ // selection
@@ -134,7 +134,7 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
     Parameters::facetParams.clear();
     Parameters::simuParams.clear();
 
-    size_t i = 0;
+    int i = 0;
     for (std::string line; inputLineStream >> line; ) {
         std::istringstream lineStream(line);
         std::string optionType;
@@ -171,7 +171,7 @@ void ParameterParser::ParseInput(const std::vector<std::string> &paramChanges, c
     std::stringstream inputStream(std::ios_base::app | std::ios_base::out | std::ios_base::in);
     const char delimiter = ';';
     for(auto sweep : paramChanges){
-        size_t pos = 0;
+        int pos = 0;
         std::string token;
         while ((pos = sweep.find(delimiter)) != std::string::npos) {
             token = sweep.substr(0, pos);
@@ -199,7 +199,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
                 params.halfLife = std::get<1>(par);
                 break;
             default:
-                Log::console_error("Unknown SimuParam {}\n", (size_t)(std::get<0>(par)));
+                Log::console_error("Unknown SimuParam {}\n", (int)(std::get<0>(par)));
         }
     }
 }
@@ -208,7 +208,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
 int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> facets) {
     int nbError = 0;
     for(auto& par : Parameters::facetParams){
-        size_t id = std::get<0>(par);
+        int id = std::get<0>(par);
         if(id < facets.size()) {
             auto& facet = facets[id];
             auto type = std::get<1>(par);
@@ -237,7 +237,7 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     facet->sh.temperature = std::get<2>(par);
                     break;
                 default:
-                    Log::console_error("Unknown FacetParam {}\n", (size_t)(std::get<1>(par)));
+                    Log::console_error("Unknown FacetParam {}\n", (int)(std::get<1>(par)));
             }
         }
         else{

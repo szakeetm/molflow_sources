@@ -163,9 +163,9 @@ TextureScaling::TextureScaling():GLWindow() {
 */
 void TextureScaling::UpdateSize() {
 
-	size_t swap = 0;
-	size_t nbFacet = interfGeom->GetNbFacet();
-	for(size_t i=0;i<nbFacet;i++) {
+	int swap = 0;
+	int nbFacet = interfGeom->GetNbFacet();
+	for(int i=0;i<nbFacet;i++) {
 		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if(f->sh.isTextured) {
 			swap += f->GetTexSwapSize(colormapBtn->GetState());

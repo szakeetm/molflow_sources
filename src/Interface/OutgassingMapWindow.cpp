@@ -152,7 +152,7 @@ void OutgassingMapWindow::GetSelected() {
   InterfaceGeometry *interfGeom = worker->GetGeometry();
   selFacet = NULL;
   int i = 0;
-  size_t nb = interfGeom->GetNbFacet();
+  int nb = interfGeom->GetNbFacet();
   while(!selFacet && i<nb) {
     if( interfGeom->GetFacet(i)->selected ) selFacet = interfGeom->GetFacet(i);
     if(!selFacet) i++;
@@ -202,8 +202,8 @@ void OutgassingMapWindow::UpdateTable() {
   if( !selFacet->cellPropertiesIds.empty() ) {
 
     char tmp[256];
-	size_t w = selFacet->sh.texWidth;
-	size_t h = selFacet->sh.texHeight;
+	int w = selFacet->sh.texWidth;
+	int h = selFacet->sh.texHeight;
     mapList->SetSize(w,h);
     mapList->SetAllColumnAlign(ALIGN_CENTER);
 	mapList->SetGrid(true);
@@ -213,9 +213,9 @@ void OutgassingMapWindow::UpdateTable() {
     //int mode = viewCombo->GetSelectedIndex();
 
     
-        for(size_t i=0;i<w;i++) { //width (cols)
+        for(int i=0;i<w;i++) { //width (cols)
 			*(mapList->cEdits+i)=EDIT_NUMBER;
-          for(size_t j=0;j<h;j++) { //height (rows)
+          for(int j=0;j<h;j++) { //height (rows)
 			  sprintf(tmp,"0");
 			  if (selFacet->GetMeshArea(i+j*w)==0.0) sprintf(tmp,"Outside");
 			  mapList->SetValueAt(i,j,tmp);
@@ -323,13 +323,13 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 			  return;
 		  }
 		  
-		  size_t w = mapList->GetNbColumn(); //width
-		  size_t h = mapList->GetNbRow(); //height
+		  int w = mapList->GetNbColumn(); //width
+		  int h = mapList->GetNbRow(); //height
 
 		  double *values = (double *)malloc(w*h*sizeof(double));
-		  size_t count=0;
-		  for(size_t j=0;j<h;j++) { //height (rows)
-			  for(size_t i=0;i<w;i++) { //width (cols)
+		  int count=0;
+		  for(int j=0;j<h;j++) { //height (rows)
+			  for(int i=0;i<w;i++) { //width (cols)
 				  if (selFacet->GetMeshArea(i+j*w)>0.0) {
 					  char *str = mapList->GetValueAt(i,j);
 					  int conv = sscanf(str,"%lf",values+count);
@@ -385,7 +385,7 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 
     case MSG_LIST:
       if(src==mapList) {
-        size_t u,v,wu,wv;
+        int u,v,wu,wv;
         if( mapList->GetSelectionBox(&v,&u,&wv,&wu) )
           selFacet->SelectElem(u,v,wu,wv);
       }

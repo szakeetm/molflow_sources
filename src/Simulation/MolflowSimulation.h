@@ -46,16 +46,16 @@ public:
 
     std::vector<std::string> SanityCheckModel(bool strictCheck) override;
     //void ClearSimulation() override;
-    size_t LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus=nullptr) override;
+    int LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus=nullptr) override;
     int RebuildAccelStructure() override;
 
     void ResetSimulation() override;
 
-    size_t GetHitsSize() override;
+    int GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    std::shared_ptr<MFSim::ParticleTracer> GetParticleTracerPtr(size_t i) override;
-    void ConstructParticleTracers(size_t n, bool fixedSeed) override;
+    std::shared_ptr<MFSim::ParticleTracer> GetParticleTracerPtr(int i) override;
+    void ConstructParticleTracers(int n, bool fixedSeed) override;
     bool lastLogUpdateOK=true; // Last log update timeout
     bool hasVolatile=false;   // Contains volatile facet
     std::vector<std::shared_ptr<MFSim::ParticleTracer>> particleTracers; //they have their own tmp counters

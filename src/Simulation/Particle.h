@@ -48,12 +48,12 @@ namespace MFSim {
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
-        bool SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes);
+        bool SimulationMCStep(int nbStep, int threadNum, int remainingDes);
 
         bool StartFromSource(Ray& ray);
 
-        bool UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, size_t nbMoments,
-            std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
+        bool UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, int nbMoments,
+            std::string& myStatus, std::mutex& statusMutex, int timeout_ms);
 
         void RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
@@ -65,7 +65,7 @@ namespace MFSim {
 
         void RecordLeakPos();
 
-		void IncreaseFacetCounter(const SimulationFacet* f, int m, const size_t hit, const size_t desorb, const size_t absorb,
+		void IncreaseFacetCounter(const SimulationFacet* f, int m, const int hit, const int desorb, const int absorb,
 			const double sum_1_per_v, const double sum_v_ort,
 			const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum);
 
@@ -88,22 +88,22 @@ namespace MFSim {
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
-            ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
+            ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, int timeout_ms);
         bool UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
-            std::string& myStatus, std::mutex& statusMutex, size_t timeout);
+            std::string& myStatus, std::mutex& statusMutex, int timeout);
 
         void Reset();
 
-        size_t GetMemSize() const;
+        int GetMemSize() const;
 
         Ray ray; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
         uint64_t totalDesorbed;
-        size_t nbBounces; // Number of hit (current particle) since desorption
-        size_t lastMomentIndex; // Speedup for binary search
-        size_t particleTracerId; //For parallel computing, each core gets a particle id. Lines and leak recording only for id=0
+        int nbBounces; // Number of hit (current particle) since desorption
+        int lastMomentIndex; // Speedup for binary search
+        int particleTracerId; //For parallel computing, each core gets a particle id. Lines and leak recording only for id=0
         double distanceTraveled;
         double generationTime; //Time it was created, constant
         //double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
@@ -111,7 +111,7 @@ namespace MFSim {
 
         double velocity;
         double expectedDecayMoment; //for radioactive gases
-        //size_t structureId;        // Current structure
+        //int structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
         SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
@@ -125,7 +125,7 @@ namespace MFSim {
         Vector3d nullVector; //so we don't have to allocate and destroy for dummy uses
 
         private:
-        int LookupMomentIndex(const double time, const size_t startIndex);
+        int LookupMomentIndex(const double time, const int startIndex);
 
     };
 }

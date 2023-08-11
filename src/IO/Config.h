@@ -39,7 +39,7 @@ namespace FlowIO {
 
             int ReadFromFile(const std::string& configFileName);
             double nbCPUCores;
-            size_t nbThreadsPerCore;
+            int nbThreadsPerCore;
             uint64_t simDuration;
             uint64_t autoSaveInterval; // default: autosave every 600s=10min
             bool loadAutosave;

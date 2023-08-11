@@ -82,7 +82,7 @@ xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
 }
 
 void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model,
-            GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave) {
+            GLProgress_Abstract& prg, const std::vector<int> &selectionToSave) {
     xml_node rootNode = GetRootNode(saveDoc);
 
 
@@ -94,7 +94,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
-    for (size_t i = 0; i < model->vertices3.size(); i++) {
+    for (int i = 0; i < model->vertices3.size(); i++) {
         //prg.SetProgress(0.166*((double)i / (double)model->vertices3.size()));
         xml_node v = geomNode.child("Vertices").append_child("Vertex");
         v.append_attribute("id") = i;
@@ -107,13 +107,13 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     geomNode.append_child("Facets");
     
     //Save every facet or only those of the selection
-    size_t nbF = saveAllFacets ? model->facets.size() : selectionToSave.size();
+    int nbF = saveAllFacets ? model->facets.size() : selectionToSave.size();
     geomNode.child("Facets").append_attribute("nb") = nbF;
-    for (size_t i = 0; i < nbF; i++) {
+    for (int i = 0; i < nbF; i++) {
         prg.SetProgress((double)i / (double)nbF);
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
-        size_t facetId = saveAllFacets ? i : selectionToSave[i];
+        int facetId = saveAllFacets ? i : selectionToSave[i];
         auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
         SaveFacet(f, mfFac.get(), model->vertices3.size());
     }
@@ -123,7 +123,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
 
     if (model->structures.size() == model->sh.nbSuper) {
-        for (size_t i = 0; i < model->sh.nbSuper; i++) {
+        for (int i = 0; i < model->sh.nbSuper; i++) {
             xml_node s = geomNode.child("Structures").append_child("Structure");
             s.append_attribute("id") = i;
             s.append_attribute("name") = model->structures[i].name.c_str();
@@ -145,7 +145,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
 
     xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
     userMomentsNode.append_attribute("nb") = userSettings.userMoments.size();
-    for (size_t i = 0; i < userSettings.userMoments.size(); i++) {
+    for (int i = 0; i < userSettings.userMoments.size(); i++) {
         xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
         newUserEntry.append_attribute("id") = i;
         newUserEntry.append_attribute("content") = userSettings.userMoments[i].content.c_str();
@@ -185,7 +185,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     v.append_attribute("z") = model->wp.torqueRefPoint.z;
 
     xml_node paramNode = simuParamNode.append_child("Parameters");
-    size_t nonCatalogParameters = 0;
+    int nonCatalogParameters = 0;
 
     for (auto &parameter : model->tdParams.parameters) {
         if (!parameter.fromCatalog) { //Don't save catalog parameters
@@ -195,7 +195,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
             newParameter.append_attribute("nbMoments") = (int) parameter.GetSize();
             newParameter.append_attribute("logXinterp") = parameter.logXinterp;
             newParameter.append_attribute("logYinterp") = parameter.logYinterp;
-            for (size_t m = 0; m < parameter.GetSize(); m++) {
+            for (int m = 0; m < parameter.GetSize(); m++) {
                 xml_node newMoment = newParameter.append_child("Moment");
                 newMoment.append_attribute("id") = m;
                 newMoment.append_attribute("t") = parameter.GetX(m);
@@ -233,12 +233,12 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node selNode = interfNode.append_child("Selections");
     selNode.append_attribute("nb") = saveAllFacets ? userSettings.selections.size() : 0; //Don't save sel.groups if save file restricted to a subset of facets
     if (saveAllFacets) {
-        for (size_t i = 0; i < userSettings.selections.size(); i++) { //don't save selections when exporting part of the geometry (saveSelected)
+        for (int i = 0; i < userSettings.selections.size(); i++) { //don't save selections when exporting part of the geometry (saveSelected)
             xml_node newSel = selNode.append_child("Selection");
             newSel.append_attribute("id") = i;
             newSel.append_attribute("name") = userSettings.selections[i].name.c_str();
             newSel.append_attribute("nb") = userSettings.selections[i].facetIds.size();
-            for (size_t j = 0; j < userSettings.selections[i].facetIds.size(); j++) {
+            for (int j = 0; j < userSettings.selections[i].facetIds.size(); j++) {
                 xml_node newItem = newSel.append_child("selItem");
                 newItem.append_attribute("id") = j;
                 newItem.append_attribute("facet") = userSettings.selections[i].facetIds[j];
@@ -274,7 +274,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node formulaNode = interfNode.append_child("Formulas");
     formulaNode.append_attribute("nb") = saveAllFacets ? userSettings.userFormulas.size() : 0;
     if (saveAllFacets) { //don't save formulas when exporting part of the geometry (saveSelected)
-        for (size_t i = 0; i < userSettings.userFormulas.size(); i++) {
+        for (int i = 0; i < userSettings.userFormulas.size(); i++) {
             xml_node newFormula = formulaNode.append_child("Formula");
             newFormula.append_attribute("id") = i;
             newFormula.append_attribute("name") = userSettings.userFormulas[i].name.c_str();
@@ -338,10 +338,10 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
     xml_node resultNode = rootNode.append_child("MolflowResults");
     xml_node momentsNode = resultNode.append_child("Moments");
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
-    //size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
+    //int facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
     prg.SetMessage("Writing simulation results...");
-    for (size_t m = 0; m <= model->tdParams.moments.size(); m++) {
+    for (int m = 0; m <= model->tdParams.moments.size(); m++) {
         prg.SetProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         xml_node newMoment = momentsNode.append_child("Moment");
         newMoment.append_attribute("id") = m;
@@ -369,7 +369,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
             hitCacheNode.append_attribute("nb") = globalState->globalStats.hitCacheSize;
 
-            for (size_t i = 0; i < globalState->globalStats.hitCacheSize; i++) {
+            for (int i = 0; i < globalState->globalStats.hitCacheSize; i++) {
                 xml_node newHit = hitCacheNode.append_child("Hit");
                 newHit.append_attribute("id") = i;
                 newHit.append_attribute("posX") = globalState->globalStats.hitCache[i].pos.x;
@@ -380,7 +380,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
 
             xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
             leakCacheNode.append_attribute("nb") = globalState->globalStats.leakCacheSize;
-            for (size_t i = 0; i < globalState->globalStats.leakCacheSize; i++) {
+            for (int i = 0; i < globalState->globalStats.leakCacheSize; i++) {
                 xml_node newLeak = leakCacheNode.append_child("Leak");
                 newLeak.append_attribute("id") = i;
                 newLeak.append_attribute("posX") = globalState->globalStats.leakCache[i].pos.x;
@@ -404,13 +404,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             if (model->wp.globalHistogramParams.recordBounce) {
                 auto &nbHitsHistogram = globalHist.nbHitsHistogram;
                 xml_node hist = histNode.append_child("Bounces");
-                size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
+                int histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
                         "binSize") = model->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
                         "max") = model->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
-                for (size_t h = 0; h < histSize; h++) {
+                for (int h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
@@ -421,13 +421,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             if (model->wp.globalHistogramParams.recordDistance) {
                 auto &distanceHistogram = globalHist.distanceHistogram;
                 xml_node hist = histNode.append_child("Distance");
-                size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
+                int histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
                         "binSize") = model->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
                         "max") = model->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
-                for (size_t h = 0; h < histSize; h++) {
+                for (int h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
@@ -438,13 +438,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             if (model->wp.globalHistogramParams.recordTime) {
                 auto &timeHistogram = globalHist.timeHistogram;
                 xml_node hist = histNode.append_child("Time");
-                size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
+                int histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
                         "binSize") = model->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
                         "max") = model->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
-                for (size_t h = 0; h < histSize; h++) {
+                for (int h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
@@ -510,9 +510,9 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 }
             }
 
-            //size_t profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + model->tdParams.moments.size())) : 0;
-            size_t height = sFac.sh.texHeight;
-            size_t width = sFac.sh.texWidth;
+            //int profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + model->tdParams.moments.size())) : 0;
+            int height = sFac.sh.texHeight;
+            int width = sFac.sh.texWidth;
 
             if (sFac.sh.texWidth * sFac.sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.append_child("Texture");
@@ -527,8 +527,8 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 sum1perText << std::setprecision(8) << '\n';
                 sumvortText << std::setprecision(8) << '\n';
 
-                for (size_t iy = 0; iy < height; iy++) {
-                    for (size_t ix = 0; ix < width; ix++) {
+                for (int iy = 0; iy < height; iy++) {
+                    for (int ix = 0; ix < width; ix++) {
                         countText << texture[iy * sFac.sh.texWidth + ix].countEquiv << '\t';
                         sum1perText << texture[iy * sFac.sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
                         sumvortText << texture[iy * sFac.sh.texWidth + ix].sum_v_ort_per_area << '\t';
@@ -554,8 +554,8 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 dirText << std::setprecision(8) << '\n'; //better readability in file
                 dirCountText << '\n';
 
-                for (size_t iy = 0; iy < height; iy++) {
-                    for (size_t ix = 0; ix < width; ix++) {
+                for (int iy = 0; iy < height; iy++) {
+                    for (int ix = 0; ix < width; ix++) {
                         dirText << dirs[iy * sFac.sh.texWidth + ix].dir.x << ",";
                         dirText << dirs[iy * sFac.sh.texWidth + ix].dir.y << ",";
                         dirText << dirs[iy * sFac.sh.texWidth + ix].dir.z << "\t";
@@ -582,13 +582,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 if (sFac.sh.facetHistogramParams.recordBounce) {
                     auto &nbHitsHistogram = histogram.nbHitsHistogram;
                     xml_node hist = histNode.append_child("Bounces");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetBounceHistogramSize();
+                    int histSize = sFac.sh.facetHistogramParams.GetBounceHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
                             "binSize") = sFac.sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
                             "max") = sFac.sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
-                    for (size_t h = 0; h < histSize; h++) {
+                    for (int h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
@@ -599,13 +599,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 if (sFac.sh.facetHistogramParams.recordDistance) {
                     auto &distanceHistogram = histogram.distanceHistogram;
                     xml_node hist = histNode.append_child("Distance");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetDistanceHistogramSize();
+                    int histSize = sFac.sh.facetHistogramParams.GetDistanceHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
                             "binSize") = sFac.sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
                             "max") = sFac.sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
-                    for (size_t h = 0; h < histSize; h++) {
+                    for (int h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
@@ -616,13 +616,13 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                 if (sFac.sh.facetHistogramParams.recordTime) {
                     auto &timeHistogram = histogram.timeHistogram;
                     xml_node hist = histNode.append_child("Time");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetTimeHistogramSize();
+                    int histSize = sFac.sh.facetHistogramParams.GetTimeHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
                             "binSize") = sFac.sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
                             "max") = sFac.sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
-                    for (size_t h = 0; h < histSize; h++) {
+                    for (int h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
@@ -658,7 +658,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void XmlWriter::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
+void XmlWriter::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, int nbTotalVertices) {
     xml_node e = facetNode.append_child("Sticking");
     e.append_attribute("constValue") = facet->sh.sticking;
     e.append_attribute("parameterId") = facet->sh.sticking_paramId;
@@ -765,7 +765,7 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size
     }
 
     facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
-    for (size_t i = 0; i < facet->sh.nbIndex; i++) {
+    for (int i = 0; i < facet->sh.nbIndex; i++) {
         xml_node indice = facetNode.child("Indices").append_child("Indice");
         indice.append_attribute("id") = i;
         indice.append_attribute("vertex") = facet->indices[i];

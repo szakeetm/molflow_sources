@@ -55,7 +55,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 	Worker *w = &(mApp->worker);
 
 	int nbMoments = (int)mApp->worker.interfaceMomentCache.size();
-	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
+	int facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 
 	auto prg = GLProgress_GUI("Building texture", "Frame update");
 	prg.SetBounds(5, 28, 300, 90);
@@ -94,7 +94,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 		}
 	}
 
-	for (size_t i = 0; i < sh.nbFacet; i++) {
+	for (int i = 0; i < sh.nbFacet; i++) {
 		int time = SDL_GetTicks();
 		if (!prg.IsVisible() && ((time - startTime) > 500)) {
 			prg.SetVisible(true);
@@ -102,9 +102,9 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 		prg.SetProgress((double)i / (double)sh.nbFacet);
 		InterfaceFacet *f = facets[i];
 
-		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0;
-		size_t nbElem = f->sh.texWidth*f->sh.texHeight;
-		size_t tSize = nbElem * sizeof(TextureCell);
+		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0;
+		int nbElem = f->sh.texWidth*f->sh.texHeight;
+		int tSize = nbElem * sizeof(TextureCell);
 
 		if (renderRegularTexture && f->sh.isTextured) {
 
@@ -134,7 +134,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 
 		if (renderDirectionTexture && f->sh.countDirection && f->dirCache) {
 			
-			size_t dSize = nbElem * sizeof(DirectionCell);
+			int dSize = nbElem * sizeof(DirectionCell);
 
 			/*
 			double iDesorbed = 0.0;
@@ -144,7 +144,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 
 
 			const std::vector<DirectionCell>& dirs = globalState->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
-			for (size_t j = 0; j < nbElem; j++) {
+			for (int j = 0; j < nbElem; j++) {
 				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
 				f->dirCache[j].dir = dirs[j].dir * denominator;
 				f->dirCache[j].count = dirs[j].count;

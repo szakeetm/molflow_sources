@@ -74,7 +74,7 @@ namespace FlowIO {
 
     static const char *ynStr[] = {"No", "Yes"};
 
-    double GetMoleculesPerTP(size_t moment, const std::shared_ptr<MolflowSimulationModel> model,
+    double GetMoleculesPerTP(int moment, const std::shared_ptr<MolflowSimulationModel> model,
         const std::shared_ptr<GlobalSimuState> globalState) {
         if (globalState->globalStats.globalHits.nbDesorbed == 0)
             return 0; // avoid division by 0
@@ -166,7 +166,7 @@ namespace FlowIO {
  * \param mode which kind of value has to be evaluated and printed
  * \return char pointer taking a string with the count value(s)
  */
-    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, const std::shared_ptr<GlobalSimuState> globalState,
+    std::string CSVExporter::FormatCell(FDetail mode, int idx, const std::shared_ptr<GlobalSimuState> globalState,
         const std::shared_ptr<MolflowSimulationModel> model) {
         std::string ret;
 
@@ -276,7 +276,7 @@ namespace FlowIO {
                 double D = -Dot(facet->sh.N, p0);
 
                 double planarityError = 0.0;
-                for (size_t i = 3; i < facet->sh.nbIndex;
+                for (int i = 3; i < facet->sh.nbIndex;
                      i++) { // First 3 vertices are by def on a plane
                     const Vector3d &p = model->vertices3[facet->indices[i]];
                     double d = A * p.x + B * p.y + C * p.z + D;
@@ -370,7 +370,7 @@ namespace FlowIO {
     }
 
     std::string
-    CSVExporter::GetLineForFacet(size_t idx,
+    CSVExporter::GetLineForFacet(int idx,
                                  const std::vector<FDetail> &selectedValues,
         const std::shared_ptr<GlobalSimuState> globalState,
         const std::shared_ptr<MolflowSimulationModel> model) {
@@ -455,9 +455,9 @@ namespace FlowIO {
             // contains no valid line
             return -1;
         }
-        size_t n_elements = std::count(buffer.begin(), buffer.end(), ',');
+        int n_elements = std::count(buffer.begin(), buffer.end(), ',');
         while (std::getline(ifs, buffer)) { // Use the read operation as the test in the loop.
-            size_t n_line_elements = std::count(buffer.begin(), buffer.end(), ',');
+            int n_line_elements = std::count(buffer.begin(), buffer.end(), ',');
             if(n_elements != n_line_elements){
                 return -2;
             }

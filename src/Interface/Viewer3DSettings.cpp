@@ -264,7 +264,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 
       double tstep,astep,nratio;
 	  int lotofFacets;
-	  size_t dnh, dnl;
+	  int dnh, dnl;
 	  //int dnh;
 
       if( !traStepText->GetNumber(&tstep) ) {

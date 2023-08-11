@@ -228,7 +228,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 					Plot();
 				} else if (selectorCombo->GetSelectedIndex() == 0) { //new Param
 					//work->parameters.push_back(tempParam); //Inserted newly defined parameter as last
-					size_t insertPos = TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, { tempParam }); //Inserts before catalog
+					int insertPos = TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, { tempParam }); //Inserts before catalog
 					UpdateCombo();
 					selectorCombo->SetSelectedIndex((int)insertPos); //Set to newly added parameter
 					deleteButton->SetEnabled(true);
@@ -334,7 +334,7 @@ void ParameterEditor::PrepareForNewParam() {
 void ParameterEditor::UpdateCombo() {
 	selectorCombo->SetSize((int)work->interfaceParameterCache.size() + 1);
 	selectorCombo->SetValueAt(0, "New...");
-	for (size_t i = 0; i < work->interfaceParameterCache.size(); i++) {
+	for (int i = 0; i < work->interfaceParameterCache.size(); i++) {
 		selectorCombo->SetValueAt((int)i + 1, work->interfaceParameterCache[i].name);
 	}
 
@@ -416,7 +416,7 @@ void ParameterEditor::CopyToClipboard() {
 void ParameterEditor::Plot() {
 	dataView->Reset();
 	if (tempParam.GetSize() > 0 && tempParam.GetX(0) >= 1E-10) dataView->Add(0.0, tempParam.GetY(0)); //Copy first user value if t0>0
-	for (size_t i = 0; i < tempParam.GetSize(); i++) {
+	for (int i = 0; i < tempParam.GetSize(); i++) {
 		dataView->Add(tempParam.GetX(i), tempParam.GetY(i));
 	}
 	dataView->CommitChange();
@@ -486,7 +486,7 @@ bool ParameterEditor::ValidateInput() {
 	tempParam.logYinterp = (bool)paramLogYtoggle->GetState();
 
 	bool atLeastOne = false;
-	for (size_t row = 0; row < userValues.size(); row++) {
+	for (int row = 0; row < userValues.size(); row++) {
 		double valueX, valueY;
 		try {
 			valueX = ::atof(userValues[row].first.c_str());
@@ -513,8 +513,8 @@ bool ParameterEditor::ValidateInput() {
 		return false;
 	}
 
-	for (size_t i = 0; i < tempParam.GetSize();i++) {
-		for (size_t j = i+1; j < tempParam.GetSize(); j++) {
+	for (int i = 0; i < tempParam.GetSize();i++) {
+		for (int j = i+1; j < tempParam.GetSize(); j++) {
 			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j), 1e-9)) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.GetX(i) << "s.";

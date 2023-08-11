@@ -201,8 +201,8 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
     }
 
     // Build all AABBTrees
-    size_t maxDepth=0;
-    for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+    int maxDepth=0;
+    for (int s = 0; s < this->sh.nbSuper; ++s) {
         auto& structure = this->structures[s];
         if(structure.aabbTree)
             structure.aabbTree.reset();
@@ -241,7 +241,7 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
         for(auto& state : globalState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globalState->globalStats.globalHits.nbHitEquiv);
         }
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+        for (int s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
                 this->rayTracingStructures.emplace_back(std::make_unique<KdTreeAccel>(primPointers[s], probabilities));
             else
@@ -249,7 +249,7 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
         }
     }
     else {
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+        for (int s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == AccelType::KD)
                 this->rayTracingStructures.emplace_back(std::make_unique<KdTreeAccel>(primPointers[s]));
             else
@@ -290,11 +290,11 @@ void MolflowSimulationModel::PrepareToRun() {
     CalcIntervalCache();
     this->maxwell_CDF_1K = CDFGeneration::Generate_CDF(1.0, wp.gasMass);
 
-    std::set<size_t> desorptionParameterIDs;
+    std::set<int> desorptionParameterIDs;
     std::vector<double> temperatureList;
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
-    for (size_t i = 0; i < sh.nbFacet; i++) {
+    for (int i = 0; i < sh.nbFacet; i++) {
         const auto facet = facets[i];
         // TODO: Find a solution to integrate catalog parameters
         if(facet->sh.outgassing_paramId >= (int) tdParams.parameters.size()){
@@ -336,7 +336,7 @@ void MolflowSimulationModel::PrepareToRun() {
 
 void MolflowSimulationModel::CalcIntervalCache() {
     intervalCache.resize(tdParams.moments.size());
-    for (size_t i=0;i<tdParams.moments.size();i++) {
+    for (int i=0;i<tdParams.moments.size();i++) {
         intervalCache[i].startTime=tdParams.moments[i].time - .5 * tdParams.moments[i].window;
         intervalCache[i].endTime=tdParams.moments[i].time + .5 * tdParams.moments[i].window;
     }
@@ -377,13 +377,13 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
     const double latestMoment = wp.latestMoment;
 
 
-    for (size_t i = 0; i < facets.size(); i++) {
+    for (int i = 0; i < facets.size(); i++) {
         const auto facet = facets[i];
         if (facet->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet->sh.useOutgassingFile) { //outgassing file
                 const auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
                 auto &ogMap = mfFacet->ogMap;
-                for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
+                for (int l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules +=
                             latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
                     finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
@@ -399,7 +399,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                 } else { //time-dependent outgassing
                     totalDesorbedMolecules +=
                             tdParams.IDs[facet->sh.IDid].back().cumulativeDesValue / (1.38E-23 * facet->sh.temperature);
-                    size_t lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
+                    int lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = tdParams.parameters[facet->sh.outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
                             finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
@@ -430,8 +430,8 @@ MolflowSimulationModel::~MolflowSimulationModel() = default;
 * \brief Calculates the used memory used by the whole simulation model
  * \return memory size used by the whole simulation model
 */
-size_t MolflowSimulationModel::GetMemSize() {
-    size_t modelSize = 0;
+int MolflowSimulationModel::GetMemSize() {
+    int modelSize = 0;
     modelSize += SimulationModel::GetMemSize(); //base class members
     //Molflow-specific members:
     modelSize += tdParams.GetMemSize();
@@ -467,9 +467,9 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState& rhs) {
     return *this;
 }
 
-size_t GlobalSimuState::GetMemSize() const
+int GlobalSimuState::GetMemSize() const
 {
-    size_t sum = 0;
+    int sum = 0;
     sum += sizeof(globalStats); //plain old data
     for (const auto& fs : facetStates) sum += fs.GetMemSize();
     for (const auto& hist : globalHistograms) sum += hist.GetMemSize();
@@ -498,12 +498,12 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
     auto lock = GetHitLock(this, 10000);
     if (!lock) return;
     auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
-    size_t nbF = model->sh.nbFacet;
-    size_t nbMoments = mf_model->tdParams.moments.size();
+    int nbF = model->sh.nbFacet;
+    int nbMoments = mf_model->tdParams.moments.size();
     facetStates.assign(nbF, FacetState());
 
     if(!model->facets.empty()) {
-        for (size_t i = 0; i < nbF; i++) {
+        for (int i = 0; i < nbF; i++) {
             auto sFac = model->facets[i];
             if (sFac->globalId != i) {
                 fmt::print(stderr, "Facet ID mismatch! : {} vs {}\n", sFac->globalId, i);
@@ -565,22 +565,22 @@ void GlobalSimuState::Reset() {
  * @param locThreshold threshold for relative difference on facet local counters
  * @return a tuple containing the number of global, local (facet), and fine (facet profile/texture) errors
  */
-std::tuple<size_t, size_t, size_t>
+std::tuple<int, int, int>
 GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, const std::shared_ptr<GlobalSimuState> rhsGlobHit, double globThreshold,
                          double locThreshold) {
 
     const double velocityThresholdFactor = 40.0;
     //std::ofstream cmpFile("cmpFile.txt");
-    size_t globalErrNb = 0;
-    size_t facetErrNb = 0;
-    size_t fineErrNb = 0;
+    int globalErrNb = 0;
+    int facetErrNb = 0;
+    int fineErrNb = 0;
 
-    size_t nbFacetSkips = 0;
-    size_t nbProfileSkips = 0;
-    size_t nbTextureSkips = 0;
-    size_t nbDirSkips = 0;
-    size_t nbHistSkips_glob = 0;
-    size_t nbHistSkips_loc = 0;
+    int nbFacetSkips = 0;
+    int nbProfileSkips = 0;
+    int nbTextureSkips = 0;
+    int nbDirSkips = 0;
+    int nbHistSkips_glob = 0;
+    int nbHistSkips_loc = 0;
 
     std::string cmpFile;
     std::string cmpFileFine; // extra stream to silence after important outputs
@@ -654,8 +654,8 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
     {
         auto& hist_lhs = lhsGlobHit->globalHistograms;
         auto& hist_rhs = rhsGlobHit->globalHistograms;
-        for(size_t tHist = 0; tHist < hist_lhs.size(); tHist++) {
-            for (size_t hIndex = 0; hIndex < hist_lhs[tHist].nbHitsHistogram.size(); ++hIndex) {
+        for(int tHist = 0; tHist < hist_lhs.size(); tHist++) {
+            for (int hIndex = 0; hIndex < hist_lhs[tHist].nbHitsHistogram.size(); ++hIndex) {
                 if(std::sqrt(std::max(1.0,std::min(hist_lhs[tHist].nbHitsHistogram[hIndex], hist_rhs[tHist].nbHitsHistogram[hIndex]))) < 80) {
                     // Sample size not large enough
                     continue;
@@ -668,7 +668,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
                     ++globalErrNb;
                 }
             }
-            for (size_t hIndex = 0; hIndex < hist_lhs[tHist].distanceHistogram.size(); ++hIndex) {
+            for (int hIndex = 0; hIndex < hist_lhs[tHist].distanceHistogram.size(); ++hIndex) {
                 if(std::sqrt(std::max(1.0,std::min(hist_lhs[tHist].distanceHistogram[hIndex], hist_rhs[tHist].distanceHistogram[hIndex]))) < 80) {
                     // Sample size not large enough
                     continue;
@@ -679,7 +679,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
                     ++globalErrNb;
                 }
             }
-            for (size_t hIndex = 0; hIndex < hist_lhs[tHist].timeHistogram.size(); ++hIndex) {
+            for (int hIndex = 0; hIndex < hist_lhs[tHist].timeHistogram.size(); ++hIndex) {
                 if(std::sqrt(std::max(1.0,std::min(hist_lhs[tHist].timeHistogram[hIndex], hist_rhs[tHist].timeHistogram[hIndex]))) < 80) {
                     // Sample size not large enough
                     continue;
@@ -701,7 +701,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
         ++facetErrNb;
     }
 
-    size_t nbCmp = std::min(lhsGlobHit->facetStates.size(), rhsGlobHit->facetStates.size());
+    int nbCmp = std::min(lhsGlobHit->facetStates.size(), rhsGlobHit->facetStates.size());
     for(int facetId = 0; facetId < nbCmp; ++facetId)
     {//cmp
         if(lhsGlobHit->facetStates[facetId].momentResults.size() != rhsGlobHit->facetStates[facetId].momentResults.size()){
@@ -841,7 +841,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
                 }
             }
 
-            if (!(std::sqrt(std::max((size_t) 1,
+            if (!(std::sqrt(std::max((int) 1,
                                      std::min(facetCounter_lhs.hits.nbDesorbed, facetCounter_rhs.hits.nbDesorbed))) <
                   80)) {
                 double desRatio = (double) facetCounter_lhs.hits.nbDesorbed / static_cast<double>(facetCounter_lhs.hits.nbMCHit);
@@ -1072,7 +1072,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
             {
                 auto &hist_lhs = facetCounter_lhs.histogram;
                 auto &hist_rhs = facetCounter_rhs.histogram;
-                for (size_t hIndex = 0; hIndex < hist_lhs.nbHitsHistogram.size(); ++hIndex) {
+                for (int hIndex = 0; hIndex < hist_lhs.nbHitsHistogram.size(); ++hIndex) {
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.nbHitsHistogram[hIndex],
                                                          hist_rhs.nbHitsHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
@@ -1091,7 +1091,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
                     }
                 }
 
-                for (size_t hIndex = 0; hIndex < hist_lhs.distanceHistogram.size(); ++hIndex) {
+                for (int hIndex = 0; hIndex < hist_lhs.distanceHistogram.size(); ++hIndex) {
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.distanceHistogram[hIndex],
                                                          hist_rhs.distanceHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
@@ -1111,7 +1111,7 @@ GlobalSimuState::Compare(const std::shared_ptr<GlobalSimuState> lhsGlobHit, cons
                     }
                 }
 
-                for (size_t hIndex = 0; hIndex < hist_lhs.timeHistogram.size(); ++hIndex) {
+                for (int hIndex = 0; hIndex < hist_lhs.timeHistogram.size(); ++hIndex) {
                     if (std::sqrt(
                             std::max(1.0, std::min(hist_lhs.timeHistogram[hIndex], hist_rhs.timeHistogram[hIndex]))) <
                         80) {
@@ -1193,9 +1193,9 @@ FacetMomentSnapshot& FacetMomentSnapshot::operator+=(const FacetMomentSnapshot &
     return *this;
 }
 
-size_t FacetMomentSnapshot::GetMemSize() const
+int FacetMomentSnapshot::GetMemSize() const
 {
-    size_t sum = 0;
+    int sum = 0;
     sum += sizeof(hits);
     sum += profile.capacity() * sizeof(ProfileSlice);
     sum += texture.capacity() * sizeof(TextureCell);
@@ -1215,10 +1215,10 @@ FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMoment
 * \param rhs reference object on the right hand
 * \return address of this (lhs)
 */
-size_t FacetState::GetMemSize() const
+int FacetState::GetMemSize() const
 {
-    size_t sum = 0;
-    sum += recordedAngleMapPdf.capacity() * sizeof(size_t);
+    int sum = 0;
+    sum += recordedAngleMapPdf.capacity() * sizeof(int);
     for (const auto& facetSnapshot : momentResults) sum += facetSnapshot.GetMemSize();
     return sum;
 }
@@ -1246,7 +1246,7 @@ DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
 //Constructs a lock guard for timed mutex
 //Returns false if lock not successful
 //Otherwise returns the unique_lock that auto-unlocks the mutex when destroyed
-[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, size_t waitMs) //not shared_ptr as called from within class as well
+[[nodiscard]] std::optional<std::unique_lock<std::timed_mutex>> GetHitLock(GlobalSimuState* simStatePtr, int waitMs) //not shared_ptr as called from within class as well
 {
     std::unique_lock<std::timed_mutex> lock(simStatePtr->simuStateMutex, std::chrono::milliseconds(waitMs));
     if (!lock.owns_lock()) {
@@ -1288,7 +1288,7 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                 continue;
             }
             //Parse
-            for (size_t i = 0; i < table.size(); i++) {
+            for (int i = 0; i < table.size(); i++) {
                 std::vector<std::string> row = table[i];
                 if (row.size() != 2) {
                     ++res;
@@ -1362,8 +1362,8 @@ std::vector<Parameter> TimeDependentParameters::GetCatalogParameters(const std::
 * \param newParams vector containing new parameters to be inserted
 * \return index to insert position
 */
-size_t TimeDependentParameters::InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams) {
-    size_t index = 0;
+int TimeDependentParameters::InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams) {
+    int index = 0;
     for (; index != parameters.size() && parameters[index].fromCatalog == false; index++);
     parameters.insert(parameters.begin() + index, newParams.begin(),
         newParams.end()); //Insert to front (before catalog parameters)

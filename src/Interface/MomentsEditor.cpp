@@ -171,7 +171,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 			//apply settings
 			if (mApp->AskToReset()) {
 				std::vector<std::vector<Moment>> parsedMoments;
-				for (size_t u = 0; u != userMoments.size(); u++) {
+				for (int u = 0; u != userMoments.size(); u++) {
 					parsedMoments.emplace_back(ParseUserMoment(userMoments[u]));
 				}
 
@@ -216,7 +216,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_TEXT:
 	case MSG_LIST:
-		for (size_t row = 0; row < (momentsList->GetNbRow() - 1); row++) {
+		for (int row = 0; row < (momentsList->GetNbRow() - 1); row++) {
 
 		    // Change in time expression
             // Or change in windows size
@@ -304,7 +304,7 @@ void MomentsEditor::RebuildList() {
 	momentsList->SetColumnEditable((int *)fEdits);
 
 	char tmp[128];
-	size_t u; double latest = 0.0;
+	int u; double latest = 0.0;
 
 	for (u = 0; u < userMoments.size(); u++) {
 		sprintf(tmp, "%zd", u + 1);

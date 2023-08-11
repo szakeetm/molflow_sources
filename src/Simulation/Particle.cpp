@@ -37,8 +37,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 using namespace MFSim;
 
-bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, size_t nbMoments, 
-    std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
+bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalState, int nbMoments, 
+    std::string& myStatus, std::mutex& statusMutex, int timeout_ms) {
 
     statusMutex.lock();
     myStatus = "Waiting to access global hit counter...";
@@ -58,7 +58,7 @@ bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalS
     totalDesorbed += tmpState->globalStats.globalHits.nbDesorbed;
 
     //Leaks
-    for (size_t leakIndex = 0; leakIndex < tmpState->globalStats.leakCacheSize; leakIndex++)
+    for (int leakIndex = 0; leakIndex < tmpState->globalStats.leakCacheSize; leakIndex++)
         globalState->globalStats.leakCache[(leakIndex + globalState->globalStats.lastLeakIndex) %
                                             LEAKCACHESIZE] = tmpState->globalStats.leakCache[leakIndex];
     globalState->globalStats.nbLeakTotal += tmpState->globalStats.nbLeakTotal;
@@ -69,7 +69,7 @@ bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalS
 
     // HHit (Only prIdx 0)
     if (particleTracerId == 0) {
-        for (size_t hitIndex = 0; hitIndex < tmpState->globalStats.hitCacheSize; hitIndex++)
+        for (int hitIndex = 0; hitIndex < tmpState->globalStats.hitCacheSize; hitIndex++)
             globalState->globalStats.hitCache[(hitIndex + globalState->globalStats.lastHitIndex) %
                                                 HITCACHESIZE] = tmpState->globalStats.hitCache[hitIndex];
 
@@ -112,7 +112,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     } else destIndex = iFacet->sh.teleportDest - 1;
 
     //Look in which superstructure is the destination facet:
-    size_t facId = 0;
+    int facId = 0;
     for(auto& fac : model->facets){
         auto& sFac = *fac;
         if (destIndex == static_cast<int>(sFac.globalId)) {
@@ -219,7 +219,7 @@ void DeleteChain (HitChain** head_ref){
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
 // Returns true if des limit reached or des error, false otherwise
-bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
+bool ParticleTracer::SimulationMCStep(int nbStep, int threadNum, int remainingDes) {
 
     // Perform simulation steps
     bool limitReachedOrDesorptionError = false;
@@ -227,7 +227,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
         const int ompIndex = threadNum;//omp_get_thread_num();
 
         particleTracerId = ompIndex;
-        size_t i;
+        int i;
 
 #if !defined(USE_OLD_BVH)
         ray.pay = nullptr;
@@ -275,7 +275,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 				if (found) {
 
 					// first pass
-					std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
+					std::set<int> alreadyHit; // account for duplicate hits on kdtree
 
 					for (auto& hit : ray.transparentHits) {
 						if (ray.tMax <= hit.hit.colDistTranspPass) {
@@ -404,10 +404,10 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     bool found = false;
     bool foundInMap = false;
     bool reverse;
-    size_t mapPositionW, mapPositionH;
+    int mapPositionW, mapPositionH;
     double srcRnd;
     double sumA = 0.0;
-    size_t i = 0, j = 0;
+    int i = 0, j = 0;
     int nbTry = 0;
 
     // Select source
@@ -431,8 +431,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                         int outgLowerIndex = lower_index(lookupValue,
                             mfFac->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
-                        mapPositionH = (size_t) ((double) outgLowerIndex / (double)mfFac->ogMap.outgassingMapWidth);
-                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * mfFac->ogMap.outgassingMapWidth;
+                        mapPositionH = (int) ((double) outgLowerIndex / (double)mfFac->ogMap.outgassingMapWidth);
+                        mapPositionW = (int) outgLowerIndex - mapPositionH * mfFac->ogMap.outgassingMapWidth;
                         foundInMap = true;
                         /*if (!foundInMap) {
                             SetThreadError("Starting point not found in imported desorption map");
@@ -909,7 +909,7 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
 
 void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
     //Record in global and facet histograms
-    size_t binIndex;
+    int binIndex;
 
     auto &tmpGlobalHistograms = tmpState->globalHistograms;
     auto &facetHistogram = tmpState->facetStates[iFacet->globalId].momentResults;
@@ -925,13 +925,13 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
             tmpGlobalHistograms[moment].nbHitsHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordDistance) {
-            binIndex = std::min(static_cast<size_t>(distanceTraveled /
+            binIndex = std::min(static_cast<int>(distanceTraveled /
                                                globHistParams.distanceBinsize),
                            globHistParams.GetDistanceHistogramSize() - 1);
             tmpGlobalHistograms[moment].distanceHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordTime) {
-            binIndex = std::min(static_cast<size_t>((ray.time - generationTime) /
+            binIndex = std::min(static_cast<int>((ray.time - generationTime) /
                                                globHistParams.timeBinsize),
                            globHistParams.GetTimeHistogramSize() - 1);
             tmpGlobalHistograms[moment].timeHistogram[binIndex] += oriRatio;
@@ -942,13 +942,13 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
             facetHistogram[moment].histogram.nbHitsHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordDistance) {
-            binIndex = std::min(static_cast<size_t>(distanceTraveled /
+            binIndex = std::min(static_cast<int>(distanceTraveled /
                                                facHistParams.distanceBinsize),
                            facHistParams.GetDistanceHistogramSize() - 1);
             facetHistogram[moment].histogram.distanceHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordTime) {
-            binIndex = std::min(static_cast<size_t>((ray.time - generationTime) /
+            binIndex = std::min(static_cast<int>((ray.time - generationTime) /
                                                facHistParams.timeBinsize),
                            facHistParams.GetTimeHistogramSize() - 1);
             facetHistogram[moment].histogram.timeHistogram[binIndex] += oriRatio;
@@ -960,9 +960,9 @@ void
 ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHit, double velocity_factor,
 	double ortSpeedFactor) {
 
-	size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-	size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
-	size_t add = tu + tv * (f->sh.texWidth);
+	int tu = (int)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
+	int tv = (int)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+	int add = tu + tv * (f->sh.texWidth);
 	double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
 		std::abs(Dot(ray.direction,
 			f->sh.N)); //surface-orthogonal velocity component
@@ -986,9 +986,9 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 }
 
 void ParticleTracer::RecordDirectionVector(const SimulationFacet *f, int m) {
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
-    size_t add = tu + tv * (f->sh.texWidth);
+    int tu = (int) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
+    int tv = (int) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+    int add = tu + tv * (f->sh.texWidth);
 
     {
         DirectionCell &dirCell = tmpState->facetStates[f->globalId].momentResults[0].direction[add];
@@ -1008,11 +1008,11 @@ void
 ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                        double ortSpeedFactor) {
 
-    size_t nbMoments = model->tdParams.moments.size();
+    int nbMoments = model->tdParams.moments.size();
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
         double dot = Dot(f->sh.N, ray.direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
-        size_t pos = (size_t) (theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
+        int pos = (int) (theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
 
         tmpState->facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
@@ -1020,7 +1020,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
             tmpState->facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
-        size_t pos = (size_t) (
+        int pos = (int) (
                 (f->sh.profileType == PROFILE_U ? tmpFacetVars[f->globalId].colU : tmpFacetVars[f->globalId].colV) *
                 (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
@@ -1055,7 +1055,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         } else { //Tangential
             dot = std::sqrt(1 - Square(std::abs(Dot(f->sh.N, ray.direction))));  //tangential
         }
-        size_t pos = (size_t) (dot * velocity / f->sh.maxSpeed *
+        int pos = (int) (dot * velocity / f->sh.maxSpeed *
                                (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
             tmpState->facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
@@ -1090,10 +1090,10 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
         inTheta = std::abs(
                 PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
     bool countTheta = true;
-    size_t thetaIndex;
+    int thetaIndex;
     if (inTheta < collidedFacet->sh.anglemapParams.thetaLimit) {
         if (collidedFacet->sh.anglemapParams.thetaLowerRes > 0) {
-            thetaIndex = (size_t) (inTheta / collidedFacet->sh.anglemapParams.thetaLimit *
+            thetaIndex = (int) (inTheta / collidedFacet->sh.anglemapParams.thetaLimit *
                                    (double) collidedFacet->sh.anglemapParams.thetaLowerRes);
         } else {
             countTheta = false;
@@ -1101,7 +1101,7 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
     } else {
         if (collidedFacet->sh.anglemapParams.thetaHigherRes > 0) {
             thetaIndex = collidedFacet->sh.anglemapParams.thetaLowerRes +
-                         (size_t) ((inTheta - collidedFacet->sh.anglemapParams.thetaLimit)
+                         (int) ((inTheta - collidedFacet->sh.anglemapParams.thetaLimit)
                                    / (PI / 2.0 - collidedFacet->sh.anglemapParams.thetaLimit) *
                                    (double) collidedFacet->sh.anglemapParams.thetaHigherRes);
         } else {
@@ -1109,7 +1109,7 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
         }
     }
     if (countTheta) {
-        size_t phiIndex = (size_t) ((inPhi + 3.1415926) / (2.0 * PI) *
+        int phiIndex = (int) ((inPhi + 3.1415926) / (2.0 * PI) *
                                     (double) collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
 
         auto &angleMap = tmpState->facetStates[collidedFacet->globalId].recordedAngleMapPdf;
@@ -1167,8 +1167,8 @@ double ParticleTracer::GenerateDesorptionTime(const SimulationFacet *src, const 
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size_t hit, const size_t desorb,
-                               const size_t absorb, const double sum_1_per_v, const double sum_v_ort,
+ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const int hit, const int desorb,
+                               const int absorb, const double sum_1_per_v, const double sum_v_ort,
                                const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
@@ -1260,8 +1260,8 @@ void ParticleTracer::Reset() {
     tmpFacetVars.clear();
 }
 
-size_t ParticleTracer::GetMemSize() const {
-    size_t size = 0;
+int ParticleTracer::GetMemSize() const {
+    int size = 0;
     size += tmpState->GetMemSize(); //local counter
     size += tmpFacetVars.capacity() * sizeof(SimulationFacetTempVar);
     size += tmpParticleLog->pLog.capacity() * sizeof(ParticleLoggerItem);
@@ -1269,7 +1269,7 @@ size_t ParticleTracer::GetMemSize() const {
 }
 
 bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
-    ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms) {
+    ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, int timeout_ms) {
 
     bool lastHitUpdateOK = UpdateMCHits(globalState, model->tdParams.moments.size(), 
         myStatus, statusMutex, timeout_ms);
@@ -1289,7 +1289,7 @@ bool ParticleTracer::UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> glo
 }
 
 bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
-    std::string& myStatus, std::mutex& statusMutex, size_t timeout){
+    std::string& myStatus, std::mutex& statusMutex, int timeout){
     if (!tmpParticleLog->pLog.empty()) {
         statusMutex.lock();
         myStatus = "Waiting to access global particle log...";
@@ -1300,13 +1300,13 @@ bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
         statusMutex.lock();
         myStatus = "Adding local particle log to global...";
         statusMutex.unlock();
-        size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
+        int writeNb = model->otfParams.logLimit - globalLog->pLog.size();
         Saturate(writeNb, 0, tmpParticleLog->pLog.size());
         globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog->pLog.begin(), tmpParticleLog->pLog.begin() + writeNb);
         globalLog->particleLogMutex.unlock();
         tmpParticleLog->clear();
         tmpParticleLog->pLog.shrink_to_fit();
-        tmpParticleLog->pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));
+        tmpParticleLog->pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (int)0u));
     }
 
     return true;
@@ -1338,7 +1338,7 @@ void ParticleTracer::RecordLeakPos() {
  * @param startIndex offset to only look in a subset of intervals
  * @return -1 if moment doesnt relate to an interval, else index of moment (+1 to account for [0]== steady state)
  */
-int ParticleTracer::LookupMomentIndex(const double time, const size_t startIndex) {
+int ParticleTracer::LookupMomentIndex(const double time, const int startIndex) {
 
     if (model->intervalCache.empty()) {
         return -1; //no moments

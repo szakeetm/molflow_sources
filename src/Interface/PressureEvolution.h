@@ -51,8 +51,8 @@ public:
 
 private:
 
-  void addView(size_t facetId);
-  void remView(size_t viewId);
+  void addView(int facetId);
+  void remView(int viewId);
   void refreshChart();
 
   Worker      *worker;

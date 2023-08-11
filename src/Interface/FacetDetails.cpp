@@ -245,7 +245,7 @@ void FacetDetails::PlaceComponents() {
   else
     hp = 20;
   sPanel->SetBounds(5, _height - (hp + 52), _width - 10, hp);
-  for(size_t i=0;i<NB_FDCOLUMN;i++)
+  for(int i=0;i<NB_FDCOLUMN;i++)
     sPanel->SetCompBounds(show[i],5+80*(((int)i-1)%nbW),18+20*(((int)i-1)/nbW),85,19);
 
   facetListD->SetBounds(5, 5, _width - 10, _height - (62 + hp));
@@ -293,7 +293,7 @@ char *FacetDetails::GetCountStr(InterfaceFacet *f) {
 * \param mode which kind of value has to be evaluated and printed
 * \return char pointer taking a string with the count value(s)
 */
-char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
+char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
   static char ret[512];
   strcpy(ret,"");
 
@@ -457,9 +457,9 @@ void FacetDetails::UpdateTable() {
   int  tmpAlign[NB_FDCOLUMN];
   int  tmpColor[NB_FDCOLUMN];
 
-  size_t nbCol = 0;
+  int nbCol = 0;
 
-  for(size_t i=0;i<NB_FDCOLUMN;i++) {
+  for(int i=0;i<NB_FDCOLUMN;i++) {
     if(i==0 || show[i]->GetState()) {
       tmpName[nbCol]  = allColumn[i].name;
       tmpWidth[nbCol] = allColumn[i].width;
@@ -481,10 +481,10 @@ void FacetDetails::UpdateTable() {
 	facetListD->SetColumnColors(tmpColor);
   
 
-  size_t nbS = 0;
+  int nbS = 0;
   for(auto& sel:selectedFacets) {
     InterfaceFacet *f = interfGeom->GetFacet(sel);
-    for(size_t j=0;j<nbCol;j++)
+    for(int j=0;j<nbCol;j++)
         facetListD->SetValueAt(j,nbS,FormatCell(sel,f,shown[j]));
 	nbS++;
 	}
@@ -499,7 +499,7 @@ void FacetDetails::Update() {
   if(!IsVisible()) return;
 
   InterfaceGeometry *s = worker->GetGeometry();
-  size_t nbS = s->GetNbSelectedFacets();
+  int nbS = s->GetNbSelectedFacets();
   
   if(nbS==0) {
     facetListD->Clear();
@@ -535,10 +535,10 @@ void FacetDetails::ProcessMessage(GLComponent *src,int message) {
       if(src==dismissButton) {
         SetVisible(false);
       } else if (src==checkAllButton) {
-        for(size_t i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(true);
+        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(true);
         UpdateTable();
       } else if (src==uncheckAllButton) {
-        for(size_t i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(false);
+        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(false);
         UpdateTable();
 	  }	else if (src==updateButton) {
         UpdateTable();

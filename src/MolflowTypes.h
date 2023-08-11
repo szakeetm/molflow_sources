@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTypes.h"
 #include "Parameter.h"
 //#include "Interface.h"
-#include <stddef.h> //size_t for gcc
+#include <stddef.h> //int for gcc
 #include <string>
 #include <vector>
 #include <cereal/cereal.hpp>
@@ -114,8 +114,8 @@ struct IntegratedVelocityEntry {
 
 struct OutgassingMap {
     OutgassingMap() = default;
-    size_t   outgassingMapWidth=0; //rounded up outgassing file map width
-    size_t   outgassingMapHeight=0; //rounded up outgassing file map height
+    int   outgassingMapWidth=0; //rounded up outgassing file map width
+    int   outgassingMapHeight=0; //rounded up outgassing file map height
     double outgassingMapWidth_precise=0.0; //actual outgassing file map width
     double outgassingMapHeight_precise=0.0; //actual outgassing file map height
     double outgassingFileRatioU=0.0; //desorption file's sample/unit ratio in U direction
@@ -203,10 +203,10 @@ class AnglemapParams {
 public:
 
 	bool   record = false; // Record incident angle 2-dim distribution
-	size_t phiWidth = 0; //resolution between -PI and +PI
+	int phiWidth = 0; //resolution between -PI and +PI
 	double thetaLimit = 0.0; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
-	size_t thetaLowerRes = 0; //resolution between 0 and angleMapThetaLimit
-	size_t thetaHigherRes = 0; //resolution between angleMapThetaLimit and PI/2
+	int thetaLowerRes = 0; //resolution between 0 and angleMapThetaLimit
+	int thetaHigherRes = 0; //resolution between angleMapThetaLimit and PI/2
 	
 	template<class Archive>
 	void serialize(Archive & archive)
@@ -220,18 +220,18 @@ public:
 		);
 	}
 
-	size_t GetMapSize() const{
+	int GetMapSize() const{
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
-	size_t GetRecordedMapSize() const{
+	int GetRecordedMapSize() const{
 		/*if (!hasRecorded) return 0;
 		else */return GetMapSize();
 	}
-	size_t GetDataSize() const {
-		return sizeof(size_t)*GetMapSize();
+	int GetDataSize() const {
+		return sizeof(int)*GetMapSize();
 	}
-	size_t GetRecordedDataSize() const {
-		return sizeof(size_t)*GetRecordedMapSize();
+	int GetRecordedDataSize() const {
+		return sizeof(int)*GetRecordedMapSize();
 	}
 };
 

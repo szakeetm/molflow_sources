@@ -276,7 +276,7 @@ namespace AnglemapGeneration {
 	* \return theta angle in rad
 	*/
 	double GetTheta(const double thetaIndex, const AnglemapParams& anglemapParams) {
-		if ((size_t)(thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
+		if ((int)(thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
 			return anglemapParams.thetaLimit * (thetaIndex) / (double)anglemapParams.thetaLowerRes;
 		}
 		else { // limit < theta < PI/2
@@ -304,7 +304,7 @@ namespace AnglemapGeneration {
 	double GetPhiNormalizedPdfValue(const double thetaIndex, const int phiLowerIndex,
 		const AnglemapParams& anglemapParams, const Anglemap& anglemap)
 	{
-		size_t phiIndex = IDX(phiLowerIndex,anglemapParams.phiWidth);//phiLowerIndex is circularized
+		int phiIndex = IDX(phiLowerIndex,anglemapParams.phiWidth);//phiLowerIndex is circularized
 		if (thetaIndex < 0.5) { //First line
 			return (anglemapParams.thetaLowerRes > 0) ? anglemap.phi_pdfs_lowerTheta[phiIndex] : anglemap.phi_pdfs_higherTheta[phiIndex];
 		}
@@ -314,13 +314,13 @@ namespace AnglemapGeneration {
 				: anglemap.phi_pdfs_lowerTheta[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes - 1) + phiIndex];
 		}
 		else { //intermediate line
-			size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+			int thetaLowerIndex = (int)(thetaIndex - 0.5);
 			double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
 
 			double valueFromLowerpdf = (thetaLowerIndex < anglemapParams.thetaLowerRes)
 				? anglemap.phi_pdfs_lowerTheta[thetaLowerIndex*anglemapParams.phiWidth + phiIndex]
 				: anglemap.phi_pdfs_higherTheta[(thetaLowerIndex-anglemapParams.thetaLowerRes)* anglemapParams.phiWidth + phiIndex];
-			size_t nextLineIndex = thetaLowerIndex + 1;
+			int nextLineIndex = thetaLowerIndex + 1;
 			double valueFromHigherpdf = (nextLineIndex < anglemapParams.thetaLowerRes)
 				? anglemap.phi_pdfs_lowerTheta[nextLineIndex *anglemapParams.phiWidth + phiIndex]
 				: anglemap.phi_pdfs_higherTheta[(nextLineIndex -anglemapParams.thetaLowerRes)* anglemapParams.phiWidth + phiIndex];
@@ -350,7 +350,7 @@ namespace AnglemapGeneration {
 					: 1.0 + anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes - 1)]; //Clamp CDF to 1.0
 			}
 			else {
-				size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+				int thetaLowerIndex = (int)(thetaIndex - 0.5);
 				double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
 				double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth)
 					? anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex]
@@ -372,7 +372,7 @@ namespace AnglemapGeneration {
 					: 1.0 + anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (anglemapParams.thetaHigherRes - 1)];
 			}
 			else {
-				size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+				int thetaLowerIndex = (int)(thetaIndex - 0.5);
 				double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
 				double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth)
 					? anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (thetaLowerIndex - anglemapParams.thetaLowerRes) + phiLowerIndex]
@@ -403,7 +403,7 @@ namespace AnglemapGeneration {
 				return (double)anglemap.phi_pdfsums_lowerTheta[anglemapParams.thetaLowerRes - 1];
 			}
 			else { //regular bin in lower part
-				size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+				int thetaLowerIndex = (int)(thetaIndex - 0.5);
 				double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
 				double valueFromLowerSum = (double)anglemap.phi_pdfsums_lowerTheta[thetaLowerIndex];
 				double valueFromHigherSum = (double)anglemap.phi_pdfsums_lowerTheta[thetaLowerIndex + 1];
@@ -418,7 +418,7 @@ namespace AnglemapGeneration {
 				return (double)anglemap.phi_pdfsums_higherTheta[anglemapParams.thetaHigherRes - 1];
 			}
 			else { //regular bin in higher part
-				size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+				int thetaLowerIndex = (int)(thetaIndex - 0.5);
 				double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
 				double valueFromLowerSum = (double)anglemap.phi_pdfsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes];
 				double valueFromHigherSum = (double)anglemap.phi_pdfsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1];

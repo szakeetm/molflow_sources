@@ -95,7 +95,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glDisable(GL_LIGHTING);
 		glDisable(GL_CULL_FACE);
 		
-		size_t count = 0;
+		int count = 0;
 		while (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
 
 			//Regular (green) line color
@@ -197,7 +197,7 @@ void GeometryViewer::DrawLinesAndHits() {
 			glColor3f(0.0f, 1.0f, 0.0f);
 		}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_REF)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -212,7 +212,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glColor3f(1.0f, 0.0f, 1.0f);
 		//}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_MOVING)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -222,7 +222,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(0.5f, 1.0f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_TRANS)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -238,7 +238,7 @@ void GeometryViewer::DrawLinesAndHits() {
 				glColor3f(1.0f, 0.0f, 1.0f);
 			}
 			glBegin(GL_POINTS);
-			for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+			for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, hitCache.hitCache[i].type))
 					glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 			glEnd();
@@ -248,7 +248,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_ABS)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
@@ -256,7 +256,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		// Des
 		glColor3f(0.3f, 0.3f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+		for (int i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
 			if (hitCache.hitCache[i].type == HIT_DES)
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();

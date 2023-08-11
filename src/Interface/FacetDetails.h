@@ -50,7 +50,7 @@ private:
 
   static char *GetCountStr(InterfaceFacet *f);
   void UpdateTable();
-  char *FormatCell(size_t idx, InterfaceFacet *f, size_t mode);
+  char *FormatCell(int idx, InterfaceFacet *f, int mode);
   void PlaceComponents();
 
   Worker      *worker;
@@ -58,7 +58,7 @@ private:
 
   GLTitledPanel *sPanel;          // Toggle panel
   GLToggle      *show[NB_FDCOLUMN];
-  size_t            shown[NB_FDCOLUMN];
+  int            shown[NB_FDCOLUMN];
 
   GLButton    *checkAllButton;
   GLButton    *uncheckAllButton;

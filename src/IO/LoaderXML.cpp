@@ -58,7 +58,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     loadModel->sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
     loadModel->vertices3.resize(loadModel->sh.nbVertex); loadModel->vertices3.shrink_to_fit();
-    size_t idx = 0;
+    int idx = 0;
     for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
         loadModel->vertices3[idx].x = vertex.attribute("x").as_double();
         loadModel->vertices3[idx].y = vertex.attribute("y").as_double();
@@ -109,7 +109,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     idx = 0;
     bool ignoreSumMismatch = false;
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
-        size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
+        int nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
             throw Error(fmt::format("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex));
         }
@@ -360,9 +360,9 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
 
         xml_node resultNode = rootNode.child("MolflowResults");
         xml_node momentsNode = resultNode.child("Moments");
-        size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
-        size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
-        size_t m = 0;
+        int nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
+        int facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
+        int m = 0;
         for (xml_node newMoment: momentsNode.children("Moment")) {
             
             if (m == 0) { //read global results
@@ -446,11 +446,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                         auto &nbHitsHistogram = globalHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
-                            size_t saveHistSize = hist.attribute("size").as_ullong();
+                            int histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
+                            int saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
-                                size_t h = 0;
+                                int h = 0;
                                 for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         nbHitsHistogram[h++] = bin.attribute("count").as_double();
@@ -467,11 +467,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                         auto &distanceHistogram = globalHistogram.distanceHistogram;
                         xml_node hist = histNode.child("Distance");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
-                            size_t saveHistSize = hist.attribute("size").as_ullong();
+                            int histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
+                            int saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
-                                size_t h = 0;
+                                int h = 0;
                                 for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         distanceHistogram[h++] = bin.attribute("count").as_double();
@@ -488,11 +488,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                         auto &timeHistogram = globalHistogram.timeHistogram;
                         xml_node hist = histNode.child("Time");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
-                            size_t saveHistSize = hist.attribute("size").as_ullong();
+                            int histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
+                            int saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
-                                size_t h = 0;
+                                int h = 0;
                                 for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         timeHistogram[h++] = bin.attribute("count").as_double();
@@ -611,7 +611,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                     //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
                     std::vector<ProfileSlice> &profilePtr = globalState->facetStates[facetId].momentResults[m].profile;
 
-                    size_t id = 0;
+                    int id = 0;
                     for (xml_node slice: profileNode.children("Slice")) {
                         if (slice.attribute("countEquiv")) {
                             profilePtr[id].countEquiv = slice.attribute("countEquiv").as_double();
@@ -628,8 +628,8 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 //Textures
                 if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
                     xml_node textureNode = newFacetResult.child("Texture");
-                    size_t texWidth_file = textureNode.attribute("width").as_llong();
-                    size_t texHeight_file = textureNode.attribute("height").as_llong();
+                    int texWidth_file = textureNode.attribute("width").as_llong();
+                    int texHeight_file = textureNode.attribute("height").as_llong();
 
                     std::vector<TextureCell> &texture = globalState->facetStates[facetId].momentResults[m].texture;
 
@@ -642,9 +642,9 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                     sum1perText << textureNode.child_value("sum_1_per_v");
                     sumvortText << textureNode.child_value("sum_v_ort");
 
-                    for (size_t iy = 0; iy < (std::min(sFac->sh.texHeight,
+                    for (int iy = 0; iy < (std::min(sFac->sh.texHeight,
                                                   texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-                        for (size_t ix = 0; ix < (std::min(sFac->sh.texWidth,
+                        for (int ix = 0; ix < (std::min(sFac->sh.texWidth,
                                                       texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
                             countText >> texture[iy * sFac->sh.texWidth + ix].countEquiv;
                             sum1perText >> texture[iy * sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
@@ -654,7 +654,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                         for (int ie = 0; ie < texWidth_file -
                                               sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
                             //Read extra cells from file without doing anything
-                            size_t dummy_ll;
+                            int dummy_ll;
                             double dummy_d;
                             countText >> dummy_ll;
                             sum1perText >> dummy_d;
@@ -666,7 +666,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                                           sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
                         //Read extra cells from file without doing anything
                         for (int iw = 0; iw < texWidth_file; iw++) {
-                            size_t dummy_ll;
+                            int dummy_ll;
                             double dummy_d;
                             countText >> dummy_ll;
                             sum1perText >> dummy_d;
@@ -695,8 +695,8 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                     dirText << dirNode.child_value("vel.vectors");
                     dirCountText << dirNode.child_value("count");
 
-                    for (size_t iy = 0; iy < sFac->sh.texHeight; iy++) {
-                        for (size_t ix = 0; ix < sFac->sh.texWidth; ix++) {
+                    for (int iy = 0; iy < sFac->sh.texHeight; iy++) {
+                        for (int ix = 0; ix < sFac->sh.texWidth; ix++) {
                             std::string component;
                             std::getline(dirText, component, ',');
                             dirs[iy * sFac->sh.texWidth + ix].dir.x = std::stod(component);
@@ -723,11 +723,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             auto &nbHitsHistogram = facetHistogram.nbHitsHistogram;
                             xml_node hist = histNode.child("Bounces");
                             if (hist) {
-                                size_t histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
-                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                int histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                                int saveHistSize = hist.attribute("size").as_ullong();
                                 if (histSize == saveHistSize) {
                                     //Can do: compare saved with expected size
-                                    size_t h = 0;
+                                    int h = 0;
                                     for (auto bin: hist.children("Bin")) {
                                         if (h < histSize) {
                                             nbHitsHistogram[h++] = bin.attribute("count").as_double();
@@ -744,11 +744,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             auto &distanceHistogram = facetHistogram.distanceHistogram;
                             xml_node hist = histNode.child("Distance");
                             if (hist) {
-                                size_t histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
-                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                int histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                                int saveHistSize = hist.attribute("size").as_ullong();
                                 if (histSize == saveHistSize) {
                                     //Can do: compare saved with expected size
-                                    size_t h = 0;
+                                    int h = 0;
                                     for (auto bin: hist.children("Bin")) {
                                         if (h < histSize) {
                                             distanceHistogram[h++] = bin.attribute("count").as_double();
@@ -765,11 +765,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             auto &timeHistogram = facetHistogram.timeHistogram;
                             xml_node hist = histNode.child("Time");
                             if (hist) {
-                                size_t histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
-                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                int histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                                int saveHistSize = hist.attribute("size").as_ullong();
                                 if (histSize == saveHistSize) {
                                     //Can do: compare saved with expected size
-                                    size_t h = 0;
+                                    int h = 0;
                                     for (auto bin: hist.children("Bin")) {
                                         if (h < histSize) {
                                             timeHistogram[h++] = bin.attribute("count").as_double();
@@ -797,7 +797,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
     return 0;
 }
 
-void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams) {
+void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, int nbTotalVertices, int nbTimedepParams) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
@@ -923,8 +923,8 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
         auto& ogMap = facet->ogMap;
         std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
 
-        for (size_t iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
-            for (size_t ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+        for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+            for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
                 outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
                 sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
             }
@@ -972,9 +972,9 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
             throw Error(err.str().c_str());
         }
 
-        size_t angleMapSum = 0;
-        for (size_t iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
-            for (size_t ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
+        int angleMapSum = 0;
+        for (int iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
+            for (int ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
                 angleText >> angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
                 angleMapSum += angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
             }
@@ -1079,7 +1079,7 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
 		std::stringstream convText;
 		std::vector<FormulaHistoryDatapoint> convData;
 		convText << convDataNode.child_value();
-        size_t nbLines;
+        int nbLines;
         auto nbEntriesAttr = convDataNode.attribute("nbEntries"); //Since 2.9.15 beta
         if (nbEntriesAttr) {
             nbLines = nbEntriesAttr.as_int();
@@ -1088,9 +1088,9 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
             nbLines = countLines(convText,false); //somewhat expensive
         }
 
-        for (size_t i = 0; i < nbLines; i++) {
+        for (int i = 0; i < nbLines; i++) {
             try {
-                size_t nbDes;
+                int nbDes;
 			    double convVal;
                 convText >> nbDes;
                 convText >> convVal;
@@ -1110,7 +1110,7 @@ int XmlLoader::LoadConvergenceValues(const std::string& inputFileName, const std
 /*
 void Loader::MoveFacetsToStructures(SimulationModel* loadModel) {
     loadModel->structures.resize(loadModel->sh.nbSuper);
-    for (size_t i = 0; i < loadModel->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
+    for (int i = 0; i < loadModel->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
         if (loadFacets[i].sh.superIdx == -1) { //Facet in all structures
             for (auto &s : loadModel->structures) {
                 s.facets.emplace_back(loadFacets[i]);

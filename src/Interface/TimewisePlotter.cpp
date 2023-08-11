@@ -86,9 +86,9 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 
 	displayModeCombo = new GLCombo(0);
 	displayModeCombo->SetEditable(true);
-	size_t nbDisplayModes = (size_t)ProfileDisplayModes::NUMITEMS;
+	int nbDisplayModes = (int)ProfileDisplayModes::NUMITEMS;
 	displayModeCombo->SetSize(nbDisplayModes);
-	for (size_t i = 0;i<nbDisplayModes;i++) {
+	for (int i = 0;i<nbDisplayModes;i++) {
 		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i]);
 	}
 	displayModeCombo->SetSelectedIndex(1);
@@ -170,14 +170,14 @@ void TimewisePlotter::Refresh() {
 	if (!worker) return;
 	if (!ParseMoments()) return;
 	InterfaceGeometry *interfGeom = worker->GetGeometry();
-	size_t nb = interfGeom->GetNbFacet();
-	size_t nbProf = 0;
-	for (size_t i = 0; i < nb; i++)
+	int nb = interfGeom->GetNbFacet();
+	int nbProf = 0;
+	for (int i = 0; i < nb; i++)
 		if (interfGeom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
-    for (size_t i = 0; i < nb; i++) {
+    for (int i = 0; i < nb; i++) {
 		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
@@ -256,8 +256,8 @@ void TimewisePlotter::refreshViews() {
 
 	double scaleY;
 
-	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
-	for (size_t i = 0; i < nbView; i++) {
+	int facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
 		UpdateMoment();
@@ -385,7 +385,7 @@ void TimewisePlotter::addView(int facet) {
 		nbView++;
 	}
 
-	for (size_t index : displayedMoments) {
+	for (int index : displayedMoments) {
 		if (nbView < 49) {
 			GLDataView *v = new GLDataView();
 			if (index<1 || (index) > worker->interfaceMomentCache.size()) continue; //invalid moment

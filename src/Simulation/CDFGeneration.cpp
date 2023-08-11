@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "CDFGeneration.h"
 #include <cmath>
 
-constexpr size_t velocity_cdf_size = 100; // points in a cumulative distribution function
+constexpr int velocity_cdf_size = 100; // points in a cumulative distribution function
 
 namespace CDFGeneration {
 /**
@@ -57,7 +57,7 @@ namespace CDFGeneration {
     std::pair<int, std::vector<IntegratedVelocityEntry>>
     GenerateNewCDF(std::vector<double> &temperatureList, double temperature,
                    double gasMass) {
-        size_t i = temperatureList.size();
+        int i = temperatureList.size();
         temperatureList.push_back(temperature);
         auto cdf_vect = Generate_CDF(temperature, gasMass);
         return std::make_pair((int) i, cdf_vect);
@@ -89,7 +89,7 @@ namespace CDFGeneration {
                 4.0 * mostProbableSpeed /
                 (double) velocity_cdf_size; // distribution generated between 0 and 4*V_prob
 
-        for (size_t i = 0; i < velocity_cdf_size; i++) {
+        for (int i = 0; i < velocity_cdf_size; i++) {
             double x = (double) i * binSize;
             double x_square_per_2_a_square =
                     std::pow(x, 2.0) / (2.0 * std::pow(a, 2.0));

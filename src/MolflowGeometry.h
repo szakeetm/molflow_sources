@@ -46,12 +46,12 @@ public:
 	void LoadSYN(FileReader& file, GLProgress_Abstract& prg, int *version, Worker *worker);
 	bool LoadTexturesGEO(FileReader& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, int version);
 	//void ImportDesorption_DES(FileReader& file); //Deprecated
-	void ImportDesorption_SYN(FileReader& synFile, const size_t source, const double time,
-		const size_t mode, const double eta0, const double alpha, const double cutoffdose,
+	void ImportDesorption_SYN(FileReader& synFile, const int source, const double time,
+		const int mode, const double eta0, const double alpha, const double cutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
 		GLProgress_Abstract& prg);
-	void AnalyzeSYNfile(FileReader& f, GLProgress_Abstract& prg, size_t *nbNewFacet,
-		size_t *nbTextured, size_t *nbDifferent);
+	void AnalyzeSYNfile(FileReader& f, GLProgress_Abstract& prg, int *nbNewFacet,
+		int *nbTextured, int *nbDifferent);
 
 	// Insert
 	void InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool newStr);
@@ -72,14 +72,14 @@ public:
 	void     LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version);
 
 	// Memory usage (in bytes)
-	size_t GetGeometrySize();
-	size_t GetHitsSize(size_t nbMoments);
+	int GetGeometrySize();
+	int GetHitsSize(int nbMoments);
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
 
 	// AC matrix
-	size_t GetMaxElemNumber();
+	int GetMaxElemNumber();
 
 	// Texture scaling
 	//TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
@@ -98,7 +98,7 @@ public:
 
 private:
 
-	void InsertSYNGeom(FileReader& file, size_t strIdx = 0, bool newStruct = false);
+	void InsertSYNGeom(FileReader& file, int strIdx = 0, bool newStruct = false);
 	void SaveProfileGEO(FileWriter& file, const std::shared_ptr<GlobalSimuState> globalState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
