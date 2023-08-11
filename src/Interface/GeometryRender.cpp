@@ -113,7 +113,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 			if (f->sh.texHeight > max_t || f->sh.texWidth > max_t) {
 				if (!f->textureError) {
 					char tmp[1024];
-					sprintf(tmp, "Facet #%zd has a texture of %zdx%zd cells.\n"
+					sprintf(tmp, "Facet #%d has a texture of %zdx%d cells.\n"
 						"Your video card only supports texture dimensions (width or height) up to %d cells.\n"
 						"Texture rendering has been disabled on this facet, but you can still read texture values\n"
 						"using the Texture Plotter window. Consider using a smaller mesh resolution, or split the facet\n"

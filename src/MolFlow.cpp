@@ -831,9 +831,9 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		}
 
 		if (nbSel == 1)
-			sprintf(tmp, "Selected Facet (#%zd)", selectedFacets[0] + 1);
+			sprintf(tmp, "Selected Facet (#%d)", selectedFacets[0] + 1);
 		else
-			sprintf(tmp, "Selected Facet (%zd selected)", selectedFacets.size());
+			sprintf(tmp, "Selected Facet (%d selected)", selectedFacets.size());
 
 		// Old STR compatibility
 		//if (stickingE && f0->wp.superDest) stickingE = false;
@@ -2450,9 +2450,9 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				facetList->SetValueAt(0, i, tmp);
 
 				facetList->SetColumnLabel(1, "Hits");
-				sprintf(tmp, "%zd", f->facetHitCache.nbMCHit);
+				sprintf(tmp, "%d", f->facetHitCache.nbMCHit);
 				facetList->SetValueAt(1, i, tmp);
-				sprintf(tmp, "%zd", f->facetHitCache.nbDesorbed);
+				sprintf(tmp, "%d", f->facetHitCache.nbDesorbed);
 				facetList->SetValueAt(2, i, tmp);
 				sprintf(tmp, "%g", f->facetHitCache.nbAbsEquiv);
 				facetList->SetValueAt(3, i, tmp);

@@ -423,7 +423,7 @@ void TexturePlotter::UpdateTable() {
 							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::NbVelocityVectors, 1.0, 1.0, 1.0, (int)(i + j*w), facetSnapshot);
 							int count = val.count;
 
-							sprintf(tmp, "%zd", count);
+							sprintf(tmp, "%d", count);
 							double countEq = (double)count;
 							if (countEq > maxValue) {
 								maxValue = countEq;

@@ -385,12 +385,12 @@ void ParameterEditor::LoadCSV() {
 	}
 	if (table[0].size() != 2) {
 		char tmp[256];
-		sprintf(tmp, "First row has %zd columns instead of the expected 2. Load anyway?",table[0].size());
+		sprintf(tmp, "First row has %d columns instead of the expected 2. Load anyway?",table[0].size());
 		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
 	}
 	if (table.size() > 30) {
 		char tmp[256];
-		sprintf(tmp, "CSV file has a large number (%zd) of rows. Load anyway?", table.size());
+		sprintf(tmp, "CSV file has a large number (%d) of rows. Load anyway?", table.size());
 		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
 	}
 	userValues = std::vector<std::pair<std::string, std::string>>();
@@ -492,7 +492,7 @@ bool ParameterEditor::ValidateInput() {
 			valueX = ::atof(userValues[row].first.c_str());
 		} catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, e.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %d, first column:\n%s", userValues[row].first.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}
@@ -501,7 +501,7 @@ bool ParameterEditor::ValidateInput() {
 		}
 		catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, e.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %d, second column:\n%s", userValues[row].second.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}

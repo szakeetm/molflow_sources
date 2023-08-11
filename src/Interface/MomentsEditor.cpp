@@ -307,17 +307,17 @@ void MomentsEditor::RebuildList() {
 	int u; double latest = 0.0;
 
 	for (u = 0; u < userMoments.size(); u++) {
-		sprintf(tmp, "%zd", u + 1);
+		sprintf(tmp, "%d", u + 1);
 		momentsList->SetValueAt(0, u, tmp);
 		sprintf(tmp, "%s", userMoments[u].content.c_str());
 		momentsList->SetValueAt(1, u, tmp);
-		sprintf(tmp, "%zd", (ParseUserMoment(userMoments[u]).size()));
+		sprintf(tmp, "%d", (ParseUserMoment(userMoments[u]).size()));
 		momentsList->SetValueAt(2, u, tmp);
         sprintf(tmp, "%g", userMoments[u].timeWindow);
         momentsList->SetValueAt(3, u, tmp);
 	}
     //last line, possibility to enter new value
-	sprintf(tmp, "%zd", u + 1);
+	sprintf(tmp, "%d", u + 1);
 	momentsList->SetValueAt(0, u, tmp);
 
 }

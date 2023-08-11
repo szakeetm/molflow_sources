@@ -1308,7 +1308,7 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                     catch (const std::exception& e) {
                         ++res;
                         char tmp[256];
-                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, e.what());
+                        sprintf(tmp, "Can't parse value \"%s\" in row %d, first column:\n%s", row[0].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
                         std::cerr << tmp << "\n";
                         break;
@@ -1321,7 +1321,7 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                     catch (const std::exception& e) {
                         ++res;
                         char tmp[256];
-                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, e.what());
+                        sprintf(tmp, "Can't parse value \"%s\" in row %d, second column:\n%s", row[1].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
                         std::cerr << tmp << "\n";
                         break;
