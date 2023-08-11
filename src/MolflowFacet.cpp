@@ -124,11 +124,11 @@ void InterfaceFacet::LoadGEO(FileReader& file, int version, int nbVertex) {
 	facetHitCache.nbAbsEquiv = file.ReadDouble();
 
 	file.ReadKeyword("nbDes"); file.ReadKeyword(":");
-	facetHitCache.nbDesorbed = file.ReadSizeT();
+	facetHitCache.nbDesorbed = file.ReadInt();
 
 	file.ReadKeyword("nbHit"); file.ReadKeyword(":");
 
-	facetHitCache.nbMCHit = file.ReadSizeT();
+	facetHitCache.nbMCHit = file.ReadInt();
 	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
 	if (version >= 2) {
 		// Added in GEO version 2
@@ -443,17 +443,17 @@ void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, int nbVertex) 
 	if (version >= 10) file.ReadKeyword("nbAbsEquiv");
 	else file.ReadKeyword("nbAbs"); file.ReadKeyword(":");
 	facetHitCache.nbAbsEquiv = 0;
-	file.ReadSizeT();
+	file.ReadInt();
 	if (version < 3) {
 		file.ReadKeyword("nbDes"); file.ReadKeyword(":");
 		facetHitCache.nbDesorbed = 0;
-		file.ReadSizeT();
+		file.ReadInt();
 	}
 	file.ReadKeyword("nbHit"); file.ReadKeyword(":");
-	file.ReadSizeT();
+	file.ReadInt();
 	if (version >= 10) {
 		file.ReadKeyword("nbHitEquiv"); file.ReadKeyword(":");
-		file.ReadSizeT();
+		file.ReadInt();
 	}
 	facetHitCache.nbMCHit = 0; facetHitCache.nbHitEquiv = 0.0;
 	if (version >= 3) {

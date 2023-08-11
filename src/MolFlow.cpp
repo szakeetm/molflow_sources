@@ -2101,10 +2101,10 @@ void MolFlow::LoadConfig() {
 			view->transStep = file.ReadDouble();
 		file.ReadKeyword("dispNumLines"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->dispNumHits = file.ReadSizeT();
+			view->dispNumHits = file.ReadInt();
 		file.ReadKeyword("dispNumLeaks"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->dispNumLeaks = file.ReadSizeT();
+			view->dispNumLeaks = file.ReadInt();
 		file.ReadKeyword("dirShow"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showDir = file.ReadInt();
@@ -2150,7 +2150,7 @@ void MolFlow::LoadConfig() {
 		interfGeom->texture_limits[2].autoscale.max.moments_only = file.ReadDouble();
 
 		file.ReadKeyword("processNum"); file.ReadKeyword(":");
-		nbProc = file.ReadSizeT();
+		nbProc = file.ReadInt();
 #if defined(_DEBUG)
 		nbProc = 1;
 #endif
