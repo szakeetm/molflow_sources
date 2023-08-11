@@ -708,7 +708,6 @@ void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-/*
 int InterfaceFacet::GetGeometrySize() { //for loader dataport
 
 	int s = sizeof(FacetProperties)
@@ -721,14 +720,13 @@ int InterfaceFacet::GetGeometrySize() { //for loader dataport
 	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
-}*/
+}
 
 /**
 * \brief Calculates the hits size for a single facet which is necessary for hits dataport
 * \param nbMoments amount of moments
 * \return calculated size of the facet hits
 */
-/*
 int InterfaceFacet::GetHitsSize(int nbMoments) { //for hits dataport
 
 	return   (1 + nbMoments) * (
@@ -740,20 +738,19 @@ int InterfaceFacet::GetHitsSize(int nbMoments) { //for hits dataport
 		) + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 
 }
-*/
 
 /**
 * \brief Calculates the RAM size for the texture of a single facet
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSize(int nbMoments) {
+int InterfaceFacet::GetTexRamSize(int nbMoments) {
 	//Values
-	size_t sizePerCell = sizeof(TextureCell) * (size_t)nbMoments; //TextureCell: long + 2*double
+	int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
-	size_t sizePerMeshElement = sizeof(CellProperties);
+	int sizePerMeshElement = sizeof(CellProperties);
 	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 	return sh.texWidth * sh.texHeight * sizePerCell + meshvectorsize * sizePerMeshElement;
 }
@@ -763,14 +760,14 @@ size_t InterfaceFacet::GetTexRamSize(int nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, int nbMoments) {
+int InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, int nbMoments) {
 
 	//Values
-	size_t sizePerCell = sizeof(TextureCell) * (size_t)nbMoments; //TextureCell: long + 2*double
+	int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
-	size_t sizePerMeshElement = sizeof(CellProperties);
+	int sizePerMeshElement = sizeof(CellProperties);
 	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 	return width * height * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 
@@ -782,7 +779,7 @@ size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool us
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
+int InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU * ratio;
@@ -795,11 +792,11 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
 		int iHeight = (int)ceil(height);
 
 		//Values
-		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
-		size_t sizePerMeshElement = sizeof(CellProperties);
+		int sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
@@ -815,7 +812,7 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, int nbMoments) {
+int InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, int nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU * ratioU;
@@ -828,11 +825,11 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, int n
 		int iHeight = (int)ceil(height);
 
 		//Values
-		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
-		size_t sizePerMeshElement = sizeof(CellProperties);
+		int sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}

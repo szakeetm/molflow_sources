@@ -230,10 +230,9 @@ public:
 	int GetDataSize() const {
 		return sizeof(int)*GetMapSize();
 	}
-	/*
 	int GetRecordedDataSize() const {
 		return sizeof(int)*GetRecordedMapSize();
-	}*/
+	}
 };
 
 class ReflectionParam {

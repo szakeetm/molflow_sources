@@ -431,7 +431,7 @@ MolflowSimulationModel::~MolflowSimulationModel() = default;
  * \return memory size used by the whole simulation model
 */
 size_t MolflowSimulationModel::GetMemSize() {
-    size_t modelSize = 0;
+    int modelSize = 0;
     modelSize += SimulationModel::GetMemSize(); //base class members
     //Molflow-specific members:
     modelSize += tdParams.GetMemSize();
@@ -469,7 +469,7 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState& rhs) {
 
 size_t GlobalSimuState::GetMemSize() const
 {
-    size_t sum = 0;
+    int sum = 0;
     sum += sizeof(globalStats); //plain old data
     for (const auto& fs : facetStates) sum += fs.GetMemSize();
     for (const auto& hist : globalHistograms) sum += hist.GetMemSize();
@@ -1217,7 +1217,7 @@ FacetMomentSnapshot operator+(const FacetMomentSnapshot & lhs, const FacetMoment
 */
 size_t FacetState::GetMemSize() const
 {
-    size_t sum = 0;
+    int sum = 0;
     sum += recordedAngleMapPdf.capacity() * sizeof(int);
     for (const auto& facetSnapshot : momentResults) sum += facetSnapshot.GetMemSize();
     return sum;

@@ -185,7 +185,7 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
         }
     }
 
-    std::vector<size_t> counterSizes;
+    std::vector<int> counterSizes;
     for (const auto& pt : particleTracers) {
         counterSizes.push_back(pt->GetMemSize());
     }
@@ -210,6 +210,7 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
     Log::console_msg_master(3, "  Global Hit: {} bytes\n", sizeof(GlobalHitBuffer));
     Log::console_msg_master(3, "  Facet Hit : {} bytes\n", model->sh.nbFacet * sizeof(FacetHitBuffer));
 
+    Log::console_msg_master(3, "  Total     : {} bytes\n", GetHitsSize());
     for(auto& particleTracer : particleTracers)
         Log::console_msg_master(5, "  Seed for {}: {}\n", particleTracer->particleTracerId, particleTracer->randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: {:.2f} ms\n", timer.ElapsedMs());
@@ -218,13 +219,12 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
     return 0;
 }
 
-/*
 int MolflowSimulation::GetHitsSize() {
     MolflowSimulationModel* simModelPtr = (MolflowSimulationModel*) model.get();
     return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
            + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModelPtr->tdParams.moments.size());
 }
-*/
+
 
 
 void MolflowSimulation::ResetSimulation() {
