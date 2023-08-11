@@ -299,7 +299,7 @@ char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
 
   switch(mode) {
     case 0: //index
-      sprintf(ret,"%d",idx+1);
+      sprintf(ret,"%zd",idx+1);
       break;
     case 1: //sticking factor
       sprintf(ret,"%g",f->sh.sticking);
@@ -316,7 +316,7 @@ char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
 		break;
 	}
     case 4: //Link destination
-      sprintf(ret,"%d",f->sh.superDest);
+      sprintf(ret,"%zd",f->sh.superDest);
       break;
     case 5: //Desorption type
 	  if (f->sh.desorbType == DES_COSINE_N)
@@ -335,7 +335,7 @@ char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      
       break;
     case 8: //Nb of vertex
-      sprintf(ret,"%d",f->sh.nbIndex);
+      sprintf(ret,"%zd",f->sh.nbIndex);
       break;
     case 9: //Area
 		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
@@ -349,7 +349,7 @@ char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
       break;
     case 12: //Texture type
       if( f->sh.isTextured ) {
-        sprintf(ret,"%zdx%d (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidth_precise,f->sh.texHeight_precise);
+        sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidth_precise,f->sh.texHeight_precise);
       } else {
         sprintf(ret,"None");
       }
@@ -404,13 +404,13 @@ char *FacetDetails::FormatCell(int idx, InterfaceFacet *f, int mode) {
 		//<v_gas>=1/<1/v_surf>
 		break;
 	case 23: //MC Hits
-		sprintf(ret,"%d",f->facetHitCache.nbMCHit);
+		sprintf(ret,"%zd",f->facetHitCache.nbMCHit);
 		break;
 	case 24: //Equiv. hits (low-flux)
 		sprintf(ret, "%g", f->facetHitCache.nbHitEquiv);
 		break;
 	case 25: //Des Abs.
-		sprintf(ret,"%d",f->facetHitCache.nbDesorbed);
+		sprintf(ret,"%zd",f->facetHitCache.nbDesorbed);
 		break;
 	case 26: //MC Abs.
 		sprintf(ret,"%g",f->facetHitCache.nbAbsEquiv);

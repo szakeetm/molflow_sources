@@ -231,7 +231,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	processPanel->Add(processList);
 
 	char tmp[128];
-	sprintf(tmp, "Number of CPU cores:     %d", mApp->numCPU);
+	sprintf(tmp, "Number of CPU cores:     %zd", mApp->numCPU);
 	coreLabel = new GLLabel(tmp);
 	processPanel->Add(coreLabel);
 

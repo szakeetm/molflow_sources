@@ -480,7 +480,7 @@ void FacetAdvParams::UpdateSize() {
 
 		}
 		ramText->SetText(FormatMemoryLL(ram));
-		sprintf(tmp, "%d", cell);
+		sprintf(tmp, "%zd", cell);
 		cellText->SetText(tmp);
 
 	}
@@ -559,7 +559,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	}
 
 	ramText->SetText(FormatMemoryLL(ram));
-	sprintf(tmp, "%d", cell);
+	sprintf(tmp, "%zd", cell);
 	cellText->SetText(tmp);
 
 }

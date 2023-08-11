@@ -766,7 +766,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					f->InitVisibleEdge();
 					if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 						char errMsg[512];
-						sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+						sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 						throw Error(errMsg);
 					}
 					interfGeom->BuildFacetList(f);
@@ -1375,7 +1375,7 @@ void Worker::PrepareToRun() {
 			int id = GetParamId(f->userOutgassing);
 			if (id == -1) { //parameter not found
 				char tmp[256];
-				sprintf(tmp, "Facet #%d: Outgassing parameter \"%s\" isn't defined.", i + 1,
+				sprintf(tmp, "Facet #%zd: Outgassing parameter \"%s\" isn't defined.", i + 1,
 					f->userOutgassing.c_str());
 				throw std::runtime_error(tmp);
 			}
@@ -1387,7 +1387,7 @@ void Worker::PrepareToRun() {
 			int id = GetParamId(f->userOpacity);
 			if (id == -1) { //parameter not found
 				char tmp[256];
-				sprintf(tmp, "Facet #%d: Opacity parameter \"%s\" isn't defined.", i + 1, f->userOpacity.c_str());
+				sprintf(tmp, "Facet #%zd: Opacity parameter \"%s\" isn't defined.", i + 1, f->userOpacity.c_str());
 				throw std::runtime_error(tmp);
 			}
 			else f->sh.opacity_paramId = id;
@@ -1398,7 +1398,7 @@ void Worker::PrepareToRun() {
 			int id = GetParamId(f->userSticking);
 			if (id == -1) { //parameter not found
 				char tmp[256];
-				sprintf(tmp, "Facet #%d: Sticking parameter \"%s\" isn't defined.", i + 1, f->userSticking.c_str());
+				sprintf(tmp, "Facet #%zd: Sticking parameter \"%s\" isn't defined.", i + 1, f->userSticking.c_str());
 				throw std::runtime_error(tmp);
 			}
 			else f->sh.sticking_paramId = id;

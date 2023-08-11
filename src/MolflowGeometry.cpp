@@ -597,7 +597,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, int strIdx, bool newStruct
 
 		if (nb < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nb);
+			sprintf(errMsg, "Facet %zd has only %zd vertices. ", i, nb);
 			throw Error(errMsg);
 		}
 
@@ -656,7 +656,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter& file, const std::shared_ptr<Glo
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int m = 0; (m <= mApp->worker.interfaceMomentCache.size()) || (m == 0); m++) {
 		char tmp[128];
-		sprintf(tmp, " moment %d {\n", m);
+		sprintf(tmp, " moment %zd {\n", m);
 		file.Write(tmp);
 
 		for (int j = 0; j < PROFILE_SIZE; j++) {
@@ -1658,7 +1658,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, const 
 	prg.SetMessage("Writing textures...");
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
-		sprintf(tmp, "moment %d {\n", m);
+		sprintf(tmp, "moment %zd {\n", m);
 		file.Write(tmp);
 		for (int i = 0, k = 0; i < sh.nbFacet; i++) {
 			if (!saveSelected || facets[i]->selected) {
@@ -1672,7 +1672,7 @@ void MolflowGeometry::SaveGEO(FileWriter& file, GLProgress_Abstract& prg, const 
 					const std::vector<TextureCell>& texture = globalState->facetStates[i].momentResults[m].texture;
 
 					//char tmp[256];
-					sprintf(tmp, "texture_facet %d {\n", k); //Starts from 1, not 0, first element is k=1
+					sprintf(tmp, "texture_facet %zd {\n", k); //Starts from 1, not 0, first element is k=1
 
 					file.Write(tmp);
 					file.Write("width:"); file.Write(f->sh.texWidth); file.Write(" height:"); file.Write(f->sh.texHeight); file.Write("\n");
@@ -1786,7 +1786,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, const std::s
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %d (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
 		// Facets
 		for (int fInd = 0; fInd < sh.nbFacet; fInd++) {
 			InterfaceFacet* f = facets[fInd];
@@ -1893,7 +1893,7 @@ MolflowGeometry::ExportTextures(FILE* file, int grouping, int mode, const std::s
 							case 8: // Velocity vector Count
 								if (f->sh.countDirection) {
 									int count = GetPhysicalValue(f, PhysicalMode::NbVelocityVectors, 1.0, 1.0, 1.0, (int)index, facetSnapshot).count;
-									sprintf(tmp, "%d", count);
+									sprintf(tmp, "%zd", count);
 								}
 								else {
 
@@ -1968,7 +1968,7 @@ void MolflowGeometry::ExportProfiles(FILE* file, int isTXT, Worker* worker) {
 	int facetHitsSize = (1 + mApp->worker.interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int m = 0; m <= mApp->worker.interfaceMomentCache.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %d (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.interfaceMomentCache[m - 1].time, mApp->worker.interfaceMomentCache[m - 1].window);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2207,7 +2207,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 			int idx = file.ReadInt();
 
 			if (idx != i + 1) {
-				sprintf(tmp, "Wrong facet index. Expected %d, read %d.", i + 1, idx);
+				sprintf(tmp, "Wrong facet index. Expected %zd, read %d.", i + 1, idx);
 				throw Error(file.MakeError(tmp));
 			}
 
@@ -3086,7 +3086,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 		int nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
 		if (nbIndex < 3) {
 			char errMsg[128];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", idx + 1, nbIndex);
+			sprintf(errMsg, "Facet %zd has only %zd vertices. ", idx + 1, nbIndex);
 			throw Error(errMsg);
 		}
 		facets[idx] = new InterfaceFacet(nbIndex);
@@ -3212,7 +3212,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress
 		InterfaceFacet* f = facets[i];
 		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);

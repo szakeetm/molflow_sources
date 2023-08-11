@@ -336,7 +336,7 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 					  if(!conv || !(*(values+count++)>=0.0)) {
 						  mapList->SetSelectedCell(i,j);
 						  char tmp[256];
-						  sprintf(tmp,"Invalid outgassing number at Cell(%d,%d)",i,j);
+						  sprintf(tmp,"Invalid outgassing number at Cell(%zd,%zd)",i,j);
 						  GLMessageBox::Display(tmp,"Error",GLDLG_OK,GLDLG_ICONERROR);
 						  return;
 					  }
