@@ -241,12 +241,12 @@ void PressureEvolution::refreshChart() {
 			}
 
 			if (displayMode == "MC Hits") {
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (int m = 1; m <= std::min((int)worker->interfaceMomentCache.size(), 10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, (double)facetHits[m].hits.nbMCHit, false);
 				}
 			}
 			else if (displayMode== "Equiv. hits") {
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (int m = 1; m <= std::min((int)worker->interfaceMomentCache.size(), 10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv, false);
 				}
 			}
@@ -254,7 +254,7 @@ void PressureEvolution::refreshChart() {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (int m = 1; m <= std::min((int)worker->interfaceMomentCache.size(), 10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_v_ort*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
@@ -263,7 +263,7 @@ void PressureEvolution::refreshChart() {
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (int m = 1; m <= std::min((int)worker->interfaceMomentCache.size(), 10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
@@ -271,7 +271,7 @@ void PressureEvolution::refreshChart() {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-                for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+                for (int m = 1; m <= std::min((int)worker->interfaceMomentCache.size(), 10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
