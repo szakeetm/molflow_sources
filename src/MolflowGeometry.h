@@ -72,11 +72,11 @@ public:
 	void     LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version);
 
 	// Memory usage (in bytes)
-	int GetGeometrySize();
-	int GetHitsSize(int nbMoments);
+	//int GetGeometrySize();
+	//int GetHitsSize(int nbMoments);
 
 	// Raw data buffer (geometry)
-	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
+	//void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
 
 	// AC matrix
 	int GetMaxElemNumber();

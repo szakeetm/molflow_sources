@@ -65,7 +65,7 @@ struct TimeDependentParameters {
 
     
     size_t GetMemSize() {
-        int sum = 0;
+        size_t sum = 0;
         for (auto &par : parameters) {
             sum += par.GetMemSize();
         }

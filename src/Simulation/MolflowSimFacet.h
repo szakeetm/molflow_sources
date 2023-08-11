@@ -41,13 +41,13 @@ public:
     double thetaLowerRatio; // ratio of angle map below theta limit, to decide which side to look up in
 
     [[nodiscard]] size_t GetMemSize() const {
-        int sum = 0;
+        size_t sum = 0;
         sum += sizeof(Anglemap);
         sum += sizeof(int) * pdf.capacity();
         sum += sizeof(double) * phi_CDFs_lowerTheta.capacity();
         sum += sizeof(double) * phi_CDFs_higherTheta.capacity();
         sum += sizeof(double) * phi_pdfs_lowerTheta.capacity();
-        sum += sizeof(double) * )phi_pdfs_higherTheta.capacity();
+        sum += sizeof(double) * phi_pdfs_higherTheta.capacity();
         sum += sizeof(int) * phi_pdfsums_lowerTheta.capacity();
         sum += sizeof(int) * phi_pdfsums_higherTheta.capacity();
         sum += sizeof(double) * theta_CDF_lower.capacity();
@@ -75,8 +75,8 @@ public:
 
     void InitializeOutgassingMap();
 
-    [[nodiscard]] int GetHitsSize(int nbMoments) const override;
-    size_t GetMemSize() const override;
+    //[[nodiscard]] int GetHitsSize(int nbMoments) const override;
+    //size_t GetMemSize() const override;
 
     OutgassingMap ogMap;
     Anglemap angleMap;

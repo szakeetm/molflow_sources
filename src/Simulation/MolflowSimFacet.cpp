@@ -238,6 +238,7 @@ bool MolflowSimFacet::InitializeLinkAndVolatile(const int  id)
 * \param nbMoments amount of moments (TD simulations are currently not used for Molflow)
 * \return calculated size of the facet hits
 */
+/*
 int MolflowSimFacet::GetHitsSize(int nbMoments) const {
     // Init with base size
     int hits_size = SimulationFacet::GetHitsSize(nbMoments);
@@ -249,9 +250,10 @@ int MolflowSimFacet::GetHitsSize(int nbMoments) const {
 size_t MolflowSimFacet::GetMemSize() const {
 
     // Init with base size
-    int mem_size = SimulationFacet::GetMemSize();
+    size_t mem_size = SimulationFacet::GetMemSize();
 
     mem_size += sizeof (double) * ogMap.outgassingMap.capacity();
     mem_size += angleMap.GetMemSize();
     return mem_size;
 }
+*/

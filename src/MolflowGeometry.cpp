@@ -74,6 +74,7 @@ MolflowGeometry::MolflowGeometry() {
 * \brief Calculates the memory size for the whole geometry
 * \return calculated memory usage for the whole geometry
 */
+/*
 int MolflowGeometry::GetGeometrySize() {
 
 	Worker* work = &mApp->worker;
@@ -101,12 +102,14 @@ int MolflowGeometry::GetGeometrySize() {
 	memoryUsage += sizeof(double) * (int)(work->interfaceMomentCache).size(); //moments
 	return memoryUsage;
 }
+*/
 
 /**
 * \brief Compute number of bytes allocated from the hits size of all facets
 * \param nbMoments vector containing all moments
 * \return calculated size of memory usage from all facet hits in the geometry
 */
+/*
 int MolflowGeometry::GetHitsSize(const int nbMoments) {
 
 	// Compute number of bytes allocated
@@ -118,7 +121,7 @@ int MolflowGeometry::GetHitsSize(const int nbMoments) {
 
 	return memoryUsage;
 }
-
+*/
 /**
 * \brief Compute the maximal (surface) element number (TODO: check if unused)
 * \return max element number

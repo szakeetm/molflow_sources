@@ -51,7 +51,7 @@ public:
 
     void ResetSimulation() override;
 
-    int GetHitsSize() override;
+    //int GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
     std::shared_ptr<MFSim::ParticleTracer> GetParticleTracerPtr(int i) override;
