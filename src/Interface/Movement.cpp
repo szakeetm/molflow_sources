@@ -336,7 +336,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 		}
 		else if (src == button1){ //Use selected vertex as base
-			int nbs = interfGeom->GetNbSelectedVertex();
+			size_t nbs = interfGeom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";
@@ -356,7 +356,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 		}
 		else if (src == button2) {
-			int nbs = interfGeom->GetNbSelectedVertex();
+			size_t nbs = interfGeom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";

@@ -59,7 +59,7 @@ private:
   int         selFacetId;
   float        lastUpdate;
   double    	maxValue;
-  int			maxX,maxY;
+  size_t			maxX,maxY;
 
   GLList      *mapList;
   GLButton    *saveButton;

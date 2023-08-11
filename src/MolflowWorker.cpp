@@ -351,7 +351,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 			char* command[1];
 			command[0] = new char[512];
 			sprintf(command[0], "%s", tmp.str().c_str());
-			int procId = StartProc(command, STARTPROC_BACKGROUND);
+			size_t procId = StartProc(command, STARTPROC_BACKGROUND);
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
 
 			delete[] command[0];
@@ -419,8 +419,8 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 	bool overwriteAll = false;
 
 	//InterfaceGeometry *interfGeom = GetGeometry();
-	std::vector<int> angleMapFacetIndices;
-	for (int i = 0; i < interfGeom->GetNbFacet(); i++) {
+	std::vector<size_t> angleMapFacetIndices;
+	for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
 		InterfaceFacet* f = interfGeom->GetFacet(i);
 		// saveAll facets e.g. when auto saving or just when selected
 		if ((saveAll || f->selected) && !f->angleMapCache.empty()) {
@@ -431,7 +431,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 	std::string extension = FileUtils::GetExtension(fileName);
 	bool isTXT = Contains({ "txt","TXT" }, extension);
 	std::vector<std::string> listOfFiles;
-	for (int facetIndex : angleMapFacetIndices) {
+	for (size_t facetIndex : angleMapFacetIndices) {
 		std::string saveFileName;
 		if (angleMapFacetIndices.size() == 1) {
 			saveFileName = fileName; //as user specified
@@ -698,7 +698,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				if (zip == nullptr) {
 					throw std::runtime_error("Can't open ZIP file");
 				}
-				int numitems = zip->GetEntriesCount();
+				size_t numitems = zip->GetEntriesCount();
 				bool notFoundYet = true;
 				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
 					auto zipItem = zip->GetEntry(i);
@@ -758,7 +758,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				auto nbFacet = interfGeom->GetNbFacet();
 
 
-				for (int i = 0; i < nbFacet; i++) {
+				for (size_t i = 0; i < nbFacet; i++) {
 					double p = (double)i / (double)nbFacet;
 
 					prg.SetProgress(p);
@@ -905,7 +905,7 @@ void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings
 	
 	//Apply facet view settings that don't exist in MolflowSimFacet, only InterfaceFacet
 	if (userSettings.facetViewSettings.size() == interfGeom->GetNbFacet()) {
-		for (int facetId = 0; facetId < interfGeom->GetNbFacet(); facetId++) {
+		for (size_t facetId = 0; facetId < interfGeom->GetNbFacet(); facetId++) {
 			auto facet = interfGeom->GetFacet(facetId);
 			facet->viewSettings.textureVisible = userSettings.facetViewSettings[facetId].textureVisible;
 			facet->viewSettings.volumeVisible = userSettings.facetViewSettings[facetId].volumeVisible;
@@ -960,9 +960,9 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 * \brief Saves current AngleMap from cache to results
 */
 int Worker::SendAngleMaps() {
-	int nbFacet = interfGeom->GetNbFacet();
-	std::vector<std::vector<int>> angleMapCaches;
-	for (int i = 0; i < nbFacet; i++) {
+	size_t nbFacet = interfGeom->GetNbFacet();
+	std::vector<std::vector<size_t>> angleMapCaches;
+	for (size_t i = 0; i < nbFacet; i++) {
 		InterfaceFacet* f = interfGeom->GetFacet(i);
 		angleMapCaches.push_back(f->angleMapCache);
 	}
@@ -972,7 +972,7 @@ int Worker::SendAngleMaps() {
 	auto lock = GetHitLock(globalState.get(), 10000);
 	if (!lock) return 1;
 
-	for (int i = 0; i < angleMapCaches.size(); i++) {
+	for (size_t i = 0; i < angleMapCaches.size(); i++) {
 		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
 		if (mfFac->sh.anglemapParams.record)
 			globalState->facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
@@ -999,7 +999,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	mf_model->vertices3.clear();
 	mf_model->tdParams.moments = interfaceMomentCache;
 
-	for (int nbV = 0; nbV < interfGeom->GetNbVertex(); ++nbV) {
+	for (size_t nbV = 0; nbV < interfGeom->GetNbVertex(); ++nbV) {
 		mf_model->vertices3.emplace_back(*interfGeom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
 	}
 
@@ -1020,14 +1020,14 @@ bool Worker::InterfaceGeomToSimModel() {
 
 	bool hasVolatile = false;
 
-	for (int facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
+	for (size_t facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
 		MolflowSimFacet sFac;
 		{
 			InterfaceFacet* facet = interfGeom->GetFacet(facIdx);
 
 			//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
 			//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
-			int mapSize = facet->sh.anglemapParams.GetMapSize();
+			size_t mapSize = facet->sh.anglemapParams.GetMapSize();
 			if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
 				// on mismatch between cached values, check if interface just got out of sync (record) or interface and simulation side are out of sync (no record)
 				if (facet->sh.anglemapParams.record) {
@@ -1043,9 +1043,9 @@ bool Worker::InterfaceGeomToSimModel() {
 			if (facet->sh.isTextured) {
 				textIncVector.resize(facet->sh.texHeight * facet->sh.texWidth);
 				if (!facet->cellPropertiesIds.empty()) {
-					int add = 0;
-					for (int j = 0; j < facet->sh.texHeight; j++) {
-						for (int i = 0; i < facet->sh.texWidth; i++) {
+					size_t add = 0;
+					for (size_t j = 0; j < facet->sh.texHeight; j++) {
+						for (size_t i = 0; i < facet->sh.texWidth; i++) {
 							double area = facet->GetMeshArea(add, true);
 
 							if (area > 0.0) {
@@ -1064,7 +1064,7 @@ bool Worker::InterfaceGeomToSimModel() {
 					double rw = facet->sh.U.Norme() / facet->sh.texWidth_precise;
 					double rh = facet->sh.V.Norme() / facet->sh.texHeight_precise;
 					double area = rw * rh;
-					int add = 0;
+					size_t add = 0;
 					for (int j = 0; j < facet->sh.texHeight; j++) {
 						for (int i = 0; i < facet->sh.texWidth; i++) {
 							if (area > 0.0) {
@@ -1213,8 +1213,8 @@ void Worker::Start() {
 	if (model->wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
 		// Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
 		bool found = false;
-		int nbF = interfGeom->GetNbFacet();
-		int i = 0;
+		size_t nbF = interfGeom->GetNbFacet();
+		size_t i = 0;
 		while (i < nbF && !found) {
 			found = (interfGeom->GetFacet(i)->sh.desorbType != DES_NONE);
 			if (!found) i++;
@@ -1255,7 +1255,7 @@ void Worker::ResetMoments() {
 * \param moment if there is constant flow or time-dependent mode
 * \return amount of physical molecules represented by one test particle
 */
-double Worker::GetMoleculesPerTP(int moment) const {
+double Worker::GetMoleculesPerTP(size_t moment) const {
 	if (globalStatCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
@@ -1283,8 +1283,8 @@ double Worker::GetMoleculesPerTP(int moment) const {
 * \param convDistr distribution for outgassing calculation in mode==2
 * \param prg GLProgress_GUI window where visualising of the import progress is shown
 */
-void Worker::ImportDesorption_SYN(const char* fileName, const int source, const double time,
-	const int mode, const double eta0, const double alpha, const double cutoffdose,
+void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, const double time,
+	const size_t mode, const double eta0, const double alpha, const double cutoffdose,
 	const std::vector<std::pair<double, double>>& convDistr,
 	GLProgress_Abstract& prg) {
 	std::string ext = FileUtils::GetExtension(fileName);
@@ -1318,7 +1318,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const int source, const 
 * \param nbTextured number of textured facets in the file
 * \param nbDifferent (TODO: check usage)
 */
-void Worker::AnalyzeSYNfile(const char* fileName, int* nbFacet, int* nbTextured, int* nbDifferent) {
+void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTextured, size_t* nbDifferent) {
 	std::string ext = FileUtils::GetExtension(fileName);
 	bool isSYN = (ext == "syn") || (ext == "SYN");
 	bool isSYN7Z = (ext == "syn7z") || (ext == "SYN7Z");
@@ -1367,7 +1367,7 @@ void Worker::PrepareToRun() {
 
 	bool needsAngleMapStatusRefresh = false;
 
-	for (int i = 0; i < g->GetNbFacet(); i++) {
+	for (size_t i = 0; i < g->GetNbFacet(); i++) {
 		InterfaceFacet* f = g->GetFacet(i);
 
 		//match time-dependent parameters
@@ -1417,11 +1417,11 @@ void Worker::CalcTotalOutgassing() {
 	mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
 	InterfaceGeometry* g = GetGeometry();
 
-	for (int i = 0; i < g->GetNbFacet(); i++) {
+	for (size_t i = 0; i < g->GetNbFacet(); i++) {
 		InterfaceFacet* f = g->GetFacet(i);
 		if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
 			if (f->sh.useOutgassingFile) { //outgassing file
-				for (int l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
+				for (size_t l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
 					mf_model->wp.totalDesorbedMolecules +=
 						mf_model->wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
 					mf_model->wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
@@ -1442,7 +1442,7 @@ void Worker::CalcTotalOutgassing() {
 
 					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue;
 					mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
-					int lastIndex = interfaceParameterCache[f->sh.outgassing_paramId].GetSize() - 1;
+					size_t lastIndex = interfaceParameterCache[f->sh.outgassing_paramId].GetSize() - 1;
 					double finalRate_mbar_l_s = interfaceParameterCache[f->sh.outgassing_paramId].GetY(lastIndex);
 					mf_model->wp.finalOutgassingRate +=
 						finalRate_mbar_l_s * MBARLS_TO_PAM3S /
@@ -1478,7 +1478,7 @@ MolflowUserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<Simulati
 	result.views = mApp->views;
 
 	auto nbFacet = interfGeom->GetNbFacet();
-	for (int facetId = 0; facetId < nbFacet; facetId++) {
+	for (size_t facetId = 0; facetId < nbFacet; facetId++) {
 		auto facet = interfGeom->GetFacet(facetId);
 		FacetViewSetting vs;
 		vs.textureVisible = facet->viewSettings.textureVisible;

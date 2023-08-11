@@ -42,7 +42,7 @@ extern std::vector<int> colorMap;
 * \param version version of the geometry description
 * \param nbVertex number of facets contained in the geometry
 */
-void InterfaceFacet::LoadGEO(FileReader& file, int version, int nbVertex) {
+void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 
 	file.ReadKeyword("indices"); file.ReadKeyword(":");
 	for (int i = 0; i < sh.nbIndex; i++) {
@@ -170,7 +170,7 @@ void InterfaceFacet::LoadGEO(FileReader& file, int version, int nbVertex) {
 * \param ignoreSumMismatch if total dynamic outgasing can be different from sum of dynamic outgassing cells
 * \param vertexOffset offset for the vertex id
 */
-void InterfaceFacet::LoadXML(xml_node f, int nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, int vertexOffset) {
+void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
 	int idx = 0;
 	int facetId = f.attribute("id").as_int();
 	for (xml_node indice : f.child("Indices").children("Indice")) {
@@ -322,8 +322,8 @@ void InterfaceFacet::LoadXML(xml_node f, int nbVertex, bool isMolflowFile, bool&
 				throw Error(err.str().c_str());
 			}
 
-			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
-				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+			for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+				for (size_t ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
 					angleText >> angleMapCache[iy * sh.anglemapParams.phiWidth + ix];
 				}
 			}
@@ -369,10 +369,10 @@ void InterfaceFacet::LoadXML(xml_node f, int nbVertex, bool isMolflowFile, bool&
 * \param version version of the syn description
 * \param nbVertex number of facets contained in the geometry
 */
-void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, int nbVertex) {
+void InterfaceFacet::LoadSYN_facet(FileReader& file, int version, size_t nbVertex) {
 
 	file.ReadKeyword("indices"); file.ReadKeyword(":");
-	for (int i = 0; i < sh.nbIndex; i++) {
+	for (size_t i = 0; i < sh.nbIndex; i++) {
 		indices[i] = file.ReadInt() - 1;
 		if (indices[i] >= nbVertex) {
 			throw Error(file.MakeError("Facet index out of bounds"));
@@ -534,10 +534,10 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 	/*wp.area =*/ file.ReadDouble(); //Unused in modern Molflow
 
 	//Counters
-	facetHitCache.nbDesorbed = (int)(file.ReadDouble() + 0.5);
-	facetHitCache.nbMCHit = (int)(file.ReadDouble() + 0.5);
+	facetHitCache.nbDesorbed = (size_t)(file.ReadDouble() + 0.5);
+	facetHitCache.nbMCHit = (size_t)(file.ReadDouble() + 0.5);
 	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
-	facetHitCache.nbAbsEquiv = (double)(int)(file.ReadDouble() + 0.5);
+	facetHitCache.nbAbsEquiv = (double)(size_t)(file.ReadDouble() + 0.5);
 
 
 	//Desorption type
@@ -683,9 +683,9 @@ void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 	file.Write("  countRefl:"); file.Write(sh.countRefl, "\n");
 	file.Write("  countTrans:"); file.Write(sh.countTrans, "\n");
 	file.Write("  acMode:"); file.Write(sh.countACD, "\n");
-	file.Write("  nbAbs:"); file.Write((int)facetHitCache.nbAbsEquiv, "\n");
+	file.Write("  nbAbs:"); file.Write((size_t)facetHitCache.nbAbsEquiv, "\n");
 	file.Write("  nbDes:"); file.Write(facetHitCache.nbDesorbed, "\n");
-	file.Write("  nbHit:"); file.Write((int)facetHitCache.nbMCHit, "\n");
+	file.Write("  nbHit:"); file.Write((size_t)facetHitCache.nbMCHit, "\n");
 
 	// Version 2
 	file.Write("  temperature:"); file.Write(sh.temperature, "\n");
@@ -708,10 +708,10 @@ void InterfaceFacet::SaveGEO(FileWriter& file, int idx) {
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-int InterfaceFacet::GetGeometrySize() { //for loader dataport
+size_t InterfaceFacet::GetGeometrySize() { //for loader dataport
 
-	int s = sizeof(FacetProperties)
-		+ (sh.nbIndex * sizeof(int)) //indices
+	size_t s = sizeof(FacetProperties)
+		+ (sh.nbIndex * sizeof(size_t)) //indices
 		+ (sh.nbIndex * sizeof(Vector2d));
 
 	// Size of the 'element area' array passed to the geometry buffer
@@ -727,7 +727,7 @@ int InterfaceFacet::GetGeometrySize() { //for loader dataport
 * \param nbMoments amount of moments
 * \return calculated size of the facet hits
 */
-int InterfaceFacet::GetHitsSize(int nbMoments) { //for hits dataport
+size_t InterfaceFacet::GetHitsSize(size_t nbMoments) { //for hits dataport
 
 	return   (1 + nbMoments) * (
 		sizeof(FacetHitBuffer) +
@@ -744,13 +744,13 @@ int InterfaceFacet::GetHitsSize(int nbMoments) { //for hits dataport
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-int InterfaceFacet::GetTexRamSize(int nbMoments) {
+size_t InterfaceFacet::GetTexRamSize(size_t nbMoments) {
 	//Values
-	int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+	size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
-	int sizePerMeshElement = sizeof(CellProperties);
+	size_t sizePerMeshElement = sizeof(CellProperties);
 	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 	return sh.texWidth * sh.texHeight * sizePerCell + meshvectorsize * sizePerMeshElement;
 }
@@ -760,14 +760,14 @@ int InterfaceFacet::GetTexRamSize(int nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-int InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, int nbMoments) {
+size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments) {
 
 	//Values
-	int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+	size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
-	int sizePerMeshElement = sizeof(CellProperties);
+	size_t sizePerMeshElement = sizeof(CellProperties);
 	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 	return width * height * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 
@@ -779,7 +779,7 @@ int InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMe
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-int InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU * ratio;
@@ -792,11 +792,11 @@ int InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
 		int iHeight = (int)ceil(height);
 
 		//Values
-		int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
-		int sizePerMeshElement = sizeof(CellProperties);
+		size_t sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
@@ -812,7 +812,7 @@ int InterfaceFacet::GetTexRamSizeForRatio(double ratio, int nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-int InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, int nbMoments) {
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU * ratioU;
@@ -825,11 +825,11 @@ int InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, int nbMo
 		int iHeight = (int)ceil(height);
 
 		//Values
-		int sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
+		size_t sizePerCell = sizeof(TextureCell) * nbMoments; //TextureCell: long + 2*double
 		if (sh.countDirection) sizePerCell += sizeof(DirectionCell) * nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
-		int sizePerMeshElement = sizeof(CellProperties);
+		size_t sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
 		return iWidth * iHeight * (sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
@@ -885,7 +885,7 @@ double InterfaceFacet::GetSmooth(int i, int j, TextureCell* texBuffer, int textu
 void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight, TextureCell* texBuffer, const int textureMode, const double scaleF, double* sum, double* totalWeight) {
 
 	if (i >= 0 && i < sh.texWidth && j >= 0 && j < sh.texHeight) {
-		int add = (int)i + (int)j * sh.texWidth;
+		size_t add = (size_t)i + (size_t)j * sh.texWidth;
 		if (GetMeshArea(add) > 0.0) {
 			if (textureMode == 0)
 				*sum += weight * (texBuffer[add].countEquiv * scaleF);
@@ -910,9 +910,9 @@ void InterfaceFacet::Sum_Neighbor(const int i, const int j, const double weight,
 * \param useColorMap if a 16bit high color map should be used (rainbow)
 */
 void InterfaceFacet::BuildTexture(const std::vector<TextureCell>& texBuffer, int textureMode, double min, double max, bool useColorMap,
-	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, int m) {
-	int size = sh.texWidth * sh.texHeight;
-	int tSize = texDimW * texDimH;
+	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
+	size_t size = sh.texWidth * sh.texHeight;
+	size_t tSize = texDimW * texDimH;
 	if (size == 0 || tSize == 0) return;
 
 	double scaleFactor = 1.0;
@@ -952,9 +952,9 @@ void InterfaceFacet::BuildTexture(const std::vector<TextureCell>& texBuffer, int
 		if (!buff8) throw Error("Cannot allocate memory for texture buffer");
 	}
 
-	for (int j = 0; j < sh.texHeight; j++) {
-		for (int i = 0; i < sh.texWidth; i++) {
-			int idx = i + j * sh.texWidth;
+	for (size_t j = 0; j < sh.texHeight; j++) {
+		for (size_t i = 0; i < sh.texWidth; i++) {
+			size_t idx = i + j * sh.texWidth;
 			double physicalValue;
 			switch (textureMode) {
 			case 0: //pressure
@@ -1164,7 +1164,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	e.append_attribute("volumeVisible") = (int)viewSettings.volumeVisible; //backward compatibility: 0 or 1
 
 	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
-	for (int i = 0; i < sh.nbIndex; i++) {
+	for (size_t i = 0; i < sh.nbIndex; i++) {
 		xml_node indice = f.child("Indices").append_child("Indice");
 		indice.append_attribute("id") = i;
 		indice.append_attribute("vertex") = indices[i];
@@ -1237,7 +1237,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 * \param formatId ID that describes the seperator for the angle map string
 * \return string describing the angle map
 */
-std::string InterfaceFacet::GetAngleMap(int formatId)
+std::string InterfaceFacet::GetAngleMap(size_t formatId)
 //formatId: 1 for comma-separated, 2 for tab-separated
 {
 	std::stringstream result; result << std::setprecision(8);
@@ -1249,20 +1249,20 @@ std::string InterfaceFacet::GetAngleMap(int formatId)
 	else return "";
 	//First, header row: phi labels
 	result << "Theta below / Phi to the right"; //A1 cell
-	for (int i = 0; i < sh.anglemapParams.phiWidth; i++) {
+	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++) {
 		result << separator << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth) * 2.0 * PI; //phiWidth number of phi bins, printing midpoint for each as column label
 	}
 	result << "\n";
 
 	//Actual table
-	for (int row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
+	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
 		//First column: theta label (bin midpoint)
 		if (row < sh.anglemapParams.thetaLowerRes)
 			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes * sh.anglemapParams.thetaLimit;
 		else
 			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row - sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes * (PI / 2.0 - sh.anglemapParams.thetaLimit);
 		//Value
-		for (int col = 0; col < sh.anglemapParams.phiWidth; col++) {
+		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
 			result << separator << angleMapCache[row * sh.anglemapParams.phiWidth + col];
 		}
 		result << "\n";
@@ -1276,17 +1276,17 @@ std::string InterfaceFacet::GetAngleMap(int formatId)
 */
 void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 {
-	int phiWidth, thetaLowerRes, thetaHigherRes;
+	size_t phiWidth, thetaLowerRes, thetaHigherRes;
 	double thetaLimit;
 
 	if (table[0][0] == "" || beginsWith(table[0][0], "Theta")) { //asume there is a header
 		//looking at header values, try to determine theta resolution and limit
 		phiWidth = table[0].size() - 1; //row width minus first header column
-		int spacingTypes = 1;
+		size_t spacingTypes = 1;
 		double currentSpacing;
 		double previousVal;
-		for (int i = 1; i < table.size(); i++) { //skip first header row
-			double val; int sz;
+		for (size_t i = 1; i < table.size(); i++) { //skip first header row
+			double val; size_t sz;
 			try {
 				val = std::stod(table[i][0], &sz); //convert to double
 			}
@@ -1349,9 +1349,9 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			throw Error(err.str().c_str());
 		}
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
-				int cellSize;
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
+				size_t cellSize;
 				try {
 					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy + 1][ix + 1], &cellSize); //convert to double
 				}
@@ -1385,9 +1385,9 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			throw Error(err.str().c_str());
 		}
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
-				int cellSize;
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
+				size_t cellSize;
 				try {
 					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
 				}
@@ -1443,8 +1443,8 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 
 	//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
 	//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
-	int mapSize = sh.anglemapParams.GetMapSize();
-	std::vector<int> angleMapVector(mapSize);
+	size_t mapSize = sh.anglemapParams.GetMapSize();
+	std::vector<size_t> angleMapVector(mapSize);
 	memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
 	std::vector<double> textIncVector;
 
@@ -1452,9 +1452,9 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 	if (sh.isTextured) {
 		textIncVector.resize(sh.texHeight * sh.texWidth);
 		if (!cellPropertiesIds.empty()) {
-			int add = 0;
-			for (int j = 0; j < sh.texHeight; j++) {
-				for (int i = 0; i < sh.texWidth; i++) {
+			size_t add = 0;
+			for (size_t j = 0; j < sh.texHeight; j++) {
+				for (size_t i = 0; i < sh.texWidth; i++) {
 					double area = GetMeshArea(add, true);
 
 					if (area > 0.0) {
@@ -1471,7 +1471,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 		else {
 			const double area = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
 			const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
-			int add = 0;
+			size_t add = 0;
 			for (int j = 0; j < sh.texHeight; j++) {
 				for (int i = 0; i < sh.texWidth; i++) {
 					textIncVector[add] = incrementVal;

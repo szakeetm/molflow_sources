@@ -53,7 +53,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "FlowMPI.h"
 #include "File.h"
 
-RuntimeStatPrinter::RuntimeStatPrinter(int n_hits, int n_des) {
+RuntimeStatPrinter::RuntimeStatPrinter(size_t n_hits, size_t n_des) {
     oldHitsNb = n_hits;
     oldDesNb = n_des;
 };
@@ -150,8 +150,8 @@ int main(int argc, char** argv) {
         Log::console_error("Neither a time limit nor a desorption limit has been set.\n");
         return 44;
     }
-    int oldHitsNb = globalState->globalStats.globalHits.nbMCHit;
-    int oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
+    size_t oldHitsNb = globalState->globalStats.globalHits.nbMCHit;
+    size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
     RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile(parsedArgs);

@@ -72,7 +72,7 @@ private:
   GLLabel     *momLabel,*momentsLabel;
   GLToggle    *logYToggle,*constantFlowToggle,*correctForGas;
 
-  std::vector<int> displayedMoments;
+  std::vector<size_t> displayedMoments;
 
   GLDataView  *views[50];
 

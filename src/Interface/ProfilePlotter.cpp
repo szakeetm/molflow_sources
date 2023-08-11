@@ -103,9 +103,9 @@ ProfilePlotter::ProfilePlotter(Worker* work) :GLWindow() , views{}{
 
 	displayModeCombo = new GLCombo(0);
 	displayModeCombo->SetEditable(true);
-	int nbDisplayModes = (int)ProfileDisplayModes::NUMITEMS;
+	size_t nbDisplayModes = (size_t)ProfileDisplayModes::NUMITEMS;
 	displayModeCombo->SetSize(nbDisplayModes);
-	for (int i = 0;i<nbDisplayModes;i++) {
+	for (size_t i = 0;i<nbDisplayModes;i++) {
 		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i]);
 	}
 	displayModeCombo->SetSelectedIndex(1);
@@ -207,9 +207,9 @@ void ProfilePlotter::Refresh() {
 
 	//Rebuild selection combo box
 	InterfaceGeometry *interfGeom = worker->GetGeometry();
-	int nb = interfGeom->GetNbFacet();
-	int nbProf = 1; // minimum 1 for custom input
-	for (int i = 0; i < nb; i++)
+	size_t nb = interfGeom->GetNbFacet();
+	size_t nbProf = 1; // minimum 1 for custom input
+	for (size_t i = 0; i < nb; i++)
 		if (interfGeom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
@@ -222,7 +222,7 @@ void ProfilePlotter::Refresh() {
     else facetInputText << "1-" << nb;
     selFacInput->SetText(facetInputText.str());
     nbProf = 1;
-    for (int i = 0; i < nb; i++) {
+    for (size_t i = 0; i < nb; i++) {
 		InterfaceFacet *f = interfGeom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
@@ -237,7 +237,7 @@ void ProfilePlotter::Refresh() {
 		if (views[v]->userData1 >= interfGeom->GetNbFacet() || !interfGeom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
-			for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
+			for (size_t j = v; j < nbView - 1; j++) views[j] = views[j + 1];
 			nbView--;
 		}
 	}
@@ -288,7 +288,7 @@ void ProfilePlotter::plot() {
 		return;
 	}
 
-	int nbVar = formula.GetNbVariable();
+	size_t nbVar = formula.GetNbVariable();
 	if (nbVar == 0) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
@@ -365,7 +365,7 @@ void ProfilePlotter::refreshViews() {
 
 	double scaleY;
 
-	int facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -464,8 +464,8 @@ void ProfilePlotter::refreshViews() {
 
 				// Volatile profile
 				v->Reset();
-				int nb = interfGeom->GetNbFacet();
-				for (int j = 0; j < nb; j++) {
+				size_t nb = interfGeom->GetNbFacet();
+				for (size_t j = 0; j < nb; j++) {
 					InterfaceFacet *f = interfGeom->GetFacet(j);
 					if (f->sh.isVolatile) {
 					    const FacetHitBuffer& fCount = worker->globalState->facetStates[j].momentResults[worker->displayedMoment].hits;
@@ -601,14 +601,14 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			int idx = profCombo->GetSelectedIndex();
 			if(idx >= 0) {
                 interfGeom->UnselectAll();
-                int facetRow;
+                size_t facetRow;
                 if (idx > 0) { //Something selected, facets start with idx==1, custom input is idx==0 (not -1)
                     int facetId = profCombo->GetUserValueAt(idx);
                     interfGeom->GetFacet(facetId)->selected = true;
                     mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
                     facetRow = profCombo->GetUserValueAt(idx);
                 } else {
-                    std::vector<int> facetIds;
+                    std::vector<size_t> facetIds;
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                         if(facetIds.empty())
@@ -644,7 +644,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
                 }
 			    else {
-                    std::vector<int> facetIds;
+                    std::vector<size_t> facetIds;
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                     }
@@ -677,7 +677,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     }
                 }
                 else {
-                    std::vector<int> facetIds;
+                    std::vector<size_t> facetIds;
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), interfGeom->GetNbFacet());
                     }
@@ -715,7 +715,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 v->SetLineWidth(linW);
             }
         }  else if (src == selectPlottedButton) {
-			std::vector<int> plottedFacetIds;
+			std::vector<size_t> plottedFacetIds;
 			for(int viewId = 0; viewId < nbView; viewId++){
                 GLDataView *v = views[viewId];
 				plottedFacetIds.push_back(v->userData1);
@@ -800,7 +800,7 @@ void ProfilePlotter::SetViews(const std::vector<int> &updatedViews) {
 std::vector<int> ProfilePlotter::GetViews() {
 	std::vector<int>v;
 	v.reserve(nbView);
-	for (int i = 0; i < nbView; i++)
+	for (size_t i = 0; i < nbView; i++)
 		v.push_back(views[i]->userData1);
 	return v;
 }

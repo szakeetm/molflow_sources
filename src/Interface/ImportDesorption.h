@@ -73,8 +73,8 @@ private:
   GLButton      *setButton;
   GLButton      *cancelButton;
 
-  int doseSource;
-  int mode;
+  size_t doseSource;
+  size_t mode;
   std::vector<std::pair<double,double>> convDistr;
 };
 

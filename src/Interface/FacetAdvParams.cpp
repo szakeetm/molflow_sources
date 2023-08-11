@@ -435,7 +435,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanel->Close();
 	angleMapPanel->Close();
 
-	Refresh(std::vector<int>());
+	Refresh(std::vector<size_t>());
 	Reposition(wD, hD);
 	PlaceComponents();
 
@@ -452,30 +452,30 @@ void FacetAdvParams::UpdateSize() {
 
 	if (enableBtn->GetState()) {
 
-		int ram = 0;
-		int cell = 0;
-		int nbFacet = interfGeom->GetNbFacet();
+		size_t ram = 0;
+		size_t cell = 0;
+		size_t nbFacet = interfGeom->GetNbFacet();
 
 		if (recordACBtn->GetState()) {
 
-			for (int i = 0; i < nbFacet; i++) {
+			for (size_t i = 0; i < nbFacet; i++) {
 				InterfaceFacet *f = interfGeom->GetFacet(i);
 				if (f->sh.opacity == 1.0) {
                     auto nbCells = f->GetNbCell();
-                    cell += (int)(nbCells.first * nbCells.second);
-					ram += (int)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
+                    cell += (size_t)(nbCells.first * nbCells.second);
+					ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 				}
 			}
-			ram += (((cell - 1)*cell) / 2 + 8 * cell)*((int)sizeof(ACFLOAT));
+			ram += (((cell - 1)*cell) / 2 + 8 * cell)*((size_t)sizeof(ACFLOAT));
 
 		}
 		else {
 
-			for (int i = 0; i < nbFacet; i++) {
+			for (size_t i = 0; i < nbFacet; i++) {
 				InterfaceFacet *f = interfGeom->GetFacet(i);
                 auto nbCells = f->GetNbCell();
-                cell += (int)(nbCells.first * nbCells.second);
-				ram += (int)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
+                cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 
 		}
@@ -517,42 +517,42 @@ void FacetAdvParams::UpdateSizeForRatio() {
 		return;
 	}
 
-	int ram = 0;
-	int cell = 0;
-	int nbFacet = interfGeom->GetNbFacet();
+	size_t ram = 0;
+	size_t cell = 0;
+	size_t nbFacet = interfGeom->GetNbFacet();
 	if (recordACBtn->GetState()) {
 
-		for (int i = 0; i < nbFacet; i++) {
+		for (size_t i = 0; i < nbFacet; i++) {
 			InterfaceFacet *f = interfGeom->GetFacet(i);
 			//if(f->wp.opacity==1.0) {
 			if (f->selected) {
 			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
-				cell += (int)(nbCells.first * nbCells.second);
-				ram += (int) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
+				cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
 			}
 			else {
                 auto nbCells = f->GetNbCell();
-                cell += (int)(nbCells.first * nbCells.second);
-				ram += (int)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
+                cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 			//}
 		}
-		ram += (((cell - 1)*cell) / 2 + 8 * cell)*((int)sizeof(ACFLOAT));
+		ram += (((cell - 1)*cell) / 2 + 8 * cell)*((size_t)sizeof(ACFLOAT));
 
 	}
 	else {
 
-		for (int i = 0; i < nbFacet; i++) {
+		for (size_t i = 0; i < nbFacet; i++) {
 			InterfaceFacet *f = interfGeom->GetFacet(i);
 			if (f->selected) {
                 auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
-                cell += (int)(nbCells.first * nbCells.second);
-				ram += (int) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
+                cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->interfaceMomentCache.size());
 			}
 			else {
                 auto nbCells = f->GetNbCell();
-                cell += (int)(nbCells.first * nbCells.second);
-                ram += (int)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
+                cell += (size_t)(nbCells.first * nbCells.second);
+                ram += (size_t)f->GetTexRamSize(1 + worker->interfaceMomentCache.size());
 			}
 		}
 
@@ -570,7 +570,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 * \param ratioV ratio in V direction used for size conversion
 * \return number of texture cells
 */
-std::pair<double,double> FacetAdvParams::GetRatioForNbCell(int nbCellsU, int nbCellsV) {
+std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size_t nbCellsV) {
 
     double ratioU = 0.0;
     double ratioV = 0.0;
@@ -598,7 +598,7 @@ std::pair<double,double> FacetAdvParams::GetRatioForNbCell(int nbCellsU, int nbC
 * \param selection Vector of facet IDs
 * \return void
 */
-void FacetAdvParams::Refresh(std::vector<int> selection) {
+void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
 	sumArea = sumOutgassing = 0.0;
 	sumAngleMapSize = 0;
@@ -729,7 +729,7 @@ void FacetAdvParams::Refresh(std::vector<int> selection) {
     sumOutgassing = f0->sh.totalOutgassing;
     sumAngleMapSize = !f0->angleMapCache.empty() ? f0->sh.anglemapParams.GetRecordedMapSize() : 0;
 
-    for (int i = 1; i < selection.size(); i++) {
+    for (size_t i = 1; i < selection.size(); i++) {
         InterfaceFacet *f = interfGeom->GetFacet(selection[i]);
         double fArea = f->GetArea();
         sumArea += fArea;
@@ -981,7 +981,7 @@ void FacetAdvParams::Refresh(std::vector<int> selection) {
 
 	//Angle map
 	std::stringstream statusLabelText;
-	std::string mapSizeText = Util::formatSize(sumAngleMapSize * sizeof(int));
+	std::string mapSizeText = Util::formatSize(sumAngleMapSize * sizeof(size_t));
 	if (hasAngleMapE) {
 		if (!f0->angleMapCache.empty())
 			statusLabelText << "All selected facets have recorded angle maps (" << mapSizeText << ")";

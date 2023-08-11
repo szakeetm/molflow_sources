@@ -182,7 +182,7 @@ void PressureEvolution::Refresh() {
 
 	//Construct combo
 	profCombo->SetSize(views.size());
-	int nbProf = 0;
+	size_t nbProf = 0;
 	for (auto& v : views) {
 		profCombo->SetValueAt(nbProf++, v->GetName(), v->userData1);
 	}
@@ -226,7 +226,7 @@ void PressureEvolution::refreshChart() {
 	GlobalHitBuffer& gHits = worker->globalStatCache;
 	double nbDes = (double)gHits.globalHits.nbDesorbed;
 	double scaleY;
-	int facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
+	size_t facetHitsSize = (1 + worker->interfaceMomentCache.size()) * sizeof(FacetHitBuffer);
 
 	for (auto& v : views) {
 
@@ -236,17 +236,17 @@ void PressureEvolution::refreshChart() {
 
 			auto& facetHits = worker->globalState->facetStates[v->userData1].momentResults;
 			
-			for (int i = 0; i < displayModes.size(); i++) {
+			for (size_t i = 0; i < displayModes.size(); i++) {
 				yScaleCombo->SetValueAt(i, displayModes[i]);
 			}
 
 			if (displayMode == "MC Hits") {
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, (double)facetHits[m].hits.nbMCHit, false);
 				}
 			}
 			else if (displayMode== "Equiv. hits") {
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv, false);
 				}
 			}
@@ -254,7 +254,7 @@ void PressureEvolution::refreshChart() {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_v_ort*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
@@ -263,7 +263,7 @@ void PressureEvolution::refreshChart() {
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
-				for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
@@ -271,7 +271,7 @@ void PressureEvolution::refreshChart() {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
-                for (int m = 1; m <= std::min(worker->interfaceMomentCache.size(), (int)10000); m++) { //max 10000 points
+                for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
@@ -284,7 +284,7 @@ void PressureEvolution::refreshChart() {
 * \brief Adds a view to the chart for a specific facet
 * \param facetId Id of the facet that should be added
 */
-void PressureEvolution::addView(int facetId) {
+void PressureEvolution::addView(size_t facetId) {
 
 	InterfaceGeometry *interfGeom = worker->GetGeometry();
 
@@ -322,7 +322,7 @@ void PressureEvolution::addView(int facetId) {
 * \brief Removes a view from the chart with a specific ID
 * \param viewId Id of the view that should be removed
 */
-void PressureEvolution::remView(int viewId) {
+void PressureEvolution::remView(size_t viewId) {
 
 	chart->GetY1Axis()->RemoveDataView(views[viewId]);
 	SAFE_DELETE(views[viewId]);
@@ -354,7 +354,7 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if (idx >= 0) {
-				int facetId = profCombo->GetUserValueAt(idx);
+				size_t facetId = profCombo->GetUserValueAt(idx);
 				if (facetId >= 0 && facetId < interfGeom->GetNbFacet()) {
 					interfGeom->UnselectAll();
 					interfGeom->GetFacet(facetId)->selected = true;

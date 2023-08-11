@@ -59,16 +59,16 @@ bool result = 0;
     return result;
 }
 
-std::shared_ptr<MFSim::ParticleTracer> MolflowSimulation::GetParticleTracerPtr(int i) {
+std::shared_ptr<MFSim::ParticleTracer> MolflowSimulation::GetParticleTracerPtr(size_t i) {
     if(i < particleTracers.size())
         return particleTracers[i];
     else
         return nullptr;
 }
 
-void MolflowSimulation::ConstructParticleTracers(int n, bool fixedSeed) {
+void MolflowSimulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
     particleTracers.resize(n);
-    int pid = 0;
+    size_t pid = 0;
     for(auto& particleTracer : particleTracers){
         particleTracer = std::make_shared<MFSim::ParticleTracer>(); //make new
         if(fixedSeed)
@@ -155,7 +155,7 @@ int MolflowSimulation::RebuildAccelStructure() {
 
 
 
-int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus) {
+size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstract* loadStatus) {
     Chronometer timer;
     timer.Start();
 
@@ -165,7 +165,7 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
     procInfo.UpdateControllerStatus({ ControllerState::Loading }, { "Constructing thread hit counters..." }, loadStatus);
     //auto simModel = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
 
-    int finished = 0;
+    size_t finished = 0;
 #pragma omp parallel for
     // New GlobalSimuState structure for threads
     for(int i=0;i<particleTracers.size();i++)
@@ -185,7 +185,7 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
         }
     }
 
-    std::vector<int> counterSizes;
+    std::vector<size_t> counterSizes;
     for (const auto& pt : particleTracers) {
         counterSizes.push_back(pt->GetMemSize());
     }
@@ -219,7 +219,7 @@ int MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abstrac
     return 0;
 }
 
-int MolflowSimulation::GetHitsSize() {
+size_t MolflowSimulation::GetHitsSize() {
     MolflowSimulationModel* simModelPtr = (MolflowSimulationModel*) model.get();
     return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
            + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModelPtr->tdParams.moments.size());

@@ -42,11 +42,11 @@ OntheflySimulationParams::OntheflySimulationParams(){
     lowFluxCutoff = 1.0E-7;
     lowFluxMode = false;
     timeLimit = 0.0;
-    logFacetId = std::numeric_limits<int>::max();
+    logFacetId = std::numeric_limits<size_t>::max();
     logLimit = 0;
 }
 
-FacetProperties::FacetProperties(int nbIndices) {
+FacetProperties::FacetProperties(size_t nbIndices) {
     nbIndex = nbIndices;
 
     sticking = 0.0;

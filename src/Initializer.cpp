@@ -103,7 +103,7 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
 
     //std::cout<<app.config_to_str(true,true);
     for (auto& lim : limits)
-        parsedArgs.desLimit.push_back(static_cast<int>(lim));
+        parsedArgs.desLimit.push_back(static_cast<size_t>(lim));
 
     if (parsedArgs.simDuration == 0 && parsedArgs.desLimit.empty()) {
         throw Error("No end criterion has been set. Use either -t or -d\n");
@@ -348,9 +348,9 @@ int Initializer::initDesLimit(const std::shared_ptr<MolflowSimulationModel> mode
 
     // Skip desorptions if limit was already reached
     if (!parsedArgs.desLimit.empty()) {
-        int oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
-        int listSize = parsedArgs.desLimit.size();
-        for (int l = 0; l < listSize; ++l) {
+        size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
+        size_t listSize = parsedArgs.desLimit.size();
+        for (size_t l = 0; l < listSize; ++l) {
             model->otfParams.desorptionLimit = parsedArgs.desLimit.front();
             parsedArgs.desLimit.pop_front();
 
@@ -388,7 +388,7 @@ int Initializer::initTimeLimit(const std::shared_ptr<MolflowSimulationModel> mod
     }
 
     model->otfParams.timeLimit = parsedArgs.simDuration;
-    parsedArgs.simDuration = static_cast<int>(parsedArgs.simDuration);
+    parsedArgs.simDuration = static_cast<size_t>(parsedArgs.simDuration);
 
     return 0;
 }
@@ -446,7 +446,7 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
 
     bool hasVolatile = false;
 
-    for (int facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
+    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facIdx]);
 
         std::vector<double> textIncVector;
@@ -459,10 +459,10 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
             double rh = mfFac->sh.V.Norme() / (double) (mfFac->sh.texHeight_precise);
             double area = rw * rh;
             area *= (mfFac->sh.is2sided) ? 2.0 : 1.0;
-            int add = 0;
+            size_t add = 0;
 
-            for (int j = 0; j < mfFac->sh.texHeight; j++) {
-                for (int i = 0; i < mfFac->sh.texWidth; i++) {
+            for (size_t j = 0; j < mfFac->sh.texHeight; j++) {
+                for (size_t i = 0; i < mfFac->sh.texWidth; i++) {
                     if (meshAreas[add] < 0.0) {
                         textIncVector[add] = 1.0 / area;
                     } else {

@@ -263,7 +263,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
     GLContainer::RestoreDeviceObjects();
 
 	lastUpdate = 0;
-	//for (int i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
+	//for (size_t i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
 	//memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
 }
 
@@ -316,8 +316,8 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 					worker->model->wp.gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 						bool hasPump = false;
-						int nbFacet = worker->GetGeometry()->GetNbFacet();
-						for (int i = 0; (i<nbFacet) && (!hasPump); i++) {
+						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
+						for (size_t i = 0; (i<nbFacet) && (!hasPump); i++) {
 							if (worker->GetGeometry()->GetFacet(i)->sh.sticking>0.0) {
 								hasPump = true;
 							}

@@ -264,7 +264,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			}
 			if (fileName.length()==0) return;
 			//load file
-			int nbFacet,nbTextured,nbDifferent;
+			size_t nbFacet,nbTextured,nbDifferent;
 			try{
 				work->AnalyzeSYNfile(fileName.c_str(),&nbFacet,
 					&nbTextured,&nbDifferent);

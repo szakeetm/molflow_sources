@@ -29,7 +29,7 @@ namespace IDGeneration {
 * \param paramId parameter ID
 * \return Id of the integrated desorption function
 */
-int GetIDId(const std::set<int> &desorptionParameterIDs, int paramId) {
+int GetIDId(const std::set<size_t> &desorptionParameterIDs, int paramId) {
     if(!desorptionParameterIDs.empty()) {
         auto pos = desorptionParameterIDs.find(paramId);
         if(pos == desorptionParameterIDs.end())
@@ -48,8 +48,8 @@ int GetIDId(const std::set<int> &desorptionParameterIDs, int paramId) {
 * \param paramId parameter ID
 * \return Previous size of IDs vector, which determines new id in the vector
 */
-std::pair<int, std::vector<IntegratedDesorptionEntry>> GenerateNewID(std::set<int>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
-    int i = desorptionParameterIDs.size();
+std::pair<int, std::vector<IntegratedDesorptionEntry>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
+    size_t i = desorptionParameterIDs.size();
     desorptionParameterIDs.insert(paramId);
 
     auto id_v = Generate_ID(paramId,model);
@@ -71,7 +71,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
     std::vector<DesorptionEntry> myOutgassing; //modified parameter
 
     //First, let's check at which index is the latest moment
-    int indexAfterLatestMoment;
+    size_t indexAfterLatestMoment;
     auto &par = model->tdParams.parameters[paramId]; //we'll reference it a lot
     for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
                                      (par.GetX(indexAfterLatestMoment) <
@@ -106,7 +106,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
 		}
 		else {
 			if (indexAfterLatestMoment > 0) {
-                for (int i = 0; i < indexAfterLatestMoment;i++) { //copy all values...
+                for (size_t i = 0; i < indexAfterLatestMoment;i++) { //copy all values...
                     myOutgassing.emplace_back(DesorptionEntry(valuesCopy[i].first, valuesCopy[i].second)); //convert pair of double (generic parameter) to DesorptionEntry
                 }
 			}
@@ -120,7 +120,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
 	} //valuesCopy goes out of scope
 
     //Intermediate moments, from first to t=latestMoment
-    for (int i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
+    for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
         if (IsEqual(myOutgassing[i].desValue, myOutgassing[i - 1].desValue)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
             ID.emplace_back(IntegratedDesorptionEntry(myOutgassing[i].time,

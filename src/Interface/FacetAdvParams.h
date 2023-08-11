@@ -40,7 +40,7 @@ public:
 	FacetAdvParams(Worker *w);
 
 	// Component method
-	void Refresh(std::vector<int> selection);
+	void Refresh(std::vector<size_t> selection);
 	void Reposition(int wD = 0, int hD = 0);
 
 	// Implementation
@@ -55,7 +55,7 @@ private:
 	void PlaceComponents();
 	void UpdateSize();
 	void UpdateSizeForRatio();
-    std::pair<double,double> GetRatioForNbCell(int nbCellsU, int nbCellsV);
+    std::pair<double,double> GetRatioForNbCell(size_t nbCellsU, size_t nbCellsV);
 	void UpdateToggle(GLComponent *src);
 	void ApplyDrawSettings(); //Apply View Settings without stopping the simulation
 
@@ -63,7 +63,7 @@ private:
 	InterfaceGeometry *interfGeom;
 	int       fIdx;
 	double sumArea, sumOutgassing;
-	int sumAngleMapSize;
+	size_t sumAngleMapSize;
 	int desPanelFullHeight, angleMapPanelFullHeight;
 
 	//Designer generated code below

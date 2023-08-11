@@ -64,10 +64,10 @@ namespace FlowIO {
     };
 
     struct CSVExporter {
-        static std::string FormatCell(FDetail mode, int idx, const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> model);
+        static std::string FormatCell(FDetail mode, size_t idx, const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> model);
 
         static std::string
-        GetLineForFacet(int idx, const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,
+        GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,
             const std::shared_ptr<MolflowSimulationModel> model);
 
         static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, const std::shared_ptr<GlobalSimuState> globalState,

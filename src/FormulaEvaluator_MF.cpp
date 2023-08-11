@@ -210,7 +210,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if (iequals(v->varName, "DESAR")) {
         double sumArea = 0.0;
-        for (int i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
+        for (size_t i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
             InterfaceFacet *f_tmp = interfGeom->GetFacet(i2);
             if (f_tmp->sh.desorbType) sumArea += f_tmp->GetArea();
         }
@@ -219,7 +219,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if (iequals(v->varName, "ABSAR")) {
         double sumArea = 0.0;
 
-        for (int i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
+        for (size_t i2 = 0; i2 < interfGeom->GetNbFacet(); i2++) {
             InterfaceFacet *f_tmp = interfGeom->GetFacet(i2);
             if (f_tmp->sh.sticking > 0.0) sumArea += f_tmp->GetArea()*f_tmp->sh.opacity;
         }
@@ -284,9 +284,9 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
             if (!iContains({ "MCH","H","D","A","AR","Force","ForceX","ForceY","ForceZ","ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ","Torque","TorqueX","TorqueY","TorqueZ" }, tokens[0]))
                 return false;
         }
-        std::vector<int> facetsToSum;
+        std::vector<size_t> facetsToSum;
         if (tokens.size() == 3) { // Like SUM(H,3,6) = H3 + H4 + H5 + H6
-            int startId, endId, pos;
+            size_t startId, endId, pos;
             try {
                 startId = std::stol(tokens[1], &pos); if (pos != tokens[1].size() || startId > interfGeom->GetNbFacet() || startId == 0) return false;
                 endId = std::stol(tokens[2], &pos); if (pos != tokens[2].size() || endId > interfGeom->GetNbFacet() || endId == 0) return false;
@@ -295,7 +295,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 return false;
             }
             if (!(startId < endId)) return false;
-            facetsToSum = std::vector<int>(endId-startId+1);
+            facetsToSum = std::vector<size_t>(endId-startId+1);
             std::iota(facetsToSum.begin(), facetsToSum.end(), startId-1);
         }
         else { //Selection group
@@ -305,7 +305,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 facetsToSum = interfGeom->GetSelectedFacets();
             }
             else {
-                int selGroupId, pos;
+                size_t selGroupId, pos;
                 try {
                     selGroupId = std::stol(selIdString, &pos); if (pos != selIdString.size() || selGroupId > selections->size() || selGroupId == 0) return false;
                 }
@@ -315,7 +315,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 facetsToSum = (*selections)[selGroupId - 1].facetIds;
             }
         }
-        int sumLL=0;
+        size_t sumLL=0;
         double sumD=0.0;
         double sumArea = 0.0; //We average by area
         for (auto& sel : facetsToSum) {

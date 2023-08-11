@@ -55,7 +55,7 @@ MolflowSimFacet& MolflowSimFacet::operator=(MolflowSimFacet&& cpy) noexcept {
 * \param regions vector containing the regions and their parameters used to fetch the min/max energy for a spectrum
 * \return boolean that is true on successful init
 */
-bool MolflowSimFacet::InitializeOnLoad(const int id) {
+bool MolflowSimFacet::InitializeOnLoad(const size_t id) {
     globalId = id;
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
@@ -110,18 +110,18 @@ int MolflowSimFacet::InitializeAngleMap()
         //First pass: determine phi line sums and total map sum
         //Lower part
         angleMap.theta_CDFsum_lower = 0;
-        memset(angleMap.phi_pdfsums_lowerTheta.data(), 0, sizeof(int) * sh.anglemapParams.thetaLowerRes);
-        for (int thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
-            for (int phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
+        memset(angleMap.phi_pdfsums_lowerTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaLowerRes);
+        for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
+            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 angleMap.phi_pdfsums_lowerTheta[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
             angleMap.theta_CDFsum_lower += angleMap.phi_pdfsums_lowerTheta[thetaIndex]; //total lower map sum
         }
         //Higher part
         angleMap.theta_CDFsum_higher = angleMap.theta_CDFsum_lower; //higher includes lower part
-        memset(angleMap.phi_pdfsums_higherTheta.data(), 0, sizeof(int) * sh.anglemapParams.thetaHigherRes);
-        for (int thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            for (int phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
+        memset(angleMap.phi_pdfsums_higherTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaHigherRes);
+        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
+            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 angleMap.phi_pdfsums_higherTheta[thetaIndex-sh.anglemapParams.thetaLowerRes] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
             angleMap.theta_CDFsum_higher += angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes]; //total map sum
@@ -136,7 +136,7 @@ int MolflowSimFacet::InitializeAngleMap()
         //We use midpoint because user expects linear interpolation between PDF midpoints, not between bin endpoints
         double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum_higher;
         //lower part
-        for (int thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
+        for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
             if (thetaIndex == 0) {
                 //First CDF value: sums from theta=0 to midpoint of first theta bin
                 angleMap.theta_CDF_lower[thetaIndex] = 0.5 * (double)angleMap.phi_pdfsums_lowerTheta[0] * thetaNormalizingFactor;
@@ -146,8 +146,8 @@ int MolflowSimFacet::InitializeAngleMap()
                 angleMap.theta_CDF_lower[thetaIndex] = angleMap.theta_CDF_lower[thetaIndex - 1] + (double)(angleMap.phi_pdfsums_lowerTheta[thetaIndex - 1] + angleMap.phi_pdfsums_lowerTheta[thetaIndex])*0.5*thetaNormalizingFactor;
             }
             double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_lowerTheta[thetaIndex];
-            for (int phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                int index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
+            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
+                size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
                 if (angleMap.phi_pdfsums_lowerTheta[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_lowerTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                     angleMap.phi_pdfs_lowerTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
@@ -166,7 +166,7 @@ int MolflowSimFacet::InitializeAngleMap()
             }
         }
         //second pass, higher part, pay attention to index shift: thetaIndex upshifted by thetaLowerRes
-        for (int thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes; thetaIndex++) {
+        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes; thetaIndex++) {
             if (thetaIndex == sh.anglemapParams.thetaLowerRes) {
                 //First CDF value: sums from theta=limit to midpoint of first higher theta bin
                 angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_pdfsums_higherTheta[0] * thetaNormalizingFactor;
@@ -176,8 +176,8 @@ int MolflowSimFacet::InitializeAngleMap()
                 angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.theta_CDF_higher[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + (double)(angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes])*0.5*thetaNormalizingFactor;
             }
             double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes];
-            for (int phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                int index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
+            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
+                size_t index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
                 if (angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_higherTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                     angleMap.phi_pdfs_higherTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
@@ -212,18 +212,18 @@ void MolflowSimFacet::InitializeOutgassingMap()
         //Precalc actual outgassing map width and height for faster generation:
         ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
         ogMap.outgassingMapHeight_precise = sh.V.Norme() * ogMap.outgassingFileRatioV;
-        int nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
+        size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use
         //outgassingMapWindow = facetRef->outgassingMapWindow; //init by copying pdf
         ogMap.outgassingMap_cdf = ogMap.outgassingMap;
-        for (int i = 1; i < nbE; i++) {
+        for (size_t i = 1; i < nbE; i++) {
             ogMap.outgassingMap_cdf[i] = ogMap.outgassingMap_cdf[i - 1] + ogMap.outgassingMap_cdf[i]; //Convert p.d.f to cumulative distr.
         }
     }
 }
 
-bool MolflowSimFacet::InitializeLinkAndVolatile(const int  id)
+bool MolflowSimFacet::InitializeLinkAndVolatile(const size_t  id)
 {
     SimulationFacet::InitializeLinkAndVolatile(id);
     if (sh.superDest || sh.isVolatile) {
@@ -238,18 +238,18 @@ bool MolflowSimFacet::InitializeLinkAndVolatile(const int  id)
 * \param nbMoments amount of moments (TD simulations are currently not used for Molflow)
 * \return calculated size of the facet hits
 */
-int MolflowSimFacet::GetHitsSize(int nbMoments) const {
+size_t MolflowSimFacet::GetHitsSize(size_t nbMoments) const {
     // Init with base size
-    int hits_size = SimulationFacet::GetHitsSize(nbMoments);
+    size_t hits_size = SimulationFacet::GetHitsSize(nbMoments);
 
     return hits_size
     + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 }
 
-int MolflowSimFacet::GetMemSize() const {
+size_t MolflowSimFacet::GetMemSize() const {
 
     // Init with base size
-    int mem_size = SimulationFacet::GetMemSize();
+    size_t mem_size = SimulationFacet::GetMemSize();
 
     mem_size += sizeof (double) * ogMap.outgassingMap.capacity();
     mem_size += angleMap.GetMemSize();

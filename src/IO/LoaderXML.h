@@ -40,7 +40,7 @@ namespace FlowIO {
     class XmlLoader : public Loader {
 
     protected:
-        void LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, int nbTotalVertices, int nbTimedepParams);
+        void LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams);
     public:
         std::shared_ptr<MolflowSimulationModel> LoadGeometry(const std::string& inputFileName, const std::vector<Parameter>& catalog, GLProgress_Abstract& prg) override;
         static int LoadSimulationState(const std::string &inputFileName, const std::shared_ptr<MolflowSimulationModel> model,

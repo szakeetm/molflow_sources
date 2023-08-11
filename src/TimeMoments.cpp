@@ -85,7 +85,7 @@ void TimeMoments::ParseAndCheckUserMoments(std::vector<Moment>& moments, const s
 	GLProgress_Abstract& prg) {
 	std::vector<std::vector<Moment>> parsedMoments;
 	prg.SetMessage("Parsing moments...", false);
-	for (int u = 0; u != userMoments.size(); u++) {
+	for (size_t u = 0; u != userMoments.size(); u++) {
 		parsedMoments.emplace_back(ParseUserMoment(userMoments[u]));
 		prg.SetProgress(0.5 * (double)u / (double)userMoments.size());
 	}

@@ -152,7 +152,7 @@ void MeasureForce::ProcessMessage(GLComponent* src, int message) {
 			}
 		}
 		else if (src == useVertexButton) { //Use selected vertex as base
-			int nbs = interfGeom->GetNbSelectedVertex();
+			size_t nbs = interfGeom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				auto msg = fmt::format("Exactly one vertex needs to be selected.\n(You have selected {}.)", nbs);
@@ -160,7 +160,7 @@ void MeasureForce::ProcessMessage(GLComponent* src, int message) {
 				return;
 			}
 			else {
-				for (int i = 0; i < interfGeom->GetNbVertex(); i++) {
+				for (size_t i = 0; i < interfGeom->GetNbVertex(); i++) {
 					auto v = interfGeom->GetVertex(i);
 					if (v->selected) {
 						x0Text->SetText(v->x);
@@ -172,14 +172,14 @@ void MeasureForce::ProcessMessage(GLComponent* src, int message) {
 			}
 		}
 		else if (src == centerOfFacetButton) { //Use center of selected facet as base
-			int nbs = interfGeom->GetNbSelectedFacets();
+			size_t nbs = interfGeom->GetNbSelectedFacets();
 			if (nbs != 1) {
 				auto msg = fmt::format("Exactly one vertex needs to be selected.\n(You have selected {}.)", nbs);
 				GLMessageBox::Display(msg.c_str(), "Can't use facet's center", GLDLG_OK, GLDLG_ICONWARNING);
 				return;
 			}
 			else {
-				for (int i = 0; i < interfGeom->GetNbFacet(); i++) {
+				for (size_t i = 0; i < interfGeom->GetNbFacet(); i++) {
 					auto f = interfGeom->GetFacet(i);
 					if (f->selected) {
 						x0Text->SetText(f->sh.center.x);

@@ -6,11 +6,11 @@ static constexpr const char* molflowCliLogo = R"(
     )"; //Unused, clutters iterative simulations and parameter sweeps
 
 class RuntimeStatPrinter {
-    int oldHitsNb=0;
-    int oldDesNb=0;
+    size_t oldHitsNb=0;
+    size_t oldDesNb=0;
 public:
     RuntimeStatPrinter() = default;
-    RuntimeStatPrinter(int n_hits, int n_des);
+    RuntimeStatPrinter(size_t n_hits, size_t n_des);
     void PrintHeader() const;
     void Print(double elapsedTime, const std::shared_ptr<GlobalSimuState> globalState, bool printSum = false) const;
 };

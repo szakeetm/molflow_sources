@@ -52,7 +52,7 @@ namespace FlowIO {
 
         bool WriteXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName); //CLI uses it, prints to console on error
         void SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model,
-            GLProgress_Abstract& prg, const std::vector<int> &selectionToSave = std::vector<int>{});
+            GLProgress_Abstract& prg, const std::vector<size_t> &selectionToSave = std::vector<size_t>{});
 
         void WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData);
 
@@ -60,7 +60,7 @@ namespace FlowIO {
         bool SaveSimulationState(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState);
 
         void
-        SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, int nbTotalVertices);
+        SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices);
 
         MolflowUserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
     };
