@@ -1058,6 +1058,7 @@ void InterfaceFacet::ConvertOldDesorbType() {
 * \brief To save facet data for the geometry in XML
 * \param f XML node representing a facet
 */
+/*
 void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	xml_node e = f.append_child("Sticking");
 	e.append_attribute("constValue") = sh.sticking;
@@ -1230,7 +1231,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	}
 #endif
 }
-
+*/
 
 /**
 * \brief Function that retrieves the angle map as a String
