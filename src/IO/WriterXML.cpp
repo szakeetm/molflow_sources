@@ -111,11 +111,11 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     geomNode.child("Facets").append_attribute("nb") = nbF;
     for (size_t i = 0; i < nbF; i++) {
         prg.SetProgress((double)i / (double)nbF);
-        xml_node f = geomNode.child("Facets").append_child("Facet");
-        f.append_attribute("id") = i;
+        xml_node currentFacetNode = geomNode.child("Facets").append_child("Facet");
+        currentFacetNode.append_attribute("id") = i;
         size_t facetId = saveAllFacets ? i : selectionToSave[i];
         auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
-        SaveFacet(f, mfFac.get(), model->vertices3.size());
+        SaveFacet(currentFacetNode, mfFac, model->vertices3.size());
     }
     
 
@@ -185,12 +185,12 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     v.append_attribute("z") = model->wp.torqueRefPoint.z;
 
     xml_node paramNode = simuParamNode.append_child("Parameters");
-    size_t nonCatalogParameters = 0;
+    size_t nbNonCatalogParameters = 0;
 
     for (auto &parameter : model->tdParams.parameters) {
         if (!parameter.fromCatalog) { //Don't save catalog parameters
             xml_node newParameter = paramNode.append_child("Parameter");
-            newParameter.append_attribute("id") = nonCatalogParameters;
+            newParameter.append_attribute("id") = nbNonCatalogParameters;
             newParameter.append_attribute("name") = parameter.name.c_str();
             newParameter.append_attribute("nbMoments") = (int) parameter.GetSize();
             newParameter.append_attribute("logXinterp") = parameter.logXinterp;
@@ -201,10 +201,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
                 newMoment.append_attribute("t") = parameter.GetX(m);
                 newMoment.append_attribute("value") = parameter.GetY(m);
             }
-            nonCatalogParameters++;
+            nbNonCatalogParameters++;
         }
     }
-    paramNode.append_attribute("nb") = nonCatalogParameters;
+    paramNode.append_attribute("nb") = nbNonCatalogParameters;
 
     xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
     if (model->wp.globalHistogramParams.recordBounce) {
@@ -658,7 +658,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void XmlWriter::SaveFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
+void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices) {
     xml_node e = facetNode.append_child("Sticking");
     e.append_attribute("constValue") = facet->sh.sticking;
     e.append_attribute("parameterId") = facet->sh.sticking_paramId;
