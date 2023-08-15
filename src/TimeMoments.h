@@ -23,8 +23,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <vector>
 #include "MolflowTypes.h"
-#include <Helper/GLProgress_abstract.hpp>
 #include <optional>
+class GLProgress_Abstract;
 
 class TimeMoments {
 public:

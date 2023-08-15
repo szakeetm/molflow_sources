@@ -17,10 +17,10 @@ public:
 
 void ShutdownMPI();
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs);
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs);
 //void CleanUpMPI();
 void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs);
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs);
 void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs);
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs);
 void GatherAngleMapRecordings(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState);

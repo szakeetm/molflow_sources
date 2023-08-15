@@ -57,7 +57,6 @@ public:
     std::shared_ptr<MFSim::ParticleTracer> GetParticleTracerPtr(size_t i) override;
     void ConstructParticleTracers(size_t n, bool fixedSeed) override;
     bool lastLogUpdateOK=true; // Last log update timeout
-    bool hasVolatile=false;   // Contains volatile facet
     std::vector<std::shared_ptr<MFSim::ParticleTracer>> particleTracers; //they have their own tmp counters
     mutable std::timed_mutex simuStateMutex;
 

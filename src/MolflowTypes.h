@@ -18,8 +18,8 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
-#include "GLApp/GLTypes.h"
-#include "Parameter.h"
+#include "GeometryTypes.h"
+//#include "Parameter.h"
 //#include "Interface.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
@@ -27,7 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <Distributions.h>
-#include "GeometryTypes.h" // SelectionGroup
+//#include "GeometryTypes.h" // SelectionGroup
 
 //#include "Buffer_shared.h"
 
@@ -66,6 +66,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define AC_MODE 1         // Angular coefficient simulation mode
 
 #define MBARLS_TO_PAM3S 0.1 //Multiply by this to convert a value expressed in mbar.l/s to Pa.m3/s
+#define PAM3S_TO_MBARLS 10.0 //Multiply by this to convert a value expressed in mbar.l/s to Pa.m3/s
 #define MBAR_TO_PA 100 //Multiply by this to convert a value expressed in mbar to Pa
 
 typedef float ACFLOAT;
@@ -204,7 +205,7 @@ public:
 
 	bool   record = false; // Record incident angle 2-dim distribution
 	size_t phiWidth = 0; //resolution between -PI and +PI
-	double thetaLimit = 0.0; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+	double thetaLimit = 1.570796326; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2. Slightly lower than PI/2 def value
 	size_t thetaLowerRes = 0; //resolution between 0 and angleMapThetaLimit
 	size_t thetaHigherRes = 0; //resolution between angleMapThetaLimit and PI/2
 	
@@ -237,9 +238,9 @@ public:
 
 class ReflectionParam {
 public:
-	double diffusePart;
-	double specularPart;
-	double cosineExponent; //Cos^N part: 1-diffuse-specular
+	double diffusePart=1.0;
+	double specularPart=0.0;
+	double cosineExponent=0.0; //Cos^N part: 1-diffuse-specular
 	
 	template<class Archive>
 	void serialize(Archive & archive)
@@ -248,6 +249,6 @@ public:
 	}
 };
 
-struct MolflowUserSettings : UserSettings {
+struct MolflowInterfaceSettings : InterfaceSettings {
 	std::vector<UserMoment> userMoments;
 };

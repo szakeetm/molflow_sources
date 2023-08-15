@@ -170,15 +170,14 @@ void InterfaceFacet::LoadGEO(FileReader& file, int version, size_t nbVertex) {
 * \param ignoreSumMismatch if total dynamic outgasing can be different from sum of dynamic outgassing cells
 * \param vertexOffset offset for the vertex id
 */
+/*
 void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
 	int idx = 0;
 	int facetId = f.attribute("id").as_int();
 	for (xml_node indice : f.child("Indices").children("Indice")) {
 		indices[idx] = indice.attribute("vertex").as_int() + vertexOffset;
 		if (indices[idx] >= nbVertex) {
-			char err[128];
-			sprintf(err, "Facet %d refers to vertex %d which doesn't exist", facetId + 1, idx + 1);
-			throw Error(err);
+			throw Error("Facet {} refers to vertex {} which doesn't exist", facetId + 1, idx + 1);
 		}
 		idx++;
 	}
@@ -317,9 +316,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 				angleMapCache.resize(sh.anglemapParams.GetMapSize());
 			}
 			catch (...) {
-				std::stringstream err;
-				err << "Not enough memory for incident angle map on facet ";
-				throw Error(err.str().c_str());
+				throw Error("Not enough memory for incident angle map on facet");
 			}
 
 			for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
@@ -362,6 +359,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 
 	UpdateFlags();
 }
+*/
 
 /**
 * \brief Function for loading the geometry data of single facets from a SYN file
@@ -1294,12 +1292,12 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			catch (...) {
 				std::stringstream err;
 				err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
-				throw Error(err.str().c_str());
+				throw Error(err.str());
 			}
 			if (sz != table[i][0].size()) {
 				std::stringstream err;
 				err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
-				throw Error(err.str().c_str());
+				throw Error(err.str());
 			}
 			if (i == 1) currentSpacing = val * 2.0;
 			else if (!IsEqual(currentSpacing, val - previousVal, 1E-3)) {
@@ -1307,7 +1305,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				if (spacingTypes > 2) {
 					std::stringstream err;
 					err << "Row  " << i + 1 << ": more than two types of theta difference\nCell content: " << table[i][0];
-					throw Error(err.str().c_str());
+					throw Error(err.str());
 				}
 				//Just switched to next range
 				thetaLowerRes = i - 1; //subtract header
@@ -1345,9 +1343,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
 		}
 		catch (...) {
-			std::stringstream err;
-			err << "Not enough memory for incident angle map on facet ";
-			throw Error(err.str().c_str());
+			throw Error("Not enough memory for incident angle map on facet ");
 		}
 
 		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
@@ -1359,12 +1355,12 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
-					throw Error(err.str().c_str());
+					throw Error(err.str());
 				}
 				if (cellSize != table[iy + 1][ix + 1].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
-					throw Error(err.str().c_str());
+					throw Error(err.str());
 				}
 			}
 		}
@@ -1381,9 +1377,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
 		}
 		catch (...) {
-			std::stringstream err;
-			err << "Not enough memory for incident angle map on facet ";
-			throw Error(err.str().c_str());
+			throw Error("Not enough memory for incident angle map on facet");
 		}
 
 		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
@@ -1395,12 +1389,12 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
-					throw Error(err.str().c_str());
+					throw Error(err.str());
 				}
 				if (cellSize != table[iy][ix].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
-					throw Error(err.str().c_str());
+					throw Error(err.str());
 				}
 			}
 		}

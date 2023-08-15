@@ -39,6 +39,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Buffer_shared.h>
 #include <Simulation/IDGeneration.h>
 #include <Simulation/CDFGeneration.h>
+#include <Simulation/MolflowSimFacet.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -158,7 +159,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 	bool isXMLzip = ext == "zip";
 	bool isSTL = ext == "stl";
 
-	if (!(isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL)) throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
+	if (!(isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL)) throw Error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
 	
 #ifdef _WIN32
 	//Check (using native handle) if background compressor is still alive
@@ -224,12 +225,12 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					}
 				}
 				else if (isXML || isXMLzip) {
-					auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+					auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 					std::stringstream xmlStream; //Will store XML file content
 					{ //Scope to store XML tree
 						xml_document saveDoc;
 						FlowIO::XmlWriter writer(mApp->useOldXMLFormat, false);
-						writer.userSettings = InterfaceSettingsToSimModel(model);
+						writer.interfaceSettings = InterfaceSettingsToSimModel(model);
 
 						if (saveSelected) {
 							writer.SaveGeometry(saveDoc, mf_model, prg, GetGeometry()->GetSelectedFacets());
@@ -401,7 +402,7 @@ void Worker::ExportProfiles(const char* fn) {
 	f = fopen(fileName.c_str(), "w");
 	if (!f) {
 		sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
-		throw std::runtime_error(tmp);
+		throw Error(tmp);
 	}
 	interfGeom->ExportProfiles(f, isTXT, this);
 	fclose(f);
@@ -457,7 +458,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
 		file.open(saveFileName);
 		if (!file.is_open()) {
 			std::string tmp = "Cannot open file for writing " + saveFileName;
-			throw std::runtime_error(tmp.c_str());
+			throw Error(tmp.c_str());
 		}
 		file << interfGeom->GetFacet(facetIndex)->GetAngleMap(isTXT ? 2 : 1);
 		file.close();
@@ -492,7 +493,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 	if (ext.empty())
 
-		throw std::runtime_error("LoadGeometry(): No file extension, can't determine type");
+		throw Error("LoadGeometry(): No file extension, can't determine type");
 
 
 	auto prg = GLProgress_GUI("Reading file...", "Please wait");
@@ -582,7 +583,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 	}
 	else if (ext == "str" || ext == "STR") {
-		if (insert) throw std::runtime_error("STR file inserting is not supported.");
+		if (insert) throw Error("STR file inserting is not supported.");
 		try {
 			auto file = FileReader(fileName);
 			prg.SetVisible(true);
@@ -696,7 +697,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				ZipArchive::Ptr zip = ZipFile::Open(fileName);
 				if (zip == nullptr) {
-					throw std::runtime_error("Can't open ZIP file");
+					throw Error("Can't open ZIP file");
 				}
 				size_t numitems = zip->GetEntriesCount();
 				bool notFoundYet = true;
@@ -714,7 +715,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					}
 				}
 				if (notFoundYet) {
-					throw std::runtime_error("Didn't find any XML file in the ZIP file.");
+					throw Error("Didn't find any XML file in the ZIP file.");
 				}
 
 			}
@@ -725,18 +726,17 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				interfGeom->Clear();
 				FlowIO::XmlLoader loader;
-				std::shared_ptr<MolflowSimulationModel> mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+				std::shared_ptr<MolflowSimulationModel> mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 				{
 					try {
 						std::shared_ptr<MolflowSimulationModel> loadedModel = loader.LoadGeometry(parseFileName,
             				TimeDependentParameters::GetCatalogParameters(mf_model->tdParams.parameters), prg);
-            			//mf_model->modelMutex.lock(); //Don't lock, would try to destroy mutex in locked state
-						model = loadedModel;
-						mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model); //Update cast
+            			model = loadedModel;
+						mf_model = std::static_pointer_cast<MolflowSimulationModel>(model); //Update cast
 					}
 					catch (const std::exception& ex) {
 						std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
-						throw std::runtime_error(msg);
+						throw Error(msg);
 					}
 				}
 
@@ -746,7 +746,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				SimModelToInterfaceGeom();
 				prg.SetMessage("Applying interface settings...");
 				try {
-					SimModelToInterfaceSettings(loader.userSettings,prg);
+					SimModelToInterfaceSettings(loader.interfaceSettings,prg);
 				}
 				catch (std::exception& e) { //Moments overlap check fail?
 					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
@@ -773,8 +773,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				}
 				prg.SetMessage("Calculating OpenGL render data...");
-				interfGeom->InitializeInterfaceGeometry();
-
 				interfGeom->UpdateName(fileName.c_str());
 
 				prg.SetMessage("Reloading worker with new geometry...");
@@ -820,25 +818,21 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			else { //insert
 				
 				prg.SetMessage("Reading and parsing XML file...");
-				// Parse zip file name or original
-				parseResult = loadXML.load_file(parseFileName.c_str()); //parse xml file directly
-				if (!parseResult) {
-					//Parse error
-					std::stringstream err;
-					err << "XML parsed with errors.\n";
-					err << "Error description: " << parseResult.description() << "\n";
-					err << "Error offset: " << parseResult.offset << "\n";
-					throw std::runtime_error(err.str().c_str());
-				}
-				prg.SetMessage("Building geometry...");
-				xml_node rootNode = loadXML.root();
-				if (appVersionId >= 2680) {
-					xml_node envNode = loadXML.child("SimulationEnvironment");
-					if (!envNode.empty())
-						rootNode = envNode;
+				FlowIO::XmlLoader loader;
+				std::shared_ptr<MolflowSimulationModel> mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
+				{
+					try {
+						std::shared_ptr<MolflowSimulationModel> loadedModel = loader.LoadGeometry(parseFileName,
+							TimeDependentParameters::GetCatalogParameters(mf_model->tdParams.parameters), prg);
+						interfGeom->InsertModel(loadedModel, *loader.interfaceSettings, this, prg, newStr);
+					}
+					catch (const std::exception& ex) {
+						std::string msg = "There was an error loading this file:\n" + std::string(ex.what());
+						throw Error(msg);
+					}
 				}
 
-				interfGeom->InsertXML(rootNode, this, prg, newStr);
+				
 				model->sh = *interfGeom->GetGeomProperties();
 				mApp->changedSinceSave = true;
 				ResetWorkerStats();
@@ -854,7 +848,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 		}
 	}
 	else {
-		throw std::runtime_error(
+		throw Error(
 			"LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,stl or str]");
 	}
 
@@ -877,56 +871,51 @@ void Worker::SimModelToInterfaceGeom() {
 
 	*interfGeom->GetGeomProperties() = model->sh;
 
-	bool hasVolatile = false;
-
-	for (int i = 0; i < model->structures.size(); i++) {
-		interfGeom->SetStructureName(i, model->structures[i].name);
-	}
-
+	interfGeom->SetInterfaceStructures(model->structures,false,false,-1);
 	interfGeom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
 	interfGeom->SetInterfaceFacets(model->facets, this);
 }
 
-void Worker::SimModelToInterfaceSettings(const MolflowUserSettings& userSettings, GLProgress_GUI& prg)
+void Worker::SimModelToInterfaceSettings(const std::unique_ptr<MolflowInterfaceSettings>& interfaceSettings, GLProgress_GUI& prg)
 {
-	userMoments = userSettings.userMoments; //Copy user moment strings
-	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+	userMoments = interfaceSettings->userMoments; //Copy user moment strings
+	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	interfaceMomentCache = mf_model->tdParams.moments; //Copy parsed moments
 	
-	mApp->selections = userSettings.selections;
+	mApp->selections = interfaceSettings->selections;
 	mApp->RebuildSelectionMenus();
 
-	mApp->views = userSettings.views;
+	mApp->views = interfaceSettings->views;
 	mApp->RebuildViewMenus();
 
-	for (auto formula : userSettings.userFormulas) {
+	for (auto formula : interfaceSettings->userFormulas) {
 		mApp->appFormulas->AddFormula(formula.name, formula.expression);
 	}
 	
 	//Apply facet view settings that don't exist in MolflowSimFacet, only InterfaceFacet
-	if (userSettings.facetViewSettings.size() == interfGeom->GetNbFacet()) {
+	if (interfaceSettings->facetSettings.size() == interfGeom->GetNbFacet()) {
 		for (size_t facetId = 0; facetId < interfGeom->GetNbFacet(); facetId++) {
 			auto facet = interfGeom->GetFacet(facetId);
-			facet->viewSettings.textureVisible = userSettings.facetViewSettings[facetId].textureVisible;
-			facet->viewSettings.volumeVisible = userSettings.facetViewSettings[facetId].volumeVisible;
+			facet->viewSettings.textureVisible = interfaceSettings->facetSettings[facetId].textureVisible;
+			facet->viewSettings.volumeVisible = interfaceSettings->facetSettings[facetId].volumeVisible;
 		}
 	}
 	else {
 		std::cerr << "Amount of view settings doesn't equal number of facets: "
-			<< userSettings.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
+			<< interfaceSettings->facetSettings.size() << " <> " << GetGeometry()->GetNbFacet()
 			<< std::endl;
 	}
 
-	if (userSettings.profilePlotterSettings.hasData) {
+	if (interfaceSettings->profilePlotterSettings.hasData) {
 		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(this);
-		mApp->profilePlotter->SetLogScaled(userSettings.profilePlotterSettings.logYscale);
-		mApp->profilePlotter->SetViews(userSettings.profilePlotterSettings.viewIds);
+		mApp->profilePlotter->SetLogScaled(interfaceSettings->profilePlotterSettings.logYscale);
+		mApp->profilePlotter->SetViews(interfaceSettings->profilePlotterSettings.viewIds);
 	}
 
-	if (userSettings.convergencePlotterSettings.hasData) {
+	if (interfaceSettings->convergencePlotterSettings.hasData) {
 		if (!mApp->convergencePlotter) mApp->convergencePlotter = new ConvergencePlotter(this, mApp->appFormulas);
-		mApp->convergencePlotter->SetLogScaled(userSettings.convergencePlotterSettings.logYscale);
-		mApp->convergencePlotter->SetViews(userSettings.convergencePlotterSettings.viewIds);
+		mApp->convergencePlotter->SetLogScaled(interfaceSettings->convergencePlotterSettings.logYscale);
+		mApp->convergencePlotter->SetViews(interfaceSettings->convergencePlotterSettings.viewIds);
 	}
 }
 
@@ -973,7 +962,7 @@ int Worker::SendAngleMaps() {
 	if (!lock) return 1;
 
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
-		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
+		auto mfFac = std::static_pointer_cast<MolflowSimFacet>(model->facets[i]);
 		if (mfFac->sh.anglemapParams.record)
 			globalState->facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
@@ -982,7 +971,7 @@ int Worker::SendAngleMaps() {
 	return 0;
 }
 
-bool Worker::InterfaceGeomToSimModel() {
+void Worker::InterfaceGeomToSimModel() {
 	//Converts iterface-extended geometry to subprocess-formatted geometry, but doesn't forward or copy anything
 	//result is stored in worker::model
 	//InterfaceVertex -> Vector3d
@@ -993,7 +982,7 @@ bool Worker::InterfaceGeomToSimModel() {
 	//auto interfGeom = GetMolflowGeometry();
 	// TODO: Proper clear call before for Real reload?
 	//TODO: return model, just like LoadGeometry()
-	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->structures.clear();
 	mf_model->facets.clear();
 	mf_model->vertices3.clear();
@@ -1018,15 +1007,11 @@ bool Worker::InterfaceGeomToSimModel() {
 		mf_model->structures[i].name = interfGeom->GetStructureName(i);
 	}
 
-	bool hasVolatile = false;
-
 	for (size_t facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
 		MolflowSimFacet sFac;
 		{
 			InterfaceFacet* facet = interfGeom->GetFacet(facIdx);
 
-			//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-			//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
 			size_t mapSize = facet->sh.anglemapParams.GetMapSize();
 			if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
 				// on mismatch between cached values, check if interface just got out of sync (record) or interface and simulation side are out of sync (no record)
@@ -1079,7 +1064,6 @@ bool Worker::InterfaceGeomToSimModel() {
 				}
 			}
 
-
 			sFac.sh = facet->sh;
 			sFac.indices = facet->indices;
 			sFac.vertices2 = facet->vertices2;
@@ -1089,23 +1073,16 @@ bool Worker::InterfaceGeomToSimModel() {
 		}
 
 		//Some initialization
-		
-		if (!sFac.InitializeOnLoad(facIdx))
-			return false;
+		try {
+			sFac.InitializeOnLoad(facIdx, mf_model->tdParams);
+		}
+		catch (Error& err) {
+			//Add facet id and rethrow
+			throw Error("Error initializing facet {}:\n{}", facIdx + 1, err.what());
+		}
 
-
-		hasVolatile |= sFac.sh.isVolatile;
-
-		if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
-			((sFac.sh.superDest - 1) >= mf_model->sh.nbSuper || sFac.sh.superDest < 0)) {
-			//Geometry error
-			//ClearSimulation();
-			//ReleaseDataport(loader);
-			std::ostringstream err;
-			err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
-			//SetThreadError(err.str().c_str());
-			std::cerr << err.str() << std::endl;
-			return false;
+		if (sFac.sh.superDest>0 && sFac.sh.superDest > mf_model->sh.nbSuper) {
+			throw Error("Wrong link {} on F#{})",sFac.sh.superDest, facIdx + 1);
 		}
 
 		mf_model->facets.emplace_back(std::make_shared<MolflowSimFacet>(std::move(sFac)));
@@ -1114,7 +1091,6 @@ bool Worker::InterfaceGeomToSimModel() {
 	if (!mf_model->facets.empty() && !mf_model->vertices3.empty())
 		mf_model->initialized = true;
 	mf_model->memSizeCache = mf_model->GetMemSize();
-	return true;
 }
 
 /**
@@ -1139,13 +1115,13 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			std::stringstream err;
 			err << "Error (Worker::RealReload -> PrepareToRun()) " << e.what();
 			GLMessageBox::Display(err.str().c_str(), "Error (Worker::PrepareToRun()", GLDLG_OK, GLDLG_ICONWARNING);
-			throw std::runtime_error(err.str());
+			throw Error(err.str());
 		}
 	}
 
 	ReloadSim(sendOnly, prg); //Convert interf. interfGeom to worker::mode and construct global counters, then copy to simManager.simulation
 	
-	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	//mf_model->CalcTotalOutgassing(); // ReloadSim() / PrepareToRun() already called it
 
 	if (!sendOnly) {
@@ -1160,7 +1136,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			std::stringstream err;
 			err << "Error (Worker::RealReload) " << e.what();
 			GLMessageBox::Display(err.str().c_str(), "Error (Worker::RealReload()", GLDLG_OK, GLDLG_ICONWARNING);
-			throw std::runtime_error(err.str());
+			throw Error(err.str());
 		}
 
 		if (model->otfParams.enableLogging) {
@@ -1224,10 +1200,10 @@ void Worker::Start() {
 			throw Error("No desorption facet found");
 	}
 	if (model->wp.totalDesorbedMolecules <= 0.0)
-		throw std::runtime_error("Total outgassing is zero.");
+		throw Error("Total outgassing is zero.");
 
 	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globalState->globalStats.globalHits.nbDesorbed)
-		throw std::runtime_error("Desorption limit has already been reached.");
+		throw Error("Desorption limit has already been reached.");
 
 	try {
 		{
@@ -1289,7 +1265,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 	GLProgress_Abstract& prg) {
 	std::string ext = FileUtils::GetExtension(fileName);
 	if (!Contains({ "syn7z", "syn" }, ext))
-		throw std::runtime_error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
+		throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
 
 	// Read a file
 
@@ -1324,7 +1300,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 	bool isSYN7Z = (ext == "syn7z") || (ext == "SYN7Z");
 
 	if (!(isSYN || isSYN7Z))
-		throw std::runtime_error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
+		throw Error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
 
 	// Read a file
 	std::unique_ptr<FileReader> file;
@@ -1366,46 +1342,6 @@ void Worker::PrepareToRun() {
 	InterfaceGeometry* g = GetGeometry();
 
 	bool needsAngleMapStatusRefresh = false;
-
-	for (size_t i = 0; i < g->GetNbFacet(); i++) {
-		InterfaceFacet* f = g->GetFacet(i);
-
-		//match time-dependent parameters
-		if (f->userOutgassing.length() > 0) {
-			int id = GetParamId(f->userOutgassing);
-			if (id == -1) { //parameter not found
-				char tmp[256];
-				sprintf(tmp, "Facet #%zd: Outgassing parameter \"%s\" isn't defined.", i + 1,
-					f->userOutgassing.c_str());
-				throw std::runtime_error(tmp);
-			}
-			else f->sh.outgassing_paramId = id;
-		}
-		else f->sh.outgassing_paramId = -1;
-
-		if (f->userOpacity.length() > 0) {
-			int id = GetParamId(f->userOpacity);
-			if (id == -1) { //parameter not found
-				char tmp[256];
-				sprintf(tmp, "Facet #%zd: Opacity parameter \"%s\" isn't defined.", i + 1, f->userOpacity.c_str());
-				throw std::runtime_error(tmp);
-			}
-			else f->sh.opacity_paramId = id;
-		}
-		else f->sh.opacity_paramId = -1;
-
-		if (f->userSticking.length() > 0) {
-			int id = GetParamId(f->userSticking);
-			if (id == -1) { //parameter not found
-				char tmp[256];
-				sprintf(tmp, "Facet #%zd: Sticking parameter \"%s\" isn't defined.", i + 1, f->userSticking.c_str());
-				throw std::runtime_error(tmp);
-			}
-			else f->sh.sticking_paramId = id;
-		}
-		else f->sh.sticking_paramId = -1;
-
-	}
 }
 
 /**
@@ -1413,7 +1349,7 @@ void Worker::PrepareToRun() {
 */
 void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facet
-	auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
 	InterfaceGeometry* g = GetGeometry();
 
@@ -1429,7 +1365,7 @@ void Worker::CalcTotalOutgassing() {
 				}
 			}
 			else { //regular outgassing
-				if (f->sh.outgassing_paramId == -1) { //constant outgassing
+				if (f->sh.outgassingParam.empty()) { //constant outgassing
 					mf_model->wp.totalDesorbedMolecules +=
 						mf_model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
 					mf_model->wp.finalOutgassingRate +=
@@ -1438,12 +1374,13 @@ void Worker::CalcTotalOutgassing() {
 				}
 				else { //time-dependent outgassing
 					if (f->sh.IDid >= mf_model->tdParams.IDs.size())
-						throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}", f->sh.IDid, mf_model->tdParams.IDs.size(), i));
-
+						throw Error("Trying to access Integrated Desorption {} of {} for facet #{}", f->sh.IDid, mf_model->tdParams.IDs.size(), i);
+					const auto param = mf_model->tdParams.parameters[mf_model->tdParams.GetParamId(f->sh.outgassingParam)];
 					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue;
 					mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
-					size_t lastIndex = interfaceParameterCache[f->sh.outgassing_paramId].GetSize() - 1;
-					double finalRate_mbar_l_s = interfaceParameterCache[f->sh.outgassing_paramId].GetY(lastIndex);
+					
+					size_t lastIndex = param.GetSize() - 1;
+					double finalRate_mbar_l_s = param.GetY(lastIndex);
 					mf_model->wp.finalOutgassingRate +=
 						finalRate_mbar_l_s * MBARLS_TO_PAM3S /
 						(1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
@@ -1456,53 +1393,41 @@ void Worker::CalcTotalOutgassing() {
 
 }
 
-/**
-* \brief Get ID of a parameter (if it exists) for a corresponding name
-* \param name name of the parameter that shall be looked up
-* \return ID corresponding to the found parameter
-*/
-int Worker::GetParamId(const std::string& name) {
-	int foundId = -1;
-	for (int i = 0; foundId == -1 && i < (int)interfaceParameterCache.size(); i++)
-		if (name == interfaceParameterCache[i].name) foundId = i;
-	return foundId;
-}
-
-MolflowUserSettings Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
+std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
 	//Construct user settings that writer will use
-	MolflowUserSettings result;
+	auto result = std::make_unique<MolflowInterfaceSettings>();
 
-	result.userMoments = this->userMoments;
-	std::dynamic_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;
-	result.selections = mApp->selections;
-	result.views = mApp->views;
+	result->userMoments = this->userMoments;
+	std::static_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;
+	result->selections = mApp->selections;
+	result->views = mApp->views;
 
 	auto nbFacet = interfGeom->GetNbFacet();
 	for (size_t facetId = 0; facetId < nbFacet; facetId++) {
 		auto facet = interfGeom->GetFacet(facetId);
-		FacetViewSetting vs;
+		FacetInterfaceSetting vs;
 		vs.textureVisible = facet->viewSettings.textureVisible;
 		vs.volumeVisible = facet->viewSettings.volumeVisible;
-		result.facetViewSettings.push_back(std::move(vs));
+		result->facetSettings.push_back(std::move(vs));
 	}
 
 	for (const auto &appFormula : mApp->appFormulas->formulas) {
 		UserFormula uf;
 		uf.name = appFormula.GetName();
 		uf.expression = appFormula.GetExpression();
-		result.userFormulas.push_back(std::move(uf));
+		result->userFormulas.push_back(std::move(uf));
 	}
 
 	if (mApp->profilePlotter) {
-		result.profilePlotterSettings.hasData=true;
-		result.profilePlotterSettings.logYscale = mApp->profilePlotter->IsLogScaled();
-		result.profilePlotterSettings.viewIds = mApp->profilePlotter->GetViews();
+		result->profilePlotterSettings.hasData=true;
+		result->profilePlotterSettings.logYscale = mApp->profilePlotter->IsLogScaled();
+		result->profilePlotterSettings.viewIds = mApp->profilePlotter->GetViews();
 	}
 
 	if (mApp->convergencePlotter) {
-		result.convergencePlotterSettings.hasData=true;
-		result.convergencePlotterSettings.logYscale = mApp->convergencePlotter->IsLogScaled();
-		result.convergencePlotterSettings.viewIds = mApp->convergencePlotter->GetViews();
+		result->convergencePlotterSettings.hasData=true;
+		result->convergencePlotterSettings.logYscale = mApp->convergencePlotter->IsLogScaled();
+		result->convergencePlotterSettings.viewIds = mApp->convergencePlotter->GetViews();
 	}
 
 	return result;

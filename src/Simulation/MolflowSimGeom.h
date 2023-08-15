@@ -38,6 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 class SimulationFacet;
+class MolflowSimFacet;
 
 class ParameterSurface : public Surface {
     Parameter* timeDepParam; //time-dependent opacity distribution
@@ -58,23 +59,13 @@ struct TimeDependentParameters {
     std::vector<std::vector<IntegratedDesorptionEntry>> IDs; //integrated distribution function for each time-dependent desorption type
     std::vector<Moment> moments;
 
-    static int LoadParameterCatalog(std::vector<Parameter>& parameters);
+    static void LoadParameterCatalog(std::vector<Parameter>& parameters);
     static void ClearParameters(std::vector<Parameter>& parameters);
     static std::vector<Parameter> GetCatalogParameters(const std::vector<Parameter>& parameters);
-    static size_t InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams);
-
+    static size_t InsertParametersBeforeCatalog(std::vector<Parameter>& targetParameters, const std::vector<Parameter>& newParams);
+    int GetParamId(const std::string& name) const;
     
-    size_t GetMemSize() {
-        size_t sum = 0;
-        for (auto &par : parameters) {
-            sum += par.GetMemSize();
-        }
-        auto nbId = this->IDs.size();
-        if (nbId > 0) sum += nbId * IDs[0].size() * sizeof(IntegratedDesorptionEntry);
-        sum += sizeof(Moment) * moments.capacity();
-
-        return sum;
-    }
+    size_t GetMemSize();
 };
 
 /*!
@@ -246,15 +237,15 @@ public:
     std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override;
 
     // Sim functions
-    double GetOpacityAt(SimulationFacet *f, double time) const;
-    double GetStickingAt(SimulationFacet *f, double time) const;
+    double GetOpacityAt(MolflowSimFacet *f, double time) const;
+    double GetStickingAt(MolflowSimFacet *f, double time) const;
 
     TimeDependentParameters tdParams;
     std::vector<Interval> intervalCache; //speedup to store moments as [start_time,end_time], calculated in PrepareToRun();
     std::vector<IntegratedVelocityEntry> maxwell_CDF_1K; //Integrated "surface" maxwell-boltzmann distribution at 1K. TODO: Make global
     void CalcIntervalCache();
 
-    void BuildPrisma(double L, double R, double angle, double s, int step);
+    //void BuildPrisma(double L, double R, double angle, double s, int step);
 };
 
 

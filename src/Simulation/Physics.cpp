@@ -28,7 +28,7 @@ double Physics::GenerateRandomVelocity(const std::vector<IntegratedVelocityEntry
 
 double Physics::GenerateDesorptionTime(const std::vector<std::vector<IntegratedDesorptionEntry>> &IDs,
                                        const SimulationFacet *src, double rndVal, double latestMoment) {
-    if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
+    if (!src->sh.outgassingParam.empty()) { //time-dependent desorption
         return InterpolateX(rndVal * IDs[src->sh.IDid].back().cumulativeDesValue, IDs[src->sh.IDid],
                             false, false, true); //allow extrapolate
     } else {

@@ -22,6 +22,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "IO/LoaderXML.h"
 #include "ParameterParser.h"
 #include <Helper/GLProgress_CLI.hpp>
+#include <Simulation/MolflowSimFacet.h>
+#include "GLApp/GLTypes.h" //error
 
 #include <CLI11/CLI11.hpp>
 #include <Helper/StringHelper.h>
@@ -134,7 +136,7 @@ SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, Simula
     model->otfParams.timeLimit = (double)parsedArgs.simDuration;
 
     if (simManager.SetUpSimulation()) { //currently only calls CreateCPUHandle()
-       throw Error(fmt::format("Error: Setting up simulation units [{} threads]...\n", simManager.nbThreads));
+       throw Error("Error: Setting up simulation units [{} threads]...\n", simManager.nbThreads);
     }
 
     Log::console_msg_master(1, "Active cores: {}\n", simManager.nbThreads);
@@ -148,23 +150,23 @@ SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, Simula
 * \brief Initializes the simulation model from a valid input file and handles parameter changes
  */
 std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationManager& simManager, const std::shared_ptr<MolflowSimulationModel> model,
-    const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
+    const std::shared_ptr<GlobalSimuState> globalState, MolflowInterfaceSettings& interfaceSettings, SettingsIO::CLIArguments& parsedArgs) {
     SettingsIO::prepareIO(parsedArgs);
 
     std::shared_ptr<MolflowSimulationModel> loadedModel = std::make_shared<MolflowSimulationModel>();
     if (std::filesystem::path(parsedArgs.workFile).extension() == ".xml") {
-        loadedModel = CLILoadFromXML(parsedArgs.workFile, !parsedArgs.resetOnStart, model, globalState, userSettings, parsedArgs);
+        loadedModel = CLILoadFromXML(parsedArgs.workFile, !parsedArgs.resetOnStart, model, globalState, interfaceSettings, parsedArgs);
     }
     else {
-        throw Error(fmt::format("Invalid file extension for input file detected: {}\n",
-                           std::filesystem::path(parsedArgs.workFile).extension().string()));
+        throw Error("Invalid file extension for input file detected: {}\n",
+                           std::filesystem::path(parsedArgs.workFile).extension().string());
     }
     if (!parsedArgs.paramFile.empty() || !parsedArgs.paramChanges.empty()) {
         // Apply parameter changes from file
         if (!parsedArgs.paramFile.empty())
-            ParameterParser::ParseFile(parsedArgs.paramFile, userSettings.selections);
+            ParameterParser::ParseFile(parsedArgs.paramFile, interfaceSettings.selections);
         if (!parsedArgs.paramChanges.empty())
-            ParameterParser::ParseInput(parsedArgs.paramChanges, userSettings.selections);
+            ParameterParser::ParseInput(parsedArgs.paramChanges, interfaceSettings.selections);
         ParameterParser::ChangeSimuParams(loadedModel->wp);
         if(ParameterParser::ChangeFacetParams(loadedModel->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
@@ -258,7 +260,7 @@ Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> mo
 * \brief Wrapper for CLI's initFromFile for XML loading with XmlLoader
  */
 std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::string &fileName, bool loadSimulationState, const std::shared_ptr<MolflowSimulationModel> model,
-    const std::shared_ptr<GlobalSimuState> globalState, MolflowUserSettings& userSettings, SettingsIO::CLIArguments& parsedArgs) {
+    const std::shared_ptr<GlobalSimuState> globalState, MolflowInterfaceSettings& interfaceSettings, SettingsIO::CLIArguments& parsedArgs) {
 
     std::shared_ptr<MolflowSimulationModel> loadedModel;
     GLProgress_CLI prg(fmt::format("Loading geometry from file {}\n", fileName));
@@ -279,7 +281,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         catch (Error& err) {
             Log::console_error("Error loading file:\n{}", err.what());
         }
-        userSettings = loader.userSettings; //persistent for saving
+        interfaceSettings = *loader.interfaceSettings; //persistent for saving
     }
 
     prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", loadedModel->memSizeCache/1024/1024));
@@ -316,7 +318,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
             // Update Angle map status
             for(int i = 0; i < loadedModel->facets.size(); i++ ) {
 #if defined(MOLFLOW)
-                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(loadedModel->facets[i]);
+                auto f = std::static_pointer_cast<MolflowSimFacet>(loadedModel->facets[i]);
                 if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
                     //Retrieve angle map from hits dp
                     globalState->facetStates[i].recordedAngleMapPdf = f->angleMap.pdf;
@@ -387,8 +389,8 @@ int Initializer::initTimeLimit(const std::shared_ptr<MolflowSimulationModel> mod
         return 1;
     }
 
-    model->otfParams.timeLimit = parsedArgs.simDuration;
-    parsedArgs.simDuration = static_cast<size_t>(parsedArgs.simDuration);
+    model->otfParams.timeLimit = static_cast<double>(parsedArgs.simDuration);
+    //parsedArgs.simDuration = static_cast<size_t>(parsedArgs.simDuration);
 
     return 0;
 }
@@ -444,10 +446,8 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
 
     model->structures.resize(model->sh.nbSuper); //Create structures
 
-    bool hasVolatile = false;
-
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facIdx]);
+        auto mfFac = std::static_pointer_cast<MolflowSimFacet>(model->facets[facIdx]);
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
@@ -476,15 +476,14 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
 
         //Some initialization
         try {
-            if (!mfFac->InitializeOnLoad(facIdx)) return false;
+            mfFac->InitializeOnLoad(facIdx, model->tdParams);
         }
         catch (const std::exception& err){
             Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
             return 1;
         }
-        hasVolatile |= mfFac->sh.isVolatile;
 
-        if ((mfFac->sh.superDest || mfFac->sh.isVolatile) &&
+        if ((mfFac->sh.superDest) &&
             ((mfFac->sh.superDest - 1) >= model->sh.nbSuper || mfFac->sh.superDest < 0)) {
             // Geometry error
             Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);

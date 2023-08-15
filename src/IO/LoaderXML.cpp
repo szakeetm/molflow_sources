@@ -29,12 +29,21 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/ConsoleLogger.h"
 #include "Helper/StringHelper.h"
 #include "Simulation/MolflowSimFacet.h"
+#include "Simulation/MolflowSimGeom.h"
+#include "GeometryTypes.h"
+#include "MolflowTypes.h"
+#include "GLApp/GLTypes.h"
 #include <fmt/core.h>
 #include <Formulas.h>
 #include "GLApp/GLFormula.h"
+#include <Helper/GLProgress_abstract.hpp>
 
 using namespace pugi;
 using namespace FlowIO;
+
+XmlLoader::XmlLoader() {
+   interfaceSettings = std::make_unique<MolflowInterfaceSettings>();
+}
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
@@ -105,17 +114,17 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
 
     prg.SetMessage("Loading facets...",false);
     loadModel->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    userSettings.facetViewSettings.resize(loadModel->sh.nbFacet);
+    interfaceSettings->facetSettings.resize(loadModel->sh.nbFacet);
     idx = 0;
     bool ignoreSumMismatch = false;
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
-            throw Error(fmt::format("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex));
+            throw Error("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex);
         }
         auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
         loadModel->facets.push_back(newFacetPtr);
-        LoadFacet(facetNode, newFacetPtr.get(), userSettings.facetViewSettings[idx],loadModel->sh.nbVertex,loadModel->tdParams.parameters.size());
+        LoadFacet(facetNode, newFacetPtr, interfaceSettings->facetSettings[idx],loadModel->sh.nbVertex,loadModel->tdParams);
         idx++;
         prg.SetProgress((double)idx/(double)loadModel->sh.nbFacet);
     }
@@ -146,10 +155,10 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
             um.timeWindow = loadModel->wp.timeWindowSize;
         }
         
-        userSettings.userMoments.emplace_back(um);
+        interfaceSettings->userMoments.emplace_back(um);
     }
     
-    TimeMoments::ParseAndCheckUserMoments(loadModel->tdParams.moments, userSettings.userMoments, prg);
+    TimeMoments::ParseAndCheckUserMoments(loadModel->tdParams.moments, interfaceSettings->userMoments, prg);
 
     xml_node motionNode = simuParamNode.child("Motion");
     loadModel->wp.motionType = motionNode.attribute("type").as_int();
@@ -212,7 +221,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     }
 
     prg.SetMessage("Loading interface settings...", false);
-    //Interface settings to temporary userSettings
+    //Interface settings to temporary interfaceSettings
     xml_node interfNode = rootNode.child("Interface");
     xml_node selNode = interfNode.child("Selections");
 
@@ -222,7 +231,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         s.facetIds.reserve(sNode.select_nodes("selItem").size());
         for (xml_node iNode : sNode.children("selItem"))
             s.facetIds.push_back(iNode.attribute("facet").as_llong());
-        userSettings.selections.push_back(std::move(s));
+        interfaceSettings->selections.push_back(std::move(s));
     }
 
     xml_node viewNode = interfNode.child("Views");
@@ -260,7 +269,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         v.vTop = newView.attribute("vTop").as_double();
         v.vBottom = newView.attribute("vBottom").as_double();
         
-        userSettings.views.push_back(std::move(v));
+        interfaceSettings->views.push_back(std::move(v));
     }
 
     xml_node formulaNode = interfNode.child("Formulas");
@@ -269,34 +278,34 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
             UserFormula uf;
             uf.name = newFormula.attribute("name").as_string();
             uf.expression = newFormula.attribute("expression").as_string();
-            userSettings.userFormulas.push_back(std::move(uf));
+            interfaceSettings->userFormulas.push_back(std::move(uf));
         }
     }
     xml_node ppNode = interfNode.child("ProfilePlotter");
     if (ppNode) {
-        userSettings.profilePlotterSettings.hasData=true;
+        interfaceSettings->profilePlotterSettings.hasData=true;
         xml_node paramsNode = ppNode.child("Parameters");
         if (paramsNode && paramsNode.attribute("logScale"))
-            userSettings.profilePlotterSettings.logYscale = paramsNode.attribute("logScale").as_bool();
+            interfaceSettings->profilePlotterSettings.logYscale = paramsNode.attribute("logScale").as_bool();
         xml_node viewsNode = ppNode.child("Views");
         if (viewsNode) {
             std::vector<int> views;
             for (xml_node view : viewsNode.children("View"))
-                userSettings.profilePlotterSettings.viewIds.push_back(view.attribute("facetId").as_int());
+                interfaceSettings->profilePlotterSettings.viewIds.push_back(view.attribute("facetId").as_int());
         }
     }
 
     xml_node cpNode = interfNode.child("ConvergencePlotter");
     if (cpNode) {
-        userSettings.convergencePlotterSettings.hasData=true;
+        interfaceSettings->convergencePlotterSettings.hasData=true;
         xml_node paramsNode = cpNode.child("Parameters");
         if (paramsNode && paramsNode.attribute("logScale"))
-            userSettings.convergencePlotterSettings.logYscale=paramsNode.attribute("logScale").as_bool();
+            interfaceSettings->convergencePlotterSettings.logYscale=paramsNode.attribute("logScale").as_bool();
         xml_node viewsNode = cpNode.child("Views");
         if (viewsNode) {
             std::vector<int> views;
             for (xml_node view : viewsNode.children("View"))
-                userSettings.convergencePlotterSettings.viewIds.push_back(view.attribute("formulaHash").as_int());
+                interfaceSettings->convergencePlotterSettings.viewIds.push_back(view.attribute("formulaHash").as_int());
         }
     }
     return loadModel;
@@ -515,7 +524,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 prg.SetProgress((double)((m * model->sh.nbFacet) + facetId) /
                     ((double)nbMoments * model->sh.nbFacet));
                 if(facetId >= model->facets.size()){
-                    throw std::runtime_error(fmt::format("Accessing simulation state for facet #{}, but only {} facets have been loaded!\nMaybe the input file is corrupted?",facetId+1, model->facets.size()));
+                    throw Error(fmt::format("Accessing simulation state for facet #{}, but only {} facets have been loaded!\nMaybe the input file is corrupted?",facetId+1, model->facets.size()));
                 }
                 auto sFac = model->facets[facetId];
                 xml_node facetHitNode = newFacetResult.child("Hits");
@@ -685,7 +694,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
                             << "In file: " << dirNode.attribute("width").as_int() << "x"
                             << dirNode.attribute("height").as_int();
-                        throw Error(msg.str().c_str());
+                        throw Error(msg.str());
 
                     }
                     
@@ -797,16 +806,14 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
     return 0;
 }
 
-void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams) {
+void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, FacetInterfaceSetting& fis, size_t nbTotalVertices, const TimeDependentParameters& tdParams) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
     for (xml_node indice : facetNode.child("Indices").children("Indice")) {
         facet->indices[idx] = indice.attribute("vertex").as_int() + 0; //+ vertexOffset;
         if (facet->indices[idx] >= nbTotalVertices) {
-            char err[128];
-            sprintf(err, "Facet %d refers to vertex %d which doesn't exist", facetId + 1, idx + 1);
-            throw Error(err);
+            throw Error("Facet {} refers to vertex {} which doesn't exist", facetId + 1, idx + 1);
         }
         idx++;
     }
@@ -816,22 +823,74 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
     facet->sh.superDest = facetNode.child("Structure").attribute("linksTo").as_int();
     facet->sh.teleportDest = facetNode.child("Teleport").attribute("target").as_int();
 
-    // TODO: Only parse Molflow files
-    facet->sh.sticking = facetNode.child("Sticking").attribute("constValue").as_double();
-    facet->sh.sticking_paramId = facetNode.child("Sticking").attribute("parameterId").as_int();
-    if (facet->sh.sticking_paramId >= static_cast<int>(nbTimedepParams)) {
-        throw Error(fmt::format("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.sticking_paramId + 1, nbTimedepParams));
+    { //sticking
+        auto constStickingAttrib = facetNode.child("Sticking").attribute("constValue");
+        if (constStickingAttrib) facet->sh.sticking = constStickingAttrib.as_double();
+        auto userStickingAttrib = facetNode.child("Sticking").attribute("stickingParam");
+        if (userStickingAttrib) { //Versions 2.9.15 and later
+            facet->sh.stickingParam = userStickingAttrib.as_string();
+        }
+        else { //Versions until 2.9.14, check if there was a paramId
+            auto stickingParamIdNode = facetNode.child("Sticking").attribute("parameterId");
+            if (stickingParamIdNode) {
+                int paramId = stickingParamIdNode.as_int();
+                if (paramId >= 0) {
+                    if (paramId >= static_cast<int>(tdParams.parameters.size())) {
+                        throw Error("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, paramId + 1, tdParams.parameters.size());
+                    }
+                    else {
+                        facet->sh.stickingParam = tdParams.parameters[paramId].name;
+                    }
+                }
+            }
+        }
     }
-    facet->sh.opacity_paramId = facetNode.child("Opacity").attribute("parameterId").as_int();
-    if (facet->sh.opacity_paramId >= static_cast<int>(nbTimedepParams)) {
-        throw Error(fmt::format("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.opacity_paramId + 1, nbTimedepParams));
+    { //opacity
+        auto constOpacityAttrib = facetNode.child("Opacity").attribute("constValue");
+        if (constOpacityAttrib) facet->sh.opacity = constOpacityAttrib.as_double();
+        auto userOpacityAttrib = facetNode.child("Opacity").attribute("opacityParam");
+        if (userOpacityAttrib) { //Versions 2.9.15 and later
+            facet->sh.opacityParam = userOpacityAttrib.as_string();
+        }
+        else { //Versions until 2.9.14, check if there was a paramId
+            auto opacityParamIdNode = facetNode.child("opacity").attribute("parameterId");
+            if (opacityParamIdNode) {
+                int paramId = opacityParamIdNode.as_int();
+                if (paramId >= 0) {
+                    if (paramId >= static_cast<int>(tdParams.parameters.size())) {
+                        throw Error("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, paramId + 1, tdParams.parameters.size());
+                    }
+                    else {
+                        facet->sh.opacityParam = tdParams.parameters[paramId].name;
+                    }
+                }
+            }
+        }
     }
     facet->sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
     facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
     facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
-    facet->sh.outgassing_paramId = facetNode.child("Outgassing").attribute("parameterId").as_int();
-    if (facet->sh.outgassing_paramId >= static_cast<int>(nbTimedepParams)) {
-        throw Error(fmt::format("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, facet->sh.outgassing_paramId + 1, nbTimedepParams));
+    { //Outgassing
+        auto constOutgassingAttrib = facetNode.child("Outgassing").attribute("constValue");
+        if (constOutgassingAttrib) facet->sh.outgassing = constOutgassingAttrib.as_double();
+        auto userOutgassingAttrib = facetNode.child("Outgassing").attribute("OutgassingParam");
+        if (userOutgassingAttrib) { //Versions 2.9.15 and later
+            facet->sh.outgassingParam = userOutgassingAttrib.as_string();
+        }
+        else { //Versions until 2.9.14, check if there was a paramId
+            auto outgassingParamIdNode = facetNode.child("Outgassing").attribute("parameterId");
+            if (outgassingParamIdNode) {
+                int paramId = outgassingParamIdNode.as_int();
+                if (paramId >= 0) {
+                    if (paramId >= static_cast<int>(tdParams.parameters.size())) {
+                        throw Error("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", facetId + 1, paramId + 1, tdParams.parameters.size());
+                    }
+                    else {
+                        facet->sh.outgassingParam = tdParams.parameters[paramId].name;
+                    }
+                }
+            }
+        }
     }
     bool hasOutgassingFile = facetNode.child("Outgassing").attribute("hasOutgassingFile").as_bool();
     facet->sh.useOutgassingFile = facetNode.child("Outgassing").attribute("useOutgassingFile").as_bool();
@@ -967,9 +1026,7 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
             angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
         }
         catch(...) {
-            std::stringstream err;
-            err << "Not enough memory for incident angle map on facet ";
-            throw Error(err.str().c_str());
+            throw Error("Not enough memory for incident angle map on facet");
         }
 
         size_t angleMapSum = 0;
@@ -989,8 +1046,8 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, Face
 
     
     // Init by default as true
-    fv.textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
-    fv.volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
+    fis.textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    fis.volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
     
 
     xml_node facetHistNode = facetNode.child("Histograms");

@@ -63,12 +63,12 @@ public:
 	void SaveGEO(FileWriter& file, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
-	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress_Abstract& prg, bool newStr);
+	void InsertModel(const std::shared_ptr<MolflowSimulationModel> loadedModel, const MolflowInterfaceSettings& interfaceSettings, Worker *work, GLProgress_Abstract& prg, bool newStr);
 	bool CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
                               const std::string &fileName_out, double cmpThreshold) override;
 	// Geometry
     void     BuildPipe(double L, double R, double s, int step);
-    void     BuildPrisma(double L, double R, double angle, double s, int step);
+    //void     BuildPrisma(double L, double R, double angle, double s, int step);
 	void     LoadProfileGEO(FileReader& file, const std::shared_ptr<GlobalSimuState> globalState, int version);
 
 	// Memory usage (in bytes)
@@ -93,8 +93,7 @@ public:
 #pragma endregion
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
-
-    void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) override;
+    void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, bool newStr, int targetStructId) override;
 
 private:
 

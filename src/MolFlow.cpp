@@ -278,7 +278,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add("Select Desorption", MENU_FACET_SELECTDES);
 	menu->GetSubMenu("Selection")->Add("Select Dyn. Desorption (Outg.Map)", MENU_SELECT_HASDESFILE);
 	menu->GetSubMenu("Selection")->Add("Select Reflective", MENU_FACET_SELECTREFL);
-	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
 
 	menu->GetSubMenu("Tools")->Add(nullptr);
 	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_TOOLS_MOVINGPARTS);
@@ -724,30 +723,30 @@ void MolFlow::ApplyFacetParams() {
 			if (doSticking) {
 				if (!stickingNotNumber) {
 					f->sh.sticking = sticking;
-					f->userSticking = "";
+					f->sh.stickingParam = "";
 				}
 				else {
-					f->userSticking = facetSticking->GetText();
+					f->sh.stickingParam = facetSticking->GetText();
 				}
 			}
 
 			if (doOpacity) {
 				if (!opacityNotNumber) {
 					f->sh.opacity = opacity;
-					f->userOpacity = "";
+					f->sh.opacityParam = "";
 				}
 				else {
-					f->userOpacity = facetOpacity->GetText();
+					f->sh.opacityParam = facetOpacity->GetText();
 				}
 			}
 			if (doTemperature) f->sh.temperature = temperature;
 			if (doFlow) {
 				if (!outgassingNotNumber) {
-					f->sh.outgassing = outgassing * MBARLS_TO_PAM3S; //0.1: mbar*l/s -> Pa*m3/s
-					f->userOutgassing = "";
+					f->sh.outgassing = outgassing * MBARLS_TO_PAM3S;
+					f->sh.outgassingParam = "";
 				}
 				else {
-					f->userOutgassing = facetFlow->GetText();
+					f->sh.outgassingParam = facetFlow->GetText();
 				}
 			}
 			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA * f->GetArea() * MBARLS_TO_PAM3S;
@@ -818,10 +817,10 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		for (size_t sel = 1; sel < selectedFacets.size(); sel++) {
 			f = interfGeom->GetFacet(selectedFacets[sel]);
 			double fArea = f->GetArea();
-			stickingE = stickingE && (f0->userSticking == f->userSticking) && IsEqual(f0->sh.sticking, f->sh.sticking);
-			opacityE = opacityE && (f0->userOpacity == f->userOpacity) && IsEqual(f0->sh.opacity, f->sh.opacity);
+			stickingE = stickingE && (f0->sh.stickingParam == f->sh.stickingParam) && IsEqual(f0->sh.sticking, f->sh.sticking);
+			opacityE = opacityE && (f0->sh.opacityParam == f->sh.opacityParam) && IsEqual(f0->sh.opacity, f->sh.opacity);
 			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
-			flowE = flowE && f0->userOutgassing == f->userOutgassing && IsEqual(f0->sh.outgassing, f->sh.outgassing);
+			flowE = flowE && f0->sh.outgassingParam == f->sh.outgassingParam && IsEqual(f0->sh.outgassing, f->sh.outgassing);
 			flowAreaE = flowAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
@@ -833,26 +832,23 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		if (nbSel == 1)
 			sprintf(tmp, "Selected Facet (#%zd)", selectedFacets[0] + 1);
 		else
-			sprintf(tmp, "Selected Facet (%zd selected)", selectedFacets.size());
-
-		// Old STR compatibility
-		//if (stickingE && f0->wp.superDest) stickingE = false;
+			sprintf(tmp, "Selected Facets (%zd selected)", selectedFacets.size());
 
 		facetPanel->SetTitle(tmp);
 		if (selectedFacets.size() > 1) facetAreaLabel->SetText("Sum Area (cm\262):");
 		else facetAreaLabel->SetText("Area (cm\262):");
 		facetArea->SetText(sumArea);
 		if (stickingE) {
-			if (f0->userSticking.length() == 0)
+			if (f0->sh.stickingParam.empty())
 				facetSticking->SetText(f0->sh.sticking);
-			else facetSticking->SetText(f0->userSticking.c_str());
+			else facetSticking->SetText(f0->sh.stickingParam);
 		}
 		else facetSticking->SetText("...");
 
 		if (opacityE) {
-			if (f0->userOpacity.length() == 0)
+			if (f0->sh.opacityParam.empty())
 				facetOpacity->SetText(f0->sh.opacity);
-			else facetOpacity->SetText(f0->userOpacity.c_str());
+			else facetOpacity->SetText(f0->sh.opacityParam);
 		}
 		else facetOpacity->SetText("...");
 
@@ -880,9 +876,9 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 				facetFILabel->SetEnabled(true);
 				facetFlow->SetEditable(true);
 				if (flowE) {
-					if (f0->userOutgassing.length() == 0)
-						facetFlow->SetText(f0->sh.outgassing * 10.00); //10: Pa*m3/sec -> mbar*l/s
-					else facetFlow->SetText(f0->userOutgassing);
+					if (f0->sh.outgassingParam.empty())
+						facetFlow->SetText(f0->sh.outgassing * PAM3S_TO_MBARLS);
+					else facetFlow->SetText(f0->sh.outgassingParam);
 				}
 				else facetFlow->SetText("...");
 				if (flowAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area * 10.00); else facetFlowArea->SetText("...");
@@ -1620,7 +1616,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		case MENU_FACET_SELECTSTICK:
 			interfGeom->UnselectAll();
 			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
-				if (interfGeom->GetFacet(i)->sh.sticking_paramId != -1 || (interfGeom->GetFacet(i)->sh.sticking != 0.0 && !interfGeom->GetFacet(i)->IsTXTLinkFacet()))
+				if (!interfGeom->GetFacet(i)->sh.stickingParam.empty() || (interfGeom->GetFacet(i)->sh.sticking != 0.0 && !interfGeom->GetFacet(i)->IsTXTLinkFacet()))
 					interfGeom->SelectFacet(i);
 			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
@@ -1633,15 +1629,6 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 				if (f->sh.desorbType == DES_NONE && f->sh.sticking == 0.0 && f->sh.opacity > 0.0)
 					interfGeom->SelectFacet(i);
 			}
-			interfGeom->UpdateSelection();
-			UpdateFacetParams(true);
-			break;
-
-		case MENU_FACET_SELECTVOL:
-			interfGeom->UnselectAll();
-			for (int i = 0; i < interfGeom->GetNbFacet(); i++)
-				if (interfGeom->GetFacet(i)->sh.isVolatile)
-					interfGeom->SelectFacet(i);
 			interfGeom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
@@ -2443,7 +2430,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, interfGeom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
-					throw std::runtime_error(errMsg);
+					throw Error(errMsg);
 				}
 				InterfaceFacet* f = interfGeom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);

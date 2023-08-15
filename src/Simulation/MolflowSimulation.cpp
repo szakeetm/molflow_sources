@@ -29,7 +29,6 @@ MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
         particleTracer.model = (MolflowSimulationModel*) model.get();
     }
 
-    hasVolatile =  o.hasVolatile;
 
     globalState = o.globalState;
     globParticleLog = o.globParticleLog;
@@ -146,7 +145,7 @@ int MolflowSimulation::RebuildAccelStructure() {
         return 1;
 
     for(auto& particleTracer : particleTracers)
-        particleTracer->model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+        particleTracer->model = std::static_pointer_cast<MolflowSimulationModel>(model);
 
     timer.Stop();
 
@@ -163,7 +162,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
     ResetSimulation();
     
     procInfo.UpdateControllerStatus({ ControllerState::Loading }, { "Constructing thread hit counters..." }, loadStatus);
-    //auto simModel = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    //auto simModel = std::static_pointer_cast<MolflowSimulationModel>(model);
 
     size_t finished = 0;
 #pragma omp parallel for
@@ -236,7 +235,7 @@ void MolflowSimulation::ResetSimulation() {
         auto& particleTracer = particleTracers[i];
         particleTracer->Reset();
         particleTracer->tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
-        particleTracer->model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+        particleTracer->model = std::static_pointer_cast<MolflowSimulationModel>(model);
         particleTracer->totalDesorbed = 0;
 
         particleTracer->tmpParticleLog->clear();

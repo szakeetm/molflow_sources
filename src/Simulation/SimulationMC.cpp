@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <sstream>
 #include <cereal/archives/binary.hpp>
 #include "MolflowSimulation.h"
+#include "MolflowSimFacet.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
 #include "Helper/MathTools.h"
@@ -31,20 +32,20 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Parameter.h"
 #include <omp.h>
 
-double MolflowSimulationModel::GetStickingAt(SimulationFacet *f, double time) const {
-    if (f->sh.sticking_paramId == -1) //constant sticking
+double MolflowSimulationModel::GetStickingAt(MolflowSimFacet *f, double time) const {
+    if (f->sticking_paramId == -1) //constant sticking
         return f->sh.sticking;
     else {
-        auto &par = tdParams.parameters[f->sh.sticking_paramId];
+        auto &par = tdParams.parameters[f->sticking_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
 }
 
-double MolflowSimulationModel::GetOpacityAt(SimulationFacet *f, double time) const {
-    if (f->sh.opacity_paramId == -1) //constant sticking
+double MolflowSimulationModel::GetOpacityAt(MolflowSimFacet *f, double time) const {
+    if (f->opacity_paramId == -1) //constant sticking
         return f->sh.opacity;
     else {
-        auto &par = tdParams.parameters[f->sh.opacity_paramId];
+        auto &par = tdParams.parameters[f->opacity_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
 }

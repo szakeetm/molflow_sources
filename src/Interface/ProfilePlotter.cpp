@@ -458,34 +458,6 @@ void ProfilePlotter::refreshViews() {
 			}
 			v->CommitChange();
 		}
-		else {
-
-			if (v->userData1 == -2 && worker->globalStatCache.globalHits.nbDesorbed != 0.0) {
-
-				// Volatile profile
-				v->Reset();
-				size_t nb = interfGeom->GetNbFacet();
-				for (size_t j = 0; j < nb; j++) {
-					InterfaceFacet *f = interfGeom->GetFacet(j);
-					if (f->sh.isVolatile) {
-					    const FacetHitBuffer& fCount = worker->globalState->facetStates[j].momentResults[worker->displayedMoment].hits;
-						double z = interfGeom->GetVertex(f->indices[0])->z;
-						v->Add(z,fCount.nbAbsEquiv / worker->globalStatCache.globalHits.nbDesorbed, false);
-					}
-				}
-				// Last
-				InterfaceFacet *f = interfGeom->GetFacet(28);
-                const FacetHitBuffer& fCount = worker->globalState->facetStates[28].momentResults[worker->displayedMoment].hits;
-				double fnbAbs = fCount.nbAbsEquiv;
-				v->Add(1000.0, fnbAbs / worker->globalStatCache.globalHits.nbDesorbed, false);
-				v->CommitChange();
-
-				//v->Reset();
-				//for(int j=0;j<BOUNCEMAX && nbAbs;j++)
-				//  v->Add((double)j,(double)gHits->wallHits[j]/nbAbs);
-
-			}
-		}
 	}
 }
 

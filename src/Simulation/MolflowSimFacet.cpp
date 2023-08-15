@@ -19,8 +19,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
 #include "MolflowSimFacet.h"
+#include "MolflowSimGeom.h"
 #include <fmt/core.h>
 #include <cmath> //sqrt
+#include "GLApp/GLTypes.h"
 
 /*
 MolflowSimFacet::MolflowSimFacet(const MolflowSimFacet& cpy)  : SimulationFacet(cpy) {
@@ -50,32 +52,57 @@ MolflowSimFacet& MolflowSimFacet::operator=(MolflowSimFacet&& cpy) noexcept {
 */
 
 /**
-* \brief Initialise various properties for a single facet
+* \brief Initialize various properties for a single facet
 * \param id global facet id for the application
 * \param regions vector containing the regions and their parameters used to fetch the min/max energy for a spectrum
 * \return boolean that is true on successful init
 */
-bool MolflowSimFacet::InitializeOnLoad(const size_t id) {
+void MolflowSimFacet::InitializeOnLoad(const size_t id, const TimeDependentParameters& tdParams) {
     globalId = id;
-    if (!InitializeLinkAndVolatile(id)) return false;
+    InitializeLinkFacet();
     InitializeOutgassingMap();
-
-    if(InitializeAngleMap() < 0)
-        return false;
-
+    InitializeAngleMap();
     InitializeTexture();
     sqrtTemp = sqrt(sh.temperature);
-
-    return true;
+    LookupParamIds(tdParams);
 }
 
-int MolflowSimFacet::InitializeAngleMap()
+void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
+    if (!sh.stickingParam.empty()) {
+        try {
+            sticking_paramId = tdParams.GetParamId(sh.stickingParam);
+        }
+        catch (...) {
+            throw Error("Sticking parameter \"{}\" not defined", globalId + 1, sh.stickingParam);
+        }
+    }
+    else sticking_paramId = -1;
+    if (!sh.opacityParam.empty()) {
+        try {
+            opacity_paramId = tdParams.GetParamId(sh.opacityParam);
+        }
+        catch (...) {
+            throw Error("Opacity parameter \"{}\" not defined", globalId + 1, sh.opacityParam);
+        }
+    }
+    else opacity_paramId = -1;
+    if (!sh.outgassingParam.empty()) {
+        try {
+            outgassing_paramId = tdParams.GetParamId(sh.outgassingParam);
+        }
+        catch (...) {
+            throw Error("Outgassing parameter \"{}\" not defined", globalId + 1, sh.outgassingParam);
+        }
+    }
+    else outgassing_paramId = -1;
+}
+
+void MolflowSimFacet::InitializeAngleMap()
 {
     //Incident angle map
-    int angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
         if (angleMap.pdf.empty()) // check if a valid recorded angle map exists, otherwise we can't desorb
-            throw Error(fmt::format("Facet {}: should generate by angle map but has none recorded.", globalId + 1).c_str());
+            throw Error("Facet {}: should generate by angle map but has none recorded.", globalId + 1);
 
         //Construct CDFs
         try {
@@ -83,28 +110,28 @@ int MolflowSimFacet::InitializeAngleMap()
             angleMap.phi_pdfsums_higherTheta.resize(sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (phi CDF line sums)");
+            throw Error("Not enough memory to load incident angle map (phi CDF line sums)");
         }
         try {
             angleMap.theta_CDF_lower.resize(sh.anglemapParams.thetaLowerRes);
             angleMap.theta_CDF_higher.resize(sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (line sums, CDF)");
+            throw Error("Not enough memory to load incident angle map (line sums, CDF)");
         }
         try {
             angleMap.phi_CDFs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
             angleMap.phi_CDFs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
+            throw Error("Not enough memory to load incident angle map (CDF)");
         }
         try {
             angleMap.phi_pdfs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
             angleMap.phi_pdfs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
+            throw Error("Not enough memory to load incident angle map (CDF)");
         }
 
         //First pass: determine phi line sums and total map sum
@@ -128,7 +155,7 @@ int MolflowSimFacet::InitializeAngleMap()
         }
         if (angleMap.theta_CDFsum_higher == 0) {
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
-            throw std::runtime_error(err.c_str());
+            throw Error(err.c_str());
         }
         angleMap.thetaLowerRatio = (double)angleMap.theta_CDFsum_lower / (double)angleMap.theta_CDFsum_higher; //higher includes lower
 
@@ -200,10 +227,6 @@ int MolflowSimFacet::InitializeAngleMap()
         //Record mode, create pdf vector
         angleMap.pdf.resize(sh.anglemapParams.GetMapSize());
     }
-
-    if(sh.anglemapParams.record)
-        angleMapSize += sh.anglemapParams.GetDataSize();
-    return angleMapSize;
 }
 
 void MolflowSimFacet::InitializeOutgassingMap()
@@ -223,14 +246,13 @@ void MolflowSimFacet::InitializeOutgassingMap()
     }
 }
 
-bool MolflowSimFacet::InitializeLinkAndVolatile(const size_t  id)
+void MolflowSimFacet::InitializeLinkFacet()
 {
-    SimulationFacet::InitializeLinkAndVolatile(id);
-    if (sh.superDest || sh.isVolatile) {
-        sh.opacity_paramId = -1;
-        sh.sticking_paramId = -1;
+    SimulationFacet::InitializeLinkFacet();
+    if (sh.superDest) {
+        opacity_paramId = -1;
+        sticking_paramId = -1;
     }
-    return true;
 }
 
 /**

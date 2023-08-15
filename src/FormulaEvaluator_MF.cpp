@@ -248,10 +248,10 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if ((idx = GetFacetIndex(v->varName,"Formula"))>0) { //Refer to previously evaluated formula
         if (idx > aboveFormulaValues.size()) {
-            throw Error(fmt::format("Formula {} should be defined above to refer to its value", idx));
+            throw Error("Formula {} should be defined above to refer to its value", idx);
         }
         if (!aboveFormulaValues[idx - 1].second.has_value()) {
-            throw Error(fmt::format("Formula {} is not yet evaluated", idx));
+            throw Error("Formula {} is not yet evaluated", idx);
         }
         ok = true;
         v->value = aboveFormulaValues[idx - 1].second.value();
@@ -265,8 +265,8 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 ++it;
             }
         }
-        if (!found) throw Error(fmt::format("Formula name {} not found above", v->varName));
-        if (!it->second.has_value()) throw Error(fmt::format("Formula {} is not yet evaluated", v->varName));
+        if (!found) throw Error("Formula name {} not found above", v->varName);
+        if (!it->second.has_value()) throw Error("Formula {} is not yet evaluated", v->varName);
         ok = true;
         v->value = it->second.value();
     }

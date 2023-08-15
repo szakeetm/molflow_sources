@@ -145,17 +145,10 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	Clear();
 
-	//mApp->ClearAllSelections();
-	//mApp->ClearAllViews();
-
-	int nbDecade = 0;
-	int nbTF = 9 * nbDecade;
-	int nbTV = 4 * nbTF;
-
-	sh.nbVertex = 2 * step + nbTV;
+	sh.nbVertex = 2 * step;
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
-	sh.nbFacet = step + 2 + nbTF;
+	sh.nbFacet = step + 2;
 
 
 	sh.nbSuper = 1;
@@ -171,77 +164,43 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	// Vertices
 	for (int i = 0; i < step; i++) {
 		double angle = (double)i / (double)step * 2 * PI;
-		vertices3[2 * i + nbTV].x = R * cos(angle);
-		vertices3[2 * i + nbTV].y = R * sin(angle);
-		vertices3[2 * i + nbTV].z = 0.0;
-		vertices3[2 * i + 1 + nbTV].x = R * cos(angle);
-		vertices3[2 * i + 1 + nbTV].y = R * sin(angle);
-		vertices3[2 * i + 1 + nbTV].z = L;
+		vertices3[2 * i].x = R * cos(angle);
+		vertices3[2 * i].y = R * sin(angle);
+		vertices3[2 * i].z = 0.0;
+		vertices3[2 * i + 1].x = R * cos(angle);
+		vertices3[2 * i + 1].y = R * sin(angle);
+		vertices3[2 * i + 1].z = L;
 	}
 
 	try {
 		// Cap facet
-		facets[0 + nbTF] = new InterfaceFacet(step);
-		facets[0 + nbTF]->sh.sticking = 1.0;
-		facets[0 + nbTF]->sh.desorbType = DES_COSINE;
-		facets[0 + nbTF]->sh.outgassing = 1.0;
+		facets[0] = new InterfaceFacet(step);
+		facets[0]->sh.sticking = 1.0;
+		facets[0]->sh.desorbType = DES_COSINE;
+		facets[0]->sh.outgassing = 1.0;
 		for (int i = 0; i < step; i++)
-			facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
+			facets[0]->indices[i] = 2 * i;
 
-		facets[1 + nbTF] = new InterfaceFacet(step);
-		facets[1 + nbTF]->sh.sticking = 1.0;
-		facets[1 + nbTF]->sh.desorbType = DES_NONE;
+		facets[1] = new InterfaceFacet(step);
+		facets[1]->sh.sticking = 1.0;
+		facets[1]->sh.desorbType = DES_NONE;
 		for (int i = 0; i < step; i++)
-			facets[1 + nbTF]->indices[step - i - 1] = 2 * i + 1 + nbTV;
+			facets[1]->indices[step - i - 1] = 2 * i + 1;
 
 		// Wall facet
 		for (int i = 0; i < step; i++) {
-			facets[i + 2 + nbTF] = new InterfaceFacet(4);
-			//facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
-			//facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
-			facets[i + 2 + nbTF]->sh.sticking = s;
-			facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
-			facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
+			facets[i + 2] = new InterfaceFacet(4);
+			facets[i + 2]->sh.sticking = s;
+			facets[i + 2]->indices[0] = 2 * i;
+			facets[i + 2]->indices[1] = 2 * i + 1;
 			if (i < step - 1) {
-				facets[i + 2 + nbTF]->indices[2] = 2 * (i + 1) + 1 + nbTV;
-				facets[i + 2 + nbTF]->indices[3] = 2 * (i + 1) + nbTV;
+				facets[i + 2]->indices[2] = 2 * (i + 1) + 1;
+				facets[i + 2]->indices[3] = 2 * (i + 1);
 			}
 			else {
 
-				facets[i + 2 + nbTF]->indices[2] = 1 + nbTV;
-				facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
-			}
-		}
-
-		// Volatile facet
-		for (int d = 0; d < nbDecade; d++) {
-			for (int i = 0; i < 9; i++) {
-
-				double z = (double)(i + 1) * pow(10, (double)d);
-				int idx = d * 36 + i * 4;
-
-				vertices3[idx + 0].x = -R;
-				vertices3[idx + 0].y = R;
-				vertices3[idx + 0].z = z;
-				vertices3[idx + 1].x = R;
-				vertices3[idx + 1].y = R;
-				vertices3[idx + 1].z = z;
-				vertices3[idx + 2].x = R;
-				vertices3[idx + 2].y = -R;
-				vertices3[idx + 2].z = z;
-				vertices3[idx + 3].x = -R;
-				vertices3[idx + 3].y = -R;
-				vertices3[idx + 3].z = z;
-
-				facets[9 * d + i] = new InterfaceFacet(4);
-				facets[9 * d + i]->sh.sticking = 0.0;
-				facets[9 * d + i]->sh.opacity = 0.0;
-				facets[9 * d + i]->sh.isVolatile = true;
-				facets[9 * d + i]->indices[0] = idx + 0;
-				facets[9 * d + i]->indices[1] = idx + 1;
-				facets[9 * d + i]->indices[2] = idx + 2;
-				facets[9 * d + i]->indices[3] = idx + 3;
-
+				facets[i + 2]->indices[2] = 1;
+				facets[i + 2]->indices[3] = 0;
 			}
 		}
 	}
@@ -250,10 +209,11 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Couldn't reserve memory for the facets");
 	}
 	catch (...) {
+		Clear();
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
+	
 }
 
 /**
@@ -263,13 +223,13 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 * \param s sticking value
 * \param step number of facets used to construct the circular hull
 */
+/*
 void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, int step) {
 	Clear();
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 
-	int nbDecade = 0;
 	int nbTF = 9 * nbDecade;
 	int nbTV = 4 * nbTF;
 
@@ -333,38 +293,6 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 				facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
 			}
 		}
-
-		// Volatile facet
-		for (int d = 0; d < nbDecade; d++) {
-			for (int i = 0; i < 9; i++) {
-
-				double z = (double)(i + 1) * pow(10, (double)d);
-				int idx = d * 36 + i * 4;
-
-				vertices3[idx + 0].x = -R;
-				vertices3[idx + 0].y = R;
-				vertices3[idx + 0].z = z;
-				vertices3[idx + 1].x = R;
-				vertices3[idx + 1].y = R;
-				vertices3[idx + 1].z = z;
-				vertices3[idx + 2].x = R;
-				vertices3[idx + 2].y = -R;
-				vertices3[idx + 2].z = z;
-				vertices3[idx + 3].x = -R;
-				vertices3[idx + 3].y = -R;
-				vertices3[idx + 3].z = z;
-
-				facets[9 * d + i] = new InterfaceFacet(4);
-				facets[9 * d + i]->sh.sticking = 0.0;
-				facets[9 * d + i]->sh.opacity = 0.0;
-				facets[9 * d + i]->sh.isVolatile = true;
-				facets[9 * d + i]->indices[0] = idx + 0;
-				facets[9 * d + i]->indices[1] = idx + 1;
-				facets[9 * d + i]->indices[2] = idx + 2;
-				facets[9 * d + i]->indices[3] = idx + 3;
-
-			}
-		}
 	}
 	catch (std::bad_alloc) {
 		Clear();
@@ -374,8 +302,9 @@ void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, i
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
+	
 }
+*/
 
 /**
 * \brief File handling for inserting a SYN geometry + initialisation
@@ -389,7 +318,7 @@ void MolflowGeometry::InsertSYN(FileReader& file, GLProgress_Abstract& prg, bool
 	if (structId == -1) structId = 0;
 	InsertSYNGeom(file, structId, newStr);
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
+	
 	//AdjustProfile();
 
 }
@@ -1010,7 +939,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 	}
 
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
+	
 	//AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
@@ -1047,7 +976,6 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 	//mApp->ClearFormulas();
 
 	// Globals
-	char tmp[512];
 	prg.SetMessage("Reading SYN file header...");
 	file.ReadKeyword("version"); file.ReadKeyword(":");
 	*version = file.ReadInt();
@@ -1280,7 +1208,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	prg.SetMessage("Initalizing geometry and building mesh...");
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
+	
 	//AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
@@ -3009,225 +2937,42 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker* work, const st
 * \param prg GLProgress_GUI window where visualising of the insert progress is shown
 * \param newStr if a new super structure is to be used
 */
-void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker* work, GLProgress_Abstract& prg, bool newStr) {
-	//mApp->ClearAllSelections();
-	//mApp->ClearAllViews();
-	//mApp->ClearFormulas();
-	//Clear();
-	int structId = viewStruct;
-	if (structId == -1) structId = 0;
+void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> loadedModel, const MolflowInterfaceSettings& interfaceSettings, Worker* work, GLProgress_Abstract& prg, bool newStr) {
+
+	int targetStructId = viewStruct;
+	if (targetStructId == -1) targetStructId = 0;
 	UnselectAll();
 
-	xml_node geomNode = loadXML.child("Geometry");
 	//Vertices
-	size_t nbNewVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
-	size_t nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
+	size_t nbNewVertex = loadedModel->vertices3.size();
+	size_t nbNewFacets = loadedModel->facets.size();
 
-	// reallocate memory
-	try {
-		facets.resize(nbNewFacets + sh.nbFacet, nullptr);
-	}
-	catch (const std::exception&) {
-		throw Error("Couldn't allocate memory for facets");
-	}
-
-	vertices3.resize(nbNewVertex + sh.nbVertex);
-
-	// Read geometry vertices
-	size_t idx = sh.nbVertex;
-	for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
-		vertices3[idx].x = vertex.attribute("x").as_double();
-		vertices3[idx].y = vertex.attribute("y").as_double();
-		vertices3[idx].z = vertex.attribute("z").as_double();
-		vertices3[idx].selected = false;
-		idx++;
-
-	}
-
-	//Structures
-	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
-	idx = 0;
-	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		structNames[sh.nbSuper + idx] = structure.attribute("name").value();
-		idx++;
-	}
-
+	SetInterfaceVertices(loadedModel->vertices3, true);
+	SetInterfaceStructures(loadedModel->structures, true,newStr, targetStructId);
 	//Parameters (needs to precede facets)
-	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
-	bool isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad XML file
+	TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, loadedModel->tdParams.parameters);
+	SetInterfaceFacets(loadedModel->facets, true, newStr, targetStructId);
 
-	{
-		std::vector<Parameter> loadedParams;
-		if (isMolflowFile) {
-			xml_node paramNode = simuParamNode.child("Parameters");
-			for (xml_node newParameter : paramNode.children("Parameter")) {
-				Parameter newPar;
-				newPar.name = newParameter.attribute("name").as_string();
-				if (newParameter.attribute("logXinterp")) {
-					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
-				} //else set to false by constructor
-				if (newParameter.attribute("logYinterp")) {
-					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
-				} //else set to false by constructor
-				for (xml_node newMoment : newParameter.children("Moment")) {
-					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
-						newMoment.attribute("value").as_double()));
-				}
-				loadedParams.push_back(newPar);
-			}
-		}
-		TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, loadedParams);
-	}
-
-	//Facets
-	idx = sh.nbFacet;
-	bool ignoreSumMismatch = false;
-	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
-		size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
-		if (nbIndex < 3) {
-			char errMsg[128];
-			sprintf(errMsg, "Facet %zd has only %zd vertices. ", idx + 1, nbIndex);
-			throw Error(errMsg);
-		}
-		facets[idx] = new InterfaceFacet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex + nbNewVertex, isMolflowFile, ignoreSumMismatch, sh.nbVertex);
-		facets[idx]->selected = true;
-
-		if (newStr) {
-			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
-				facets[idx]->sh.superIdx += static_cast<int>(sh.nbSuper); //offset structure
-			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += sh.nbSuper;
-		}
-		else {
-			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
-				facets[idx]->sh.superIdx += structId; //offset structure
-			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += structId;
-		}
-		if (facets[idx]->sh.teleportDest > 0) facets[idx]->sh.teleportDest += sh.nbFacet; //Offset teleport target
-
-		if (isMolflowFile) {
-			//Set param names for interface
-			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->interfaceParameterCache[facets[idx]->sh.sticking_paramId].name;
-			if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->interfaceParameterCache[facets[idx]->sh.opacity_paramId].name;
-			if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->interfaceParameterCache[facets[idx]->sh.outgassing_paramId].name;
-		}
-		idx++;
-	}
-
-	xml_node interfNode = loadXML.child("Interface");
-	xml_node selNode = interfNode.child("Selections");
-	//int nbS = selNode.select_nodes("Selection").size();
-
-	for (xml_node sNode : selNode.children("Selection")) {
+	for (const auto& selection : interfaceSettings.selections) {
 		SelectionGroup s;
-		s.name = strdup(sNode.attribute("name").as_string());
-		size_t nbSel = sNode.select_nodes("selItem").size();
-		for (xml_node iNode : sNode.children("selItem"))
-			s.facetIds.push_back(iNode.attribute("facet").as_int() + sh.nbFacet); //offset selection numbers
+		s.name = selection.name;
+		for (const auto& id_original : selection.facetIds)
+			s.facetIds.push_back(id_original + sh.nbFacet); //offset selection numbers
 		mApp->AddSelection(s);
 	}
 
-	xml_node viewNode = interfNode.child("Views");
-	for (xml_node newView : selNode.children("View")) {
-		CameraView v;
-		v.name = newView.attribute("name").as_string();
-		v.projMode = newView.attribute("projMode").as_int();
-		v.camAngleOx = newView.attribute("camAngleOx").as_double();
-		v.camAngleOy = newView.attribute("camAngleOy").as_double();
-		if (newView.attribute("camAngleOz")) {
-			v.camAngleOz = newView.attribute("camAngleOz").as_double();
-		}
-		else {
-			v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
-		}
-		if (newView.attribute("lightAngleOx")) {
-			v.lightAngleOx = newView.attribute("lightAngleOx").as_double();
-		}
-		else {
-			v.lightAngleOx = 0.0;
-		}
-		if (newView.attribute("lightAngleOy")) {
-			v.lightAngleOy = newView.attribute("lightAngleOy").as_double();
-		}
-		else {
-			v.lightAngleOy = 0.0;
-		}
-		v.camDist = newView.attribute("camDist").as_double();
-		v.camOffset.x = newView.attribute("camOffset.x").as_double();
-		v.camOffset.y = newView.attribute("camOffset.y").as_double();
-		v.camOffset.z = newView.attribute("camOffset.z").as_double();
-		v.performXY = newView.attribute("performXY").as_int();
-		v.vLeft = newView.attribute("vLeft").as_double();
-		v.vRight = newView.attribute("vRight").as_double();
-		v.vTop = newView.attribute("vTop").as_double();
-		v.vBottom = newView.attribute("vBottom").as_double();
-		mApp->AddView(v);
+	for (const auto& newView : interfaceSettings.views) {
+		mApp->AddView(newView);
 	}
 
-	sh.nbVertex += nbNewVertex;
-	sh.nbFacet += nbNewFacets; //formulas can refer to newly inserted facets
-
-	if (isMolflowFile) {
-		xml_node formulaNode = interfNode.child("Formulas");
-		for (xml_node newFormula : formulaNode.children("Formula")) {
-			std::string expr = newFormula.attribute("expression").as_string();
-			std::string name = newFormula.attribute("name").as_string();
-			mApp->OffsetFormula(expr, (int)sh.nbFacet);
-			mApp->appFormulas->AddFormula(name, expr);
-		}
+	for (const auto & newFormula : interfaceSettings.userFormulas) {
+		auto expr_cpy = newFormula.expression;
+		mApp->OffsetFormula(expr_cpy, (int)sh.nbFacet);
+		mApp->appFormulas->AddFormula(newFormula.name, expr_cpy);
 	}
 
-	/*work->model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->model->wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
-
-	/*
-	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
-
-	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
-	for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-	char tmpExpr[512];
-	strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-	work->userMoments.push_back(tmpExpr);
-	work->AddMoment(mApp->worker.ParseUserMoment(tmpExpr));
-
-	}
-	work->model->wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-	work->model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-	work->model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
-	*/
-
-	if (newStr) sh.nbSuper += nbNewSuper;
-	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
-	InitializeInterfaceGeometry();
-	//AdjustProfile();
-	//isLoaded = true; //InitializeGeometry() sets to true
-
-	// Update mesh for newly inserted facets
-	prg.SetMessage("Building mesh...");
-	for (size_t i = sh.nbFacet - nbNewFacets; i < sh.nbFacet; i++) {
-		double p = (double)(sh.nbFacet - i) / (double)nbNewFacets;
-
-		prg.SetProgress(p);
-		InterfaceFacet* f = facets[i];
-		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
-			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
-			throw Error(errMsg);
-		}
-		BuildFacetList(f);
-		const double nU = f->sh.U.Norme();
-		const double nV = f->sh.V.Norme();
-
-		f->tRatioU = f->sh.texWidth_precise / nU;
-		f->tRatioV = f->sh.texHeight_precise / nV;
-
-		if (std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON) {
-			f->tRatioV = f->tRatioU;
-		}
-	}
 }
-
 
 
 /**
@@ -3243,14 +2988,14 @@ bool MolflowGeometry::CompareXML_simustate(const std::string& fileName_lhs, cons
 	return false;
 }
 
-void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, Worker* work) {
+void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, bool newStr, int targetStructId) {
 	//General Facets
-	InterfaceGeometry::SetInterfaceFacets(sFacets, work);
+	size_t index = insert ? facets.size() : 0;
+	InterfaceGeometry::SetInterfaceFacets(sFacets, insert,newStr,targetStructId);
 
 	// Init Molflow properties
-	size_t index = 0;
 	for (auto& sFac : sFacets) {
-		auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(sFac);
+		auto mfFac = std::static_pointer_cast<MolflowSimFacet>(sFac);
 		auto& intFacet = facets[index];
 
 		// Molflow
@@ -3261,13 +3006,7 @@ void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationF
 			|| intFacet->ogMap.outgassingFileRatioU > 0.0 || intFacet->ogMap.outgassingFileRatioV > 0.0) {
 			intFacet->hasOutgassingFile = true;
 		}
-
-		//Set param names for interface
-		if (intFacet->sh.sticking_paramId > -1) intFacet->userSticking = work->interfaceParameterCache[intFacet->sh.sticking_paramId].name;
-		if (intFacet->sh.opacity_paramId > -1) intFacet->userOpacity = work->interfaceParameterCache[intFacet->sh.opacity_paramId].name;
-		if (intFacet->sh.outgassing_paramId > -1) intFacet->userOutgassing = work->interfaceParameterCache[intFacet->sh.outgassing_paramId].name;
-		if (intFacet->sh.isTextured) intFacet->hasMesh = true;
-		++index;
+		index++;
 	}
 }
 

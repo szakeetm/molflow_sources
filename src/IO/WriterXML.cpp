@@ -22,13 +22,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <sstream>
 #include <Helper/StringHelper.h>
 #include <Helper/ConsoleLogger.h>
+#include <Helper/GLProgress_abstract.hpp>
 #include "PugiXML/pugixml.hpp"
 
 #include "WriterXML.h"
 #include "versionId.h"
 #include "Simulation/MolflowSimFacet.h"
 #include "Simulation/MolflowSimGeom.h"
-
+#include "MolflowTypes.h"
 
 using namespace FlowIO;
 using namespace pugi;
@@ -114,8 +115,8 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         xml_node currentFacetNode = geomNode.child("Facets").append_child("Facet");
         currentFacetNode.append_attribute("id") = i;
         size_t facetId = saveAllFacets ? i : selectionToSave[i];
-        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
-        SaveFacet(currentFacetNode, mfFac, model->vertices3.size());
+        auto mfFac = std::static_pointer_cast<MolflowSimFacet>(model->facets[facetId]);
+        SaveFacet(currentFacetNode, mfFac, model->vertices3.size(),model->tdParams);
     }
     
 
@@ -144,12 +145,12 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
     xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
-    userMomentsNode.append_attribute("nb") = userSettings.userMoments.size();
-    for (size_t i = 0; i < userSettings.userMoments.size(); i++) {
+    userMomentsNode.append_attribute("nb") = interfaceSettings->userMoments.size();
+    for (size_t i = 0; i < interfaceSettings->userMoments.size(); i++) {
         xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
         newUserEntry.append_attribute("id") = i;
-        newUserEntry.append_attribute("content") = userSettings.userMoments[i].content.c_str();
-        newUserEntry.append_attribute("window") = userSettings.userMoments[i].timeWindow;
+        newUserEntry.append_attribute("content") = interfaceSettings->userMoments[i].content.c_str();
+        newUserEntry.append_attribute("window") = interfaceSettings->userMoments[i].timeWindow;
     }
 
     timeSettingsNode.append_attribute("timeWindow") = model->wp.timeWindowSize;
@@ -231,72 +232,72 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node interfNode = rootNode.insert_child_after("Interface", simuParamNode);
 
     xml_node selNode = interfNode.append_child("Selections");
-    selNode.append_attribute("nb") = saveAllFacets ? userSettings.selections.size() : 0; //Don't save sel.groups if save file restricted to a subset of facets
+    selNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->selections.size() : 0; //Don't save sel.groups if save file restricted to a subset of facets
     if (saveAllFacets) {
-        for (size_t i = 0; i < userSettings.selections.size(); i++) { //don't save selections when exporting part of the geometry (saveSelected)
+        for (size_t i = 0; i < interfaceSettings->selections.size(); i++) { //don't save selections when exporting part of the geometry (saveSelected)
             xml_node newSel = selNode.append_child("Selection");
             newSel.append_attribute("id") = i;
-            newSel.append_attribute("name") = userSettings.selections[i].name.c_str();
-            newSel.append_attribute("nb") = userSettings.selections[i].facetIds.size();
-            for (size_t j = 0; j < userSettings.selections[i].facetIds.size(); j++) {
+            newSel.append_attribute("name") = interfaceSettings->selections[i].name.c_str();
+            newSel.append_attribute("nb") = interfaceSettings->selections[i].facetIds.size();
+            for (size_t j = 0; j < interfaceSettings->selections[i].facetIds.size(); j++) {
                 xml_node newItem = newSel.append_child("selItem");
                 newItem.append_attribute("id") = j;
-                newItem.append_attribute("facet") = userSettings.selections[i].facetIds[j];
+                newItem.append_attribute("facet") = interfaceSettings->selections[i].facetIds[j];
             }
         }
     }
 
     xml_node viewNode = interfNode.append_child("Views");
-    viewNode.append_attribute("nb") = saveAllFacets ? userSettings.views.size() : 0;
+    viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->views.size() : 0;
     if (saveAllFacets) {
-        for (int i = 0; i < userSettings.views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
+        for (int i = 0; i < interfaceSettings->views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
             xml_node newView = viewNode.append_child("View");
             newView.append_attribute("id") = i;
-            newView.append_attribute("name") = userSettings.views[i].name.c_str();
-            newView.append_attribute("projMode") = userSettings.views[i].projMode;
-            newView.append_attribute("camAngleOx") = userSettings.views[i].camAngleOx;
-            newView.append_attribute("camAngleOy") = userSettings.views[i].camAngleOy;
-            newView.append_attribute("camAngleOz") = userSettings.views[i].camAngleOz;
-            newView.append_attribute("camDist") = userSettings.views[i].camDist;
-            newView.append_attribute("lightAngleOx") = userSettings.views[i].lightAngleOx;
-            newView.append_attribute("lightAngleOy") = userSettings.views[i].lightAngleOy;
-            newView.append_attribute("camOffset.x") = userSettings.views[i].camOffset.x;
-            newView.append_attribute("camOffset.y") = userSettings.views[i].camOffset.y;
-            newView.append_attribute("camOffset.z") = userSettings.views[i].camOffset.z;
-            newView.append_attribute("performXY") = userSettings.views[i].performXY;
-            newView.append_attribute("vLeft") = userSettings.views[i].vLeft;
-            newView.append_attribute("vRight") = userSettings.views[i].vRight;
-            newView.append_attribute("vTop") = userSettings.views[i].vTop;
-            newView.append_attribute("vBottom") = userSettings.views[i].vBottom;
+            newView.append_attribute("name") = interfaceSettings->views[i].name.c_str();
+            newView.append_attribute("projMode") = interfaceSettings->views[i].projMode;
+            newView.append_attribute("camAngleOx") = interfaceSettings->views[i].camAngleOx;
+            newView.append_attribute("camAngleOy") = interfaceSettings->views[i].camAngleOy;
+            newView.append_attribute("camAngleOz") = interfaceSettings->views[i].camAngleOz;
+            newView.append_attribute("camDist") = interfaceSettings->views[i].camDist;
+            newView.append_attribute("lightAngleOx") = interfaceSettings->views[i].lightAngleOx;
+            newView.append_attribute("lightAngleOy") = interfaceSettings->views[i].lightAngleOy;
+            newView.append_attribute("camOffset.x") = interfaceSettings->views[i].camOffset.x;
+            newView.append_attribute("camOffset.y") = interfaceSettings->views[i].camOffset.y;
+            newView.append_attribute("camOffset.z") = interfaceSettings->views[i].camOffset.z;
+            newView.append_attribute("performXY") = interfaceSettings->views[i].performXY;
+            newView.append_attribute("vLeft") = interfaceSettings->views[i].vLeft;
+            newView.append_attribute("vRight") = interfaceSettings->views[i].vRight;
+            newView.append_attribute("vTop") = interfaceSettings->views[i].vTop;
+            newView.append_attribute("vBottom") = interfaceSettings->views[i].vBottom;
         }
     }
 
     xml_node formulaNode = interfNode.append_child("Formulas");
-    formulaNode.append_attribute("nb") = saveAllFacets ? userSettings.userFormulas.size() : 0;
+    formulaNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->userFormulas.size() : 0;
     if (saveAllFacets) { //don't save formulas when exporting part of the geometry (saveSelected)
-        for (size_t i = 0; i < userSettings.userFormulas.size(); i++) {
+        for (size_t i = 0; i < interfaceSettings->userFormulas.size(); i++) {
             xml_node newFormula = formulaNode.append_child("Formula");
             newFormula.append_attribute("id") = i;
-            newFormula.append_attribute("name") = userSettings.userFormulas[i].name.c_str();
-            newFormula.append_attribute("expression") = userSettings.userFormulas[i].expression.c_str();
+            newFormula.append_attribute("name") = interfaceSettings->userFormulas[i].name.c_str();
+            newFormula.append_attribute("expression") = interfaceSettings->userFormulas[i].expression.c_str();
         }
     }
 
-    if (userSettings.profilePlotterSettings.hasData) {
+    if (interfaceSettings->profilePlotterSettings.hasData) {
         xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
-        profilePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.profilePlotterSettings.logYscale;
+        profilePlotterNode.append_child("Parameters").append_attribute("logScale") = interfaceSettings->profilePlotterSettings.logYscale;
         xml_node viewsNode = profilePlotterNode.append_child("Views");
-        for (int v : userSettings.profilePlotterSettings.viewIds) {
+        for (int v : interfaceSettings->profilePlotterSettings.viewIds) {
             xml_node view = viewsNode.append_child("View");
             view.append_attribute("facetId") = v;
         }
     }
 
-    if (userSettings.convergencePlotterSettings.hasData) {
+    if (interfaceSettings->convergencePlotterSettings.hasData) {
         xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
-        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = userSettings.convergencePlotterSettings.logYscale;
+        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = interfaceSettings->convergencePlotterSettings.logYscale;
         xml_node viewsNode = convergencePlotterNode.append_child("Views");
-        for (int v : userSettings.convergencePlotterSettings.viewIds) {
+        for (int v : interfaceSettings->convergencePlotterSettings.viewIds) {
             xml_node view = viewsNode.append_child("View");
             view.append_attribute("formulaHash") = v;
         }
@@ -658,19 +659,52 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices) {
-    xml_node e = facetNode.append_child("Sticking");
-    e.append_attribute("constValue") = facet->sh.sticking;
-    e.append_attribute("parameterId") = facet->sh.sticking_paramId;
+void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices, const TimeDependentParameters& tdParams) {
+    
+    {   
+        xml_node e = facetNode.append_child("Sticking");
+        std::string paramName = facet->sh.stickingParam;
+        if (!paramName.empty()) {
+            e.append_attribute("stickingParam") = paramName.c_str();
+            e.append_attribute("parameterId") = tdParams.GetParamId(paramName);
+            e.append_attribute("constValue") = 0.0; //for backward compatibility, won't be read
+        }
+        else {
+            e.append_attribute("constValue") = facet->sh.sticking;
+            e.append_attribute("parameterId") = -1; //for backward compatibility, versions<2.9.15 expect it
+        }
+    }
+    {
+        xml_node e = facetNode.append_child("Opacity");
+        std::string paramName = facet->sh.opacityParam;
+        if (!paramName.empty()) {
+            e.append_attribute("opacityParam") = paramName.c_str();
+            e.append_attribute("parameterId") = tdParams.GetParamId(paramName);
+            e.append_attribute("constValue") = 1.0; //for backward compatibility, won't be read
+        }
+        else {
+            e.append_attribute("constValue") = facet->sh.opacity;
+            e.append_attribute("parameterId") = -1; //for backward compatibility, versions<2.9.15 expect it
+        }
+        e.append_attribute("is2sided") = (int) facet->sh.is2sided; //backward compatibility: 0 or 1
+    }
 
-    e = facetNode.append_child("Opacity");
-    e.append_attribute("constValue") = facet->sh.opacity;
-    e.append_attribute("parameterId") = facet->sh.opacity_paramId;
-    e.append_attribute("is2sided") = (int) facet->sh.is2sided; //backward compatibility: 0 or 1
+    xml_node e = facetNode.append_child("Outgassing");
+    {
+        
+        std::string paramName = facet->sh.outgassingParam;
+        if (!paramName.empty()) {
+            e.append_attribute("outgassingParam") = paramName.c_str();
+            e.append_attribute("parameterId") = tdParams.GetParamId(paramName);
+            e.append_attribute("constValue") = 0.0; //for backward compatibility, won't be read
+        }
+        else {
+            e.append_attribute("constValue") = facet->sh.outgassing;
+            e.append_attribute("parameterId") = -1; //for backward compatibility, versions<2.9.15 expect it
+        }
+        e.append_attribute("is2sided") = (int)facet->sh.is2sided; //backward compatibility: 0 or 1
+    }
 
-    e = facetNode.append_child("Outgassing");
-    e.append_attribute("constValue") = facet->sh.outgassing;
-    e.append_attribute("parameterId") = facet->sh.outgassing_paramId;
     e.append_attribute("desType") = facet->sh.desorbType;
     e.append_attribute("desExponent") = facet->sh.desorbTypeN;
     e.append_attribute(
@@ -758,10 +792,10 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
         t.append_attribute("thetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
     }
 
-    if (!userSettings.facetViewSettings.empty()) {
+    if (!interfaceSettings->facetSettings.empty()) {
         e = facetNode.append_child("ViewSettings");
-        e.append_attribute("textureVisible") = userSettings.facetViewSettings[facet->globalId].textureVisible; //backward compatibility: 0 or 1
-        e.append_attribute("volumeVisible") = userSettings.facetViewSettings[facet->globalId].volumeVisible; //backward compatibility: 0 or 1
+        e.append_attribute("textureVisible") = interfaceSettings->facetSettings[facet->globalId].textureVisible; //backward compatibility: 0 or 1
+        e.append_attribute("volumeVisible") = interfaceSettings->facetSettings[facet->globalId].volumeVisible; //backward compatibility: 0 or 1
     }
 
     facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
@@ -835,11 +869,11 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
 }
 
 XmlWriter::XmlWriter(bool useOldXMLFormat, bool updateRootNode) : useOldXMLFormat(useOldXMLFormat), updateRootNode(updateRootNode){
-
+    interfaceSettings = std::make_unique<MolflowInterfaceSettings>();
 }
 
 void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::vector<std::vector<FormulaHistoryDatapoint>>& convergenceData) {
-    //make sure userSettings.userFormuals is set (for names)
+    //make sure interfaceSettings->userFormuals is set (for names)
     auto rootNode = GetRootNode(saveDoc);
     xml_node resultNode = rootNode.child("MolflowResults");
     if (!resultNode) {
@@ -856,8 +890,8 @@ void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::v
             convText << convVal.nbDes << "\t" << convVal.value << "\n";
         }
         xml_node newFormulaNode = convNode.append_child("ConvData");
-        if (userSettings.userFormulas.size() > formulaId) {
-            newFormulaNode.append_attribute("Formula") = userSettings.userFormulas[formulaId].expression.c_str();
+        if (interfaceSettings->userFormulas.size() > formulaId) {
+            newFormulaNode.append_attribute("Formula") = interfaceSettings->userFormulas[formulaId].expression.c_str();
             newFormulaNode.append_attribute("nbEntries") = formulaVec.size();
         }
         xml_node newConv = newFormulaNode.append_child(node_cdata);

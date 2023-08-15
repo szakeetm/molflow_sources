@@ -8,7 +8,8 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
-
+#include <Helper/GLProgress_abstract.hpp>
+#include <GLApp/GLTypes.h>
 
 /*!
  * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (singleMoment and b_j) overlap

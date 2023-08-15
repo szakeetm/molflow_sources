@@ -22,11 +22,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "SimulationFacet.h"
 
+struct TimeDependentParameters;
+
 class Anglemap {
 public:
-    Anglemap(){
-        theta_CDFsum_lower=theta_CDFsum_higher=0;
-    };
     std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation. Unites lower and higher theta parts
     std::vector<double> phi_CDFs_lowerTheta;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
     std::vector<double> phi_CDFs_higherTheta;
@@ -36,9 +35,9 @@ public:
     std::vector<double> phi_pdfs_higherTheta;
     std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n.)
     std::vector<double> theta_CDF_higher;
-    size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
-    size_t theta_CDFsum_higher; // theta_CDFsum_higher>=theta_CDFsum_lower as it includes lower part. Also total number of hits in raw pdf
-    double thetaLowerRatio; // ratio of angle map below theta limit, to decide which side to look up in
+    size_t theta_CDFsum_lower=0;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
+    size_t theta_CDFsum_higher=0; // theta_CDFsum_higher>=theta_CDFsum_lower as it includes lower part. Also total number of hits in raw pdf
+    double thetaLowerRatio=1.0; // ratio of angle map below theta limit, to decide which side to look up in
 
     [[nodiscard]] size_t GetMemSize() const {
         size_t sum = 0;
@@ -67,11 +66,13 @@ public:
     //MolflowSimFacet &operator=(const MolflowSimFacet &o);
     //MolflowSimFacet &operator=(MolflowSimFacet &&o) noexcept;
 
-    bool InitializeOnLoad(const size_t id);
+    void InitializeOnLoad(const size_t id, const TimeDependentParameters& tdParams);
 
-    bool InitializeLinkAndVolatile(const size_t  id) override;
+    void LookupParamIds(const TimeDependentParameters& tdParams);
 
-    int InitializeAngleMap();
+    void InitializeLinkFacet() override;
+
+    void InitializeAngleMap();
 
     void InitializeOutgassingMap();
 
@@ -82,4 +83,10 @@ public:
     Anglemap angleMap;
 
     double sqrtTemp; //pre-caculated sqrt(sh.temperature) for frequent multiplication
+
+    //Helper IDs for fast lookup
+    int sticking_paramId=-1;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
+    int opacity_paramId=-1;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
+    int outgassing_paramId=-1;  // -1 if use constant value, 0 or more if referencing time-dependent parameter
+
 };

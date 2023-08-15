@@ -33,6 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <IO/LoaderXML.h>
 #include <IO/WriterXML.h>
 #include "Simulation/MolflowSimGeom.h"
+#include "Simulation/MolflowSimFacet.h"
 #include "Initializer.h"
 #include "Helper/MathTools.h"
 #include <sstream>
@@ -44,6 +45,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/GLProgress_CLI.hpp"
 #include "MolflowCLI.hpp"
 #include <CLI11/CLI11.hpp>
+#include "GLApp/GLTypes.h"
 
 //#if defined(MOLFLOW)
 #include <SettingsIO.h>
@@ -113,7 +115,7 @@ int main(int argc, char** argv) {
     SimulationManager simManager{MFMPI::world_rank};
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-    MolflowUserSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
+    MolflowInterfaceSettings persistentUserSettings; //persistent user data that should be written back to a results file when saving
     SettingsIO::CLIArguments parsedArgs;
 
     // Parse arguments
@@ -124,7 +126,7 @@ int main(int argc, char** argv) {
         ShutdownMPI();
         return 41;
     } catch (const CLI::ParseError& e) {
-        throw Error(fmt::format("Argument parse error:\n{}", e.what()));
+        throw Error("Argument parse error:\n{}", e.what());
     }
 
 #if defined(USE_MPI)
@@ -258,7 +260,7 @@ void ShutdownMPI() {
 }
 
 void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs) {
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, std::string& autoSave, RuntimeStatPrinter& printer, SettingsIO::CLIArguments& parsedArgs) {
     // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
     do {
@@ -300,7 +302,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_p
 }
 
 void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs) {
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs) {
     // Export results
         //  a) Use existing autosave as base
         //  b) Create copy of input file
@@ -328,7 +330,7 @@ void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std
     GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
     prg.noProgress = simManager.noProgress;
     FlowIO::XmlWriter writer(false, true);
-    writer.userSettings = persistentUserSettings;
+    writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentUserSettings);
     pugi::xml_document newDoc;
     newDoc.load_file(fullOutFile.c_str());
     writer.SaveGeometry(newDoc, model, prg);
@@ -367,7 +369,7 @@ void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std
 }
 
 void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowUserSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs) {
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs) {
     // First write an intermediate output file
                 // 1. Get file name
     std::string outFile = std::filesystem::path(parsedArgs.outputPath)
@@ -381,7 +383,7 @@ void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> mo
         prg.noProgress = simManager.noProgress;
         // 2. Write XML file, use existing file as base or create new file
         FlowIO::XmlWriter writer;
-        writer.userSettings = persistentUserSettings; //keep from loaded file
+        writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentUserSettings); //keep from loaded file
         if (!parsedArgs.workFile.empty() && std::filesystem::exists(parsedArgs.workFile)) {
             try {
                 std::filesystem::copy_file(parsedArgs.workFile, outFile,
@@ -424,7 +426,7 @@ void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> mo
 void GatherAngleMapRecordings(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState) {
     for (int i = 0; i < model->facets.size(); i++) {
 #if defined(MOLFLOW)
-        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
+        auto f = std::static_pointer_cast<MolflowSimFacet>(model->facets[i]);
         if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
             //Retrieve angle map from hits dp
             f->angleMap.pdf = globalState->facetStates[i].recordedAngleMapPdf;

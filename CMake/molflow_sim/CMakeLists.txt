@@ -75,8 +75,6 @@ set(SRC_FILES
         ${CPP_DIR_2}/Process.cpp
         ${CPP_DIR_2}/GLApp/GLFormula.cpp
 
-        ${CPP_DIR_1}/MolflowBuffer.cpp
-
         ${CPP_DIR_2}/Vector.cpp
         ${CPP_DIR_2}/Distributions.cpp
         ${CPP_DIR_2}/GLApp/GLFormula.h

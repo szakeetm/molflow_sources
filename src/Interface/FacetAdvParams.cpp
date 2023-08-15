@@ -1222,7 +1222,7 @@ bool FacetAdvParams::Apply() {
 			superStruct = std::stoi(ssText);
 			superStruct--; //Internally numbered from 0
 			if (superStruct < 0 || superStruct >= interfGeom->GetNbStructure()) {
-				throw std::invalid_argument("Invalid superstructure number");
+				throw Error("Invalid superstructure number");
 			}
 			doSuperStruct = true;
 		}

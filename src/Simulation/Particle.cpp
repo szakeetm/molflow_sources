@@ -266,7 +266,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 #else
             transparentHitBuffer.clear();
             bool found;
-            SimulationFacet* collidedFacet;
+           MolflowSimFacet* collidedFacet;
 			double d;
 			{
 				ray.tMax = 1.0e99;
@@ -303,7 +303,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             // hard hit
             if(found){
                 auto& hit = ray.hardHit;
-                collidedFacet = model->facets[hit.hitId].get();
+                collidedFacet = (MolflowSimFacet*)(model->facets[hit.hitId].get());
                 tmpFacetVars[hit.hitId] = hit.hit;
                 d = hit.hit.colDistTranspPass;
             }
@@ -423,7 +423,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
                                                                   (1.38E-23 * f->sh.temperature)));
                     if (found) {
-                        auto mfFac = std::dynamic_pointer_cast<MolflowSimFacet>(f);
+                        auto mfFac = std::static_pointer_cast<MolflowSimFacet>(f);
                         //look for exact position in map
                         double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
                                                                                           f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
@@ -444,9 +444,9 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             } //end outgassing file block
             else { //constant or time-dependent outgassing
                 double facetOutgassing =
-                        ((f->sh.outgassing_paramId >= 0)
+                        (std::static_pointer_cast<MolflowSimFacet>(f)->outgassing_paramId >= 0)
                          ? model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue
-                         : model->wp.latestMoment * f->sh.outgassing) / (1.38E-23 * f->sh.temperature);
+                         : model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
                 found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                 sumA += facetOutgassing;
             } //end constant or time-dependent outgassing block
@@ -470,7 +470,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
-    auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src); //access extended properties
+    auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src); //access extended properties
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfSrc->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
@@ -497,7 +497,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     while (!found && nbTry < 1000) {
         double u, v;
         if (foundInMap) {
-            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
+            auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src);
             auto& outgMap = mfSrc->ogMap;
             if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
@@ -536,7 +536,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     if (!found) {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
-            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
+            auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src);
             auto& outgMap = mfSrc->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
@@ -581,7 +581,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                                          randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_ANGLEMAP: {
-            auto mfSrc = std::dynamic_pointer_cast<MolflowSimFacet>(src);
+            auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src);
             auto [theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, mfSrc->angleMap, randomGenerator.rnd());
 
@@ -665,15 +665,6 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         RecordHitOnTexture(src.get(), momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
 
-    // Reset volatile state
-    /*if (hasVolatile) {
-        for (auto &s : model->structures) {
-            for (auto &f : s.facets) {
-                f.isReady = true;
-            }
-        }
-    }*/
-
     found = false;
     return true;
 }
@@ -713,27 +704,6 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
             RecordDirectionVector(iFacet, momentIndex);
 
-        return;
-
-    }
-
-    // Handle volatile facet
-    if (iFacet->sh.isVolatile) {
-        if (iFacet->isReady) {
-            int momentIndex = -1;
-            if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
-                lastMomentIndex = momentIndex - 1;
-            }
-
-            IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0, nullVector, nullVector, nullVector);
-            iFacet->isReady = false;
-            LogHit(iFacet);
-            ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
-            if (/*iFacet->texture && */iFacet->sh.countAbs)
-                RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0);
-            if (/*iFacet->direction && */iFacet->sh.countDirection)
-                RecordDirectionVector(iFacet, momentIndex);
-        }
         return;
 
     }

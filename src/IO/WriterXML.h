@@ -18,19 +18,18 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#ifndef MOLFLOW_PROJ_WRITERXML_H
-#define MOLFLOW_PROJ_WRITERXML_H
+#pragma once
 
 #include <PugiXML/pugixml.hpp>
-#include <Helper/GLProgress_abstract.hpp>
 #include <string>
-#include "MolflowTypes.h"
 
 class MolflowSimFacet;
 class MolflowSimulationModel;
-class MolflowSimulationModel;
 class GlobalSimuState;
 struct FormulaHistoryDatapoint;
+struct TimeDependentParameters;
+struct MolflowInterfaceSettings;
+class GLProgress_Abstract;
 
 namespace FlowIO {
 
@@ -59,11 +58,8 @@ namespace FlowIO {
         bool AppendSimulationStateToFile(const std::string &outputFileName, const std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState);
         bool SaveSimulationState(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> model, GLProgress_Abstract& prg, const std::shared_ptr<GlobalSimuState> globalState);
 
-        void
-        SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices);
+        void SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices, const TimeDependentParameters& tdParams);
 
-        MolflowUserSettings userSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
+        std::unique_ptr<MolflowInterfaceSettings> interfaceSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
     };
 }
-
-#endif //MOLFLOW_PROJ_WRITERXML_H

@@ -22,12 +22,17 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <set>
 #include <map>
-#include <GeometryTypes.h>
-#include <Formulas.h>
-#include "Simulation/MolflowSimGeom.h"
 #include "PugiXML/pugixml.hpp"
-#include "Simulation/MolflowSimFacet.h"
-#include <Helper/GLProgress_abstract.hpp>
+
+class GLProgress_Abstract;
+class MolflowSimulationModel;
+class MolflowSimFacet;
+class Parameter;
+struct TimeDependentParameters;
+struct Formulas;
+class GlobalSimuState;
+struct FacetInterfaceSetting;
+struct MolflowInterfaceSettings;
 
 namespace FlowIO {
 
@@ -40,13 +45,14 @@ namespace FlowIO {
     class XmlLoader : public Loader {
 
     protected:
-        void LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, FacetViewSetting& fv, size_t nbTotalVertices, size_t nbTimedepParams);
+        void LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, FacetInterfaceSetting& fis, size_t nbTotalVertices, const TimeDependentParameters& tdParams);
     public:
+        XmlLoader();
         std::shared_ptr<MolflowSimulationModel> LoadGeometry(const std::string& inputFileName, const std::vector<Parameter>& catalog, GLProgress_Abstract& prg) override;
-        static int LoadSimulationState(const std::string &inputFileName, const std::shared_ptr<MolflowSimulationModel> model,
+        static int LoadSimulationState(const std::string& inputFileName, const std::shared_ptr<MolflowSimulationModel> model,
             const std::shared_ptr<GlobalSimuState> globalState, GLProgress_Abstract& prg);
         static int
-        LoadConvergenceValues(const std::string &inputFileName, const std::shared_ptr<Formulas> appFormulas, GLProgress_Abstract& prg);
-        MolflowUserSettings userSettings; //Cache that will be passed on to Worker/model after loading
+            LoadConvergenceValues(const std::string& inputFileName, const std::shared_ptr<Formulas> appFormulas, GLProgress_Abstract& prg);
+        std::unique_ptr<MolflowInterfaceSettings> interfaceSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI };
     };
 }

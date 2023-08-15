@@ -38,6 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowSimFacet.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 #include "File.h" //FileReader for LoadParamCatalog
+#include "GLApp/GLTypes.h"
 
 /**
 * \brief Computes with a distribution function and a random number whether a hit on a surface is "hard" or not
@@ -60,9 +61,9 @@ bool ParameterSurface::IsHardHit(const Ray &r) {
 * \param s sticking value
 * \param step number of facets used to construct the circular hull
 */
-void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, double s, int step) {
+/*
+void MolflowSimulationModel::BuildPrisma(double L, double R, double angle, double s, int step) {
 
-    int nbDecade = 0;
     int nbTF = 9 * nbDecade;
     int nbTV = 4 * nbTF;
 
@@ -127,38 +128,6 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
                 facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
             }
         }
-
-        // Volatile facet
-        for (int d = 0; d < nbDecade; d++) {
-            for (int i = 0; i < 9; i++) {
-
-                double z = (double)(i + 1) * pow(10, (double)d);
-                int idx = d * 36 + i * 4;
-
-                vertices3[idx + 0].x = -R;
-                vertices3[idx + 0].y = R;
-                vertices3[idx + 0].z = z;
-                vertices3[idx + 1].x = R;
-                vertices3[idx + 1].y = R;
-                vertices3[idx + 1].z = z;
-                vertices3[idx + 2].x = R;
-                vertices3[idx + 2].y = -R;
-                vertices3[idx + 2].z = z;
-                vertices3[idx + 3].x = -R;
-                vertices3[idx + 3].y = -R;
-                vertices3[idx + 3].z = z;
-
-                facets[9 * d + i] = std::make_shared<MolflowSimFacet>(4);
-                facets[9 * d + i]->sh.sticking = 0.0;
-                facets[9 * d + i]->sh.opacity = 0.0;
-                facets[9 * d + i]->sh.isVolatile = true;
-                facets[9 * d + i]->indices[0] = idx + 0;
-                facets[9 * d + i]->indices[1] = idx + 1;
-                facets[9 * d + i]->indices[2] = idx + 2;
-                facets[9 * d + i]->indices[3] = idx + 3;
-
-            }
-        }
     }
     catch (std::bad_alloc) {
         throw Error("Couldn't reserve memory for the facets");
@@ -167,6 +136,7 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
         throw Error("Unspecified Error while building pipe");
     }
 }
+*/
 
 /**
 * \brief Builds ADS given certain parameters
@@ -226,10 +196,11 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
     }
 
     for(auto& sFac : this->facets){
-        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+        auto mfFac = std::static_pointer_cast<MolflowSimFacet>(sFac);
+        if (mfFac->opacity_paramId == -1) { //constant sticking
             sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0); //sanitize
         }
-        sFac->surf = GetSurface(sFac);
+        sFac->surf = GetSurface(mfFac);
     }
 
     this->rayTracingStructures.clear();
@@ -295,24 +266,24 @@ void MolflowSimulationModel::PrepareToRun() {
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        const auto facet = facets[i];
+        const auto facet = std::static_pointer_cast<MolflowSimFacet>(facets[i]);
         // TODO: Find a solution to integrate catalog parameters
-        if(facet->sh.outgassing_paramId >= (int) tdParams.parameters.size()){
-            throw Error(fmt::format("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.outgassing_paramId + 1, tdParams.parameters.size()));
+        if(facet->outgassing_paramId >= (int) tdParams.parameters.size()){
+            throw Error("Facet {} outgassing refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->outgassing_paramId + 1, tdParams.parameters.size());
         }
-        if(facet->sh.opacity_paramId >= (int) tdParams.parameters.size()){
-            throw Error(fmt::format("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.opacity_paramId + 1, tdParams.parameters.size()));
+        if(facet->opacity_paramId >= (int) tdParams.parameters.size()){
+            throw Error("Facet {} opacity refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->opacity_paramId + 1, tdParams.parameters.size());
         }
-        if(facet->sh.sticking_paramId >= (int) tdParams.parameters.size()){
-            throw Error(fmt::format("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sh.sticking_paramId + 1, tdParams.parameters.size()));
+        if(facet->sticking_paramId >= (int) tdParams.parameters.size()){
+            throw Error("Facet {} sticking refers to time-dependent parameter no. {}, but there are only {}.", i + 1, facet->sticking_paramId + 1, tdParams.parameters.size());
         }
 
-        if (facet->sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = IDGeneration::GetIDId(desorptionParameterIDs, facet->sh.outgassing_paramId);
+        if (facet->outgassing_paramId >= 0) { //if time-dependent desorption
+            int id = IDGeneration::GetIDId(desorptionParameterIDs, facet->outgassing_paramId);
             if (id >= 0)
                 facet->sh.IDid = id; //we've already generated an ID for this parameter
             else {
-                auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet->sh.outgassing_paramId, this);
+                auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet->outgassing_paramId, this);
                 facet->sh.IDid = id_new;
                 tdParams.IDs.emplace_back(std::move(id_vec));
             }
@@ -320,12 +291,12 @@ void MolflowSimulationModel::PrepareToRun() {
         
         //Angle map
         if (facet->sh.desorbType == DES_ANGLEMAP) {
-            auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+            auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(facets[i]);
             if (mfFacet->angleMap.pdf.empty()) {
-                throw Error(fmt::format("Facet #{} uses angle map desorption but doesn't have a recorded angle map.", i + 1));
+                throw Error("Facet #{} uses angle map desorption but doesn't have a recorded angle map.", i + 1);
             }
             if (mfFacet->sh.anglemapParams.record) {
-                throw Error(fmt::format("Facet #{}: Can't RECORD and USE angle map desorption at the same time.", i + 1));
+                throw Error("Facet #{}: Can't RECORD and USE angle map desorption at the same time.", i + 1);
             }
         }
     }
@@ -343,13 +314,14 @@ void MolflowSimulationModel::CalcIntervalCache() {
 }
 
 std::shared_ptr<Surface> MolflowSimulationModel::GetSurface(std::shared_ptr<SimulationFacet> facet) {
+    const auto mfFac = std::static_pointer_cast<MolflowSimFacet>(facet);
 
-    if (facet->sh.opacity_paramId == -1) { //constant sticking
+    if (mfFac->opacity_paramId == -1) { //constant sticking
         return SimulationModel::GetSurface(facet); //simply based on opacity
     }
     else { //time-dependent opacity
-        auto opacity_paramId = facet->sh.opacity_paramId;
-        Parameter* parPtr = &(this->tdParams.parameters[facet->sh.opacity_paramId]);
+        auto opacity_paramId = mfFac->opacity_paramId;
+        Parameter* parPtr = &(this->tdParams.parameters[mfFac->opacity_paramId]);
 
         double indexed_id = 10.0 + opacity_paramId;
         if (!surfaces.empty()) {
@@ -379,9 +351,10 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
 
     for (size_t i = 0; i < facets.size(); i++) {
         const auto facet = facets[i];
+        const auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(facet);
         if (facet->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet->sh.useOutgassingFile) { //outgassing file
-                const auto mfFacet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+                const auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(facets[i]);
                 auto &ogMap = mfFacet->ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules +=
@@ -390,7 +363,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                     finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
-                if (facet->sh.outgassing_paramId == -1) { //constant outgassing
+                if (mfFacet->outgassing_paramId == -1) { //constant outgassing
                     totalDesorbedMolecules +=
                             latestMoment * facet->sh.outgassing / (1.38E-23 * facet->sh.temperature);
                     finalOutgassingRate +=
@@ -399,8 +372,8 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                 } else { //time-dependent outgassing
                     totalDesorbedMolecules +=
                             tdParams.IDs[facet->sh.IDid].back().cumulativeDesValue / (1.38E-23 * facet->sh.temperature);
-                    size_t lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
-                    double finalRate_mbar_l_s = tdParams.parameters[facet->sh.outgassing_paramId].GetY(lastIndex);
+                    size_t lastIndex = tdParams.parameters[mfFacet->outgassing_paramId].GetSize() - 1;
+                    double finalRate_mbar_l_s = tdParams.parameters[mfFacet->outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
                             finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
                     finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
@@ -497,7 +470,7 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
 
     auto lock = GetHitLock(this, 10000);
     if (!lock) return;
-    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
     size_t nbF = model->sh.nbFacet;
     size_t nbMoments = mf_model->tdParams.moments.size();
     facetStates.assign(nbF, FacetState());
@@ -1257,12 +1230,11 @@ DirectionCell operator+(const DirectionCell& lhs, const DirectionCell& rhs) {
     }
 }
 
-int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parameters) {
-    int res = 0;
+void TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parameters) {
     char* parse_end;
 
     std::filesystem::path catalogPath = "parameter_catalog"; //string (POSIX) or wstring (Windows)
-    if (!std::filesystem::exists(catalogPath)) return 1; //No param_catalog directory
+    if (!std::filesystem::exists(catalogPath)) return; //No param_catalog directory, don't do anything
     for (const auto& p : std::filesystem::directory_iterator(catalogPath)) {
         if (p.path().extension() == ".csv") {
 
@@ -1280,7 +1252,6 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                 table = file.ImportCSV_string();
             }
             catch (const std::exception& e) {
-                ++res;
                 char errMsg[512];
                 sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
                 //GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
@@ -1291,7 +1262,6 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
             for (size_t i = 0; i < table.size(); i++) {
                 std::vector<std::string> row = table[i];
                 if (row.size() != 2) {
-                    ++res;
                     std::stringstream errMsg;
                     errMsg << p.path().filename() << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
                     //GLMessageBox::Display(errMsg.str().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1303,10 +1273,9 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                     try {
                         valueX = std::strtod(row[0].c_str(), &parse_end);
                         if (*parse_end != '\0')
-                            throw std::runtime_error("Malformed input in CSV file.");
+                            throw Error("Malformed input in CSV file.");
                     }
                     catch (const std::exception& e) {
-                        ++res;
                         char tmp[256];
                         sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1316,10 +1285,9 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
                     try {
                         valueY = std::strtod(row[1].c_str(), &parse_end);
                         if (*parse_end != '\0')
-                            throw std::runtime_error("Malformed input in CSV file.");
+                            throw Error("Malformed input in CSV file.");
                     }
                     catch (const std::exception& e) {
-                        ++res;
                         char tmp[256];
                         sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1332,7 +1300,6 @@ int TimeDependentParameters::LoadParameterCatalog(std::vector<Parameter>& parame
             parameters.push_back(newParam);
         }
     }
-    return res;
 }
 
 void TimeDependentParameters::ClearParameters(std::vector<Parameter>& parameters) {
@@ -1362,10 +1329,35 @@ std::vector<Parameter> TimeDependentParameters::GetCatalogParameters(const std::
 * \param newParams vector containing new parameters to be inserted
 * \return index to insert position
 */
-size_t TimeDependentParameters::InsertParametersBeforeCatalog(std::vector<Parameter>& parameters, const std::vector<Parameter>& newParams) {
+size_t TimeDependentParameters::InsertParametersBeforeCatalog(std::vector<Parameter>& targetParameters, const std::vector<Parameter>& newParams) {
     size_t index = 0;
-    for (; index != parameters.size() && parameters[index].fromCatalog == false; index++);
-    parameters.insert(parameters.begin() + index, newParams.begin(),
+    for (; index != targetParameters.size() && targetParameters[index].fromCatalog == false; index++);
+    targetParameters.insert(targetParameters.begin() + index, newParams.begin(),
         newParams.end()); //Insert to front (before catalog parameters)
     return index; //returns insert position
+}
+
+/**
+* \brief Get ID of a parameter (if it exists) for a corresponding name
+* \param name name of the parameter that shall be looked up
+* \return ID corresponding to the found parameter
+*/
+int TimeDependentParameters::GetParamId(const std::string& name) const {
+    for (int i = 0; i < (int)parameters.size(); i++) {
+        if (name == parameters[i].name) return i;
+    }
+    //Not found
+    throw Error("Parameter \"{}\" not found.",name);
+}
+
+size_t TimeDependentParameters::GetMemSize() {
+    size_t sum = 0;
+    for (auto& par : parameters) {
+        sum += par.GetMemSize();
+    }
+    auto nbId = this->IDs.size();
+    if (nbId > 0) sum += nbId * IDs[0].size() * sizeof(IntegratedDesorptionEntry);
+    sum += sizeof(Moment) * moments.capacity();
+
+    return sum;
 }
