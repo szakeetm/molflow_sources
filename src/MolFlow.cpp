@@ -1885,10 +1885,10 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	try {
 		interfGeom->BuildPipe(L, R, 0, step);
 		worker.needsReload = true;
-
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.model->wp = WorkerParams(); //reset to default
+		
 		worker.ResetMoments();
 		ResetSimulation(false);
 	}

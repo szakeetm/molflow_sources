@@ -1119,9 +1119,9 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 			throw Error(err.str());
 		}
 	}
-
-	ReloadSim(sendOnly, prg); //Convert interf. interfGeom to worker::mode and construct global counters, then copy to simManager.simulation
 	
+	ReloadSim(sendOnly, prg); //Convert interf.geom to worker::mode and construct global counters, then copy to simManager.simulation
+		
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	//mf_model->CalcTotalOutgassing(); // ReloadSim() / PrepareToRun() already called it
 
@@ -1332,16 +1332,12 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 * Angle map
 */
 void Worker::PrepareToRun() {
-
 	//determine latest moment
 	if (!interfaceMomentCache.empty())
 		model->wp.latestMoment = (interfaceMomentCache.end() - 1)->time + (interfaceMomentCache.end() - 1)->window / 2.0;
 	else {
 		model->wp.latestMoment = model->wp.timeWindowSize * .5;
 	}
-
-	InterfaceGeometry* g = GetGeometry();
-
 	bool needsAngleMapStatusRefresh = false;
 }
 
