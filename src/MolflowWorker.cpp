@@ -754,6 +754,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 				interfGeom->InitializeGeometry();
 
+				/*
 				prg.SetMessage("Building mesh...");
 				auto nbFacet = interfGeom->GetNbFacet();
 
@@ -763,7 +764,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 					prg.SetProgress(p);
 					auto f = interfGeom->GetFacet(i);
-					f->InitVisibleEdge();
 					if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 						char errMsg[512];
 						sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
@@ -772,6 +772,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					interfGeom->BuildFacetList(f);
 
 				}
+				*/
 				prg.SetMessage("Calculating OpenGL render data...");
 				interfGeom->UpdateName(fileName.c_str());
 
@@ -872,8 +873,8 @@ void Worker::SimModelToInterfaceGeom() {
 	*interfGeom->GetGeomProperties() = model->sh;
 
 	interfGeom->SetInterfaceStructures(model->structures,false,false,-1);
-	interfGeom->SetInterfaceVertices(model->vertices3); //copy and convert from Vertex3d to InterfaceVertex
-	interfGeom->SetInterfaceFacets(model->facets, this);
+	interfGeom->SetInterfaceVertices(model->vertices3,false); //copy and convert from Vertex3d to InterfaceVertex
+	interfGeom->SetInterfaceFacets(model->facets, false,false,-1);
 }
 
 void Worker::SimModelToInterfaceSettings(const std::unique_ptr<MolflowInterfaceSettings>& interfaceSettings, GLProgress_GUI& prg)
