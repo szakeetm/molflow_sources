@@ -152,7 +152,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 
 	sh.nbSuper = 1;
-	structNames[0] = "Pipe";
+	structNames = { "Pipe" };
 
 	try {
 		facets.resize(sh.nbFacet, nullptr);
@@ -453,7 +453,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (size_t i = 0; i < nbNewSuper; i++) {
-		structNames[sh.nbSuper + i] = file.ReadString();
+		structNames.push_back(file.ReadString());
 	}
 	file.ReadKeyword("}");
 
@@ -841,7 +841,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		structNames[i] = file.ReadString();
+		structNames.push_back(file.ReadString());
 	}
 	file.ReadKeyword("}");
 
@@ -1110,7 +1110,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 
 	file.ReadKeyword("structures"); file.ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		structNames[i] = file.ReadString();
+		structNames.push_back(file.ReadString());
 	}
 	file.ReadKeyword("}");
 
@@ -2942,10 +2942,6 @@ void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> 
 	int targetStructId = viewStruct;
 	if (targetStructId == -1) targetStructId = 0;
 	UnselectAll();
-
-	//Vertices
-	size_t nbNewVertex = loadedModel->vertices3.size();
-	size_t nbNewFacets = loadedModel->facets.size();
 
 	SetInterfaceVertices(loadedModel->vertices3, true);
 	SetInterfaceStructures(loadedModel->structures, true,newStr, targetStructId);

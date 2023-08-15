@@ -853,6 +853,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			"LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,stl or str]");
 	}
 
+	/*
 	// Readers that load the geometry directly into the sim model
 	// need to update the interface geometry afterwards
 	if (insert) {
@@ -860,6 +861,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 	} else {
 		//CalcTotalOutgassing(); RealReload()->ReloadSim()->PrepareToRun() already called it
 	}
+	*/
 
 	globalStatCache = globalState->globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
 	if (insert) {

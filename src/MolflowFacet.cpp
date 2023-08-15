@@ -31,6 +31,7 @@ using namespace pugi;
 #include <cstring>
 #include <math.h>
 #include <cereal/types/vector.hpp>
+#include "Geometry_shared.h"
 
 // Colormap stuff, defined in GLGradient.cpp
 extern std::vector<int> colorMap;
@@ -916,7 +917,7 @@ void InterfaceFacet::BuildTexture(const std::vector<TextureCell>& texBuffer, int
 	double scaleFactor = 1.0;
 	int val;
 
-	glBindTexture(GL_TEXTURE_2D, glTex);
+	glBindTexture(GL_TEXTURE_2D, glTex->textureId);
 
 
 	// 16 Bit rainbow colormap
