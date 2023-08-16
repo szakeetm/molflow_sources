@@ -444,9 +444,10 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             } //end outgassing file block
             else { //constant or time-dependent outgassing
                 double facetOutgassing =
-                        (std::static_pointer_cast<MolflowSimFacet>(f)->outgassing_paramId >= 0)
+                        ((std::static_pointer_cast<MolflowSimFacet>(f)->outgassing_paramId >= 0)
                          ? model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue
-                         : model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
+                         : (model->wp.latestMoment * f->sh.outgassing))
+                    / (1.38E-23 * f->sh.temperature);
                 found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                 sumA += facetOutgassing;
             } //end constant or time-dependent outgassing block
