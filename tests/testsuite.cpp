@@ -24,6 +24,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "../src/ParameterParser.h"
 #include "../src/Simulation/MolflowSimFacet.h"
 #include "Helper/GLProgress_CLI.hpp"
+#include "GLApp/GLTypes.h"
+#include "../src/MolflowTypes.h"
 
 #include <filesystem>
 #include <fstream>
@@ -216,7 +218,7 @@ namespace {
 			simManager.asyncMode=true;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-			MolflowUserSettings persistentUserSettings;
+			MolflowInterfaceSettings persistentInterfaceSettings;
 			SettingsIO::CLIArguments parsedArgs;
 
 			std::vector<std::string> argv = { "tester", "--time", std::to_string(runForTSec), "--reset",
@@ -230,7 +232,7 @@ namespace {
 				exit(41);
 			}
 			try {
-				model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+				model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 			}
 			catch (std::exception& err) {
 				Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -367,7 +369,7 @@ namespace {
 		{
 			SimulationManager simManager;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
-			MolflowUserSettings persistentUserSettings;
+			MolflowInterfaceSettings persistentInterfaceSettings;
 			SettingsIO::CLIArguments parsedArgs;
 
 			TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
@@ -382,7 +384,7 @@ namespace {
 				exit(41);
 			}
 			try {
-				model = Initializer::initFromFile(simManager, model, referenceState, persistentUserSettings, parsedArgs);
+				model = Initializer::initFromFile(simManager, model, referenceState, persistentInterfaceSettings, parsedArgs);
 			}
 			catch (std::exception& err) {
 				Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -421,7 +423,7 @@ namespace {
 			SimulationManager simManager;
 			std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-			MolflowUserSettings persistentUserSettings;
+			MolflowInterfaceSettings persistentInterfaceSettings;
 			TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 			SettingsIO::CLIArguments parsedArgs;
 
@@ -436,7 +438,7 @@ namespace {
 				exit(41);
 			}
 			try {
-				model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+				model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 			}
 			catch (std::exception& err) {
 				Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -492,7 +494,7 @@ namespace {
 		SimulationManager simManager;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> oldState = std::shared_ptr<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		std::vector<std::string> argv = { "tester", "--verbosity", "0", "-t", "120","--noProgress",
@@ -508,7 +510,7 @@ namespace {
 		}
 		TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 		try {
-			model = Initializer::initFromFile(simManager, model, oldState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, oldState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -539,7 +541,7 @@ namespace {
 				}
 				TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
 				try {
-					model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+					model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 				}
 				catch (std::exception& err) {
 					Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -655,7 +657,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		std::vector<std::string> argv = { "tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip", "--noProgress" };
@@ -668,7 +670,7 @@ namespace {
 			exit(41);
 		}
 		try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -676,7 +678,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -720,7 +722,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		// generate hash name for tmp working file
@@ -736,7 +738,7 @@ namespace {
 			exit(41);
 		}
 		try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -744,7 +746,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -791,7 +793,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -806,7 +808,7 @@ namespace {
 			Log::console_error(err.what());
 			exit(41);
 		}  try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -814,7 +816,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -861,7 +863,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -876,7 +878,7 @@ namespace {
 			exit(41);
 		}
 		try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -884,7 +886,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = (std::filesystem::path(parsedArgs.outputPath) / parsedArgs.outputFile).string();
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -927,7 +929,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		EXPECT_FALSE(parsedArgs.workPath.find("gtest_relpath") != std::string::npos);
@@ -946,7 +948,7 @@ namespace {
 			exit(41);
 		}
 		try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -954,7 +956,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = parsedArgs.outputFile;
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
@@ -1000,7 +1002,7 @@ namespace {
 		simManager.asyncMode = false;
 		std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
 		std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
-		MolflowUserSettings persistentUserSettings;
+		MolflowInterfaceSettings persistentInterfaceSettings;
 		SettingsIO::CLIArguments parsedArgs;
 
 		EXPECT_FALSE(parsedArgs.workPath.find("gtest_relpath") != std::string::npos);
@@ -1020,7 +1022,7 @@ namespace {
 			exit(41);
 		}
 		try {
-			model = Initializer::initFromFile(simManager, model, globalState, persistentUserSettings, parsedArgs);
+			model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 		}
 		catch (std::exception& err) {
 			Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
@@ -1028,7 +1030,7 @@ namespace {
 		}
 
 		FlowIO::XmlWriter writer;
-		writer.userSettings = persistentUserSettings;
+		writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentInterfaceSettings);
 		pugi::xml_document newDoc;
 		std::string fullFileName = parsedArgs.workPath + "/" + parsedArgs.outputFile;
 		EXPECT_FALSE(std::filesystem::exists(fullFileName));
