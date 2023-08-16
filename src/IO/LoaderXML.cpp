@@ -817,8 +817,7 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
         }
         idx++;
     }
-    facet->sh.opacity = facetNode.child("Opacity").attribute("constValue").as_double();
-    facet->sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
+
     facet->sh.superIdx = facetNode.child("Structure").attribute("inStructure").as_int();
     facet->sh.superDest = facetNode.child("Structure").attribute("linksTo").as_int();
     facet->sh.teleportDest = facetNode.child("Teleport").attribute("target").as_int();
@@ -866,7 +865,10 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
                 }
             }
         }
+        
     }
+    facet->sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
+
     facet->sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
     facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
     facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
