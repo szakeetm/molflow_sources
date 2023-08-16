@@ -2943,11 +2943,13 @@ void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> 
 	if (targetStructId == -1) targetStructId = 0;
 	UnselectAll();
 
+	size_t oldNbVertex = sh.nbVertex;
 	SetInterfaceVertices(loadedModel->vertices3, true);
+	int oldNbStruct = (int)sh.nbSuper;
 	SetInterfaceStructures(loadedModel->structures, true,newStr, targetStructId);
 	//Parameters (needs to precede facets)
 	TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, loadedModel->tdParams.parameters);
-	SetInterfaceFacets(loadedModel->facets, true, newStr, targetStructId);
+	SetInterfaceFacets(loadedModel->facets, true, oldNbVertex, newStr ? oldNbStruct : targetStructId);
 
 	for (const auto& selection : interfaceSettings.selections) {
 		SelectionGroup s;
@@ -2984,10 +2986,10 @@ bool MolflowGeometry::CompareXML_simustate(const std::string& fileName_lhs, cons
 	return false;
 }
 
-void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, bool newStr, int targetStructId) {
+void MolflowGeometry::SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, size_t vertexOffset, int structOffset) {
 	//General Facets
 	size_t index = insert ? facets.size() : 0;
-	InterfaceGeometry::SetInterfaceFacets(sFacets, insert,newStr,targetStructId);
+	InterfaceGeometry::SetInterfaceFacets(sFacets, insert,vertexOffset,structOffset);
 
 	// Init Molflow properties
 	for (auto& sFac : sFacets) {

@@ -93,7 +93,7 @@ public:
 #pragma endregion
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
-    void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, bool newStr, int targetStructId) override;
+    void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, size_t vertexOffset, int structOffset) override;
 
 private:
 

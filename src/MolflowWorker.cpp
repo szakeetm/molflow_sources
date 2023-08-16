@@ -876,7 +876,7 @@ void Worker::SimModelToInterfaceGeom() {
 
 	interfGeom->SetInterfaceStructures(model->structures,false,false,-1);
 	interfGeom->SetInterfaceVertices(model->vertices3,false); //copy and convert from Vertex3d to InterfaceVertex
-	interfGeom->SetInterfaceFacets(model->facets, false,false,-1);
+	interfGeom->SetInterfaceFacets(model->facets, false,0,0);
 }
 
 void Worker::SimModelToInterfaceSettings(const std::unique_ptr<MolflowInterfaceSettings>& interfaceSettings, GLProgress_GUI& prg)
