@@ -472,6 +472,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
     auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src); //access extended properties
+    //Currently all desorbing facets are const. temp and thus const. temp:
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfSrc->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
@@ -1090,22 +1091,28 @@ void ParticleTracer::RecordAngleMap(const SimulationFacet *collidedFacet) {
 
 void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
     auto mfCollidedFacet = static_cast<const MolflowSimFacet*>(collidedFacet); //access extended properties
+    double temp=model->GetTemperatureAt(mfCollidedFacet, ray.time);
+    double sqrtTemp;
+    if (mfCollidedFacet->temperature_paramId == -1) {
+        sqrtTemp = mfCollidedFacet->sqrtTemp; //precalculated value
+    }
+    else {
+        sqrtTemp = std::sqrt(temp);
+    }
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
         if (model->wp.useMaxwellDistribution)
-            velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfCollidedFacet->sqrtTemp, randomGenerator.rnd());
+            velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, sqrtTemp, randomGenerator.rnd());
         else
-            velocity =
-                    145.469 * std::sqrt(model->GetTemperatureAt(mfCollidedFacet, ray.time) / model->wp.gasMass);
+            velocity = 145.469 * sqrtTemp / model->wp.gasMass;
     } else {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
         if (model->wp.useMaxwellDistribution)
-            newSpeed2 = pow(Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfCollidedFacet->sqrtTemp, randomGenerator.rnd()), 2);
-        else newSpeed2 = /*145.469*/ 29369.939 * (model->GetTemperatureAt(mfCollidedFacet, ray.time) / model->wp.gasMass);
+            newSpeed2 = pow(Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, sqrtTemp, randomGenerator.rnd()), 2);
+        else newSpeed2 = /*145.469*/ 29369.939 * (temp / model->wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
-        velocity = std::sqrt(
-                oldSpeed2 + (newSpeed2 - oldSpeed2) * collidedFacet->sh.accomodationFactor);
+        velocity = std::sqrt(oldSpeed2 + (newSpeed2 - oldSpeed2) * collidedFacet->sh.accomodationFactor);
     }
 }
 

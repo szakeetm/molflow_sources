@@ -73,7 +73,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
             sticking_paramId = tdParams.GetParamId(sh.stickingParam);
         }
         catch (...) {
-            throw Error("Sticking parameter \"{}\" not defined", globalId + 1, sh.stickingParam);
+            throw Error("Sticking parameter \"{}\" not defined", sh.stickingParam);
         }
     }
     else sticking_paramId = -1;
@@ -83,7 +83,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
             opacity_paramId = tdParams.GetParamId(sh.opacityParam);
         }
         catch (...) {
-            throw Error("Opacity parameter \"{}\" not defined", globalId + 1, sh.opacityParam);
+            throw Error("Opacity parameter \"{}\" not defined", sh.opacityParam);
         }
     }
     else opacity_paramId = -1;
@@ -93,7 +93,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
             outgassing_paramId = tdParams.GetParamId(sh.outgassingParam);
         }
         catch (...) {
-            throw Error("Outgassing parameter \"{}\" not defined", globalId + 1, sh.outgassingParam);
+            throw Error("Outgassing parameter \"{}\" not defined", sh.outgassingParam);
         }
     }
     else outgassing_paramId = -1;
@@ -103,7 +103,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
             temperature_paramId = tdParams.GetParamId(sh.temperatureParam);
         }
         catch (...) {
-            throw Error("Temperature parameter \"{}\" not defined", globalId + 1, sh.temperatureParam);
+            throw Error("Temperature parameter \"{}\" not defined", sh.temperatureParam);
         }
     }
     else temperature_paramId = -1;

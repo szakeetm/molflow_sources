@@ -228,7 +228,7 @@ public:
     //int InitializeFacets();
 
     void CalcTotalOutgassing();
-
+    std::vector<std::string> SanityCheck();
     /**
     * \brief Returns an existing or a new surface corresponding to a facet's properties
     * \param facet facet for which a Surface should be found or created

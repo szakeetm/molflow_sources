@@ -386,6 +386,76 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
     wp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
     wp.finalOutgassingRate = finalOutgassingRate;
 }
+
+std::vector<std::string> MolflowSimulationModel::SanityCheck() {
+    //Must be called after totaloutgassing is calculated
+
+    std::vector<std::string> errLog;
+
+    if (!initialized) {
+        errLog.push_back("Model not initialized");
+    }
+    if (vertices3.empty()) {
+        errLog.push_back("Loaded empty vertex list");
+    }
+    if (facets.empty()) {
+        errLog.push_back("Loaded empty facet list");
+    }
+    if (sh.nbFacet != facets.size()) {
+        char tmp[256];
+        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", sh.nbFacet, facets.size());
+        errLog.push_back(tmp);
+    }
+    for (auto& fac : facets) {
+        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
+        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
+            char tmp[256];
+            snprintf(tmp, 256, "[Facet #%zu] Untextured facet with texture size\n", fac->globalId + 1);
+            errLog.push_back(tmp);
+        }
+        else if (!fac->sh.isTextured && (hasAnyTexture)) {
+            fac->sh.countDes = false;
+            fac->sh.countAbs = false;
+            fac->sh.countRefl = false;
+            fac->sh.countTrans = false;
+            fac->sh.countACD = false;
+            fac->sh.countDirection = false;
+            char tmp[256];
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId + 1);
+            errLog.push_back(tmp);
+        }
+        if (fac->sh.desorbType != DES_NONE && !fac->sh.temperatureParam.empty()) {
+            errLog.push_back(fmt::format("[Facet {}]: Time-dependent temperature not allowed on facets with outgassing", fac->globalId + 1));
+        }
+    }
+
+    //Molflow unique
+    if (wp.enableDecay && wp.halfLife <= 0.0) {
+        char tmp[255];
+        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", wp.halfLife);
+        errLog.push_back(tmp);
+    }
+
+    // Is there some desorption in the system? (depends on pre calculation)
+    if (wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
+        // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
+        bool found = false;
+        size_t nbF = facets.size();
+        size_t i = 0;
+        while (i < nbF && !found) {
+            found = (facets[i]->sh.desorbType != DES_NONE);
+            if (!found) i++;
+        }
+
+        if (!found)
+            throw Error("No desorption facet found");
+    }
+    if (wp.totalDesorbedMolecules <= 0.0)
+        throw Error("Total outgassing is zero.");
+
+    return errLog;
+}
+
 /*
 
 MolflowSimulationModel::MolflowSimulationModel(MolflowSimulationModel &&o) noexcept {
