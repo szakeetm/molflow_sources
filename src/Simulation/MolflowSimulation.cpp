@@ -79,51 +79,7 @@ void MolflowSimulation::ConstructParticleTracers(size_t n, bool fixedSeed) {
 }
 
 std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
-    std::vector<std::string> errLog;
-
-    if (!model->initialized) {
-        errLog.push_back("Model not initialized");
-    }
-    if (model->vertices3.empty()) {
-        errLog.push_back("Loaded empty vertex list");
-    }
-    if (model->facets.empty()) {
-        errLog.push_back("Loaded empty facet list");
-    }
-    if(model->sh.nbFacet != model->facets.size()) {
-        char tmp[256];
-        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
-        errLog.push_back(tmp);
-    }
-    for(auto& fac : model->facets){
-        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
-        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
-            char tmp[256];
-            snprintf(tmp, 256, "[Facet #%zu] Untextured facet with texture size\n", fac->globalId+1);
-            errLog.push_back(tmp);
-        }
-        else if (!fac->sh.isTextured && (hasAnyTexture)) {
-            fac->sh.countDes = false;
-            fac->sh.countAbs = false;
-            fac->sh.countRefl = false;
-            fac->sh.countTrans = false;
-            fac->sh.countACD = false;
-            fac->sh.countDirection = false;
-            char tmp[256];
-            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId+1);
-            errLog.push_back(tmp);
-        }
-        if (fac->sh.desorbType != DES_NONE && !fac->sh.temperatureParam.empty()) {
-            errLog.push_back(fmt::format("[Facet {}]: Time-dependent temperature not allowed on facets with outgassing", fac->globalId + 1));
-        }
-    }
-
-    //Molflow unique
-    if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
-        char tmp[255];
-        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
-        errLog.push_back(tmp);
-    }
+    std::vector<std::string> errLog = model->SanityCheck();
 
     if(!globalState){
         errLog.push_back("No global simulation state set\n");
