@@ -475,7 +475,7 @@ namespace {
 		}
 
 		//Test case pass or fail
-		if (nbFailed > maxFail) {
+		if (nbFailed >= maxFail) {
 			Log::console_msg(1, "This test case failed as there were {} failed runs.\n", maxFail);
 		}
 		else {
