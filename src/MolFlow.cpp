@@ -744,7 +744,7 @@ void MolFlow::ApplyFacetParams() {
 					f->sh.temperatureParam = "";
 				}
 				else {
-					f->sh.temperature = temperature;
+					f->sh.temperatureParam = facetTemperature->GetText();
 				}
 			}
 			if (doFlow) {
