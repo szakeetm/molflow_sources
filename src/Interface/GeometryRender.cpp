@@ -132,22 +132,12 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 
-		if (renderDirectionTexture && f->sh.countDirection && f->dirCache) {
-			
-			size_t dSize = nbElem * sizeof(DirectionCell);
-
-			/*
-			double iDesorbed = 0.0;
-			if (shGHit->globalStats.hit.nbDesorbed)
-			iDesorbed = 1.0 / (double)shGHit->globalStats.hit.nbDesorbed;
-			*/
-
-
-			const std::vector<DirectionCell>& dirs = globalState->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
-			for (size_t j = 0; j < nbElem; j++) {
-				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
-				f->dirCache[j].dir = dirs[j].dir * denominator;
-				f->dirCache[j].count = dirs[j].count;
+		if (renderDirectionTexture && f->sh.countDirection) {
+			f->dirCache = globalState->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
+			for (auto& dirCell : f->dirCache) {
+				if (dirCell.count > 0) {
+					dirCell.dir = dirCell.dir * (1.0 / dirCell.count);
+				}
 			}
 		}
 	}

@@ -852,7 +852,7 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
             facet->sh.opacityParam = userOpacityAttrib.as_string();
         }
         else { //Versions until 2.9.14, check if there was a paramId
-            auto opacityParamIdNode = facetNode.child("opacity").attribute("parameterId");
+            auto opacityParamIdNode = facetNode.child("Opacity").attribute("parameterId");
             if (opacityParamIdNode) {
                 int paramId = opacityParamIdNode.as_int();
                 if (paramId >= 0) {
@@ -869,7 +869,6 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
     }
     facet->sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
 
-    facet->sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
     facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
     facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
     { //Outgassing

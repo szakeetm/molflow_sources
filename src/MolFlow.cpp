@@ -807,8 +807,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		bool stickingE = true;
 		bool opacityE = true;
 		bool temperatureE = true;
-		bool flowE = true;
-		bool flowAreaE = true;
+		bool outgassingE = true;
+		bool outgassingPerAreaE = true;
 		bool desorbTypeE = true;
 		bool desorbTypeNE = true;
 		bool recordE = true;
@@ -817,11 +817,11 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		for (size_t sel = 1; sel < selectedFacets.size(); sel++) {
 			f = interfGeom->GetFacet(selectedFacets[sel]);
 			double fArea = f->GetArea();
-			stickingE = stickingE && (f0->sh.stickingParam == f->sh.stickingParam) && IsEqual(f0->sh.sticking, f->sh.sticking);
-			opacityE = opacityE && (f0->sh.opacityParam == f->sh.opacityParam) && IsEqual(f0->sh.opacity, f->sh.opacity);
+			stickingE = stickingE && (f0->sh.stickingParam == f->sh.stickingParam) && (!f0->sh.stickingParam.empty() || IsEqual(f0->sh.sticking, f->sh.sticking));
+			opacityE = opacityE && (f0->sh.opacityParam == f->sh.opacityParam) && (!f0->sh.opacityParam.empty() || IsEqual(f0->sh.opacity, f->sh.opacity));
 			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
-			flowE = flowE && f0->sh.outgassingParam == f->sh.outgassingParam && IsEqual(f0->sh.outgassing, f->sh.outgassing);
-			flowAreaE = flowAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea);
+			outgassingE = outgassingE && (f0->sh.outgassingParam == f->sh.outgassingParam) && (!f0->sh.outgassingParam.empty() || IsEqual(f0->sh.outgassing, f->sh.outgassing));
+			outgassingPerAreaE = outgassingPerAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
 			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN, f->sh.desorbTypeN);
@@ -875,13 +875,13 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 				facetFlowArea->SetEditable(true);
 				facetFILabel->SetEnabled(true);
 				facetFlow->SetEditable(true);
-				if (flowE) {
+				if (outgassingE) {
 					if (f0->sh.outgassingParam.empty())
 						facetFlow->SetText(f0->sh.outgassing * PAM3S_TO_MBARLS);
 					else facetFlow->SetText(f0->sh.outgassingParam);
 				}
 				else facetFlow->SetText("...");
-				if (flowAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area * 10.00); else facetFlowArea->SetText("...");
+				if (outgassingPerAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area * 10.00); else facetFlowArea->SetText("...");
 				if (f0->sh.desorbType == 3) {
 					facetDesTypeN->SetEditable(true);
 					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
