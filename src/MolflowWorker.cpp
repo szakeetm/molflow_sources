@@ -1188,22 +1188,11 @@ void Worker::ResetWorkerStats() {
 */
 void Worker::Start() {
 	// Sanity checks
-	// Is there some desorption in the system? (depends on pre calculation)
-	if (model->wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
-		// Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
-		bool found = false;
-		size_t nbF = interfGeom->GetNbFacet();
-		size_t i = 0;
-		while (i < nbF && !found) {
-			found = (interfGeom->GetFacet(i)->sh.desorbType != DES_NONE);
-			if (!found) i++;
-		}
+	auto errLog = model->SanityCheck();
 
-		if (!found)
-			throw Error("No desorption facet found");
+	if (!errLog.empty()) {
+		throw Error(errLog[0]); //First issue with model
 	}
-	if (model->wp.totalDesorbedMolecules <= 0.0)
-		throw Error("Total outgassing is zero.");
 
 	if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globalState->globalStats.globalHits.nbDesorbed)
 		throw Error("Desorption limit has already been reached.");
