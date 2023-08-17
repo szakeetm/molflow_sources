@@ -25,6 +25,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Worker.h"
 #include "MolflowGeometry.h"
 #include "Facet_shared.h"
+#include "Simulation/MolflowSimFacet.h"
 
 FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* interfGeom, std::vector<SelectionGroup>* sel){
     worker = w;
@@ -83,7 +84,20 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if ((idx = GetFacetIndex(v->varName, "T")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) v->value = interfGeom->GetFacet(idx - 1)->sh.temperature;
+        if (ok) {
+            if (interfGeom->GetFacet(idx - 1)->sh.temperatureParam.empty()) {
+                v->value = interfGeom->GetFacet(idx - 1)->sh.temperature;
+            }
+            else {
+                double time;
+                auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
+                if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment].time;
+                else time = mfModel->wp.latestMoment;
+                
+                auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx - 1]);
+                v->value = mfModel->GetTemperatureAt(mfFacet.get(), time);
+            }
+        }
     }
     else if ((idx = GetFacetIndex(v->varName, "AR")) > 0) {
         ok = (idx <= nbFacet);

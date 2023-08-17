@@ -363,7 +363,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                     finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
-                if (mfFacet->outgassing_paramId == -1) { //constant outgassing
+                if (mfFacet->sh.outgassingParam.empty()) { //constant outgassing
                     totalDesorbedMolecules +=
                             latestMoment * facet->sh.outgassing / (1.38E-23 * facet->sh.temperature);
                     finalOutgassingRate +=
@@ -375,8 +375,8 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
                     size_t lastIndex = tdParams.parameters[mfFacet->outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = tdParams.parameters[mfFacet->outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
-                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
+                            finalRate_mbar_l_s * MBARLS_TO_PAM3S / (1.38E-23 * facet->sh.temperature);
+                    finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
                 }
             }
         }

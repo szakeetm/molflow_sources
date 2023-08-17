@@ -869,6 +869,15 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
     }
     facet->sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
 
+    { //temperature
+        auto constTemperatureAttrib = facetNode.child("Temperature").attribute("value");
+        if (constTemperatureAttrib) facet->sh.temperature = constTemperatureAttrib.as_double();
+        auto userTemperatureAttrib = facetNode.child("Temperature").attribute("tempParam"); //2.9.15+
+        if (userTemperatureAttrib) facet->sh.temperatureParam = userTemperatureAttrib.as_string();
+    }
+
+    facet->sh.accomodationFactor = facetNode.child("Temperature").attribute("accFactor").as_double();
+
     facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
     facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
     { //Outgassing
@@ -895,8 +904,7 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
     }
     bool hasOutgassingFile = facetNode.child("Outgassing").attribute("hasOutgassingFile").as_bool();
     facet->sh.useOutgassingFile = facetNode.child("Outgassing").attribute("useOutgassingFile").as_bool();
-    facet->sh.temperature = facetNode.child("Temperature").attribute("value").as_double();
-    facet->sh.accomodationFactor = facetNode.child("Temperature").attribute("accFactor").as_double();
+    
     xml_node reflNode = facetNode.child("Reflection");
     if (reflNode.attribute("diffusePart") && reflNode.attribute("specularPart")) { //New format
         facet->sh.reflection.diffusePart = reflNode.attribute("diffusePart").as_double();

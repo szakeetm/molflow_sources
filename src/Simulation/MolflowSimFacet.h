@@ -85,8 +85,9 @@ public:
     double sqrtTemp; //pre-caculated sqrt(sh.temperature) for frequent multiplication
 
     //Helper IDs for fast lookup
-    int sticking_paramId=-1;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
-    int opacity_paramId=-1;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
-    int outgassing_paramId=-1;  // -1 if use constant value, 0 or more if referencing time-dependent parameter
-
+    // -1 if use constant value, 0 or more if referencing time-dependent parameter
+    int sticking_paramId=-1;    
+    int opacity_paramId=-1; 
+    int outgassing_paramId=-1;  
+    int temperature_paramId = -1;
 };

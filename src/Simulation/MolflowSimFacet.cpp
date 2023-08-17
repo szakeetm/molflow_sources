@@ -77,6 +77,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
         }
     }
     else sticking_paramId = -1;
+
     if (!sh.opacityParam.empty()) {
         try {
             opacity_paramId = tdParams.GetParamId(sh.opacityParam);
@@ -86,6 +87,7 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
         }
     }
     else opacity_paramId = -1;
+
     if (!sh.outgassingParam.empty()) {
         try {
             outgassing_paramId = tdParams.GetParamId(sh.outgassingParam);
@@ -95,6 +97,16 @@ void MolflowSimFacet::LookupParamIds(const TimeDependentParameters& tdParams) {
         }
     }
     else outgassing_paramId = -1;
+
+    if (!sh.temperatureParam.empty()) {
+        try {
+            temperature_paramId = tdParams.GetParamId(sh.temperatureParam);
+        }
+        catch (...) {
+            throw Error("Temperature parameter \"{}\" not defined", globalId + 1, sh.temperatureParam);
+        }
+    }
+    else temperature_paramId = -1;
 }
 
 void MolflowSimFacet::InitializeAngleMap()

@@ -237,8 +237,9 @@ public:
     std::shared_ptr<Surface> GetSurface(std::shared_ptr<SimulationFacet> facet) override;
 
     // Sim functions
-    double GetOpacityAt(MolflowSimFacet *f, double time) const;
-    double GetStickingAt(MolflowSimFacet *f, double time) const;
+    double GetOpacityAt(const MolflowSimFacet *f, const double time) const;
+    double GetStickingAt(const MolflowSimFacet *f, const double time) const;
+    double GetTemperatureAt(const MolflowSimFacet *f, const double time) const;
 
     TimeDependentParameters tdParams;
     std::vector<Interval> intervalCache; //speedup to store moments as [start_time,end_time], calculated in PrepareToRun();

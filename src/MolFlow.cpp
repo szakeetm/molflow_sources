@@ -601,10 +601,7 @@ void MolFlow::ApplyFacetParams() {
 	}
 	else {
 		if (facetOpacity->GetText() == "...") doOpacity = false;
-		else {/*
-			GLMessageBox::Display("Invalid opacity number","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
-			return;*/
+		else {
 			doOpacity = true;
 			opacityNotNumber = true;
 		}
@@ -613,18 +610,20 @@ void MolFlow::ApplyFacetParams() {
 	// temperature
 	double temperature;
 	bool doTemperature = false;
+	bool temperatureNotNumber;
 	if (facetTemperature->GetNumber(&temperature)) {
 		if (temperature <= 0.0) {
 			GLMessageBox::Display("Temperature must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
 		doTemperature = true;
+		temperatureNotNumber = false;
 	}
 	else {
 		if (facetTemperature->GetText() == "...") doTemperature = false;
 		else {
-			GLMessageBox::Display("Invalid temperature number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return;
+			doTemperature = true;
+			temperatureNotNumber = true;
 		}
 	}
 
@@ -739,7 +738,15 @@ void MolFlow::ApplyFacetParams() {
 					f->sh.opacityParam = facetOpacity->GetText();
 				}
 			}
-			if (doTemperature) f->sh.temperature = temperature;
+			if (doTemperature) {
+				if (!temperatureNotNumber) {
+					f->sh.temperature = temperature;
+					f->sh.temperatureParam = "";
+				}
+				else {
+					f->sh.temperature = temperature;
+				}
+			}
 			if (doFlow) {
 				if (!outgassingNotNumber) {
 					f->sh.outgassing = outgassing * MBARLS_TO_PAM3S;
@@ -819,7 +826,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 			double fArea = f->GetArea();
 			stickingE = stickingE && (f0->sh.stickingParam == f->sh.stickingParam) && (!f0->sh.stickingParam.empty() || IsEqual(f0->sh.sticking, f->sh.sticking));
 			opacityE = opacityE && (f0->sh.opacityParam == f->sh.opacityParam) && (!f0->sh.opacityParam.empty() || IsEqual(f0->sh.opacity, f->sh.opacity));
-			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
+			temperatureE = temperatureE && (f0->sh.temperatureParam == f->sh.temperatureParam) && (!f0->sh.temperatureParam.empty() || IsEqual(f0->sh.temperature, f->sh.temperature));
 			outgassingE = outgassingE && (f0->sh.outgassingParam == f->sh.outgassingParam) && (!f0->sh.outgassingParam.empty() || IsEqual(f0->sh.outgassing, f->sh.outgassing));
 			outgassingPerAreaE = outgassingPerAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
@@ -852,7 +859,13 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		}
 		else facetOpacity->SetText("...");
 
-		if (temperatureE) facetTemperature->SetText(f0->sh.temperature); else facetTemperature->SetText("...");
+		if (temperatureE) {
+			if (f0->sh.temperatureParam.empty())
+				facetTemperature->SetText(f0->sh.temperature);
+			else facetTemperature->SetText(f0->sh.temperatureParam);
+		}
+		else facetTemperature->SetText("...");
+
 		if (is2sidedE) facetSideType->SetSelectedIndex(f0->sh.is2sided); else facetSideType->SetSelectedValue("...");
 		if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
 		if (recordE) facetProfileCombo->SetSelectedIndex(f0->sh.profileType); else facetProfileCombo->SetSelectedValue("...");

@@ -99,7 +99,7 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
             char tmp[256];
-            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId+1);
+            snprintf(tmp, 256, "[Facet #%zu] Untextured facet with texture size\n", fac->globalId+1);
             errLog.push_back(tmp);
         }
         else if (!fac->sh.isTextured && (hasAnyTexture)) {
@@ -112,6 +112,9 @@ std::vector<std::string> MolflowSimulation::SanityCheckModel(bool strictCheck) {
             char tmp[256];
             snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId+1);
             errLog.push_back(tmp);
+        }
+        if (fac->sh.desorbType != DES_NONE && !fac->sh.temperatureParam.empty()) {
+            errLog.push_back(fmt::format("[Facet {}]: Time-dependent temperature not allowed on facets with outgassing", fac->globalId + 1));
         }
     }
 

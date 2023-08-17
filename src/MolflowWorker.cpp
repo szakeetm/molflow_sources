@@ -1349,6 +1349,8 @@ void Worker::PrepareToRun() {
 void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facet
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
+	mf_model->CalcTotalOutgassing();
+	/*
 	mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
 	InterfaceGeometry* g = GetGeometry();
 
@@ -1382,14 +1384,14 @@ void Worker::CalcTotalOutgassing() {
 					double finalRate_mbar_l_s = param.GetY(lastIndex);
 					mf_model->wp.finalOutgassingRate +=
 						finalRate_mbar_l_s * MBARLS_TO_PAM3S /
-						(1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+						(1.38E-23 * f->sh.temperature);
 					mf_model->wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
 				}
 			}
 		}
 	}
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
-
+	*/
 }
 
 std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {

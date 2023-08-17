@@ -756,7 +756,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     UpdateVelocity(iFacet);
     //Sojourn time
     if (iFacet->sh.enableSojournTime) {
-        double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
+        double A = exp(-iFacet->sh.sojournE / (8.31 * model->GetTemperatureAt(static_cast<const MolflowSimFacet*>(iFacet),ray.time)));
         ray.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
         momentIndex = LookupMomentIndex(ray.time, lastMomentIndex); //reflection might happen in another moment
     }
@@ -1095,13 +1095,13 @@ void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
             velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfCollidedFacet->sqrtTemp, randomGenerator.rnd());
         else
             velocity =
-                    145.469 * std::sqrt(collidedFacet->sh.temperature / model->wp.gasMass);
+                    145.469 * std::sqrt(model->GetTemperatureAt(mfCollidedFacet, ray.time) / model->wp.gasMass);
     } else {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
         if (model->wp.useMaxwellDistribution)
             newSpeed2 = pow(Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfCollidedFacet->sqrtTemp, randomGenerator.rnd()), 2);
-        else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model->wp.gasMass);
+        else newSpeed2 = /*145.469*/ 29369.939 * (model->GetTemperatureAt(mfCollidedFacet, ray.time) / model->wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
         velocity = std::sqrt(

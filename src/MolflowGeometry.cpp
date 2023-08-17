@@ -2209,7 +2209,6 @@ void MolflowGeometry::ImportDesorption_SYN(
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMapWindow[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
 						f->ogMap.outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info

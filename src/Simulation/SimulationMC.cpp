@@ -32,7 +32,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Parameter.h"
 #include <omp.h>
 
-double MolflowSimulationModel::GetStickingAt(MolflowSimFacet *f, double time) const {
+double MolflowSimulationModel::GetStickingAt(const MolflowSimFacet *f, const double time) const {
     if (f->sticking_paramId == -1) //constant sticking
         return f->sh.sticking;
     else {
@@ -41,8 +41,8 @@ double MolflowSimulationModel::GetStickingAt(MolflowSimFacet *f, double time) co
     }
 }
 
-double MolflowSimulationModel::GetOpacityAt(MolflowSimFacet *f, double time) const {
-    if (f->opacity_paramId == -1) //constant sticking
+double MolflowSimulationModel::GetOpacityAt(const MolflowSimFacet *f, const double time) const {
+    if (f->opacity_paramId == -1) //constant opacity
         return f->sh.opacity;
     else {
         auto &par = tdParams.parameters[f->opacity_paramId];
@@ -50,3 +50,11 @@ double MolflowSimulationModel::GetOpacityAt(MolflowSimFacet *f, double time) con
     }
 }
 
+double MolflowSimulationModel::GetTemperatureAt(const MolflowSimFacet *f, const double time) const {
+    if (f->temperature_paramId == -1) //constant temp
+        return f->sh.temperature;
+    else {
+        auto &par = tdParams.parameters[f->opacity_paramId];
+        return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
+    }
+}

@@ -712,7 +712,12 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
     e.append_attribute("useOutgassingFile") = (int) facet->sh.useOutgassingFile; //backward compatibility: 0 or 1
 
     e = facetNode.append_child("Temperature");
-    e.append_attribute("value") = facet->sh.temperature;
+    if (!facet->sh.temperatureParam.empty()) { //Introduced in 2.9.15, no backward compatibility
+        e.append_attribute("tempParam") = facet->sh.temperatureParam.c_str();
+    }
+    else {
+        e.append_attribute("value") = facet->sh.temperature;
+    }
     e.append_attribute("accFactor") = facet->sh.accomodationFactor;
 
     e = facetNode.append_child("Reflection");
