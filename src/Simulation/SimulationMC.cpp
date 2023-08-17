@@ -54,7 +54,7 @@ double MolflowSimulationModel::GetTemperatureAt(const MolflowSimFacet *f, const 
     if (f->temperature_paramId == -1) //constant temp
         return f->sh.temperature;
     else {
-        auto &par = tdParams.parameters[f->opacity_paramId];
+        auto &par = tdParams.parameters[f->temperature_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
 }
