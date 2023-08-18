@@ -1339,7 +1339,7 @@ void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facets
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->CalcTotalOutgassing();
-	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
+	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing(model->wp);
 }
 
 std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
