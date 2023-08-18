@@ -373,17 +373,17 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 /**
 * \brief Updates the values regarding outgassing (from memory and by calculation)
 */
-void GlobalSettings::UpdateOutgassing() {
+void GlobalSettings::UpdateOutgassing(const WorkerParams& wp) {
 	char tmp[128];
-	sprintf(tmp, "%g", worker->model->wp.gasMass);
+	sprintf(tmp, "%g", wp.gasMass);
 	gasMassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->model->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingGasRateText->SetText(tmp);
-	sprintf(tmp, "%g", worker->model->wp.finalOutgassingRate); //In molecules/sec
+	sprintf(tmp, "%g", wp.finalOutgassingRate); //In molecules/sec
 	outgassingMoleculeRateText->SetText(tmp);
-	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->model->wp.latestMoment);
+	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",wp.latestMoment);
 	desorbedMoleculesLabel->SetText(tmp);
-	sprintf(tmp, "%.3E", worker->model->wp.totalDesorbedMolecules);
+	sprintf(tmp, "%.3E", wp.totalDesorbedMolecules);
 	desorbedMoleculesText->SetText(tmp);
 }
 

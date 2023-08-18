@@ -27,7 +27,7 @@ public:
 
   // Construction
   GlobalSettings(Worker *w);
-  void UpdateOutgassing();
+  void UpdateOutgassing(const WorkerParams& wp);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

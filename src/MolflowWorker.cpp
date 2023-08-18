@@ -1336,51 +1336,10 @@ void Worker::PrepareToRun() {
 * \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
 */
 void Worker::CalcTotalOutgassing() {
-	// Compute the outgassing of all source facet
+	// Compute the outgassing of all source facets
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->CalcTotalOutgassing();
-	/*
-	mf_model->wp.totalDesorbedMolecules = mf_model->wp.finalOutgassingRate_Pa_m3_sec = mf_model->wp.finalOutgassingRate = 0.0;
-	InterfaceGeometry* g = GetGeometry();
-
-	for (size_t i = 0; i < g->GetNbFacet(); i++) {
-		InterfaceFacet* f = g->GetFacet(i);
-		if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
-			if (f->sh.useOutgassingFile) { //outgassing file
-				for (size_t l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
-					mf_model->wp.totalDesorbedMolecules +=
-						mf_model->wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-					mf_model->wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-					mf_model->wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
-				}
-			}
-			else { //regular outgassing
-				if (f->sh.outgassingParam.empty()) { //constant outgassing
-					mf_model->wp.totalDesorbedMolecules +=
-						mf_model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
-					mf_model->wp.finalOutgassingRate +=
-						f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
-					mf_model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
-				}
-				else { //time-dependent outgassing
-					if (f->sh.IDid >= mf_model->tdParams.IDs.size())
-						throw Error("Trying to access Integrated Desorption {} of {} for facet #{}", f->sh.IDid, mf_model->tdParams.IDs.size(), i);
-					const auto param = mf_model->tdParams.parameters[mf_model->tdParams.GetParamId(f->sh.outgassingParam)];
-					double lastValue = mf_model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue;
-					mf_model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
-					
-					size_t lastIndex = param.GetSize() - 1;
-					double finalRate_mbar_l_s = param.GetY(lastIndex);
-					mf_model->wp.finalOutgassingRate +=
-						finalRate_mbar_l_s * MBARLS_TO_PAM3S /
-						(1.38E-23 * f->sh.temperature);
-					mf_model->wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
-				}
-			}
-		}
-	}
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
-	*/
 }
 
 std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
