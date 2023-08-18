@@ -975,6 +975,7 @@ void Worker::InterfaceGeomToSimModel() {
 	//auto interfGeom = GetMolflowGeometry();
 	// TODO: Proper clear call before for Real reload?
 	//TODO: return model, just like LoadGeometry()
+	model->initialized = false;
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	mf_model->structures.clear();
 	mf_model->facets.clear();
