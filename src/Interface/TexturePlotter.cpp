@@ -250,7 +250,7 @@ void TexturePlotter::UpdateTable() {
 			//TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
-					//int tSize = selFacet->wp.texWidth*selFacet->wp.texHeight;
+					//int tSize = selFacet->sp.texWidth*selFacet->sp.texHeight;
 
 					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::MCHits, 1.0, 1.0, 1.0, (int)(i + j*w), facetSnapshot);
 					double realVal = val.value;
@@ -273,7 +273,7 @@ void TexturePlotter::UpdateTable() {
 				double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 				for (size_t i = 0; i < w; i++) {
 					for (size_t j = 0; j < h; j++) {
-						PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->model->wp.gasMass, (int)(i + j * w), facetSnapshot);
+						PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->model->sp.gasMass, (int)(i + j * w), facetSnapshot);
 						double realVal = val.value;
 						if (realVal > maxValue) {
 							maxValue = realVal;
@@ -296,7 +296,7 @@ void TexturePlotter::UpdateTable() {
 
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
-					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
+					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, worker->model->sp.gasMass, (int)(i + j*w), facetSnapshot);
 					double rho = val.value;
 
 					if (rho > maxValue) {
@@ -321,7 +321,7 @@ void TexturePlotter::UpdateTable() {
 
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
-					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
+					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, worker->model->sp.gasMass, (int)(i + j*w), facetSnapshot);
 					double rho_mass = val.value;
 					if (rho_mass > maxValue) {
 						maxValue = rho_mass;
@@ -345,7 +345,7 @@ void TexturePlotter::UpdateTable() {
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
 
-					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::Pressure, moleculesPerTP, 1.0, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
+					PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::Pressure, moleculesPerTP, 1.0, worker->model->sp.gasMass, (int)(i + j*w), facetSnapshot);
 					double p = val.value;
 
 					if (p > maxValue) {

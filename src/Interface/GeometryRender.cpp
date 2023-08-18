@@ -70,10 +70,10 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 	if (renderRegularTexture) {
         {
 		    const GlobalHitBuffer& globHit = globalState->globalStats;
-			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.nbDesorbed * mApp->worker.model->wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.nbDesorbed * mApp->worker.model->sp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
 			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.nbDesorbed;
 			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.nbDesorbed;
-			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model->wp.finalOutgassingRate : mApp->worker.model->wp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[mApp->worker.displayedMoment - 1].window;
+			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model->sp.finalOutgassingRate : mApp->worker.model->sp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[mApp->worker.displayedMoment - 1].window;
 		}
 
 		if (!texAutoScale) { //manual values

@@ -94,7 +94,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     prg.SetMessage("Saving vertices...");
     xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
-            "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
+            "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to sp.nbVertex
     for (size_t i = 0; i < model->vertices3.size(); i++) {
         //prg.SetProgress(0.166*((double)i / (double)model->vertices3.size()));
         xml_node v = geomNode.child("Vertices").append_child("Vertex");
@@ -137,10 +137,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         rootNode.remove_child("MolflowSimuSettings");
     xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
 
-    simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
+    simuParamNode.append_child("Gas").append_attribute("mass") = model->sp.gasMass;
     simuParamNode.child("Gas").append_attribute(
-            "enableDecay") = (int) model->wp.enableDecay; //backward compatibility: 0 or 1
-    simuParamNode.child("Gas").append_attribute("halfLife") = model->wp.halfLife;
+            "enableDecay") = (int) model->sp.enableDecay; //backward compatibility: 0 or 1
+    simuParamNode.child("Gas").append_attribute("halfLife") = model->sp.halfLife;
 
     xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -153,37 +153,37 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         newUserEntry.append_attribute("window") = interfaceSettings->userMoments[i].timeWindow;
     }
 
-    timeSettingsNode.append_attribute("timeWindow") = model->wp.timeWindowSize;
+    timeSettingsNode.append_attribute("timeWindow") = model->sp.timeWindowSize;
     timeSettingsNode.append_attribute(
-            "useMaxwellDistr") = (int) model->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
+            "useMaxwellDistr") = (int) model->sp.useMaxwellDistribution; //backward compatibility: 0 or 1
     timeSettingsNode.append_attribute(
-            "calcConstFlow") = (int) model->wp.calcConstantFlow; //backward compatibility: 0 or 1
+            "calcConstFlow") = (int) model->sp.calcConstantFlow; //backward compatibility: 0 or 1
 
     xml_node motionNode = simuParamNode.append_child("Motion");
-    motionNode.append_attribute("type") = model->wp.motionType;
-    if (model->wp.motionType == 1) { //fixed motion
+    motionNode.append_attribute("type") = model->sp.motionType;
+    if (model->sp.motionType == 1) { //fixed motion
         xml_node v = motionNode.append_child("VelocityVector");
-        v.append_attribute("vx") = model->wp.motionVector2.x;
-        v.append_attribute("vy") = model->wp.motionVector2.y;
-        v.append_attribute("vz") = model->wp.motionVector2.z;
-    } else if (model->wp.motionType == 2) { //rotation
+        v.append_attribute("vx") = model->sp.motionVector2.x;
+        v.append_attribute("vy") = model->sp.motionVector2.y;
+        v.append_attribute("vz") = model->sp.motionVector2.z;
+    } else if (model->sp.motionType == 2) { //rotation
         xml_node v = motionNode.append_child("AxisBasePoint");
-        v.append_attribute("x") = model->wp.motionVector1.x;
-        v.append_attribute("y") = model->wp.motionVector1.y;
-        v.append_attribute("z") = model->wp.motionVector1.z;
+        v.append_attribute("x") = model->sp.motionVector1.x;
+        v.append_attribute("y") = model->sp.motionVector1.y;
+        v.append_attribute("z") = model->sp.motionVector1.z;
         xml_node v2 = motionNode.append_child("RotationVector");
-        v2.append_attribute("x") = model->wp.motionVector2.x;
-        v2.append_attribute("y") = model->wp.motionVector2.y;
-        v2.append_attribute("z") = model->wp.motionVector2.z;
+        v2.append_attribute("x") = model->sp.motionVector2.x;
+        v2.append_attribute("y") = model->sp.motionVector2.y;
+        v2.append_attribute("z") = model->sp.motionVector2.z;
     }
 
     auto forcesNode = simuParamNode.append_child("MeasureForces");
-    forcesNode.append_attribute("enabled") = model->wp.enableForceMeasurement;
+    forcesNode.append_attribute("enabled") = model->sp.enableForceMeasurement;
     auto torqueNode = forcesNode.append_child("Torque");
     auto v = torqueNode.append_child("refPoint");
-    v.append_attribute("x") = model->wp.torqueRefPoint.x;
-    v.append_attribute("y") = model->wp.torqueRefPoint.y;
-    v.append_attribute("z") = model->wp.torqueRefPoint.z;
+    v.append_attribute("x") = model->sp.torqueRefPoint.x;
+    v.append_attribute("y") = model->sp.torqueRefPoint.y;
+    v.append_attribute("z") = model->sp.torqueRefPoint.z;
 
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nbNonCatalogParameters = 0;
@@ -208,21 +208,21 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     paramNode.append_attribute("nb") = nbNonCatalogParameters;
 
     xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
-    if (model->wp.globalHistogramParams.recordBounce) {
+    if (model->sp.globalHistogramParams.recordBounce) {
         xml_node nbBounceNode = globalHistNode.append_child("Bounces");
-        nbBounceNode.append_attribute("binSize") = model->wp.globalHistogramParams.nbBounceBinsize;
-        nbBounceNode.append_attribute("max") = model->wp.globalHistogramParams.nbBounceMax;
+        nbBounceNode.append_attribute("binSize") = model->sp.globalHistogramParams.nbBounceBinsize;
+        nbBounceNode.append_attribute("max") = model->sp.globalHistogramParams.nbBounceMax;
     }
-    if (model->wp.globalHistogramParams.recordDistance) {
+    if (model->sp.globalHistogramParams.recordDistance) {
         xml_node distanceNode = globalHistNode.append_child("Distance");
-        distanceNode.append_attribute("binSize") = model->wp.globalHistogramParams.distanceBinsize;
-        distanceNode.append_attribute("max") = model->wp.globalHistogramParams.distanceMax;
+        distanceNode.append_attribute("binSize") = model->sp.globalHistogramParams.distanceBinsize;
+        distanceNode.append_attribute("max") = model->sp.globalHistogramParams.distanceMax;
     }
 #ifdef MOLFLOW
-    if (model->wp.globalHistogramParams.recordTime) {
+    if (model->sp.globalHistogramParams.recordTime) {
         xml_node timeNode = globalHistNode.append_child("Time");
-        timeNode.append_attribute("binSize") = model->wp.globalHistogramParams.timeBinsize;
-        timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
+        timeNode.append_attribute("binSize") = model->sp.globalHistogramParams.timeBinsize;
+        timeNode.append_attribute("max") = model->sp.globalHistogramParams.timeMax;
     }
 #endif
 
@@ -394,62 +394,62 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
         } //end global node
 
         bool hasHistogram =
-                model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
+                model->sp.globalHistogramParams.recordBounce || model->sp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
-        hasHistogram = hasHistogram || model->wp.globalHistogramParams.recordTime;
+        hasHistogram = hasHistogram || model->sp.globalHistogramParams.recordTime;
 #endif
         if (hasHistogram) {
             xml_node histNode = newMoment.append_child("Histograms");
             //Retrieve histogram map from hits dp
             auto &globalHist = globalState->globalHistograms[m];
-            if (model->wp.globalHistogramParams.recordBounce) {
+            if (model->sp.globalHistogramParams.recordBounce) {
                 auto &nbHitsHistogram = globalHist.nbHitsHistogram;
                 xml_node hist = histNode.append_child("Bounces");
-                size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
+                size_t histSize = model->sp.globalHistogramParams.GetBounceHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
-                        "binSize") = model->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+                        "binSize") = model->sp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
-                        "max") = model->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
+                        "max") = model->sp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
                 for (size_t h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
-                    else value = h * model->wp.globalHistogramParams.nbBounceBinsize;
+                    else value = h * model->sp.globalHistogramParams.nbBounceBinsize;
                     bin.append_attribute("count") = nbHitsHistogram[h];
                 }
             }
-            if (model->wp.globalHistogramParams.recordDistance) {
+            if (model->sp.globalHistogramParams.recordDistance) {
                 auto &distanceHistogram = globalHist.distanceHistogram;
                 xml_node hist = histNode.append_child("Distance");
-                size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
+                size_t histSize = model->sp.globalHistogramParams.GetDistanceHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
-                        "binSize") = model->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+                        "binSize") = model->sp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
-                        "max") = model->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
+                        "max") = model->sp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
                 for (size_t h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
-                    else value = h * model->wp.globalHistogramParams.distanceBinsize;
+                    else value = h * model->sp.globalHistogramParams.distanceBinsize;
                     bin.append_attribute("count") = distanceHistogram[h];
                 }
             }
-            if (model->wp.globalHistogramParams.recordTime) {
+            if (model->sp.globalHistogramParams.recordTime) {
                 auto &timeHistogram = globalHist.timeHistogram;
                 xml_node hist = histNode.append_child("Time");
-                size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
+                size_t histSize = model->sp.globalHistogramParams.GetTimeHistogramSize();
                 hist.append_attribute("size") = histSize;
                 hist.append_attribute(
-                        "binSize") = model->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+                        "binSize") = model->sp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
                 hist.append_attribute(
-                        "max") = model->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
+                        "max") = model->sp.globalHistogramParams.timeMax; //redundancy for human-reading or export
                 for (size_t h = 0; h < histSize; h++) {
                     xml_node bin = hist.append_child("Bin");
                     auto value = bin.append_attribute("start");
                     if (h == histSize - 1) value = "overRange";
-                    else value = (double)h * model->wp.globalHistogramParams.timeBinsize;
+                    else value = (double)h * model->sp.globalHistogramParams.timeBinsize;
                     bin.append_attribute("count") = timeHistogram[h];
                 }
             }
@@ -475,7 +475,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
             facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
-            if (model->wp.enableForceMeasurement) { //don't save all-zero quantities if not measured
+            if (model->sp.enableForceMeasurement) { //don't save all-zero quantities if not measured
 
                 auto forcesNode = newFacetResult.append_child("Forces");
 

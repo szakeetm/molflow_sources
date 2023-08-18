@@ -185,7 +185,7 @@ void ParameterParser::ParseInput(const std::vector<std::string> &paramChanges, c
 }
 
 //! Read values for parsed simulation parameters
-void ParameterParser::ChangeSimuParams(WorkerParams& params){
+void ParameterParser::ChangeSimuParams(SimuParams& params){
     for(auto& par : Parameters::simuParams){
         auto type = std::get<0>(par);
         switch (type) {

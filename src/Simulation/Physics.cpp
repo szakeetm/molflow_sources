@@ -42,12 +42,12 @@ double Physics::GenerateDesorptionTime(const std::vector<std::vector<IntegratedD
 void
 Physics::TreatMovingFacet(std::shared_ptr<MolflowSimulationModel> model, const Vector3d &position, Vector3d &direction, double &velocity) {
     Vector3d localVelocityToAdd;
-    if (model->wp.motionType == 1) { //Translation
-        localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector
-    } else if (model->wp.motionType == 2) { //Rotation
+    if (model->sp.motionType == 1) { //Translation
+        localVelocityToAdd = model->sp.motionVector2; //Fixed translational vector
+    } else if (model->sp.motionType == 2) { //Rotation
         Vector3d distanceVector = 0.01 * (position -
-                                          model->wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
-        localVelocityToAdd = CrossProduct(model->wp.motionVector2, distanceVector); //motionVector2 is rotation axis
+                                          model->sp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
+        localVelocityToAdd = CrossProduct(model->sp.motionVector2, distanceVector); //motionVector2 is rotation axis
     }
     Vector3d oldVelocity, newVelocity;
     oldVelocity = direction * velocity;

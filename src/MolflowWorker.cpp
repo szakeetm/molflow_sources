@@ -125,7 +125,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 	bool crashSave) {
 
 	try {
-		if (needsReload && (!crashSave && !saveSelected)) RealReload();
+		if (!crashSave && !saveSelected) ReloadIfNeeded();
 		// Update persistent anglemap
 		SendAngleMaps();
 	}
@@ -504,7 +504,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 	if (!insert) {
 		//Clear hits and leaks cache
 		ResetMoments();
-		model->wp = WorkerParams(); //reset to default
+		model->sp = SimuParams(); //reset to default
 	}
 
 	if (ext == "txt" || ext == "TXT") {
@@ -1123,10 +1123,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	}
 	
 	ReloadSim(sendOnly, prg); //Convert interf.geom to worker::mode and construct global counters, then copy to simManager.simulation
-		
-	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
-	//mf_model->CalcTotalOutgassing(); // ReloadSim() / PrepareToRun() already called it
-
+	
 	if (!sendOnly) {
 		try {
 			prg.SetMessage("Asking subprocesses to clear geometry...");
@@ -1158,6 +1155,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 	prg.SetMessage("Finishing reload...");
 	needsReload = false;
+	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
 }
 
 /**
@@ -1228,13 +1226,13 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->wp.finalOutgassingRate / globalStatCache.globalHits.nbDesorbed;
+		return model->sp.finalOutgassingRate / globalStatCache.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
-		return (model->wp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[moment - 1].window) /
+		return (model->sp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[moment - 1].window) /
 			globalStatCache.globalHits.nbDesorbed;
 	}
 }
@@ -1275,7 +1273,7 @@ void Worker::ImportDesorption_SYN(const char* fileName, const size_t source, con
 		}
 
 		interfGeom->ImportDesorption_SYN(*file, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
-		CalcTotalOutgassing();
+		//CalcTotalOutgassing();
 	}
 }
 
@@ -1325,21 +1323,11 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 void Worker::PrepareToRun() {
 	//determine latest moment
 	if (!interfaceMomentCache.empty())
-		model->wp.latestMoment = (interfaceMomentCache.end() - 1)->time + (interfaceMomentCache.end() - 1)->window / 2.0;
+		model->sp.latestMoment = (interfaceMomentCache.end() - 1)->time + (interfaceMomentCache.end() - 1)->window / 2.0;
 	else {
-		model->wp.latestMoment = model->wp.timeWindowSize * .5;
+		model->sp.latestMoment = model->sp.timeWindowSize * .5;
 	}
 	bool needsAngleMapStatusRefresh = false;
-}
-
-/**
-* \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
-*/
-void Worker::CalcTotalOutgassing() {
-	// Compute the outgassing of all source facets
-	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
-	mf_model->CalcTotalOutgassing();
-	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing(model->wp);
 }
 
 std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {

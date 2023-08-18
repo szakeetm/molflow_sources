@@ -1087,14 +1087,14 @@ namespace {
 		outfile.close();
 		ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
 
-		WorkerParams wp;
-		ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
-		ASSERT_FALSE(wp.enableDecay);
-		ASSERT_FALSE(std::abs(wp.halfLife - 42.42) < 1e-5);
-		ParameterParser::ChangeSimuParams(wp);
-		ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
-		ASSERT_TRUE(wp.enableDecay);
-		ASSERT_TRUE(std::abs(wp.halfLife - 42.42) < 1e-5);
+		SimuParams sp;
+		ASSERT_FALSE(std::abs(sp.gasMass - 42.42) < 1e-5);
+		ASSERT_FALSE(sp.enableDecay);
+		ASSERT_FALSE(std::abs(sp.halfLife - 42.42) < 1e-5);
+		ParameterParser::ChangeSimuParams(sp);
+		ASSERT_TRUE(std::abs(sp.gasMass - 42.42) < 1e-5);
+		ASSERT_TRUE(sp.enableDecay);
+		ASSERT_TRUE(std::abs(sp.halfLife - 42.42) < 1e-5);
 
 
 		std::vector<std::shared_ptr<SimulationFacet>> facets(200);
@@ -1128,10 +1128,10 @@ namespace {
 		params.emplace_back("simulation.mass=42.42");
 		ParameterParser::ParseInput(params, std::vector<SelectionGroup>());
 
-		WorkerParams wp;
-		ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
-		ParameterParser::ChangeSimuParams(wp);
-		ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+		SimuParams sp;
+		ASSERT_FALSE(std::abs(sp.gasMass - 42.42) < 1e-5);
+		ParameterParser::ChangeSimuParams(sp);
+		ASSERT_TRUE(std::abs(sp.gasMass - 42.42) < 1e-5);
 
 
 		std::vector<std::shared_ptr<SimulationFacet>> facets(200);

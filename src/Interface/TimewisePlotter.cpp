@@ -266,7 +266,7 @@ void TimewisePlotter::refreshViews() {
 		if (idx < 0) return;
 		InterfaceFacet *f = interfGeom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
-		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
+		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sp.hitOffset);
 		//double fnbHit = (double)fCount->hit.nbMCHit;
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
@@ -280,7 +280,7 @@ void TimewisePlotter::refreshViews() {
 						v->Add((double)j, profile[j].countEquiv, false);
 				}
 				else if (displayMode == ProfileDisplayModes::Pressure) {
-					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->sp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(v->userData1);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
@@ -374,7 +374,7 @@ void TimewisePlotter::addView(int facet) {
 
 	if (constantFlowToggle->GetState()) { //add constant flow
 		GLDataView *v = new GLDataView();
-		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->wp.profileType]*/);
+		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->sp.profileType]*/);
 		v->SetName(tmp);
 		v->userData1 = 0;
 		v->SetStyle(STYLE_DOT);

@@ -186,9 +186,9 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
     /*iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
-                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+                         2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
                          nullVector, nullVector, nullVector);
     tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
@@ -284,7 +284,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 
 						// Second pass for transparent hits
 						auto tpFacet = model->facets[hit.hitId].get();
-						if (model->wp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
+						if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
 							if (alreadyHit.count(tpFacet->globalId) == 0) {
 								tmpFacetVars[hit.hitId] = hit.hit;
 								RegisterTransparentPass(tpFacet);
@@ -318,13 +318,13 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
                 const double lastParticleTime = ray.time; //memorize for partial hits
                 ray.time += d / 100.0 / velocity; //conversion from cm to m
 
-                if ((!model->wp.calcConstantFlow && (ray.time > model->wp.latestMoment))
-                    || (model->wp.enableDecay &&
+                if ((!model->sp.calcConstantFlow && (ray.time > model->sp.latestMoment))
+                    || (model->sp.enableDecay &&
                         (expectedDecayMoment < ray.time))) {
                     //hit time over the measured period - we create a new particle
                     //OR particle has decayed
                     const double remainderFlightPath = velocity * 100.0 *
-                                                       std::min(model->wp.latestMoment - lastParticleTime,
+                                                       std::min(model->sp.latestMoment - lastParticleTime,
                                                            expectedDecayMoment -
                                                                    lastParticleTime); //distance until the point in space where the particle decayed
                     tmpState->globalStats.distTraveled_total += remainderFlightPath * oriRatio;
@@ -411,7 +411,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     int nbTry = 0;
 
     // Select source
-    srcRnd = ray.rng->rnd() * model->wp.totalDesorbedMolecules;
+    srcRnd = ray.rng->rnd() * model->sp.totalDesorbedMolecules;
 
     i = 0;
     for(const auto& f : model->facets) { //Go through facets in a structure
@@ -420,12 +420,12 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             
             if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                 if (f->sh.totalOutgassing > 0.0) {
-                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
+                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->sp.latestMoment * f->sh.totalOutgassing /
                                                                   (1.38E-23 * f->sh.temperature)));
                     if (found) {
                         auto mfFac = std::static_pointer_cast<MolflowSimFacet>(f);
                         //look for exact position in map
-                        double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
+                        double rndRemainder = (srcRnd - sumA) / model->sp.latestMoment * (1.38E-23 *
                                                                                           f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = lower_index(lookupValue,
@@ -439,14 +439,14 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
                             return false;
                         }*/
                     }
-                    sumA += model->wp.latestMoment * f->sh.totalOutgassing / (1.38E-23 * f->sh.temperature);
+                    sumA += model->sp.latestMoment * f->sh.totalOutgassing / (1.38E-23 * f->sh.temperature);
                 }
             } //end outgassing file block
             else { //constant or time-dependent outgassing
                 double facetOutgassing =
                         ((std::static_pointer_cast<MolflowSimFacet>(f)->outgassing_paramId >= 0)
                          ? model->tdParams.IDs[f->sh.IDid].back().cumulativeDesValue
-                         : (model->wp.latestMoment * f->sh.outgassing))
+                         : (model->sp.latestMoment * f->sh.outgassing))
                     / (1.38E-23 * f->sh.temperature);
                 found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                 sumA += facetOutgassing;
@@ -469,19 +469,19 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     ray.lastIntersected = lastHitFacet->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
-    ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->wp.latestMoment);
+    ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->sp.latestMoment);
     lastMomentIndex = 0;
     auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src); //access extended properties
     //Currently all desorbing facets are const. temp and thus const. temp:
-    if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfSrc->sqrtTemp, randomGenerator.rnd());
+    if (model->sp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfSrc->sqrtTemp, randomGenerator.rnd());
     else
         velocity =
-                145.469 * std::sqrt(src->sh.temperature / model->wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
+                145.469 * std::sqrt(src->sh.temperature / model->sp.gasMass);  //sqrt(8*R/PI/1000)=145.47
 
     oriRatio = 1.0;
-    if (model->wp.enableDecay) { //decaying gas
+    if (model->sp.enableDecay) { //decaying gas
         expectedDecayMoment =
-                ray.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
+                ray.time + model->sp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
@@ -558,7 +558,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
 
     if (particleTracerId == 0) {
-        if (src->sh.isMoving && model->wp.motionType)
+        if (src->sh.isMoving && model->sp.motionType)
             RecordHit(HIT_MOVING);
         else
             RecordHit(HIT_DES); //create blue hit point for created particle
@@ -641,23 +641,23 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             velocity * std::abs(Dot(ray.direction, src->sh.N));
     /*src->sh.tmpCounter.hit.nbDesorbed++;
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-    src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    src->sh.tmpCounter.hit.sum_v_ort += (model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    if (model->wp.enableForceMeasurement) {
+    if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
-        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(src.get(), momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
+		(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
         IncreaseFacetCounter(src.get(), momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     //Desorption doesn't contribute to angular profiles, nor to angle maps
@@ -724,24 +724,24 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     /*iFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    if (model->wp.enableForceMeasurement) {
+    if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
-        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
-        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
+        (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
-            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     nbBounces++;
@@ -797,17 +797,17 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     ortVelocity = velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
 
 
-    if (model->wp.enableForceMeasurement) {
+    if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = - 1.0 * velocity * ray.direction; //sum impulse unchanged
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
-        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
-        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
+        (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
         IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
-            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
@@ -816,7 +816,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     ProfileFacet(iFacet, momentIndex, false, 1.0, 1.0);
     //no particle.direction count on outgoing, neither angle map
 
-    if (iFacet->sh.isMoving && model->wp.motionType) {
+    if (iFacet->sh.isMoving && model->sp.motionType) {
         if (particleTracerId == 0)
             RecordHit(HIT_MOVING);
     } else if (particleTracerId == 0)RecordHit(HIT_REF);
@@ -830,7 +830,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (velocity*directionFactor);
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
     iFacet->isHit = true;
     if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, particle.time + iFacet->colDist / 100.0 / velocity,
         true, 2.0, 2.0);
@@ -857,17 +857,17 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
     double ortVelocity =
             velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
     
-    if (model->wp.enableForceMeasurement) {
+    if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
-        Vector3d impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
+        Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
-        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+        (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
-            (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
+            (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     LogHit(iFacet);
@@ -885,7 +885,7 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
 
     auto &tmpGlobalHistograms = tmpState->globalHistograms;
     auto &facetHistogram = tmpState->facetStates[iFacet->globalId].momentResults;
-    auto &globHistParams = model->wp.globalHistogramParams;
+    auto &globHistParams = model->sp.globalHistogramParams;
     auto &facHistParams = iFacet->sh.facetHistogramParams;
 
     for (const int moment : {0, m}) {
@@ -935,7 +935,7 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 	size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
 	size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
 	size_t add = tu + tv * (f->sh.texWidth);
-	double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
+	double ortVelocity = (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
 		std::abs(Dot(ray.direction,
 			f->sh.N)); //surface-orthogonal velocity component
 
@@ -1004,7 +1004,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
-                                     (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                     (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
             if (m > 0) {
                 ProfileSlice &profile = tmpState->facetStates[f->globalId].momentResults[m].profile[pos];
@@ -1014,7 +1014,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
-                                     (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                     (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
         }
     } else if (countHit && (f->sh.profileType == PROFILE_VELOCITY || f->sh.profileType == PROFILE_ORT_VELOCITY ||
@@ -1100,16 +1100,16 @@ void ParticleTracer::UpdateVelocity(const SimulationFacet *collidedFacet) {
         sqrtTemp = std::sqrt(temp);
     }
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
-        if (model->wp.useMaxwellDistribution)
+        if (model->sp.useMaxwellDistribution)
             velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, sqrtTemp, randomGenerator.rnd());
         else
-            velocity = 145.469 * sqrtTemp / model->wp.gasMass;
+            velocity = 145.469 * sqrtTemp / model->sp.gasMass;
     } else {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
-        if (model->wp.useMaxwellDistribution)
+        if (model->sp.useMaxwellDistribution)
             newSpeed2 = pow(Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, sqrtTemp, randomGenerator.rnd()), 2);
-        else newSpeed2 = /*145.469*/ 29369.939 * (temp / model->wp.gasMass);
+        else newSpeed2 = /*145.469*/ 29369.939 * (temp / model->sp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
         velocity = std::sqrt(oldSpeed2 + (newSpeed2 - oldSpeed2) * collidedFacet->sh.accomodationFactor);
@@ -1128,7 +1128,7 @@ double ParticleTracer::GenerateDesorptionTime(const SimulationFacet *src, const 
         return InterpolateX(rndVal * model->tdParams.IDs[src->sh.IDid].back().second, model->tdParams.IDs[src->sh.IDid],
                             false, false, true); //allow extrapolate
     } else {
-        return rndVal * model->wp.latestMoment; //continous desorption between 0 and latestMoment
+        return rndVal * model->sp.latestMoment; //continous desorption between 0 and latestMoment
     }
 }*/
 
@@ -1159,7 +1159,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
-        if (model->wp.enableForceMeasurement) {
+        if (model->sp.enableForceMeasurement) {
             hits.impulse += oriRatio * impulse;
             hits.impulse_square += oriRatio * impulse_square;
             hits.impulse_momentum += oriRatio * impulse_momentum;
@@ -1175,7 +1175,7 @@ ParticleTracer::IncreaseFacetCounter(const SimulationFacet *f, int m, const size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
-        if (model->wp.enableForceMeasurement) {
+        if (model->sp.enableForceMeasurement) {
             hits.impulse += oriRatio * impulse;
             hits.impulse_square += oriRatio * impulse_square;
             hits.impulse_momentum += oriRatio * impulse_momentum;
@@ -1194,7 +1194,7 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
 
     IncreaseFacetCounter(facet, momentIndex, 1, 0, 0,
                          2.0 / (velocity * directionFactor),
-                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity * directionFactor,
+                         2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity * directionFactor,
                          nullVector,nullVector,nullVector);
 
     tmpFacetVars[facet->globalId].isHit = true;

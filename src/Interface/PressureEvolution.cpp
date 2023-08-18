@@ -251,17 +251,17 @@ void PressureEvolution::refreshChart() {
 				}
 			}
 			else if (displayMode == "Pressure (mbar)") {
-				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-                scaleY *= worker->model->wp.totalDesorbedMolecules;
-                //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
+				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->sp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+                scaleY *= worker->model->sp.totalDesorbedMolecules;
+                //scaleY *= worker->model->sp.totalDesorbedMolecules / worker->model->sp.timeWindowSize;
 				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_v_ort*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}
 			}
 			else if (displayMode == "Density (1/m3)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-                scaleY *= worker->model->wp.totalDesorbedMolecules;
-                //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
+                scaleY *= worker->model->sp.totalDesorbedMolecules;
+                //scaleY *= worker->model->sp.totalDesorbedMolecules / worker->model->sp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
@@ -269,8 +269,8 @@ void PressureEvolution::refreshChart() {
 			}
 			else if (displayMode == "Imp.rate (1/s/m2)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-                scaleY *= worker->model->wp.totalDesorbedMolecules;
-                //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
+                scaleY *= worker->model->sp.totalDesorbedMolecules;
+                //scaleY *= worker->model->sp.totalDesorbedMolecules / worker->model->sp.timeWindowSize;
                 for (size_t m = 1; m <= std::min(worker->interfaceMomentCache.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->interfaceMomentCache[m - 1].time, facetHits[m].hits.nbHitEquiv*(scaleY/worker->interfaceMomentCache[m - 1].window), false);
 				}

@@ -362,7 +362,7 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 					  SAFE_FREE(values);
 					  mApp->UpdateModelParams();
 					  mApp->UpdateFacetParams(true);
-					  worker->CalcTotalOutgassing();
+					  //worker->CalcTotalOutgassing();
 					  // Send to sub process
 					  worker->MarkToReload();
 				  } catch (const std::exception &e) {

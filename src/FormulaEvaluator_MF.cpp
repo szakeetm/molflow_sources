@@ -59,7 +59,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     else if ((idx = GetFacetIndex(v->varName, "P")) > 0) {
         ok = (idx <= nbFacet);
         if (ok) v->value = interfGeom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / interfGeom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / interfGeom->GetFacet(idx - 1)->GetArea() * (worker->model->sp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetFacetIndex(v->varName, "DEN")) > 0) {
         ok = (idx <= nbFacet);
@@ -92,7 +92,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 double time;
                 auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
                 if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment].time;
-                else time = mfModel->wp.latestMoment;
+                else time = mfModel->sp.latestMoment;
                 
                 auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx - 1]);
                 v->value = mfModel->GetTemperatureAt(mfFacet.get(), time);
@@ -107,7 +107,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         ok = (idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-            auto forceN = f->facetHitCache.impulse.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            auto forceN = f->facetHitCache.impulse.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
             v->value = forceN;
         }
     }
@@ -115,7 +115,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         ok = (idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-            auto forceX = f->facetHitCache.impulse.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            auto forceX = f->facetHitCache.impulse.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
             v->value = forceX;
         }
     }
@@ -123,7 +123,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto forceY = f->facetHitCache.impulse.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+			auto forceY = f->facetHitCache.impulse.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
 			v->value = forceY;
 		}
 	}
@@ -131,7 +131,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto forceZ = f->facetHitCache.impulse.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+			auto forceZ = f->facetHitCache.impulse.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
 			v->value = forceZ;
 		}
 	}
@@ -140,7 +140,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         if (ok) {
             InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
             auto force_sqrN = f->facetHitCache.impulse_square.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment)
-                * Square(worker->model->wp.gasMass / 1000 / 6E23);
+                * Square(worker->model->sp.gasMass / 1000 / 6E23);
             v->value = force_sqrN;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
         }
@@ -149,7 +149,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         ok = (idx <= nbFacet);
         if (ok) {
             InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-            auto force_sqrX = f->facetHitCache.impulse_square.x * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
+            auto force_sqrX = f->facetHitCache.impulse_square.x * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23);
             v->value = force_sqrX;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
         }
@@ -158,7 +158,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto force_sqrY = f->facetHitCache.impulse_square.y * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
+			auto force_sqrY = f->facetHitCache.impulse_square.y * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23);
 			v->value = force_sqrY;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
 		}
@@ -167,7 +167,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto force_sqrZ = f->facetHitCache.impulse_square.z * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
+			auto force_sqrZ = f->facetHitCache.impulse_square.z * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23);
 			v->value = force_sqrZ;
             if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
 		}
@@ -176,7 +176,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 	    ok = (idx <= nbFacet);
 	    if (ok) {
 		    InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-		    auto torqueN = f->facetHitCache.impulse_momentum.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+		    auto torqueN = f->facetHitCache.impulse_momentum.Norme() * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 		    v->value = torqueN;
 	    }
 	}
@@ -184,7 +184,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     ok = (idx <= nbFacet);
     if (ok) {
         InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-        auto torqueX = f->facetHitCache.impulse_momentum.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+        auto torqueX = f->facetHitCache.impulse_momentum.x * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
         v->value = torqueX;
     }
     }
@@ -192,7 +192,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto torqueY = f->facetHitCache.impulse_momentum.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+			auto torqueY = f->facetHitCache.impulse_momentum.y * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 			v->value = torqueY;
 		}
 	}
@@ -200,7 +200,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
 		ok = (idx <= nbFacet);
 		if (ok) {
 			InterfaceFacet* f = interfGeom->GetFacet(idx - 1);
-			auto torqueZ = f->facetHitCache.impulse_momentum.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+			auto torqueZ = f->facetHitCache.impulse_momentum.z * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
 			v->value = torqueZ;
 		}
 	}
@@ -240,16 +240,16 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         v->value = sumArea;
     }
     else if (iequals(v->varName, "QCONST")) {
-        v->value = worker->model->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+        v->value = worker->model->sp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->varName, "QCONST_N")) {
-        v->value = worker->model->wp.finalOutgassingRate;
+        v->value = worker->model->sp.finalOutgassingRate;
     }
     else if (iequals(v->varName, "NTOT")) {
-        v->value = worker->model->wp.totalDesorbedMolecules;
+        v->value = worker->model->sp.totalDesorbedMolecules;
     }
     else if (iequals(v->varName, "GASMASS")) {
-        v->value = worker->model->wp.gasMass;
+        v->value = worker->model->sp.gasMass;
     }
     else if (iequals(v->varName, "KB")) {
         v->value = 1.3806504e-23;
@@ -348,7 +348,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
             }
             else if (Contains({ "P", "p" }, tokens[0])) {
                 sumD+= interfGeom->GetFacet(sel)->facetHitCache.sum_v_ort *
-                       (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
+                       (worker->model->sp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += interfGeom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
                 InterfaceFacet *f = interfGeom->GetFacet(sel);
@@ -398,22 +398,22 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         }
         if (avgMode) {
             if (iContains({ "P","DEN","Z" },tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea;
-            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
             else if (iContains({ "ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ" }, tokens[0])) {
-                v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+                v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
                 if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
             }
-            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
+            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
         }
         else { //sum mode
             if (iequals("AR" , tokens[0])) v->value = sumArea;
             else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
-            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            else if (iContains({ "Force","ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
             else if (iContains({ "ForceSqr","ForceSqrX","ForceSqrY","ForceSqrZ" }, tokens[0])){
-                v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
+                v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23);
                 if (worker->displayedMoment!=0) v->value/=worker->interfaceMomentCache[worker->displayedMoment - 1].window; //force2 divided by dt^2 to get N^2
             }
-            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
+            else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
             else v->value = static_cast<double>(sumLL); //One long->double conversion at the end (instead of at each summing operation)
         }
      }

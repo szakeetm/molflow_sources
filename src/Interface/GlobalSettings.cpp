@@ -273,11 +273,10 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 void GlobalSettings::Update() {
 	Update_shared();
 	UpdateOutgassing();
-	gasMassText->SetText(worker->model->wp.gasMass);
-
-	enableDecay->SetState(worker->model->wp.enableDecay);
-	halfLifeText->SetText(worker->model->wp.halfLife);
-	halfLifeText->SetEditable(worker->model->wp.enableDecay);
+	gasMassText->SetText(worker->model->sp.gasMass);
+	enableDecay->SetState(worker->model->sp.enableDecay);
+	halfLifeText->SetText(worker->model->sp.halfLife);
+	halfLifeText->SetEditable(worker->model->sp.enableDecay);
 }
 
 /**
@@ -296,10 +295,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		if (src == recalcButton) {
 			if (mApp->AskToReset()) {
 				try {
-					worker->RealReload();
+					worker->ReloadIfNeeded();
+					UpdateOutgassing();
 				}
 				catch (const std::exception &e) {
-					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
+					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't convert model to simulation", GLDLG_OK, GLDLG_ICONWARNING);
 				}
 			}		
 		}
@@ -310,10 +310,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (std::abs(gm - worker->model->wp.gasMass) > 1e-7) {
+			if (std::abs(gm - worker->model->sp.gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->model->wp.gasMass = gm;
+					worker->model->sp.gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 						bool hasPump = false;
 						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
@@ -332,11 +332,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if ((enableDecay->GetState()==1) != worker->model->wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->model->wp.halfLife))) {
+			if ((enableDecay->GetState()==1) != worker->model->sp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->model->sp.halfLife))) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->model->wp.enableDecay = enableDecay->GetState();
-					if (worker->model->wp.enableDecay) worker->model->wp.halfLife = hl;
+					worker->model->sp.enableDecay = enableDecay->GetState();
+					if (worker->model->sp.enableDecay) worker->model->sp.halfLife = hl;
 				}
 			}
 			return;
@@ -373,18 +373,25 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 /**
 * \brief Updates the values regarding outgassing (from memory and by calculation)
 */
-void GlobalSettings::UpdateOutgassing(const WorkerParams& wp) {
-	char tmp[128];
-	sprintf(tmp, "%g", wp.gasMass);
-	gasMassText->SetText(tmp);
-	sprintf(tmp, "%g", wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
-	outgassingGasRateText->SetText(tmp);
-	sprintf(tmp, "%g", wp.finalOutgassingRate); //In molecules/sec
-	outgassingMoleculeRateText->SetText(tmp);
-	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",wp.latestMoment);
-	desorbedMoleculesLabel->SetText(tmp);
-	sprintf(tmp, "%.3E", wp.totalDesorbedMolecules);
-	desorbedMoleculesText->SetText(tmp);
+void GlobalSettings::UpdateOutgassing() {
+	if (worker->needsReload) {
+		std::string changedTxt("Model changed");
+		outgassingGasRateText->SetText(changedTxt);
+		outgassingMoleculeRateText->SetText(changedTxt);
+		desorbedMoleculesLabel->SetText("Tot.des.molecules["+changedTxt+"]");
+		desorbedMoleculesText->SetText(changedTxt);
+	}
+	else {
+		char tmp[128];
+		sprintf(tmp, "%g", worker->model->sp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+		outgassingGasRateText->SetText(tmp);
+		sprintf(tmp, "%g", worker->model->sp.finalOutgassingRate); //In molecules/sec
+		outgassingMoleculeRateText->SetText(tmp);
+		sprintf(tmp, "Tot.des. molecules [0 to %g s]:", worker->model->sp.latestMoment);
+		desorbedMoleculesLabel->SetText(tmp);
+		sprintf(tmp, "%.3E", worker->model->sp.totalDesorbedMolecules);
+		desorbedMoleculesText->SetText(tmp);
+	}
 }
 
 void GlobalSettings::ResizeProcessPanel(int windowWidth, int windowHeight) {

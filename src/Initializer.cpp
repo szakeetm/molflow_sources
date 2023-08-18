@@ -167,7 +167,7 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
             ParameterParser::ParseFile(parsedArgs.paramFile, interfaceSettings.selections);
         if (!parsedArgs.paramChanges.empty())
             ParameterParser::ParseInput(parsedArgs.paramChanges, interfaceSettings.selections);
-        ParameterParser::ChangeSimuParams(loadedModel->wp);
+        ParameterParser::ChangeSimuParams(loadedModel->sp);
         if(ParameterParser::ChangeFacetParams(loadedModel->facets)){
             throw Error("Error in ParameterParser::ChangeFacetParams()");
         }

@@ -524,7 +524,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 
 		for (size_t i = 0; i < nbFacet; i++) {
 			InterfaceFacet *f = interfGeom->GetFacet(i);
-			//if(f->wp.opacity==1.0) {
+			//if(f->sp.opacity==1.0) {
 			if (f->selected) {
 			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
 				cell += (size_t)(nbCells.first * nbCells.second);
@@ -1500,23 +1500,23 @@ bool FacetAdvParams::Apply() {
 	for (auto& sel:selectedFacets) {
 		InterfaceFacet *f = interfGeom->GetFacet(sel);
 		/*
-		bool hadAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
-		bool hadDirCount = f->wp.countDirection;
+		bool hadAnyTexture = f->sp.countDes || f->sp.countAbs || f->sp.countRefl || f->sp.countTrans || f->sp.countACD || f->sp.countDirection;
+		bool hadDirCount = f->sp.countDirection;
 		
 		if (enableBtn->GetState() == 0 || ratio == 0.0) {
 			//Let the user disable textures with the main switch or by typing 0 as resolution
-			f->wp.countDes = f->wp.countAbs = f->wp.countRefl = f->wp.countTrans = f->wp.countACD = f->wp.countDirection = false;
+			f->sp.countDes = f->sp.countAbs = f->sp.countRefl = f->sp.countTrans = f->sp.countACD = f->sp.countDirection = false;
 		}
 		else {
-			if (recordDesBtn->GetState() < 2) f->wp.countDes = recordDesBtn->GetState();
-			if (recordAbsBtn->GetState() < 2) f->wp.countAbs = recordAbsBtn->GetState();
-			if (recordReflBtn->GetState() < 2) f->wp.countRefl = recordReflBtn->GetState();
-			if (recordTransBtn->GetState() < 2) f->wp.countTrans = recordTransBtn->GetState();
-			if (recordACBtn->GetState() < 2) f->wp.countACD = recordACBtn->GetState();
-			if (recordDirBtn->GetState() < 2) f->wp.countDirection = recordDirBtn->GetState();
+			if (recordDesBtn->GetState() < 2) f->sp.countDes = recordDesBtn->GetState();
+			if (recordAbsBtn->GetState() < 2) f->sp.countAbs = recordAbsBtn->GetState();
+			if (recordReflBtn->GetState() < 2) f->sp.countRefl = recordReflBtn->GetState();
+			if (recordTransBtn->GetState() < 2) f->sp.countTrans = recordTransBtn->GetState();
+			if (recordACBtn->GetState() < 2) f->sp.countACD = recordACBtn->GetState();
+			if (recordDirBtn->GetState() < 2) f->sp.countDirection = recordDirBtn->GetState();
 		}
 		
-		bool hasAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
+		bool hasAnyTexture = f->sp.countDes || f->sp.countAbs || f->sp.countRefl || f->sp.countTrans || f->sp.countACD || f->sp.countDirection;
 		*/
 
 		if (doTeleport) f->sh.teleportDest = teleport;
@@ -1576,7 +1576,7 @@ bool FacetAdvParams::Apply() {
 		/*
 		//set textures
 		try {
-			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->wp.countDirection) || (doRatio && (!IsEqual(interfGeom->GetFacet(sel)->tRatio , ratio)));
+			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sp.countDirection) || (doRatio && (!IsEqual(interfGeom->GetFacet(sel)->tRatio , ratio)));
 			if (needsRemeshing) interfGeom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (const std::exception &e) {
@@ -1588,7 +1588,7 @@ bool FacetAdvParams::Apply() {
 			return false;
 		}
 		*/
-		//if (angleMapRecordCheckbox->GetState() < 2) f->wp.anglemapParams.record = angleMapRecordCheckbox->GetState();
+		//if (angleMapRecordCheckbox->GetState() < 2) f->sp.anglemapParams.record = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->viewSettings.textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->viewSettings.volumeVisible = showVolume->GetState();
 		nbPerformed++;

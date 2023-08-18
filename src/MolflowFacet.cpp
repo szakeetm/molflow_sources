@@ -530,7 +530,7 @@ void InterfaceFacet::LoadTXT(FileReader& file) {
 	}
 
 	//Area
-	/*wp.area =*/ file.ReadDouble(); //Unused in modern Molflow
+	/*sp.area =*/ file.ReadDouble(); //Unused in modern Molflow
 
 	//Counters
 	facetHitCache.nbDesorbed = (size_t)(file.ReadDouble() + 0.5);
@@ -987,11 +987,11 @@ void InterfaceFacet::BuildTexture(const std::vector<TextureCell>& texBuffer, int
 	/*
 	// Perform edge smoothing (only with mesh)
 	if( mesh ) {
-	for(int j=-1;j<=wp.texHeight;j++) {
-	for(int i=-1;i<=wp.texWidth;i++) {
-	bool doSmooth = (i<0) || (i>=wp.texWidth) ||
-	(j<0) || (j>=wp.texHeight) ||
-	mesh[i+j*wp.texWidth].area==0.0f;
+	for(int j=-1;j<=sp.texHeight;j++) {
+	for(int i=-1;i<=sp.texWidth;i++) {
+	bool doSmooth = (i<0) || (i>=sp.texWidth) ||
+	(j<0) || (j>=sp.texHeight) ||
+	mesh[i+j*sp.texWidth].area==0.0f;
 	if( doSmooth ) {
 	if( doLog ) {
 	val = (int)((log10(GetSmooth(i,j,texBuffer,dCoeff))-log10(min))*scaleFactor+0.5f);

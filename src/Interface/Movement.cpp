@@ -315,14 +315,14 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 			
 			if (mApp->AskToReset()) {
-				work->model->wp.motionType = mode;
+				work->model->sp.motionType = mode;
 				switch (mode) {
 				case MODE_FIXED:
-					work->model->wp.motionVector2 = AXIS_DIR;
+					work->model->sp.motionVector2 = AXIS_DIR;
 					break;
 				case MODE_ROTATING: 
-					work->model->wp.motionVector1 = AXIS_P0;
-					work->model->wp.motionVector2 = AXIS_DIR.Normalized() * (degPerSec / 180.0 * 3.14159);
+					work->model->sp.motionVector1 = AXIS_P0;
+					work->model->sp.motionVector2 = AXIS_DIR.Normalized() * (degPerSec / 180.0 * 3.14159);
 					break;
 				}
 
@@ -449,13 +449,13 @@ void Movement::UpdateToggle(GLComponent *src) {
 */
 void Movement::Update() {
 	
-	mode = work->model->wp.motionType;
+	mode = work->model->sp.motionType;
 	
-	checkBox1->SetState(work->model->wp.motionType == 0);
-	checkBox2->SetState(work->model->wp.motionType == 1);
-	checkBox3->SetState(work->model->wp.motionType == 2);
+	checkBox1->SetState(work->model->sp.motionType == 0);
+	checkBox2->SetState(work->model->sp.motionType == 1);
+	checkBox3->SetState(work->model->sp.motionType == 2);
 
-	if (work->model->wp.motionType == 0) {
+	if (work->model->sp.motionType == 0) {
 		for (auto& textBox : group1) {
 			textBox->SetText("0");
 		}
@@ -463,32 +463,32 @@ void Movement::Update() {
 			textBox->SetText("0");
 		}
 	}
-	else if (work->model->wp.motionType == 1) {
+	else if (work->model->sp.motionType == 1) {
 		for (auto& textBox : group1) {
 			textBox->SetEditable(true);
 		}
 		for (auto& textBox : group2) {
 			textBox->SetText("0");
 		}
-		vxText->SetText(work->model->wp.motionVector2.x);
-		vyText->SetText(work->model->wp.motionVector2.y);
-		vzText->SetText(work->model->wp.motionVector2.z);
+		vxText->SetText(work->model->sp.motionVector2.x);
+		vyText->SetText(work->model->sp.motionVector2.y);
+		vzText->SetText(work->model->sp.motionVector2.z);
 	}
-	else if (work->model->wp.motionType == 2) {
+	else if (work->model->sp.motionType == 2) {
 		for (auto& textBox : group1) {
 			textBox->SetText("0");
 		}
 		for (auto& textBox : group2) {
 			textBox->SetEditable(true);
 		}
-		axText->SetText(work->model->wp.motionVector1.x);
-		ayText->SetText(work->model->wp.motionVector1.y);
-		azText->SetText(work->model->wp.motionVector1.z);
-		Vector3d rot = work->model->wp.motionVector2.Normalized();
+		axText->SetText(work->model->sp.motionVector1.x);
+		ayText->SetText(work->model->sp.motionVector1.y);
+		azText->SetText(work->model->sp.motionVector1.z);
+		Vector3d rot = work->model->sp.motionVector2.Normalized();
 		rxText->SetText(rot.x);
 		ryText->SetText(rot.y);
 		rzText->SetText(rot.z);
-		double num=work->model->wp.motionVector2.Norme()/3.14159*180.0;
+		double num=work->model->sp.motionVector2.Norme()/3.14159*180.0;
 		degText->SetText(num);
 		rpmText->SetText(num / 6);
 		hzText->SetText(num / 360);

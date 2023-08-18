@@ -131,20 +131,20 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
 
     prg.SetMessage("Loading physics parameters...",false);
 
-    loadModel->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-    loadModel->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+    loadModel->sp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+    loadModel->sp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
     if (simuParamNode.child("Gas").attribute("enableDecay")) {
-        loadModel->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
+        loadModel->sp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
     }
     else {
-        loadModel->wp.enableDecay = loadModel->wp.halfLife < 1e100;
+        loadModel->sp.enableDecay = loadModel->sp.halfLife < 1e100;
     }
 
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
-    loadModel->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+    loadModel->sp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
     // Default initialization
-    loadModel->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
-    loadModel->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
+    loadModel->sp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+    loadModel->sp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
@@ -152,7 +152,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         um.content=newUserEntry.attribute("content").as_string();
         um.timeWindow=newUserEntry.attribute("window").as_double();
         if(um.timeWindow==0.0){
-            um.timeWindow = loadModel->wp.timeWindowSize;
+            um.timeWindow = loadModel->sp.timeWindowSize;
         }
         
         interfaceSettings->userMoments.emplace_back(um);
@@ -161,37 +161,37 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     TimeMoments::ParseAndCheckUserMoments(loadModel->tdParams.moments, interfaceSettings->userMoments, prg);
 
     xml_node motionNode = simuParamNode.child("Motion");
-    loadModel->wp.motionType = motionNode.attribute("type").as_int();
-    if (loadModel->wp.motionType == 1) { //fixed motion
+    loadModel->sp.motionType = motionNode.attribute("type").as_int();
+    if (loadModel->sp.motionType == 1) { //fixed motion
         xml_node v = motionNode.child("VelocityVector");
-        loadModel->wp.motionVector2.x = v.attribute("vx").as_double();
-        loadModel->wp.motionVector2.y = v.attribute("vy").as_double();
-        loadModel->wp.motionVector2.z = v.attribute("vz").as_double();
+        loadModel->sp.motionVector2.x = v.attribute("vx").as_double();
+        loadModel->sp.motionVector2.y = v.attribute("vy").as_double();
+        loadModel->sp.motionVector2.z = v.attribute("vz").as_double();
     }
-    else if (loadModel->wp.motionType == 2) { //rotation
+    else if (loadModel->sp.motionType == 2) { //rotation
         xml_node v = motionNode.child("AxisBasePoint");
-        loadModel->wp.motionVector1.x = v.attribute("x").as_double();
-        loadModel->wp.motionVector1.y = v.attribute("y").as_double();
-        loadModel->wp.motionVector1.z = v.attribute("z").as_double();
+        loadModel->sp.motionVector1.x = v.attribute("x").as_double();
+        loadModel->sp.motionVector1.y = v.attribute("y").as_double();
+        loadModel->sp.motionVector1.z = v.attribute("z").as_double();
         xml_node v2 = motionNode.child("RotationVector");
-        loadModel->wp.motionVector2.x = v2.attribute("x").as_double();
-        loadModel->wp.motionVector2.y = v2.attribute("y").as_double();
-        loadModel->wp.motionVector2.z = v2.attribute("z").as_double();
+        loadModel->sp.motionVector2.x = v2.attribute("x").as_double();
+        loadModel->sp.motionVector2.y = v2.attribute("y").as_double();
+        loadModel->sp.motionVector2.z = v2.attribute("z").as_double();
     }
 
     auto forcesNode = simuParamNode.child("MeasureForces");
     if (!forcesNode) {
-        loadModel->wp.enableForceMeasurement = false;
-        loadModel->wp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
+        loadModel->sp.enableForceMeasurement = false;
+        loadModel->sp.torqueRefPoint = Vector3d(0.0, 0.0, 0.0);
     }
     else {
-        loadModel->wp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
+        loadModel->sp.enableForceMeasurement = forcesNode.attribute("enabled").as_bool();
         auto torqueNode = forcesNode.child("Torque");
         if (torqueNode) {
             auto v = torqueNode.child("refPoint");
-            loadModel->wp.torqueRefPoint.x = v.attribute("x").as_double();
-            loadModel->wp.torqueRefPoint.y = v.attribute("y").as_double();
-            loadModel->wp.torqueRefPoint.z = v.attribute("z").as_double();
+            loadModel->sp.torqueRefPoint.x = v.attribute("x").as_double();
+            loadModel->sp.torqueRefPoint.y = v.attribute("y").as_double();
+            loadModel->sp.torqueRefPoint.z = v.attribute("z").as_double();
         }
     }
 
@@ -200,22 +200,22 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");
         if (nbBounceNode) {
-            loadModel->wp.globalHistogramParams.recordBounce=true;
-            loadModel->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
-            loadModel->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+            loadModel->sp.globalHistogramParams.recordBounce=true;
+            loadModel->sp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+            loadModel->sp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
         }
         xml_node distanceNode = globalHistNode.child("Distance");
         if (distanceNode) {
-            loadModel->wp.globalHistogramParams.recordDistance=true;
-            loadModel->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
-            loadModel->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+            loadModel->sp.globalHistogramParams.recordDistance=true;
+            loadModel->sp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+            loadModel->sp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
         }
 #ifdef MOLFLOW
         xml_node timeNode = globalHistNode.child("Time");
         if (timeNode) {
-            loadModel->wp.globalHistogramParams.recordTime=true;
-            loadModel->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
-            loadModel->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
+            loadModel->sp.globalHistogramParams.recordTime=true;
+            loadModel->sp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+            loadModel->sp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
         }
 #endif
     }
@@ -442,20 +442,20 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
 
             //prg.SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
             bool hasHistogram =
-                    model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
+                    model->sp.globalHistogramParams.recordBounce || model->sp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasHistogram = hasHistogram || model->wp.globalHistogramParams.recordTime;
+            hasHistogram = hasHistogram || model->sp.globalHistogramParams.recordTime;
 #endif
             if (hasHistogram) {
                 xml_node histNode = newMoment.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
                     auto &globalHistogram = globalState->globalHistograms[m];
-                    if (model->wp.globalHistogramParams.recordBounce) {
+                    if (model->sp.globalHistogramParams.recordBounce) {
                         auto &nbHitsHistogram = globalHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
+                            size_t histSize = model->sp.globalHistogramParams.GetBounceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -472,11 +472,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             }
                         }
                     }
-                    if (model->wp.globalHistogramParams.recordDistance) {
+                    if (model->sp.globalHistogramParams.recordDistance) {
                         auto &distanceHistogram = globalHistogram.distanceHistogram;
                         xml_node hist = histNode.child("Distance");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
+                            size_t histSize = model->sp.globalHistogramParams.GetDistanceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -493,11 +493,11 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                             }
                         }
                     }
-                    if (model->wp.globalHistogramParams.recordTime) {
+                    if (model->sp.globalHistogramParams.recordTime) {
                         auto &timeHistogram = globalHistogram.timeHistogram;
                         xml_node hist = histNode.child("Time");
                         if (hist) {
-                            size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
+                            size_t histSize = model->sp.globalHistogramParams.GetTimeHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -1085,7 +1085,7 @@ void XmlLoader::LoadFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
 
     //Update flags
     facet->sh.isProfile = (facet->sh.profileType != PROFILE_NONE);
-    //wp.isOpaque = (wp.opacity != 0.0);
+    //sp.isOpaque = (sp.opacity != 0.0);
     facet->sh.isTextured = ((facet->sh.texWidth_precise * facet->sh.texHeight_precise) > 0);
 
     // Do some fixes

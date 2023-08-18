@@ -113,8 +113,8 @@ void MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doubl
         // Wall facet
         for (int i = 0; i < step; i++) {
             facets[i + 2 + nbTF] = std::make_shared<MolflowSimFacet>(4);
-            //facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
-            //facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
+            //facets[i + 2 + nbTF]->sp.reflection.diffusePart = 1.0; //constructor does this already
+            //facets[i + 2 + nbTF]->sp.reflection.specularPart = 0.0; //constructor does this already
             facets[i + 2 + nbTF]->sh.sticking = s;
             facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
             facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
@@ -253,13 +253,13 @@ void MolflowSimulationModel::PrepareToRun() {
 
     //determine latest moment
     if(!tdParams.moments.empty()) {
-        wp.latestMoment = tdParams.moments.back().time + .5 * tdParams.moments.back().window;
+        sp.latestMoment = tdParams.moments.back().time + .5 * tdParams.moments.back().window;
     } else {
-        wp.latestMoment = wp.timeWindowSize * .5;
+        sp.latestMoment = sp.timeWindowSize * .5;
     }
 
     CalcIntervalCache();
-    this->maxwell_CDF_1K = CDFGeneration::Generate_CDF(1.0, wp.gasMass);
+    this->maxwell_CDF_1K = CDFGeneration::Generate_CDF(1.0, sp.gasMass);
 
     std::set<size_t> desorptionParameterIDs;
     std::vector<double> temperatureList;
@@ -346,7 +346,7 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
     double finalOutgassingRate_Pa_m3_sec = 0.0;
     double finalOutgassingRate = 0.0;
 
-    const double latestMoment = wp.latestMoment;
+    const double latestMoment = sp.latestMoment;
 
 
     for (size_t i = 0; i < facets.size(); i++) {
@@ -382,9 +382,9 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
         }
     }
 
-    wp.totalDesorbedMolecules = totalDesorbedMolecules;
-    wp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
-    wp.finalOutgassingRate = finalOutgassingRate;
+    sp.totalDesorbedMolecules = totalDesorbedMolecules;
+    sp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
+    sp.finalOutgassingRate = finalOutgassingRate;
 }
 
 std::vector<std::string> MolflowSimulationModel::SanityCheck() {
@@ -430,14 +430,14 @@ std::vector<std::string> MolflowSimulationModel::SanityCheck() {
     }
 
     //Molflow unique
-    if (wp.enableDecay && wp.halfLife <= 0.0) {
+    if (sp.enableDecay && sp.halfLife <= 0.0) {
         char tmp[255];
-        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", wp.halfLife);
+        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", sp.halfLife);
         errLog.push_back(tmp);
     }
 
     // Is there some desorption in the system? (depends on pre calculation)
-    if (wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
+    if (sp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
         // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
         bool found = false;
         size_t nbF = facets.size();
@@ -450,7 +450,7 @@ std::vector<std::string> MolflowSimulationModel::SanityCheck() {
         if (!found)
             throw Error("No desorption facet found");
     }
-    if (wp.totalDesorbedMolecules <= 0.0)
+    if (sp.totalDesorbedMolecules <= 0.0)
         throw Error("Total outgassing is zero.");
 
     return errLog;
@@ -569,7 +569,7 @@ void GlobalSimuState::Resize(std::shared_ptr<SimulationModel> model) {
     //Global histogram
 
     FacetHistogramBuffer globalHistTemplate{};
-    globalHistTemplate.Resize(model->wp.globalHistogramParams);
+    globalHistTemplate.Resize(model->sp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
     initialized = true;
 }

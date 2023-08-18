@@ -336,7 +336,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				sprintf(errMsg,"%s\nFile:%s",e.what(),synFile.c_str());
 				GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 			}
-			work->CalcTotalOutgassing();
+			//work->CalcTotalOutgassing();
 			mApp->UpdateFacetParams(false);
 			// Send to sub process
 			work->MarkToReload();

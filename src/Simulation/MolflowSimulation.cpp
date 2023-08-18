@@ -179,7 +179,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
 
 size_t MolflowSimulation::GetHitsSize() {
     MolflowSimulationModel* simModelPtr = (MolflowSimulationModel*) model.get();
-    return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
+    return sizeof(GlobalHitBuffer) + model->sp.globalHistogramParams.GetDataSize() +
            + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModelPtr->tdParams.moments.size());
 }
 

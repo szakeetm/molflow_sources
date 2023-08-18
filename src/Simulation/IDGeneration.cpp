@@ -75,7 +75,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
     auto &par = model->tdParams.parameters[paramId]; //we'll reference it a lot
     for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
                                      (par.GetX(indexAfterLatestMoment) <
-                                      model->wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
+                                      model->sp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
     bool lastUserMomentBeforeLatestMoment;
     if (indexAfterLatestMoment >= par.GetSize()) {
         indexAfterLatestMoment = par.GetSize() - 1; //not found, set as last moment
@@ -101,7 +101,7 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
             for (const auto& val : valuesCopy) { //copy all values...
                 myOutgassing.emplace_back(DesorptionEntry(val.first,val.second)); //convert pair of double (generic parameter) to DesorptionEntry
             }
-			myOutgassing.emplace_back(DesorptionEntry(model->wp.latestMoment,
+			myOutgassing.emplace_back(DesorptionEntry(model->sp.latestMoment,
 				myOutgassing.back().desValue)); //...and create last point equal to last outgassing (const extrapolation)
 		}
 		else {
@@ -110,9 +110,9 @@ std::vector<IntegratedDesorptionEntry> Generate_ID(int paramId, MolflowSimulatio
                     myOutgassing.emplace_back(DesorptionEntry(valuesCopy[i].first, valuesCopy[i].second)); //convert pair of double (generic parameter) to DesorptionEntry
                 }
 			}
-			if (!IsEqual(myOutgassing.back().time, model->wp.latestMoment)) { //if interpolation is needed
-				myOutgassing.emplace_back(DesorptionEntry(model->wp.latestMoment,
-					InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
+			if (!IsEqual(myOutgassing.back().time, model->sp.latestMoment)) { //if interpolation is needed
+				myOutgassing.emplace_back(DesorptionEntry(model->sp.latestMoment,
+					InterpolateY(model->sp.latestMoment, valuesCopy, par.logXinterp,
 						par.logYinterp,true))); //interpolate outgassing value to t=latestMoment
 			}
 		}

@@ -766,11 +766,11 @@ void MolFlow::ApplyFacetParams() {
 
 			if (rType >= 0) {
 				f->sh.profileType = rType;
-				//f->wp.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
+				//f->sp.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
 			}
 			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
-			f->sh.maxSpeed = 4.0 * sqrt(2.0 * 8.31 * f->sh.temperature / 0.001 / worker.model->wp.gasMass);
+			f->sh.maxSpeed = 4.0 * sqrt(2.0 * 8.31 * f->sh.temperature / 0.001 / worker.model->sp.gasMass);
 			f->UpdateFlags();
 		}
 	}
@@ -778,7 +778,7 @@ void MolFlow::ApplyFacetParams() {
 	// Mark "needsReload" to sync changes with workers on next simulation start
 	worker.MarkToReload();
 
-	worker.CalcTotalOutgassing();
+	//worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
@@ -1215,7 +1215,7 @@ void MolFlow::ImportDesorption_DES() {
 			sprintf(errMsg, "%s\nFile:%s", e.what(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
-		worker.CalcTotalOutgassing();
+		//worker.CalcTotalOutgassing();
 		UpdateFacetParams();
 	}
 
@@ -1391,7 +1391,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 
 		InterfaceGeometry* interfGeom = worker.GetGeometry();
 		worker.PrepareToRun();
-		worker.CalcTotalOutgassing();
+		//worker.CalcTotalOutgassing();
 
 		//Increase BB
 		for (auto& view : viewer)
@@ -1452,7 +1452,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 
 void MolFlow::StartStopSimulation() {
 
-	if (worker.globalStatCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.interfaceMomentCache.empty()) {
+	if (worker.globalStatCache.globalHits.nbMCHit <= 0 && !worker.model->sp.calcConstantFlow && worker.interfaceMomentCache.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1613,7 +1613,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 				if (AskToReset()) {
 					if (worker.IsRunning()) worker.Stop_Public();
 					interfGeom->RemoveFacets(selectedFacets);
-					worker.CalcTotalOutgassing();
+					//worker.CalcTotalOutgassing();
 					//interfGeom->CheckIsolatedVertex();
 					UpdateModelParams();
 					RefreshPlotterCombos();
@@ -1689,7 +1689,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 					if (AskToReset()) {
 						if (worker.IsRunning()) worker.Stop_Public();
 						interfGeom->RemoveSelectedVertex();
-						worker.CalcTotalOutgassing();
+						//worker.CalcTotalOutgassing();
 						interfGeom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
@@ -1897,10 +1897,10 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	try {
 		interfGeom->BuildPipe(L, R, 0, step);
-		worker.needsReload = true;
-		worker.CalcTotalOutgassing();
+		worker.MarkToReload();
+		//worker.CalcTotalOutgassing();
 		//default values
-		worker.model->wp = WorkerParams(); //reset to default
+		worker.model->sp = SimuParams(); //reset to default
 		
 		worker.ResetMoments();
 		ResetSimulation(false);
@@ -1969,9 +1969,9 @@ void MolFlow::EmptyGeometry() {
 
 	try {
 		interfGeom->EmptyGeometry();
-		worker.CalcTotalOutgassing();
+		//worker.CalcTotalOutgassing();
 		//default values
-		worker.model->wp = WorkerParams(); //reset to default
+		worker.model->sp = SimuParams(); //reset to default
 		worker.ResetMoments();
 	}
 	catch (const std::exception& e) {
@@ -2178,7 +2178,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("compressSavedFiles"); file.ReadKeyword(":");
 		compressSavedFiles = file.ReadInt();
 		file.ReadKeyword("gasMass"); file.ReadKeyword(":");
-		worker.model->wp.gasMass = file.ReadDouble();
+		worker.model->sp.gasMass = file.ReadDouble();
 		file.ReadKeyword("expandShortcutPanel"); file.ReadKeyword(":");
 		bool isOpen = file.ReadInt();
 		if (isOpen) shortcutPanel->Open();
@@ -2321,7 +2321,7 @@ void MolFlow::SaveConfig() {
 		file.Write("checkForUpdates:"); file.Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		file.Write("autoUpdateFormulas:"); file.Write(autoUpdateFormulas, "\n");
 		file.Write("compressSavedFiles:"); file.Write(compressSavedFiles, "\n");
-		file.Write("gasMass:"); file.Write(worker.model->wp.gasMass, "\n");
+		file.Write("gasMass:"); file.Write(worker.model->sp.gasMass, "\n");
 		file.Write("expandShortcutPanel:"); file.Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
@@ -2351,7 +2351,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	outgassing = 1 * sticking * area / 10.0 / 4.0 * sqrt(8.0 * 8.31 * temperature / PI / (worker.model->wp.gasMass * 0.001));
+	outgassing = 1 * sticking * area / 10.0 / 4.0 * sqrt(8.0 * 8.31 * temperature / PI / (worker.model->sp.gasMass * 0.001));
 	facetPumping->SetText(outgassing);
 }
 
@@ -2367,7 +2367,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = std::abs(outgassing / (area / 10.0) * 4.0 * sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI * (worker.model->wp.gasMass * 0.001)));
+	sticking = std::abs(outgassing / (area / 10.0) * 4.0 * sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI * (worker.model->sp.gasMass * 0.001)));
 	facetSticking->SetText(sticking);
 }
 

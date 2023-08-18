@@ -389,11 +389,11 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 	{
 	double dCoef =  1E4 * worker->GetMoleculesPerTP(worker->displayedMoment)*f->DensityCorrection();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
-	sprintf(ret, "%g", f->facetHitCache.sum_1_per_ort_velocity / f->GetArea()*dCoef*mApp->worker.model->wp.gasMass / 1000.0 / 6E23);
+	sprintf(ret, "%g", f->facetHitCache.sum_1_per_ort_velocity / f->GetArea()*dCoef*mApp->worker.model->sp.gasMass / 1000.0 / 6E23);
 	break; }
 	case 21: //avg.pressure
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
 	sprintf(ret, "%g", f->facetHitCache.sum_v_ort*dCoef / f->GetArea());
 	break; }
@@ -417,13 +417,13 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		break;
     case 27: //Force
     {
-        auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+        auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23);
         strcpy(ret, fmt::format("{:.4g} N ({:.4g},{:.4g},{:.4g})", force.Norme(), force.x, force.y, force.z).c_str());
         break;
     }
     case 28: //Force^2 
     {
-        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->wp.gasMass / 1000 / 6E23);
+        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Square(worker->model->sp.gasMass / 1000 / 6E23);
         if (worker->displayedMoment != 0) {
             force_sqr = 1.0 / worker->interfaceMomentCache[worker->displayedMoment - 1].window * force_sqr; //force2 divided by dt^2 to get N^2 
         }
@@ -432,7 +432,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
     }
     case 29: //Torque
     {
-        auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
+        auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->sp.gasMass / 1000 / 6E23) * 0.01; //0.01: N*cm to Nm
         strcpy(ret, fmt::format("{:.4g} Nm ({:.4g},{:.4g},{:.4g})", torque.Norme(), torque.x, torque.y, torque.z).c_str());
         break;
     }

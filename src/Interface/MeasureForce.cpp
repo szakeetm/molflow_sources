@@ -142,9 +142,9 @@ void MeasureForce::ProcessMessage(GLComponent* src, int message) {
 
 			if (mApp->AskToReset()) {
 
-				work->model->wp.enableForceMeasurement = enabled;
+				work->model->sp.enableForceMeasurement = enabled;
 				if (enabled) {
-					work->model->wp.torqueRefPoint = Vector3d(x0, y0, z0);
+					work->model->sp.torqueRefPoint = Vector3d(x0, y0, z0);
 				}
 				work->MarkToReload();
 				mApp->changedSinceSave = true;
@@ -215,8 +215,8 @@ void MeasureForce::UpdateToggle(GLComponent *src) {
 */
 void MeasureForce::Update() {
 	
-	enableMeasureCheckbox->SetState(work->model->wp.enableForceMeasurement);
-	x0Text->SetText(work->model->wp.torqueRefPoint.x);
-	y0Text->SetText(work->model->wp.torqueRefPoint.y);
-	z0Text->SetText(work->model->wp.torqueRefPoint.z);
+	enableMeasureCheckbox->SetState(work->model->sp.enableForceMeasurement);
+	x0Text->SetText(work->model->sp.torqueRefPoint.x);
+	y0Text->SetText(work->model->sp.torqueRefPoint.y);
+	z0Text->SetText(work->model->sp.torqueRefPoint.z);
 }

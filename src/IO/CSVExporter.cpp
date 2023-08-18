@@ -81,7 +81,7 @@ namespace FlowIO {
         if (moment == 0) {
             // Constant flow
             // Each test particle represents a certain real molecule influx per second
-            return model->wp.finalOutgassingRate /
+            return model->sp.finalOutgassingRate /
                    (double)globalState->globalStats.globalHits.nbDesorbed;
         } else {
             // Time-dependent mode
@@ -91,7 +91,7 @@ namespace FlowIO {
             // if dt=0.1s, we have collected only 1/10th of what would happen during a
             // second. Hence we DIVIDE by the time window length, even if it's
             // uninuitional.
-            return (model->wp.totalDesorbedMolecules / model->tdParams.moments[moment - 1].window) /
+            return (model->sp.totalDesorbedMolecules / model->tdParams.moments[moment - 1].window) /
                    (double)globalState->globalStats.globalHits.nbDesorbed;
         }
     }
@@ -316,13 +316,13 @@ namespace FlowIO {
 
                 ret = fmt::format("{}",
                         fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef *
-                        model->wp.gasMass / 1000.0 / 6E23);
+                        model->sp.gasMass / 1000.0 / 6E23);
                 break;
             }
             case FDetail::F_PRESSURE: // avg.pressure
             {
                 double dCoef = 1E4 * GetMoleculesPerTP(moment, model, globalState) *
-                               (model->wp.gasMass / 1000 / 6E23) *
+                               (model->sp.gasMass / 1000 / 6E23) *
                                0.0100; // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
                 ret = fmt::format("{}", fHit.sum_v_ort * dCoef / GetArea(*facet));

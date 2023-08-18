@@ -34,7 +34,7 @@ public:
 
     static void ParseInput(const std::vector<std::string> &paramChanges, const std::vector<SelectionGroup> &selections);
 
-    static void ChangeSimuParams(WorkerParams& params);
+    static void ChangeSimuParams(SimuParams& params);
 
     static int ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> facets);
 };
