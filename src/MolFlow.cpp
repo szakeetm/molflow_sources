@@ -336,18 +336,18 @@ simuPanel->Add(statusSimu);
 	facetDesTypeN->SetEditable(false);
 	facetPanel->Add(facetDesTypeN);
 
-	facetFILabel = new GLToggle(0, "Outgassing (mbar*l/s):");
-	facetFILabel->SetEnabled(false);
-	facetFILabel->SetState(true);
-	inputPanel->Add(facetFILabel);
-	facetFlow = new GLTextField(0, nullptr);
-	inputPanel->Add(facetFlow);
+	facetOutgLabel = new GLToggle(0, "Outgassing (mbar*l/s):");
+	facetOutgLabel->SetEnabled(false);
+	facetOutgLabel->SetState(true);
+	inputPanel->Add(facetOutgLabel);
+	facetOutgassingText = new GLTextField(0, nullptr);
+	inputPanel->Add(facetOutgassingText);
 
-	facetFIAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
-	facetFIAreaLabel->SetEnabled(false);
-	inputPanel->Add(facetFIAreaLabel);
-	facetFlowArea = new GLTextField(0, nullptr);
-	inputPanel->Add(facetFlowArea);
+	facetOutgPerAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
+	facetOutgPerAreaLabel->SetEnabled(false);
+	inputPanel->Add(facetOutgPerAreaLabel);
+	facetOutgasssingPerAreaText = new GLTextField(0, nullptr);
+	inputPanel->Add(facetOutgasssingPerAreaText);
 
 	outputPanel = new GLTitledPanel("Particles out");
 	facetPanel->Add(outputPanel);
@@ -441,11 +441,11 @@ void MolFlow::PlaceComponents() {
 	inputPanel->SetCompBounds(facetDesType, 65, cursorY, 80, 18);
 	inputPanel->SetCompBounds(facetDesTypeN, 150, cursorY, 30, 18);
 
-	inputPanel->SetCompBounds(facetFILabel, 5, cursorY += 25, 110, 18);
-	inputPanel->SetCompBounds(facetFlow, 140, cursorY, 45, 18);
+	inputPanel->SetCompBounds(facetOutgLabel, 5, cursorY += 25, 110, 18);
+	inputPanel->SetCompBounds(facetOutgassingText, 140, cursorY, 45, 18);
 
-	inputPanel->SetCompBounds(facetFIAreaLabel, 5, cursorY += 25, 110, 18);
-	inputPanel->SetCompBounds(facetFlowArea, 140, cursorY, 45, 18);
+	inputPanel->SetCompBounds(facetOutgPerAreaLabel, 5, cursorY += 25, 110, 18);
+	inputPanel->SetCompBounds(facetOutgasssingPerAreaText, 140, cursorY, 45, 18);
 
 	facetPanel->SetCompBounds(outputPanel, 5, cursorY += 45, 192, 65);
 
@@ -465,7 +465,7 @@ void MolFlow::PlaceComponents() {
 	facetPanel->SetCompBounds(facetTemperature, 110, cursorY, 82, 18);
 
 	facetPanel->SetCompBounds(facetAreaLabel, 7, cursorY += 25, 100, 18);
-	facetPanel->SetCompBounds(facetArea, 110, cursorY, 82, 18);
+	facetPanel->SetCompBounds(facetAreaText, 110, cursorY, 82, 18);
 
 	facetPanel->SetCompBounds(facetReLabel, 7, cursorY += 25, 60, 18);
 	facetPanel->SetCompBounds(facetProfileCombo, 65, cursorY, 130, 18);
@@ -532,14 +532,14 @@ void MolFlow::ClearFacetParams() {
 	facetPanel->SetTitle("Selected Facet (none)");
 	facetSticking->Clear();
 	facetSticking->SetEditable(false);
-	facetFILabel->SetEnabled(false);
-	facetFIAreaLabel->SetEnabled(false);
-	facetFlow->Clear();
-	facetFlow->SetEditable(false);
-	facetFlowArea->Clear();
-	facetFlowArea->SetEditable(false);
-	facetArea->SetEditable(false);
-	facetArea->Clear();
+	facetOutgLabel->SetEnabled(false);
+	facetOutgPerAreaLabel->SetEnabled(false);
+	facetOutgassingText->Clear();
+	facetOutgassingText->SetEditable(false);
+	facetOutgasssingPerAreaText->Clear();
+	facetOutgasssingPerAreaText->SetEditable(false);
+	facetAreaText->SetEditable(false);
+	facetAreaText->Clear();
 	facetPumping->SetEditable(false);
 	facetPumping->Clear();
 	facetOpacity->Clear();
@@ -632,9 +632,9 @@ void MolFlow::ApplyFacetParams() {
 	bool doFlow = false;
 	bool outgassingNotNumber;
 	//Calculate outgassing
-	if (facetFILabel->GetState() && facetFlow->GetText() != "..." && facetDesType->GetSelectedIndex() != 0
-		&& facetDesType->GetSelectedValue() != "..." && facetFlow->IsEditable()) {  //We want outgassing
-		if (facetFlow->GetNumber(&outgassing)) { //If we can parse the number
+	if (facetOutgLabel->GetState() && facetOutgassingText->GetText() != "..." && facetDesType->GetSelectedIndex() != 0
+		&& facetDesType->GetSelectedValue() != "..." && facetOutgassingText->IsEditable()) {  //We want outgassing
+		if (facetOutgassingText->GetNumber(&outgassing)) { //If we can parse the number
 			if (outgassing <= 0.0) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -653,9 +653,9 @@ void MolFlow::ApplyFacetParams() {
 	bool doFlowA = false;
 	//Calculate outgassing
 
-	if (facetFIAreaLabel->GetState() && facetFlowArea->GetText() != "..."
-		&& facetDesType->GetSelectedIndex() != 0 && facetDesType->GetSelectedValue() != "..." && facetFlowArea->IsEditable()) { //We want outgassing per area
-		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
+	if (facetOutgPerAreaLabel->GetState() && facetOutgasssingPerAreaText->GetText() != "..."
+		&& facetDesType->GetSelectedIndex() != 0 && facetDesType->GetSelectedValue() != "..." && facetOutgasssingPerAreaText->IsEditable()) { //We want outgassing per area
+		if (facetOutgasssingPerAreaText->GetNumber(&flowA)) { //Can be parsed as number
 			if (flowA <= 0.0) {
 				GLMessageBox::Display("Outgassing per area must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -753,7 +753,7 @@ void MolFlow::ApplyFacetParams() {
 					f->sh.outgassingParam = "";
 				}
 				else {
-					f->sh.outgassingParam = facetFlow->GetText();
+					f->sh.outgassingParam = facetOutgassingText->GetText();
 				}
 			}
 			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA * f->GetArea() * MBARLS_TO_PAM3S;
@@ -844,7 +844,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		facetPanel->SetTitle(tmp);
 		if (selectedFacets.size() > 1) facetAreaLabel->SetText("Sum Area (cm\262):");
 		else facetAreaLabel->SetText("Area (cm\262):");
-		facetArea->SetText(sumArea);
+		facetAreaText->SetText(sumArea);
 		if (stickingE) {
 			if (f0->sh.stickingParam.empty())
 				facetSticking->SetText(f0->sh.sticking);
@@ -883,18 +883,18 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 			facetDesType->SetSelectedIndex(f0->sh.desorbType);
 			if (f0->sh.desorbType > DES_NONE) { //There is some desorption
 
-				//facetFlow->SetEnabled(true);
-				facetFIAreaLabel->SetEnabled(true);
-				facetFlowArea->SetEditable(true);
-				facetFILabel->SetEnabled(true);
-				facetFlow->SetEditable(true);
+				//facetOutgassingText->SetEnabled(true);
+				facetOutgPerAreaLabel->SetEnabled(true);
+				facetOutgasssingPerAreaText->SetEditable(true);
+				facetOutgLabel->SetEnabled(true);
+				facetOutgassingText->SetEditable(true);
 				if (outgassingE) {
 					if (f0->sh.outgassingParam.empty())
-						facetFlow->SetText(f0->sh.outgassing * PAM3S_TO_MBARLS);
-					else facetFlow->SetText(f0->sh.outgassingParam);
+						facetOutgassingText->SetText(f0->sh.outgassing * PAM3S_TO_MBARLS);
+					else facetOutgassingText->SetText(f0->sh.outgassingParam);
 				}
-				else facetFlow->SetText("...");
-				if (outgassingPerAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area * 10.00); else facetFlowArea->SetText("...");
+				else facetOutgassingText->SetText("...");
+				if (outgassingPerAreaE) facetOutgasssingPerAreaText->SetText(f0->sh.outgassing / f0Area * 10.00); else facetOutgasssingPerAreaText->SetText("...");
 				if (f0->sh.desorbType == 3) {
 					facetDesTypeN->SetEditable(true);
 					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
@@ -906,26 +906,26 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 
 			}
 			else { //No desorption
-				facetFILabel->SetEnabled(false);
-				facetFlow->SetEditable(false);
-				facetFIAreaLabel->SetEnabled(false);
-				facetFlowArea->SetEditable(false);
+				facetOutgLabel->SetEnabled(false);
+				facetOutgassingText->SetEditable(false);
+				facetOutgPerAreaLabel->SetEnabled(false);
+				facetOutgasssingPerAreaText->SetEditable(false);
 				facetDesTypeN->SetText("");
 				facetDesTypeN->SetEditable(false);
-				facetFlow->SetText("");
-				facetFlowArea->SetText("");
+				facetOutgassingText->SetText("");
+				facetOutgasssingPerAreaText->SetText("");
 			}
 		}
 		else { //Mixed state
 			facetDesType->SetSelectedValue("...");
-			facetFILabel->SetEnabled(false);
-			facetFlow->SetEditable(false);
-			facetFIAreaLabel->SetEnabled(false);
-			facetFlowArea->SetEditable(false);
+			facetOutgLabel->SetEnabled(false);
+			facetOutgassingText->SetEditable(false);
+			facetOutgPerAreaLabel->SetEnabled(false);
+			facetOutgasssingPerAreaText->SetEditable(false);
 			facetDesTypeN->SetText("");
 			facetDesTypeN->SetEditable(false);
-			facetFlow->SetText("");
-			facetFlowArea->SetText("");
+			facetOutgassingText->SetText("");
+			facetOutgasssingPerAreaText->SetText("");
 		}
 
 		if (facetAdvParams) facetAdvParams->Refresh(selectedFacets); //Refresh advanced facet parameters panel
@@ -1716,28 +1716,28 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		else if (src == facetOpacity || src == facetDesTypeN) {
 			facetApplyBtn->SetEnabled(true);
 		}
-		else if (src == facetFlow) {
+		else if (src == facetOutgassingText) {
 			double outgassing;
 			double area;
-			facetFlow->GetNumber(&outgassing);
-			facetArea->GetNumber(&area);
-			if (area == 0) facetFlowArea->SetText("#DIV0");
-			else facetFlowArea->SetText(outgassing / area);
+			facetOutgassingText->GetNumber(&outgassing);
+			facetAreaText->GetNumber(&area);
+			if (area == 0) facetOutgasssingPerAreaText->SetText("#DIV0");
+			else facetOutgasssingPerAreaText->SetText(outgassing / area);
 			facetApplyBtn->SetEnabled(true);
-			facetFILabel->SetState(true);
-			facetFIAreaLabel->SetState(false);
+			facetOutgLabel->SetState(true);
+			facetOutgPerAreaLabel->SetState(false);
 			// //else if ( src == facetMass ) {
 			//  facetApplyBtn->SetEnabled(true);
 		}
-		else if (src == facetFlowArea) {
+		else if (src == facetOutgasssingPerAreaText) {
 			double flowPerArea;
 			double area;
-			facetFlowArea->GetNumber(&flowPerArea);
-			facetArea->GetNumber(&area);
-			facetFlow->SetText(flowPerArea * area);
+			facetOutgasssingPerAreaText->GetNumber(&flowPerArea);
+			facetAreaText->GetNumber(&area);
+			facetOutgassingText->SetText(flowPerArea * area);
 			facetApplyBtn->SetEnabled(true);
-			facetFIAreaLabel->SetState(true);
-			facetFILabel->SetState(false);
+			facetOutgPerAreaLabel->SetState(true);
+			facetOutgLabel->SetState(false);
 			// //else if ( src == facetMass ) {
 			//  facetApplyBtn->SetEnabled(true);
 		}
@@ -1751,7 +1751,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 
 	case MSG_TEXT:
 		if (src == facetSticking || src == facetDesTypeN || src == facetOpacity || src == facetTemperature
-			|| src == facetPumping || src == facetFlow || src == facetFlowArea) {
+			|| src == facetPumping || src == facetOutgassingText || src == facetOutgasssingPerAreaText) {
 			ApplyFacetParams();
 		}
 		break;
@@ -1763,14 +1763,14 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			facetApplyBtn->SetEnabled(true);
 			bool hasDesorption = facetDesType->GetSelectedIndex() != 0;
 
-			facetFlow->SetEditable(hasDesorption);
-			facetFlowArea->SetEditable(hasDesorption);
+			facetOutgassingText->SetEditable(hasDesorption);
+			facetOutgasssingPerAreaText->SetEditable(hasDesorption);
 
 			int color = (hasDesorption) ? 0 : 110;
-			facetFILabel->SetTextColor(color, color, color);
-			facetFIAreaLabel->SetTextColor(color, color, color);
-			facetFILabel->SetEnabled(hasDesorption);
-			facetFIAreaLabel->SetEnabled(hasDesorption);
+			facetOutgLabel->SetTextColor(color, color, color);
+			facetOutgPerAreaLabel->SetTextColor(color, color, color);
+			facetOutgLabel->SetEnabled(hasDesorption);
+			facetOutgPerAreaLabel->SetEnabled(hasDesorption);
 			facetDesTypeN->SetEditable(facetDesType->GetSelectedIndex() == 3);
 		}
 		else if (src == facetProfileCombo || src == facetSideType) {
@@ -1780,13 +1780,13 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 
 		//TOGGLE ------------------------------------------------------------------
 	case MSG_TOGGLE:
-		if (src == facetFILabel) {
-			facetFILabel->SetState(true);
-			facetFIAreaLabel->SetState(false);
+		if (src == facetOutgLabel) {
+			facetOutgLabel->SetState(true);
+			facetOutgPerAreaLabel->SetState(false);
 		}
-		else if (src == facetFIAreaLabel) {
-			facetFILabel->SetState(false);
-			facetFIAreaLabel->SetState(true);
+		else if (src == facetOutgPerAreaLabel) {
+			facetOutgLabel->SetState(false);
+			facetOutgPerAreaLabel->SetState(true);
 		}
 		else if (src == autoFrameMoveToggle) {
 			autoFrameMove = autoFrameMoveToggle->GetState();
@@ -2345,7 +2345,7 @@ void MolFlow::calcFlow() {
 	//double mass;
 
 	facetSticking->GetNumber(&sticking);
-	facetArea->GetNumber(&area);
+	facetAreaText->GetNumber(&area);
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
@@ -2361,7 +2361,7 @@ void MolFlow::calcSticking() {
 	//double mass;
 
 	facetPumping->GetNumber(&outgassing);
-	facetArea->GetNumber(&area);
+	facetAreaText->GetNumber(&area);
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 

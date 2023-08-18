@@ -887,8 +887,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	if (reflectCosineNE) cosineNReflBox->SetText(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart); else cosineNReflBox->SetText("...");
 	if (reflectionExponentE) reflectionExponentBox->SetText(f0->sh.reflection.cosineExponent); else reflectionExponentBox->SetText("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
-		//mApp->facetFlow->SetEditable(!f0->hasOutgassingFile);
-		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingFile);
+		//mApp->facetOutgassingText->SetEditable(!f0->hasOutgassingFile);
+		//mApp->facetOutgasssingPerAreaText->SetEditable(!f0->hasOutgassingFile);
 		if (!f0->hasOutgassingFile) { //All selected DON'T HAVE outgassing maps
 			facetUseDesFile->SetSize(1);
 			facetUseDesFile->SetSelectedIndex(0); //no map
@@ -918,13 +918,13 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			if (yieldEqual) sprintf(tmp, "%.2E", f0->sh.totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->ogMap.totalFlux); else sprintf(tmp, "...");
 			fileYieldText->SetText(tmp);
 			if (useOutgMapE) {
-				mApp->facetFlow->SetEditable(!f0->sh.useOutgassingFile);
-				mApp->facetFlowArea->SetEditable(!f0->sh.useOutgassingFile);
+				mApp->facetOutgassingText->SetEditable(!f0->sh.useOutgassingFile);
+				mApp->facetOutgasssingPerAreaText->SetEditable(!f0->sh.useOutgassingFile);
 				if (f0->sh.useOutgassingFile) {
 					sprintf(tmp, "%.1E", sumOutgassing * 10.00); //10.00: Pa*m3/s -> mbar*l/s
-					mApp->facetFlow->SetText(tmp);
+					mApp->facetOutgassingText->SetText(tmp);
 					sprintf(tmp, "%.1E", sumOutgassing * 10.00 / sumArea);
-					mApp->facetFlowArea->SetText(tmp);
+					mApp->facetOutgasssingPerAreaText->SetText(tmp);
 				}
 				else {
 					//Let the main program handle this
@@ -932,8 +932,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			}
 			else { //some use it, some not
 				facetUseDesFile->SetSelectedValue("...");
-				mApp->facetFlow->SetEditable(false);
-				mApp->facetFlowArea->SetEditable(false);
+				mApp->facetOutgassingText->SetEditable(false);
+				mApp->facetOutgasssingPerAreaText->SetEditable(false);
 			}
 		}
 	}
@@ -1996,18 +1996,18 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			mApp->facetApplyBtn->SetEnabled(true);
 			if (facetUseDesFile->GetSelectedIndex() == 0) {
 				//User values
-				mApp->facetFlow->SetEditable(true);
-				mApp->facetFlowArea->SetEditable(true);
+				mApp->facetOutgassingText->SetEditable(true);
+				mApp->facetOutgasssingPerAreaText->SetEditable(true);
 			}
 			else { //use desorption file
-				mApp->facetFlow->SetEditable(false);
-				mApp->facetFlowArea->SetEditable(false);
+				mApp->facetOutgassingText->SetEditable(false);
+				mApp->facetOutgasssingPerAreaText->SetEditable(false);
 				//Values from last Refresh();
 				char tmp[64];
 				sprintf(tmp, "%.2E", sumOutgassing);
-				mApp->facetFlow->SetText(tmp);
+				mApp->facetOutgassingText->SetText(tmp);
 				sprintf(tmp, "%.2E", sumOutgassing / sumArea);
-				mApp->facetFlowArea->SetText(tmp);
+				mApp->facetOutgasssingPerAreaText->SetText(tmp);
 			}
 		}
 		break;

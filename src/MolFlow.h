@@ -46,8 +46,8 @@ public:
     MolFlow();
 
 	//Public textfields so we can disable them from "Advanced facet parameters":
-	GLTextField   *facetFlow;
-	GLTextField   *facetFlowArea;
+	GLTextField   *facetOutgassingText;
+	GLTextField   *facetOutgasssingPerAreaText;
 
     void LoadFile(const std::string &fileName) override;
 	void InsertGeometry(bool newStr, const std::string &fileName) override;
@@ -91,8 +91,8 @@ public:
 	GLTextField   *facetTemperature;
     GLLabel       *facetDLabel;
     GLLabel       *facetReLabel;
-    GLToggle       *facetFILabel;
-	GLToggle      *facetFIAreaLabel;
+    GLToggle       *facetOutgLabel;
+	GLToggle      *facetOutgPerAreaLabel;
 
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
