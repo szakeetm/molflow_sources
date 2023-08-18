@@ -280,6 +280,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         }
         catch (Error& err) {
             Log::console_error("Error loading file:\n{}", err.what());
+            exit(43);
         }
         interfaceSettings = *loader.interfaceSettings; //persistent for saving
     }
@@ -290,8 +291,13 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
     loadedModel->InitializeFacets();
 
     prg.SetMessage("Initializing geometry...",true);
-    initSimModel(loadedModel);
-    loadedModel->PrepareToRun();
+    try {
+        initSimModel(loadedModel);
+    }
+    catch (Error& err) {
+        Log::console_error("Couldn't initialize loaded model:\n{}", err.what());
+        exit(43);
+    }
 
     // 2. Create simulation dataports
     try {
@@ -433,15 +439,16 @@ std::string Initializer::getAutosaveFile(SettingsIO::CLIArguments& parsedArgs) {
 
 /**
 * \brief Prepares data structures for use in simulation
-* \return error code: 0=no error, 1=error
 */
-int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> model) {
+void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> model) {
+
+    model->initialized = false;
 
     try { //unti initSimModel will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
     }
     catch (...) {
-        return 1;
+        throw Error("Couldn't lock model mutex");
     }
 
     model->structures.resize(model->sh.nbSuper); //Create structures
@@ -479,17 +486,15 @@ int Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mode
             mfFac->InitializeOnLoad(facIdx, model->tdParams);
         }
         catch (const std::exception& err){
-            Log::console_error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
-            return 1;
+            throw Error("Failed to initialize facet (F#{})\n{}\n", facIdx + 1, err.what());
         }
 
         if ((mfFac->sh.superDest) &&
             ((mfFac->sh.superDest - 1) >= model->sh.nbSuper || mfFac->sh.superDest < 0)) {
             // Geometry error
-            Log::console_error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
-            return 1;
+            throw Error("Invalid structure (wrong link on F#{})\n", facIdx + 1);
         }
     }
 
-    return 0;
+    model->PrepareToRun();
 }
