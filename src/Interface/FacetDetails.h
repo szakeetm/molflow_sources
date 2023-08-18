@@ -17,8 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _FACETDETAILSH_
-#define _FACETDETAILSH_
+#pragma once
 
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLList.h"
@@ -29,42 +28,48 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class InterfaceFacet;
 
-#define NB_FDCOLUMN 30
+struct ColumnData {
+
+	std::string colName;
+	int   width;
+	int   align;
+	int   timeDepColor; //Can display time-dependent value, change color accordingly
+
+};
 
 class FacetDetails : public GLWindow {
 
 public:
 
-  // Construction
-  FacetDetails();
+	// Construction
+	FacetDetails();
 
-  // Component method
-  void Display(Worker *w);
-  void Update();
+	// Component method
+	void Display(Worker* w);
+	void Update();
 
-  // Implementation
-  void ProcessMessage(GLComponent *src,int message) override;
-  void SetBounds(int x,int y,int w,int h) override;
+	// Implementation
+	void ProcessMessage(GLComponent* src, int message) override;
+	void SetBounds(int x, int y, int w, int h) override;
 
 private:
 
-  static char *GetCountStr(InterfaceFacet *f);
-  void UpdateTable();
-  char *FormatCell(size_t idx, InterfaceFacet *f, size_t mode);
-  void PlaceComponents();
+	std::string GetCountStr(InterfaceFacet* f);
+	void UpdateTable();
+	std::string FormatCell(size_t idx, InterfaceFacet* f, size_t mode);
+	void PlaceComponents();
 
-  Worker      *worker;
-  GLList      *facetListD;
+	Worker* worker;
+	GLList* facetListD;
 
-  GLTitledPanel *sPanel;          // Toggle panel
-  GLToggle      *show[NB_FDCOLUMN];
-  size_t            shown[NB_FDCOLUMN];
+	GLTitledPanel* sPanel;          // Toggle panel
+	std::vector<std::unique_ptr<GLToggle>> colShowToggle;
+	std::vector<size_t> shownColIds;
+	std::vector<ColumnData> columnData;
 
-  GLButton    *checkAllButton;
-  GLButton    *uncheckAllButton;
-  GLButton    *dismissButton;
-  GLButton	  *updateButton;
+	GLButton* checkAllButton;
+	GLButton* uncheckAllButton;
+	GLButton* dismissButton;
+	GLButton* updateButton;
 
 };
-
-#endif /* _FACETDETAILSH_ */
