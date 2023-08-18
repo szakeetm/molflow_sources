@@ -78,8 +78,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
     }
     else if ((idx = GetFacetIndex(v->varName, "V")) > 0) {
         ok = (idx <= nbFacet);
-        if (ok) /*v->value = 4.0*(double)(interfGeom->GetFacet(idx - 1)->facetHitCache.nbMCHit + interfGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed) /
-			interfGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_ort_velocity;*/
+        if (ok) 
             v->value = (interfGeom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv + static_cast<double>(interfGeom->GetFacet(idx - 1)->facetHitCache.nbDesorbed)) / interfGeom->GetFacet(idx - 1)->facetHitCache.sum_1_per_velocity;
     }
     else if ((idx = GetFacetIndex(v->varName, "T")) > 0) {
@@ -91,7 +90,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
             else {
                 double time;
                 auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
-                if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment].time;
+                if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment-1].time;
                 else time = mfModel->sp.latestMoment;
                 if (!worker->model->initialized) {
                     //Don't dereference facets, maybe they werent' yet passed to model
@@ -243,12 +242,21 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         v->value = sumArea;
     }
     else if (iequals(v->varName, "QCONST")) {
+        if (worker->needsReload || !worker->model->initialized) {
+            throw Error("Recalc. outgassing in global settings");
+        }
         v->value = worker->model->sp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->varName, "QCONST_N")) {
+        if (worker->needsReload || !worker->model->initialized) {
+            throw Error("Recalc. outgassing in global settings");
+        }
         v->value = worker->model->sp.finalOutgassingRate;
     }
     else if (iequals(v->varName, "NTOT")) {
+        if (worker->needsReload || !worker->model->initialized) {
+            throw Error("Recalc. outgassing in global settings");
+        }
         v->value = worker->model->sp.totalDesorbedMolecules;
     }
     else if (iequals(v->varName, "GASMASS")) {
