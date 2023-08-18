@@ -888,7 +888,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	if (reflectionExponentE) reflectionExponentBox->SetText(f0->sh.reflection.cosineExponent); else reflectionExponentBox->SetText("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
 		//mApp->facetOutgassingText->SetEditable(!f0->hasOutgassingFile);
-		//mApp->facetOutgasssingPerAreaText->SetEditable(!f0->hasOutgassingFile);
+		//mApp->facetOutgPerAreaText->SetEditable(!f0->hasOutgassingFile);
 		if (!f0->hasOutgassingFile) { //All selected DON'T HAVE outgassing maps
 			facetUseDesFile->SetSize(1);
 			facetUseDesFile->SetSelectedIndex(0); //no map
@@ -919,12 +919,12 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			fileYieldText->SetText(tmp);
 			if (useOutgMapE) {
 				mApp->facetOutgassingText->SetEditable(!f0->sh.useOutgassingFile);
-				mApp->facetOutgasssingPerAreaText->SetEditable(!f0->sh.useOutgassingFile);
+				mApp->facetOutgPerAreaText->SetEditable(!f0->sh.useOutgassingFile);
 				if (f0->sh.useOutgassingFile) {
 					sprintf(tmp, "%.1E", sumOutgassing * 10.00); //10.00: Pa*m3/s -> mbar*l/s
 					mApp->facetOutgassingText->SetText(tmp);
 					sprintf(tmp, "%.1E", sumOutgassing * 10.00 / sumArea);
-					mApp->facetOutgasssingPerAreaText->SetText(tmp);
+					mApp->facetOutgPerAreaText->SetText(tmp);
 				}
 				else {
 					//Let the main program handle this
@@ -933,7 +933,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			else { //some use it, some not
 				facetUseDesFile->SetSelectedValue("...");
 				mApp->facetOutgassingText->SetEditable(false);
-				mApp->facetOutgasssingPerAreaText->SetEditable(false);
+				mApp->facetOutgPerAreaText->SetEditable(false);
 			}
 		}
 	}
@@ -1997,17 +1997,17 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			if (facetUseDesFile->GetSelectedIndex() == 0) {
 				//User values
 				mApp->facetOutgassingText->SetEditable(true);
-				mApp->facetOutgasssingPerAreaText->SetEditable(true);
+				mApp->facetOutgPerAreaText->SetEditable(true);
 			}
 			else { //use desorption file
 				mApp->facetOutgassingText->SetEditable(false);
-				mApp->facetOutgasssingPerAreaText->SetEditable(false);
+				mApp->facetOutgPerAreaText->SetEditable(false);
 				//Values from last Refresh();
 				char tmp[64];
 				sprintf(tmp, "%.2E", sumOutgassing);
 				mApp->facetOutgassingText->SetText(tmp);
 				sprintf(tmp, "%.2E", sumOutgassing / sumArea);
-				mApp->facetOutgasssingPerAreaText->SetText(tmp);
+				mApp->facetOutgPerAreaText->SetText(tmp);
 			}
 		}
 		break;
@@ -2027,7 +2027,7 @@ void FacetAdvParams::CalcSojournTime() {
 	if (enableSojournTime->GetState() == 0
 		|| !(sojournFreq->GetNumber(&sojF))
 		|| !(sojournE->GetNumber(&sojE))
-		|| !(mApp->facetTemperature->GetNumber(&facetT))) {
+		|| !(mApp->facetTemperatureText->GetNumber(&facetT))) {
 		enableSojournTime->SetText("Wall sojourn time");
 		return;
 	}

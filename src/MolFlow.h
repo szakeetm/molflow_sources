@@ -47,7 +47,7 @@ public:
 
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetOutgassingText;
-	GLTextField   *facetOutgasssingPerAreaText;
+	GLTextField   *facetOutgPerAreaText;
 
     void LoadFile(const std::string &fileName) override;
 	void InsertGeometry(bool newStr, const std::string &fileName) override;
@@ -73,26 +73,25 @@ public:
 	void RefreshPlotterCombos();
 
 	//Flow/sticking coeff. conversion
-	void calcFlow();
-	void calcSticking();
+	void CalcPumpingSpeed();
+	void CalcSticking();
 
-    GLTextField   *facetSticking;
+    GLTextField   *facetStickingText;
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
     GLCombo       *facetProfileCombo;
 
 	GLLabel       *facetPumpingLabel;
-	GLTextField   *facetPumping;	
-    GLLabel       *facetSLabel;
-	
+	GLTextField   *facetPumpingSpeedText;	
+    GLLabel       *facetStickingLabel;
     
 	GLLabel       *facetTempLabel;
-	GLTextField   *facetTemperature;
-    GLLabel       *facetDLabel;
-    GLLabel       *facetReLabel;
-    GLToggle       *facetOutgLabel;
-	GLToggle      *facetOutgPerAreaLabel;
+	GLTextField   *facetTemperatureText;
+    GLLabel       *facetDesTypeLabel;
+    GLLabel       *facetProfileLabel;
+    GLToggle      *facetOutgToggleLabel;
+	GLToggle      *facetOutgPerAreaToggleLabel;
 
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
