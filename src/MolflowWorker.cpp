@@ -853,16 +853,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 			"LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,stl or str]");
 	}
 
-	/*
-	// Readers that load the geometry directly into the sim model
-	// need to update the interface geometry afterwards
-	if (insert) {
-		InterfaceGeomToSimModel();
-	} else {
-		//CalcTotalOutgassing(); RealReload()->ReloadSim()->PrepareToRun() already called it
-	}
-	*/
-
 	globalStatCache = globalState->globalStats; //Make a copy so that we don't have to lock the mutex every time using nbDes, etc.
 	if (insert) {
 		mApp->UpdateFacetlistSelected();
@@ -1110,16 +1100,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 		if (simManager.nbThreads == 0 && !interfGeom->IsLoaded()) {
 			return;
 		}
-
-		try {
-			PrepareToRun();
-		}
-		catch (const std::exception& e) {
-			std::stringstream err;
-			err << "Error (Worker::RealReload -> PrepareToRun()) " << e.what();
-			GLMessageBox::Display(err.str().c_str(), "Error (Worker::PrepareToRun()", GLDLG_OK, GLDLG_ICONWARNING);
-			throw Error(err.str());
-		}
 	}
 	
 	ReloadSim(sendOnly, prg); //Convert interf.geom to worker::mode and construct global counters, then copy to simManager.simulation
@@ -1310,24 +1290,6 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 		}
 		interfGeom->AnalyzeSYNfile(*file, prg, nbFacet, nbTextured, nbDifferent);
 	}
-}
-
-/**
-* \brief Do calculations necessary before launching simulation
-* determine latest moment
-* Generate integrated desorption functions
-* match parameters
-* Generate speed distribution functions
-* Angle map
-*/
-void Worker::PrepareToRun() {
-	//determine latest moment
-	if (!interfaceMomentCache.empty())
-		model->sp.latestMoment = (interfaceMomentCache.end() - 1)->time + (interfaceMomentCache.end() - 1)->window / 2.0;
-	else {
-		model->sp.latestMoment = model->sp.timeWindowSize * .5;
-	}
-	bool needsAngleMapStatusRefresh = false;
 }
 
 std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {

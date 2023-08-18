@@ -1390,8 +1390,6 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		worker.LoadGeometry(filePath, true, newStr);
 
 		InterfaceGeometry* interfGeom = worker.GetGeometry();
-		worker.PrepareToRun();
-		//worker.CalcTotalOutgassing();
 
 		//Increase BB
 		for (auto& view : viewer)
