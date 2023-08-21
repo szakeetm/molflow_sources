@@ -1,5 +1,26 @@
 # Changelog
 
+## v2.9.15 beta (2023-08-21)
+
+### Feature
+
+- Facet temperatures can be time-dependent (non-outgassing only)
+- Lowered XML file memory usage by ~25%
+- XML format change: refer to parameters by name, not by ID
+    - Backwards compatible with previous versions, except for temperature
+
+### Interface
+
+- Time-dependent sticking, opacity and temp. now shown in Facet details
+    - In blue color, value for current moment, as defined in Time Settings
+- Total outgassing now calculated by simulation model (as opposed to GUI)
+    - Needs manual recalc. button push if model not synced
+- Model sanity check now also done by simulation model
+
+### Bugfix
+
+- Fixed hang when exiting Molflow with simulation running
+
 ## v2.9.14 beta (2023-08-08)
 
 ### Feature
@@ -7,12 +28,12 @@
 - Load status window for simulation-interface operations that take >0.5s
 - Possibility to abort simulation start/stop/reload if taking too long
 
-## Interface
+### Interface
 
 - Resizable Global Settings window (for long thread list)
 - Approximation for Sim.Manager and thread memory usage
 
-## Bugfix
+### Bugfix
 
 - Formula parsing fixed for consecutive multiplications/divisions
 - Convergence data saved again
