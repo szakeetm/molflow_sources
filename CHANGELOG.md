@@ -4,8 +4,9 @@
 
 ### Feature
 
-- Facet temperatures can be time-dependent (non-outgassing only)
-- Lowered XML file memory usage by ~25%
+- Facet temperatures can be time-dependent
+    - Currently only for non-outgassing facets
+- Lowered XML file memory usage on load by ~25%
 - XML format change: refer to parameters by name, not by ID
     - Backwards compatible with previous versions, except for temperature
 
