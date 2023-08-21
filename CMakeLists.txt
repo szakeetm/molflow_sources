@@ -97,7 +97,7 @@ if(USE_TESTS)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
-    add_dependencies(testsuite molflowSim)
+    add_dependencies(testsuite molflowSim molflowCLI)
 endif()
 
 # Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)
