@@ -112,6 +112,7 @@ namespace {
 			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", 20),
 			std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip", 30),
 			std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip", 30),
+			std::make_tuple("TestCases/02c-timedependent_temperature.zip", 20),
 			std::make_tuple("TestCases/03-anglemap_record.zip", 20),
 			std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip", 20),
 			std::make_tuple("TestCases/04-anglemap_desorb.zip", 20),
