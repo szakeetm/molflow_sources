@@ -2175,8 +2175,6 @@ void MolFlow::LoadConfig() {
 		autoUpdateFormulas = file.ReadInt();
 		file.ReadKeyword("compressSavedFiles"); file.ReadKeyword(":");
 		compressSavedFiles = file.ReadInt();
-		file.ReadKeyword("gasMass"); file.ReadKeyword(":");
-		worker.model->sp.gasMass = file.ReadDouble();
 		file.ReadKeyword("expandShortcutPanel"); file.ReadKeyword(":");
 		bool isOpen = file.ReadInt();
 		if (isOpen) shortcutPanel->Open();
@@ -2184,10 +2182,6 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("hideLot"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->hideLot = file.ReadInt();
-		file.ReadKeyword("lowFluxMode"); file.ReadKeyword(":");
-		worker.model->otfParams.lowFluxMode = file.ReadInt();
-		file.ReadKeyword("lowFluxCutoff"); file.ReadKeyword(":");
-		worker.model->otfParams.lowFluxCutoff = file.ReadDouble();
 		file.ReadKeyword("textureLogScale"); file.ReadKeyword(":");
 		interfGeom->texLogScale = file.ReadInt();
 		file.ReadKeyword("leftHandedView"); file.ReadKeyword(":");
@@ -2319,12 +2313,9 @@ void MolFlow::SaveConfig() {
 		file.Write("checkForUpdates:"); file.Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		file.Write("autoUpdateFormulas:"); file.Write(autoUpdateFormulas, "\n");
 		file.Write("compressSavedFiles:"); file.Write(compressSavedFiles, "\n");
-		file.Write("gasMass:"); file.Write(worker.model->sp.gasMass, "\n");
 		file.Write("expandShortcutPanel:"); file.Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		file.Write("lowFluxMode:"); file.Write(worker.model->otfParams.lowFluxMode, "\n");
-		file.Write("lowFluxCutoff:"); file.Write(worker.model->otfParams.lowFluxCutoff, "\n");
 		file.Write("textureLogScale:"); file.Write(interfGeom->texLogScale, "\n");
 		file.Write("leftHandedView:"); file.Write(leftHandedView, "\n");
 		file.Write("highlightNonplanarFacets:"); file.Write(highlightNonplanarFacets, "\n");
