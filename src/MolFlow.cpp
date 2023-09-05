@@ -1899,7 +1899,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		//worker.CalcTotalOutgassing();
 		//default values
 		worker.model->sp = SimuParams(); //reset to default
-		
+		worker.model->otfParams = OntheflySimulationParams(); //reset to default
 		worker.ResetMoments();
 		ResetSimulation(false);
 	}
@@ -1970,6 +1970,7 @@ void MolFlow::EmptyGeometry() {
 		//worker.CalcTotalOutgassing();
 		//default values
 		worker.model->sp = SimuParams(); //reset to default
+		worker.model->otfParams = OntheflySimulationParams(); //reset to default
 		worker.ResetMoments();
 	}
 	catch (const std::exception& e) {
