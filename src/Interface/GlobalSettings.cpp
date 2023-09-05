@@ -146,7 +146,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
     settingsPanel->Add(useOldXMLFormat);
 
 
-	auto *simuSettingsPanel = new GLTitledPanel("Simulation settings");
+	auto *simuSettingsPanel = new GLTitledPanel("Simulation settings (current file)");
 	simuSettingsPanel->SetBounds(280, 2, 290, 292);
 	Add(simuSettingsPanel);
 
