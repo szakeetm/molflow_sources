@@ -112,23 +112,6 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         TimeDependentParameters::InsertParametersBeforeCatalog(loadModel->tdParams.parameters, tmpLoadedParams);
     }
 
-    prg.SetMessage("Loading facets...",false);
-    loadModel->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    interfaceSettings->facetSettings.resize(loadModel->sh.nbFacet);
-    idx = 0;
-    bool ignoreSumMismatch = false;
-    for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
-        size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
-        if (nbIndex < 3) {
-            throw Error("Facet {} has only {} vertices (must be min. 3)",idx + 1, nbIndex);
-        }
-        auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
-        loadModel->facets.push_back(newFacetPtr);
-        LoadFacet(facetNode, newFacetPtr, interfaceSettings->facetSettings[idx],loadModel->sh.nbVertex,loadModel->tdParams);
-        idx++;
-        prg.SetProgress((double)idx/(double)loadModel->sh.nbFacet);
-    }
-
     prg.SetMessage("Loading physics parameters...",false);
 
     loadModel->sp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
@@ -138,6 +121,12 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     }
     else {
         loadModel->sp.enableDecay = loadModel->sp.halfLife < 1e100;
+    }
+
+    xml_node lowFluxNode = simuParamNode.child("LowFluxMode");
+    if (lowFluxNode) { //Present since 2.9.16
+        loadModel->otfParams.lowFluxMode = lowFluxNode.attribute("enabled").as_bool();
+        loadModel->otfParams.lowFluxCutoff = lowFluxNode.attribute("cutoff").as_double();
     }
 
     xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -218,6 +207,23 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
             loadModel->sp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
         }
 #endif
+    }
+
+    prg.SetMessage("Loading facets...", false);
+    loadModel->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
+    interfaceSettings->facetSettings.resize(loadModel->sh.nbFacet);
+    idx = 0;
+    bool ignoreSumMismatch = false;
+    for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
+        size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
+        if (nbIndex < 3) {
+            throw Error("Facet {} has only {} vertices (must be min. 3)", idx + 1, nbIndex);
+        }
+        auto newFacetPtr = std::make_shared<MolflowSimFacet>(nbIndex);
+        loadModel->facets.push_back(newFacetPtr);
+        LoadFacet(facetNode, newFacetPtr, interfaceSettings->facetSettings[idx], loadModel->sh.nbVertex, loadModel->tdParams);
+        idx++;
+        prg.SetProgress((double)idx / (double)loadModel->sh.nbFacet);
     }
 
     prg.SetMessage("Loading interface settings...", false);

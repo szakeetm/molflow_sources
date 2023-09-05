@@ -142,6 +142,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
             "enableDecay") = (int) model->sp.enableDecay; //backward compatibility: 0 or 1
     simuParamNode.child("Gas").append_attribute("halfLife") = model->sp.halfLife;
 
+    auto lowFluxNode = simuParamNode.append_child("LowFluxMode");
+    lowFluxNode.append_attribute("enabled") = model->otfParams.lowFluxMode;
+    lowFluxNode.append_attribute("cutoff") = model->otfParams.lowFluxCutoff;
+
     xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
     xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
