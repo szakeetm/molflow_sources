@@ -383,7 +383,7 @@ void GlobalSettings::UpdateOutgassing() {
 	}
 	else {
 		char tmp[128];
-		sprintf(tmp, "%g", worker->model->sp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+		sprintf(tmp, "%g", worker->model->sp.finalOutgassingRate_Pa_m3_sec * PAM3S_TO_MBARLS);
 		outgassingGasRateText->SetText(tmp);
 		sprintf(tmp, "%g", worker->model->sp.finalOutgassingRate); //In molecules/sec
 		outgassingMoleculeRateText->SetText(tmp);
