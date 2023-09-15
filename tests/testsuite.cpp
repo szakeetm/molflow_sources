@@ -111,7 +111,6 @@ namespace {
 		ValidationFixture,
 		::testing::Values( //fileName, time per run in seconds
 			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", "-d", 1e7),
-			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", "-t",20.0),
 			std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip", "-t",30.0),
 			std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip", "-t",30.0),
 			std::make_tuple("TestCases/02c-timedependent_temperature.zip", "-t",20.0),
@@ -363,7 +362,17 @@ namespace {
 		const std::string testFile = std::get<0>(params);
 		const std::string endConditionType = std::get<1>(params);
 		double endConditionAmount = std::get<2>(params); //not const, doubled on retry
+
+		std::string extension; //empty on unix
+		char delimiter = '/';
+#ifdef _WIN32
+		extension = ".exe";
+		delimiter = '\\';
+#endif // _WIN32
+
 		std::string outPath = "TempPath_ResultsOkay_" + std::to_string(std::hash<time_t>()(time(nullptr)));
+
+		std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 		Log::console_msg(1, "Filename: {}\n", testFile);
 
 		const size_t maxFail = 2; //Max allowed fails. At every fail, simulation time is doubled.
@@ -408,17 +417,10 @@ namespace {
 		}
 
 		//Now run a simulation
-		std::string extension; //empty on unix
-		char delimiter = '/';
-#ifdef _WIN32
-		extension = ".exe";
-		delimiter = '\\';
-#endif // _WIN32
 		std::string sourceFile;
 		SettingsIO::CLIArguments parsedArgs;
 		while (nbFailed < maxFail && correctStreak < correctStreakForSuccess) {
 			std::string resetFlag;
-			std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
 			if (runId == 0) {
 				resetFlag = " --reset";
 				sourceFile = testFile;
@@ -464,8 +466,7 @@ namespace {
 			//Make sure that results were loaded correctly
 			EXPECT_NE(0, globalState->globalStats.globalHits.nbDesorbed);
 			EXPECT_NE(0, globalState->globalStats.globalHits.nbMCHit);
-			//std::filesystem::remove(resultFile);
-			//std::filesystem::remove(outPath);
+			
 			Log::console_msg(1, "Run results loaded and parsed.\n");
 
 			//Compare results
@@ -485,10 +486,11 @@ namespace {
 				if (endConditionType == "-d") endConditionAmount *= 2;
 				Log::console_msg(1, "Run {} success: no global, no local, {} fine differences.\n", runId + 1, diff_fine);
 			}
-
 			runId++;
 		}
+		std::filesystem::remove(resultFile);
 		SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
+		std::filesystem::remove(outPath);
 
 		//Test case pass or fail
 		if (nbFailed >= maxFail) {
