@@ -217,12 +217,13 @@ void DeleteChain (HitChain** head_ref){
 }
 */
 
+
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
 // Returns true if des limit reached or des error, false otherwise
-bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
+MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
-    // Perform simulation steps
-    bool limitReachedOrDesorptionError = false;
+    MCStepResult result = MCStepResult::Success; //By default
+
     {
         const int ompIndex = threadNum;//omp_get_thread_num();
 
@@ -243,8 +244,12 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
         for (i = 0; i < nbStep && !exitRequested; i++) {
             if (insertNewParticle) {
                 // quit on desorp error or limit reached
-                if((model->otfParams.desorptionLimit > 0 && remainingDes==0) || !StartFromSource(ray)){
-                    limitReachedOrDesorptionError = true; // desorp limit reached
+                if((model->otfParams.desorptionLimit > 0 && remainingDes==0)){
+                    result = MCStepResult::MaxReached; // desorp limit reached
+                    break;
+                }
+                else if (!StartFromSource(ray)) {
+                    result = MCStepResult::DesorptionError;
                     break;
                 }
                 insertNewParticle = false;
@@ -252,10 +257,12 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
             }
 
             // Todo: Only use one method, ID or Ptr
-            if(lastHitFacet)
+            if (lastHitFacet) {
                 ray.lastIntersected = lastHitFacet->globalId;
-            else
+            }
+            else {
                 ray.lastIntersected = -1;
+            }
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
@@ -266,7 +273,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
 #else
             transparentHitBuffer.clear();
             bool found;
-           MolflowSimFacet* collidedFacet;
+            MolflowSimFacet* collidedFacet;
 			double d;
 			{
 				ray.tMax = 1.0e99;
@@ -388,7 +395,7 @@ bool ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t re
         }
     } // omp parallel
 
-    return limitReachedOrDesorptionError;
+    return result;
 }
 
 void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {

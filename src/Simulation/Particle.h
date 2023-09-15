@@ -39,6 +39,11 @@ enum ThreadState:int;
  */
 namespace MFSim {
 
+    enum MCStepResult {
+        Success,
+        DesorptionError,
+        MaxReached
+    };
 
 /**
 * \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
@@ -48,7 +53,7 @@ namespace MFSim {
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
-        bool SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes);
+        MCStepResult SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes);
 
         bool StartFromSource(Ray& ray);
 
