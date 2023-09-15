@@ -114,7 +114,7 @@ namespace {
 			std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip", "-t",30.0),
 			std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip", "-t",30.0),
 			std::make_tuple("TestCases/02c-timedependent_temperature.zip", "-t",20.0),
-			std::make_tuple("TestCases/03-anglemap_record.zip", "-t",20.0),
+			std::make_tuple("TestCases/03-anglemap_record.zip", "-t",30.0),
 			std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip", "-t",20.0),
 			std::make_tuple("TestCases/04-anglemap_desorb.zip", "-t",20.0),
 			std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip", "-t",20.0),
