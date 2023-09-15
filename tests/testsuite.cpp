@@ -229,7 +229,7 @@ namespace {
 											 "--outputPath", outPath, "--noProgress" };
 
 			argv.push_back(endConditionType);
-			argv.push_back(std::to_string(endConditionAmount));
+			argv.push_back(fmt::format("{}",endConditionAmount));
 
 			try {
 				parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
@@ -490,7 +490,7 @@ namespace {
 		}
 		std::filesystem::remove(resultFile);
 		SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
-		std::filesystem::remove(outPath);
+		//std::filesystem::remove(outPath);
 
 		//Test case pass or fail
 		if (nbFailed >= maxFail) {
