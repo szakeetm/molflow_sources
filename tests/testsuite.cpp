@@ -68,7 +68,7 @@ char** ConvertToCStyleArgv(const std::vector<std::string>& arguments) {
 
 namespace {
 
-	class SimulationFixture : public ::testing::TestWithParam<std::tuple<std::string, size_t>> {
+	class SimulationFixture : public ::testing::TestWithParam<std::tuple<std::string, std::string, double>> {
 	protected:
 		SimulationFixture() {
 			// You can do set-up work for each test here.
@@ -99,29 +99,31 @@ namespace {
 		Performance,
 		SimulationFixture,
 		::testing::Values(
-			std::make_tuple("TestCases/B01-lr1000_pipe.zip", 20),
-			std::make_tuple("TestCases/B02-lr10_pipe_tex.zip", 20),
-			std::make_tuple("TestCases/B03-lr10_pipe_prof.zip", 20),
-			std::make_tuple("TestCases/B04-lr10_pipe_trans.zip", 20)
+			std::make_tuple("TestCases/B01-lr1000_pipe.zip", "-t",20.0),
+			std::make_tuple("TestCases/B02-lr10_pipe_tex.zip", "-t",20.0),
+			std::make_tuple("TestCases/B03-lr10_pipe_prof.zip", "-t",20.0),
+			std::make_tuple("TestCases/B04-lr10_pipe_trans.zip", "-t",20.0)
+			
 		));
 
 	INSTANTIATE_TEST_SUITE_P(
 		Results,
 		ValidationFixture,
 		::testing::Values( //fileName, time per run in seconds
-			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", 20),
-			std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip", 30),
-			std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip", 30),
-			std::make_tuple("TestCases/02c-timedependent_temperature.zip", 20),
-			std::make_tuple("TestCases/03-anglemap_record.zip", 20),
-			std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip", 20),
-			std::make_tuple("TestCases/04-anglemap_desorb.zip", 20),
-			std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip", 20),
-			std::make_tuple("TestCases/05-three_structures_nonsquare_textures.zip", 20),
-			std::make_tuple("TestCases/06-dynamic_desorption_from_synrad.zip", 20),
-			std::make_tuple("TestCases/07-volume_decay.zip", 20),
-			std::make_tuple("TestCases/08-wall_sojourn_time.zip", 20),
-			std::make_tuple("TestCases/09-histograms.zip", 20)
+			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", "-d", 1e7),
+			std::make_tuple("TestCases/01-quick_pipe_profiles_textures_2sided.zip", "-t",20.0),
+			std::make_tuple("TestCases/02-timedependent_with_two_parameters.zip", "-t",30.0),
+			std::make_tuple("TestCases/02b-timedependent_with_three_parameters.zip", "-t",30.0),
+			std::make_tuple("TestCases/02c-timedependent_temperature.zip", "-t",20.0),
+			std::make_tuple("TestCases/03-anglemap_record.zip", "-t",20.0),
+			std::make_tuple("TestCases/03b-anglemap_record_transparent_target.zip", "-t",20.0),
+			std::make_tuple("TestCases/04-anglemap_desorb.zip", "-t",20.0),
+			std::make_tuple("TestCases/04b-anglemap_desorb-sticking source.zip", "-t",20.0),
+			std::make_tuple("TestCases/05-three_structures_nonsquare_textures.zip", "-t",20.0),
+			std::make_tuple("TestCases/06-dynamic_desorption_from_synrad.zip", "-t",20.0),
+			std::make_tuple("TestCases/07-volume_decay.zip", "-t",20.0),
+			std::make_tuple("TestCases/08-wall_sojourn_time.zip", "-t",20.0),
+			std::make_tuple("TestCases/09-histograms.zip", "-t",20.0)
 		));
 
 	struct Stats {
@@ -186,7 +188,8 @@ namespace {
 	TEST_P(SimulationFixture, PerformanceOkay) {
 		auto params = GetParam();
 		const std::string testFile = std::get<0>(params);
-		const size_t runForTSec = std::get<1>(params);
+		const std::string endConditionType = std::get<1>(params);
+		const double endConditionAmount = std::get<2>(params);
 		std::string outPath = "TempPath_PerformanceOkay_" + std::to_string(std::hash<time_t>()(time(nullptr)));
 		Log::console_msg(1, "Filename: {}\n", testFile);
 		std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
@@ -222,9 +225,13 @@ namespace {
 			MolflowInterfaceSettings persistentInterfaceSettings;
 			SettingsIO::CLIArguments parsedArgs;
 
-			std::vector<std::string> argv = { "tester", "--time", std::to_string(runForTSec), "--reset",
+			std::vector<std::string> argv = { "tester", "--reset",
 											 "--file", testFile,
 											 "--outputPath", outPath, "--noProgress" };
+
+			argv.push_back(endConditionType);
+			argv.push_back(std::to_string(endConditionAmount));
+
 			try {
 				parsedArgs = Initializer::initFromArgv(argv.size(), ConvertToCStyleArgv(argv), simManager, model);
 			}
@@ -354,7 +361,8 @@ namespace {
 	TEST_P(ValidationFixture, ResultsOkay) {
 		auto params = GetParam();
 		const std::string testFile = std::get<0>(params);
-		size_t runForTSec = std::get<1>(params);
+		const std::string endConditionType = std::get<1>(params);
+		double endConditionAmount = std::get<2>(params); //not const, doubled on retry
 		std::string outPath = "TempPath_ResultsOkay_" + std::to_string(std::hash<time_t>()(time(nullptr)));
 		Log::console_msg(1, "Filename: {}\n", testFile);
 
@@ -406,14 +414,22 @@ namespace {
 		extension = ".exe";
 		delimiter = '\\';
 #endif // _WIN32
-
+		std::string sourceFile;
+		SettingsIO::CLIArguments parsedArgs;
 		while (nbFailed < maxFail && correctStreak < correctStreakForSuccess) {
 			std::string resetFlag;
-			if (runId == 0) resetFlag = " --reset";
 			std::string resultFile = fmt::format("{}{}result.xml", outPath, delimiter);
+			if (runId == 0) {
+				resetFlag = " --reset";
+				sourceFile = testFile;
+			}
+			else {
+				sourceFile = resultFile;
+			}
 
 			Log::console_msg(1, "Starting run {}...\n", runId + 1);
-			std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -t {} -o \"{}\"{} --noProgress", delimiter, extension, testFile, runForTSec, resultFile, resetFlag);
+			std::string command = fmt::format("..{}molflowCLI{} -f \"{}\" -o \"{}\"{} --noProgress {} {}",
+				delimiter, extension, sourceFile, resultFile, resetFlag, endConditionType, endConditionAmount);
 			//Log::console_msg(1, command.c_str());
 
 			int returnCode = std::system(command.c_str());
@@ -426,7 +442,6 @@ namespace {
 			std::shared_ptr<GlobalSimuState> globalState = std::make_shared<GlobalSimuState>();
 			MolflowInterfaceSettings persistentInterfaceSettings;
 			TimeDependentParameters::LoadParameterCatalog(model->tdParams.parameters);
-			SettingsIO::CLIArguments parsedArgs;
 
 			Log::console_msg(1, "Loading results for parsing...\n");
 
@@ -449,7 +464,7 @@ namespace {
 			//Make sure that results were loaded correctly
 			EXPECT_NE(0, globalState->globalStats.globalHits.nbDesorbed);
 			EXPECT_NE(0, globalState->globalStats.globalHits.nbMCHit);
-			std::filesystem::remove(resultFile);
+			//std::filesystem::remove(resultFile);
 			//std::filesystem::remove(outPath);
 			Log::console_msg(1, "Run results loaded and parsed.\n");
 
@@ -461,19 +476,19 @@ namespace {
 				nbFailed++;
 				if (nbFailed < maxFail) {
 					correctStreak = 0;
-					runForTSec *= 2; //try running longer
-					Log::console_msg(1, "Increasing run time to {} seconds.\n", runForTSec);
+					endConditionAmount *= 2; //try running longer
+					Log::console_msg(1, "Increasing run time to {} seconds.\n", endConditionAmount);
 				}
 			}
 			else {
 				correctStreak++;
+				if (endConditionType == "-d") endConditionAmount *= 2;
 				Log::console_msg(1, "Run {} success: no global, no local, {} fine differences.\n", runId + 1, diff_fine);
 			}
 
-			SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
-
 			runId++;
 		}
+		SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
 
 		//Test case pass or fail
 		if (nbFailed >= maxFail) {
