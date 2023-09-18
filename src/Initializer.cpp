@@ -125,21 +125,19 @@ SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, Simula
 #else
     std::setlocale(LC_ALL, "en_US.UTF-8");
 #endif
-
+    Log::console_header(1, "Parsing and applying arguments...\n");
     SettingsIO::CLIArguments parsedArgs;
     parsedArgs = parseArguments(argc, argv);
-
-    Log::console_header(1, "Initializing simulation...\n");
 
     simManager.nbThreads = parsedArgs.nbThreads;
     simManager.noProgress = parsedArgs.noProgress;
     model->otfParams.timeLimit = (double)parsedArgs.simDuration;
-
+    Log::console_msg_master(1, "Creating {} thread{}...\n",
+        simManager.nbThreads, (simManager.nbThreads>1) ? "s" : "");
     if (simManager.SetUpSimulation()) { //currently only calls CreateCPUHandle()
-       throw Error("Error: Setting up simulation units [{} threads]...\n", simManager.nbThreads);
+       throw Error("Error creating thread(s)");
     }
 
-    Log::console_msg_master(1, "Active cores: {}\n", simManager.nbThreads);
     if (parsedArgs.simDuration != 0) {
         Log::console_msg_master(1, "Running simulation for: {} sec\n", parsedArgs.simDuration);
     }
@@ -179,15 +177,15 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
     }
 
     simManager.simulationChanged = true;
-    Log::console_msg_master(2, "Forwarding model to simulation units...\n");
+    Log::console_msg_master(2, "Initializing simulation... ");
     try {
         simManager.InitSimulation(loadedModel, globalState); //shares model and globalState with simManager
     }
     catch (std::exception &ex) {
-        Log::console_error("Failed Initializing simulation units:\n{}\n", ex.what());
+        Log::console_error("\nFailed Initializing simulation units:\n{}\n", ex.what());
         throw ex;
     }
-    Log::console_footer(1, "Forwarded successfully.\n");
+    Log::console_footer(1, "done.\n");
     return loadedModel;
 }
 
@@ -304,6 +302,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
 
         prg.SetMessage("Resizing global state counters...");
         globalState->Resize(loadedModel);
+        prg.SetProgress(1.0);
 
         // 3. init counters with previous results
         if (loadSimulationState) {
@@ -320,6 +319,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
             } else {
                 FlowIO::XmlLoader::LoadSimulationState(parsedArgs.workFile, loadedModel, globalState, prg);
             }
+            prg.SetProgress(1.0);
 
             // Update Angle map status
             for(int i = 0; i < loadedModel->facets.size(); i++ ) {

@@ -803,7 +803,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
             m++;
         } //end moment
 
-        prg.SetMessage("Simulation state load complete.");
+        prg.SetMessage("Loaded simulation state.");
     }
     catch (const std::exception &e) {
         Log::console_error("[XmlLoader] {}", e.what());
