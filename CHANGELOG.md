@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.9.16 beta (2023-09-18)
+
+## Interface
+
+- Message boxes (error and confirmation) now accept Enter and Esc
+- Global settings right pane now shows that settings are file-based
+
+## Bugfix
+
+- Desorption limit working again (GUI & CLI)
+- No more false warnings for app updater
+- Low-flux mode and gas mass saved with file, not with app settings
+
 ## v2.9.15 beta (2023-08-21)
 
 ### Feature
