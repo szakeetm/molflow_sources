@@ -106,14 +106,8 @@ public:
 	Movement*				movement = nullptr;
 	MeasureForce*			measureForces = nullptr;
     FacetAdvParams*			facetAdvParams = nullptr;
-    FacetDetails*			facetDetails = nullptr;
-    Viewer3DSettings*		viewer3DSettings = nullptr;
-    TextureScaling*			textureScaling = nullptr;
-	GlobalSettings*			globalSettings = nullptr;
-    ProfilePlotter*			profilePlotter = nullptr;
     PressureEvolution*		pressureEvolution = nullptr;
 	TimewisePlotter*		timewisePlotter = nullptr;
-    TexturePlotter*			texturePlotter = nullptr;
 	OutgassingMapWindow*	outgassingMapWindow = nullptr;
 	MomentsEditor			*momentsEditor = nullptr;
 	ParameterEditor			*parameterEditor = nullptr;
