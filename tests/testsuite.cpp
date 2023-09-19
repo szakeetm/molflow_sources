@@ -165,8 +165,8 @@ namespace {
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, Stats const& r) {
-			return os << r.commitHash << "\t" << std::scientific << std::setprecision(8) << "max: "<< r.max << "\t" << "min: " << r.min
-				<< "\t" << "median: " << r.med << "\t" << "avg: " << r.avg;
+			return os << r.commitHash << " " << std::scientific << std::setprecision(8) << "max: "<< r.max << " " << "min: " << r.min
+				<< " " << "median: " << r.med << " " << "avg: " << r.avg;
 		}
 
 		bool operator<(Stats const& other) const {
