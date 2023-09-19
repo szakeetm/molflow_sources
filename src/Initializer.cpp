@@ -132,12 +132,12 @@ SettingsIO::CLIArguments Initializer::initFromArgv(int argc, char **argv, Simula
     simManager.nbThreads = parsedArgs.nbThreads;
     simManager.noProgress = parsedArgs.noProgress;
     model->otfParams.timeLimit = (double)parsedArgs.simDuration;
-    Log::console_msg_master(1, "Creating {} thread{}...\n",
-        simManager.nbThreads, (simManager.nbThreads>1) ? "s" : "");
+    Log::console_msg_master(1, "Creating thread(s)...");
     if (simManager.SetUpSimulation()) { //currently only calls CreateCPUHandle()
        throw Error("Error creating thread(s)");
     }
-
+    Log::console_msg_master(1, "{} thread{} created.\n", simManager.nbThreads, 
+        simManager.nbThreads>1 ? "s" : "");
     if (parsedArgs.simDuration != 0) {
         Log::console_msg_master(1, "Running simulation for: {} sec\n", parsedArgs.simDuration);
     }
