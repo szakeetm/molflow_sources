@@ -282,8 +282,8 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         }
         interfaceSettings = *loader.interfaceSettings; //persistent for saving
     }
-
-    prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", loadedModel->memSizeCache/1024/1024));
+    loadedModel->memSizeCache = loadedModel->GetMemSize();
+    prg.SetMessage(fmt::format("Loaded geometry ({:.1f} Mbytes)", (double)loadedModel->memSizeCache/1024.0/1024.0));
 
     //InitializeGeometry();
     loadedModel->InitializeFacets();
