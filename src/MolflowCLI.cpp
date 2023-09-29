@@ -285,7 +285,7 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_p
             simTimer.UpdateLastAutoSave();
         }
 
-        if (parsedArgs.statprintInterval && simTimer.SecondsSinceLastStatprint() > parsedArgs.statprintInterval) { // autosave every x seconds
+        if (parsedArgs.statprintInterval && simTimer.SecondsSinceLastStatprint() > parsedArgs.statprintInterval) { // print stats every x seconds
             // Print runtime stats
             if ((uint64_t)elapsedTime / parsedArgs.statprintInterval <= 1) {
                 printer.PrintHeader();
@@ -327,12 +327,14 @@ void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std
             }
         }
     }
-    GLProgress_CLI prg(fmt::format("Writing file {} ...", fullOutFile));
+    GLProgress_CLI prg("");
+    prg.SetMessage(fmt::format("Writing file {} ...", fullOutFile), true); //Force new line
     prg.noProgress = simManager.noProgress;
     FlowIO::XmlWriter writer(false, true);
     writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentUserSettings);
     pugi::xml_document newDoc;
     newDoc.load_file(fullOutFile.c_str());
+    prg.SetMessage("", true);
     writer.SaveGeometry(newDoc, model, prg);
     writer.SaveSimulationState(newDoc, model, prg, globalState);
     writer.WriteXMLToFile(newDoc, fullOutFile);
