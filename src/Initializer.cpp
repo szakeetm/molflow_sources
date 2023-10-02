@@ -66,11 +66,11 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
             ->check(CLI::ExistingFile);
 
     CLI::Option *optOfile = app.add_option("-o,--output", parsedArgs.outputFile,
-                                           R"(Output file name (e.g. 'outfile.xml', default: 'out_{inputFileName}')");
+                                           "Output file name. Example: 'result.zip', default: 'out_{inputFileName}'");
     CLI::Option *optOpath = app.add_option("--outputPath", parsedArgs.outputPath,
                                            "Output path, default: \'Results_{timestamp}\'");
-    app.add_option("-s,--statprintInterval", parsedArgs.statprintInterval, "Statistics print interval in seconds, 0=disabled, default:60");
-    app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, "Autosave interval in seconds, 0=disabled, default:600)");
+    app.add_option("-s,--statprintInterval", parsedArgs.statprintInterval, fmt::format("Statistics print interval in seconds, 0=disabled, default:{}", parsedArgs.statprintInterval));
+    app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, fmt::format("Autosave interval in seconds, 0=disabled, default:600",parsedArgs.autoSaveInterval));
     app.add_flag("--writeFacetDetails", parsedArgs.outputFacetDetails,
                    "When ready, write a CSV file containing all facet details (incl. physical quantities)");
     app.add_flag("--writeFacetQuantities", parsedArgs.outputFacetQuantities,
@@ -81,10 +81,10 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
             ->check(CLI::ExistingFile);
     app.add_option("--setParams", parsedArgs.paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
-    app.add_option("--verbosity", AppSettings::verbosity, "Console output verbosity. Levels: 0-4. Default:2");
-    app.add_flag("--noProgress", parsedArgs.noProgress, "Log file mode: No percentage updates printed of progress");
-    app.add_flag("--loadAutosave", parsedArgs.loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_flag("-r,--reset", parsedArgs.resetOnStart, "Resets input file simulation status before starting simulation");
+    app.add_option("--verbosity", AppSettings::verbosity, fmt::format("Console output verbosity. Levels: 0-4. Default:{}",AppSettings::verbosity));
+    app.add_flag("--noProgress", parsedArgs.noProgress, "No percentage updates of progress (useful when output is saved to a log file)");
+    app.add_flag("--loadAutosave", parsedArgs.loadAutosave, "Load and continue autosave_ file if exists");
+    app.add_flag("-r,--reset", parsedArgs.resetOnStart, "Reset input file simulation (to 0 des.) before starting");
     app.add_flag("--verbose", verbose, "Verbose console output (equivalent to --verbosity 4)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", parsedArgs.overwrite,
                                              "Overwrite input file with results")->excludes(optOfile, optOpath);
