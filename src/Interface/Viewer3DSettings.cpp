@@ -288,7 +288,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 		  return;
 	  }
 
-      viewer->volumeRenderMode=volumeRenderModeCombo->GetSelectedIndex();
+      viewer->volumeRenderMode=static_cast<VolumeRenderMode>(volumeRenderModeCombo->GetSelectedIndex());
       viewer->transStep = tstep;
       viewer->angleStep = astep;
 	  viewer->dispNumHits = dnh;

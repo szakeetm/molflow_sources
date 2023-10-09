@@ -244,7 +244,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     for (xml_node newView : viewNode.children("View")) {
         CameraView v;
         v.name = newView.attribute("name").as_string();
-        v.projMode = newView.attribute("projMode").as_int();
+        v.projMode = static_cast<ProjectionMode>(newView.attribute("projMode").as_int());
         v.camAngleOx = newView.attribute("camAngleOx").as_double();
         v.camAngleOy = newView.attribute("camAngleOy").as_double();
         if (newView.attribute("camAngleOz")) {
@@ -269,7 +269,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         v.camOffset.x = newView.attribute("camOffset.x").as_double();
         v.camOffset.y = newView.attribute("camOffset.y").as_double();
         v.camOffset.z = newView.attribute("camOffset.z").as_double();
-        v.performXY = newView.attribute("performXY").as_int();
+        v.performXY = static_cast<CameraPlaneMode>(newView.attribute("performXY").as_int());
         v.vLeft = newView.attribute("vLeft").as_double();
         v.vRight = newView.attribute("vRight").as_double();
         v.vTop = newView.attribute("vTop").as_double();

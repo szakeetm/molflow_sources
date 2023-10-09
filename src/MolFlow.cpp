@@ -2078,7 +2078,7 @@ void MolFlow::LoadConfig() {
 			view->showVertexId = file.ReadInt();
 		file.ReadKeyword("showMode"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->volumeRenderMode = file.ReadInt();
+			view->volumeRenderMode = static_cast<VolumeRenderMode>(file.ReadInt());
 		file.ReadKeyword("showMesh"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showMesh = file.ReadInt();
