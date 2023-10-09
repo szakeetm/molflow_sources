@@ -895,8 +895,10 @@ void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
     auto &globHistParams = model->sp.globalHistogramParams;
     auto &facHistParams = iFacet->sh.facetHistogramParams;
 
-    for (const int moment : {0, m}) {
-        if (moment < 0) return;
+    for (const int moment : {0, m}) { //Record for const.flow(0) and for actual moment(m)
+        if (moment < 0) {
+            return;
+        }
 
         if (globHistParams.recordBounce) {
             binIndex = std::min(nbBounces / globHistParams.nbBounceBinsize,
