@@ -381,7 +381,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
         for (xml_node newMoment: momentsNode.children("Moment")) {
             
             if (m == 0) { //read global results
-                prg.SetMessage(fmt::format("Loading global results...",m));
+                prg.SetMessage(fmt::format("Loading global results..."));
                 xml_node globalNode = newMoment.child("Global");
                 xml_node hitsNode = globalNode.child("Hits");
                 globalState->globalStats.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
@@ -446,7 +446,6 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             } //end global node
 
-            //prg.SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
             bool hasHistogram =
                     model->sp.globalHistogramParams.recordBounce || model->sp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
@@ -523,7 +522,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             }
 
-            prg.SetMessage(fmt::format("Loading facet results [moment {}]...", m),false);
+            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m, nbMoments),false);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();

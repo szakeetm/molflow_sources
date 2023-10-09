@@ -754,25 +754,6 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				}
 				interfGeom->InitializeGeometry();
 
-				/*
-				prg.SetMessage("Building mesh...");
-				auto nbFacet = interfGeom->GetNbFacet();
-
-
-				for (size_t i = 0; i < nbFacet; i++) {
-					double p = (double)i / (double)nbFacet;
-
-					prg.SetProgress(p);
-					auto f = interfGeom->GetFacet(i);
-					if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
-						char errMsg[512];
-						sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
-						throw Error(errMsg);
-					}
-					interfGeom->BuildFacetList(f);
-
-				}
-				*/
 				prg.SetMessage("Calculating OpenGL render data...");
 				interfGeom->UpdateName(fileName.c_str());
 
@@ -791,11 +772,10 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					}
 					simManager.simulationChanged = true; //mark for loading
 
-
 					CalculateTextureLimits(); // Load texture limits on init
 
 					// actually loads all caches
-					UpdateFacetCaches(); //So interface gets histogram data for disp.moment right after loadin
+					UpdateInterfaceCaches(); //So interface gets facet hit and histogram data for disp.moment right after loading
 					//simManager.ShareGlobalCounter(globalState, particleLog);
 					SendAngleMaps();
 
