@@ -955,15 +955,18 @@ void Worker::InterfaceGeomToSimModel() {
 	//auto interfGeom = GetMolflowGeometry();
 	// TODO: Proper clear call before for Real reload?
 	//TODO: return model, just like LoadGeometry()
+
+	std::lock_guard<std::mutex> lock(model->modelMutex);
 	model->initialized = false;
+	model->structures.clear();
+	model->facets.clear();
+	model->vertices3.clear();
+
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
-	mf_model->structures.clear();
-	mf_model->facets.clear();
-	mf_model->vertices3.clear();
 	mf_model->tdParams.moments = interfaceMomentCache;
 
 	for (size_t nbV = 0; nbV < interfGeom->GetNbVertex(); ++nbV) {
-		mf_model->vertices3.emplace_back(*interfGeom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
+		model->vertices3.emplace_back(*interfGeom->GetVertex(nbV)); //InterfaceVertex->Vertex3d conversion
 	}
 
 	mf_model->maxwell_CDF_1K.clear();
@@ -974,14 +977,14 @@ void Worker::InterfaceGeomToSimModel() {
 	for (auto& param : this->interfaceParameterCache)
 		mf_model->tdParams.parameters.emplace_back(param);
 
-	mf_model->sh = *interfGeom->GetGeomProperties();
+	model->sh = *interfGeom->GetGeomProperties();
 
-	mf_model->structures.resize(mf_model->sh.nbSuper); //Create structures
-	for (int i = 0; i < mf_model->sh.nbSuper; i++) {
-		mf_model->structures[i].name = interfGeom->GetStructureName(i);
+	model->structures.resize(model->sh.nbSuper); //Create structures
+	for (int i = 0; i < model->sh.nbSuper; i++) {
+		model->structures[i].name = interfGeom->GetStructureName(i);
 	}
 
-	for (size_t facIdx = 0; facIdx < mf_model->sh.nbFacet; facIdx++) {
+	for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
 		MolflowSimFacet sFac;
 		{
 			InterfaceFacet* facet = interfGeom->GetFacet(facIdx);
@@ -1055,16 +1058,16 @@ void Worker::InterfaceGeomToSimModel() {
 			throw Error("Error initializing facet {}:\n{}", facIdx + 1, err.what());
 		}
 
-		if (sFac.sh.superDest>0 && sFac.sh.superDest > mf_model->sh.nbSuper) {
+		if (sFac.sh.superDest>0 && sFac.sh.superDest > model->sh.nbSuper) {
 			throw Error("Wrong link {} on F#{})",sFac.sh.superDest, facIdx + 1);
 		}
 
-		mf_model->facets.emplace_back(std::make_shared<MolflowSimFacet>(std::move(sFac)));
+		model->facets.emplace_back(std::make_shared<MolflowSimFacet>(std::move(sFac)));
 	}
 
-	if (!mf_model->facets.empty() && !mf_model->vertices3.empty())
-		mf_model->initialized = true;
-	mf_model->memSizeCache = mf_model->GetMemSize();
+	if (!model->facets.empty() && !model->vertices3.empty())
+		model->initialized = true;
+	model->memSizeCache = mf_model->GetMemSize();
 }
 
 /**
@@ -1086,19 +1089,11 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	ReloadSim(sendOnly, prg); //Convert interf.geom to worker::mode and construct global counters, then copy to simManager.simulation
 	
 	if (!sendOnly) {
-		try {
-			prg.SetMessage("Asking subprocesses to clear geometry...");
-			LoadStatus loadStatus(this);
-			simManager.ResetSimulations(&loadStatus);
-			prg.SetMessage("Clearing Logger...");
-			particleLog->clear();
-		}
-		catch (const std::exception& e) {
-			std::stringstream err;
-			err << "Error (Worker::RealReload) " << e.what();
-			GLMessageBox::Display(err.str().c_str(), "Error (Worker::RealReload()", GLDLG_OK, GLDLG_ICONWARNING);
-			throw Error(err.str());
-		}
+		prg.SetMessage("Asking subprocesses to clear geometry...");
+		LoadStatus loadStatus(this);
+		simManager.ResetSimulations(&loadStatus);
+		prg.SetMessage("Clearing Logger...");
+		particleLog->clear();
 
 		if (model->otfParams.enableLogging) {
 			try {
