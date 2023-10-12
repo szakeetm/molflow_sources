@@ -94,8 +94,6 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 else time = mfModel->sp.latestMoment;
                 if (worker->needsReload) {
                     throw Error(fmt::format("\"T{}\": Model not synchronized.",idx));
-                } if (!worker->model->initialized) {
-                    throw Error(fmt::format("\"T{}\": Model invalid.",idx));
                 }
                 auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx - 1]);
                 v->value = mfModel->GetTemperatureAt(mfFacet.get(), time);
@@ -243,19 +241,19 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         v->value = sumArea;
     }
     else if (iequals(v->varName, "QCONST")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->varName, "QCONST_N")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.finalOutgassingRate;
     }
     else if (iequals(v->varName, "NTOT")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.totalDesorbedMolecules;

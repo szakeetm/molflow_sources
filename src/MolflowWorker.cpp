@@ -1065,8 +1065,8 @@ void Worker::InterfaceGeomToSimModel() {
 		model->facets.emplace_back(std::make_shared<MolflowSimFacet>(std::move(sFac)));
 	}
 
-	if (!model->facets.empty() && !model->vertices3.empty())
-		model->initialized = true;
+	//if (!model->facets.empty() && !model->vertices3.empty())
+	model->initialized = true;
 	model->memSizeCache = mf_model->GetMemSize();
 }
 

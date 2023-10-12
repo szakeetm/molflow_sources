@@ -323,8 +323,6 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			else time = mfModel->sp.latestMoment;
 			if (worker->needsReload) {
 				throw Error("Model not synchronized.");
-			} if (!worker->model->initialized) {
-				throw Error("Model invalid.");
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetStickingAt(mfFacet.get(), time));
@@ -341,8 +339,6 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			else time = mfModel->sp.latestMoment;
 			if (worker->needsReload) {
 				throw Error("Model not synchronized.");
-			} if (!worker->model->initialized) {
-				throw Error("Model invalid.");
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetOpacityAt(mfFacet.get(), time));
@@ -393,8 +389,6 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			else time = mfModel->sp.latestMoment;
 			if (worker->needsReload) {
 				throw Error("Model not synchronized.");
-			} if (!worker->model->initialized) {
-				throw Error("Model invalid.");
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetTemperatureAt(mfFacet.get(), time));
