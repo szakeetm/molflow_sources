@@ -94,7 +94,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 else time = mfModel->sp.latestMoment;
                 if (!worker->model->initialized) {
                     //Don't dereference facets, maybe they werent' yet passed to model
-                    throw Error("Model not yet initialized");
+                    throw Error(fmt::format("Evaluating potentially time-dependent \"T{}\" but model not yet synchronized.",idx));
                 }
                 auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx - 1]);
                 v->value = mfModel->GetTemperatureAt(mfFacet.get(), time);
