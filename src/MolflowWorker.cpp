@@ -208,11 +208,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 			try {
 				std::string toOpen;
 
+				toOpen = fileName; //Txt, stl, geo, etc...
 				if (isGEO7Z) {
 					toOpen = fileNameWithGeo;
 				}
-				else if (!(isXML || isXMLzip)) {
-					toOpen = fileName; //Txt, stl, geo, etc...
+				if (!(isXML || isXMLzip)) {
 					auto file = FileWriter(toOpen);//We first write a GEO file, then compress it to GEO7Z later
 					if (isTXT) {
 						interfGeom->SaveTXT(file, globalState, saveSelected);
@@ -338,7 +338,6 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 
 	//File written, compress it if the user wanted to
 	if (isGEO7Z) {
-
 #ifdef _WIN32
 		std::string compressorName = "compress.exe";
 #else
