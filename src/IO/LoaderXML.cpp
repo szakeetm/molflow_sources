@@ -244,7 +244,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     for (xml_node newView : viewNode.children("View")) {
         CameraView v;
         v.name = newView.attribute("name").as_string();
-        v.projMode = newView.attribute("projMode").as_int();
+        v.projMode = static_cast<ProjectionMode>(newView.attribute("projMode").as_int());
         v.camAngleOx = newView.attribute("camAngleOx").as_double();
         v.camAngleOy = newView.attribute("camAngleOy").as_double();
         if (newView.attribute("camAngleOz")) {
@@ -269,7 +269,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         v.camOffset.x = newView.attribute("camOffset.x").as_double();
         v.camOffset.y = newView.attribute("camOffset.y").as_double();
         v.camOffset.z = newView.attribute("camOffset.z").as_double();
-        v.performXY = newView.attribute("performXY").as_int();
+        v.performXY = static_cast<CameraPlaneMode>(newView.attribute("performXY").as_int());
         v.vLeft = newView.attribute("vLeft").as_double();
         v.vRight = newView.attribute("vRight").as_double();
         v.vTop = newView.attribute("vTop").as_double();
@@ -381,7 +381,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
         for (xml_node newMoment: momentsNode.children("Moment")) {
             
             if (m == 0) { //read global results
-                prg.SetMessage(fmt::format("Loading global results...",m));
+                prg.SetMessage(fmt::format("Loading global results..."));
                 xml_node globalNode = newMoment.child("Global");
                 xml_node hitsNode = globalNode.child("Hits");
                 globalState->globalStats.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
@@ -446,7 +446,6 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             } //end global node
 
-            //prg.SetMessage(fmt::format("Loading histograms [moment {}]...", m),false);
             bool hasHistogram =
                     model->sp.globalHistogramParams.recordBounce || model->sp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
@@ -523,7 +522,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             }
 
-            prg.SetMessage(fmt::format("Loading facet results [moment {}]...", m),false);
+            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m, nbMoments),false);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();

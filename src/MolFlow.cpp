@@ -1314,13 +1314,13 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckIsolatedVertex();
 		// Set up view
 		// Default
-		viewer[0]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[0]->SetProjection(ProjectionMode::Orthographic);
 		viewer[0]->ToFrontView();
-		viewer[1]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[1]->SetProjection(ProjectionMode::Orthographic);
 		viewer[1]->ToTopView();
-		viewer[2]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[2]->SetProjection(ProjectionMode::Orthographic);
 		viewer[2]->ToSideView();
-		viewer[3]->SetProjection(PERSPECTIVE_PROJ);
+		viewer[3]->SetProjection(ProjectionMode::Perspective);
 		viewer[3]->ToFrontView();
 		SelectViewer(0);
 
@@ -1417,13 +1417,13 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		/*
 		// Set up view
 		// Default
-		viewer[0]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[0]->SetProjection(ProjectionMode::Orthographic);
 		viewer[0]->ToFrontView();
-		viewer[1]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[1]->SetProjection(ProjectionMode::Orthographic);
 		viewer[1]->ToTopView();
-		viewer[2]->SetProjection(ORTHOGRAPHIC_PROJ);
+		viewer[2]->SetProjection(ProjectionMode::Orthographic);
 		viewer[2]->ToSideView();
-		viewer[3]->SetProjection(PERSPECTIVE_PROJ);
+		viewer[3]->SetProjection(ProjectionMode::Perspective);
 		viewer[3]->ToFrontView();
 		SelectViewer(0);
 		*/
@@ -2078,13 +2078,13 @@ void MolFlow::LoadConfig() {
 			view->showVertexId = file.ReadInt();
 		file.ReadKeyword("showMode"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->showBack = file.ReadInt();
+			view->volumeRenderMode = static_cast<VolumeRenderMode>(file.ReadInt());
 		file.ReadKeyword("showMesh"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showMesh = file.ReadInt();
 		file.ReadKeyword("showHidden"); file.ReadKeyword(":");
 		for (auto& view : viewer)
-			view->showHidden = file.ReadInt();
+			view->showHiddenFacet = file.ReadInt();
 		file.ReadKeyword("showHiddenVertex"); file.ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showHiddenVertex = file.ReadInt();
@@ -2245,9 +2245,9 @@ void MolFlow::SaveConfig() {
 		WRITEI("showFilter", showFilter);
 		WRITEI("showIndices", showIndex);
 		WRITEI("showVertices", showVertexId);
-		WRITEI("showMode", showBack);
+		WRITEI("showMode", volumeRenderMode);
 		WRITEI("showMesh", showMesh);
-		WRITEI("showHidden", showHidden);
+		WRITEI("showHidden", showHiddenFacet);
 		WRITEI("showHiddenVertex", showHiddenVertex);
 		WRITEI("showTimeOverlay", showTime);
 		//WRITEI("texColormap", showColormap);

@@ -50,7 +50,7 @@ private:
   GeometryViewer *viewer;
 
   GLTitledPanel *panel;
-  GLCombo       *showMode;
+  GLCombo       *volumeRenderModeCombo;
   GLTextField   *traStepText;
   GLTextField   *angStepText;
   GLTextField   *dispNumHits;
