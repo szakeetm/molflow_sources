@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define _PARAMETEREDITORH_
 
 #include "GLApp/GLWindow.h"
-#include "Parameter.h"
+#include "../Parameter.h"
 class GLButton;
 class GLCombo;
 class GLChart;
