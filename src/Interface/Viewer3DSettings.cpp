@@ -60,14 +60,14 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   l4->SetBounds(10,25,90,18);
   Add(l4);
 
-  showMode = new GLCombo(0);
-  showMode->SetEditable(true);
-  showMode->SetSize(3);
-  showMode->SetValueAt(0,"Front & Back");
-  showMode->SetValueAt(1,"Front only");
-  showMode->SetValueAt(2,"Back only");
-  showMode->SetBounds(100,25,100,19);
-  Add(showMode);
+  volumeRenderModeCombo = new GLCombo(0);
+  volumeRenderModeCombo->SetEditable(true);
+  volumeRenderModeCombo->SetSize(3);
+  volumeRenderModeCombo->SetValueAt(0,"Front & Back");
+  volumeRenderModeCombo->SetValueAt(1,"Front only");
+  volumeRenderModeCombo->SetValueAt(2,"Back only");
+  volumeRenderModeCombo->SetBounds(100,25,100,19);
+  Add(volumeRenderModeCombo);
 
   GLLabel *l5 = new GLLabel("Translation step");
   l5->SetBounds(10,50,90,18);
@@ -209,8 +209,8 @@ void Viewer3DSettings::Refresh(InterfaceGeometry *s,GeometryViewer *v) {
 
   interfGeom = s;
   viewer = v;
-  showMode->SetSelectedIndex(viewer->showBack);
-  hiddenEdge->SetState(viewer->showHidden);
+  volumeRenderModeCombo->SetSelectedIndex(viewer->volumeRenderMode);
+  hiddenEdge->SetState(viewer->showHiddenFacet);
   hiddenVertex->SetState(viewer->showHiddenVertex);
   showMesh->SetState(viewer->showMesh);
   showTimeToggle->SetState(viewer->showTime);
@@ -288,12 +288,12 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 		  return;
 	  }
 
-      viewer->showBack=showMode->GetSelectedIndex();
+      viewer->volumeRenderMode=static_cast<VolumeRenderMode>(volumeRenderModeCombo->GetSelectedIndex());
       viewer->transStep = tstep;
       viewer->angleStep = astep;
 	  viewer->dispNumHits = dnh;
       viewer->dispNumLeaks = dnl;
-      viewer->showHidden=hiddenEdge->GetState();
+      viewer->showHiddenFacet=hiddenEdge->GetState();
 	  viewer->showHiddenVertex=hiddenVertex->GetState();
       viewer->showMesh=showMesh->GetState();
 	  viewer->bigDots=bigDots->GetState();

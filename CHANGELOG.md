@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.9.17 beta
+
+## Bugfix
+
+- Fix: Histogram plotter had no values for global histograms and
+  for facet-based flight time
+
 ## v2.9.16 beta (2023-09-18)
 
 ## Interface

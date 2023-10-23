@@ -57,37 +57,37 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
     SettingsIO::CLIArguments parsedArgs;
 
     // Define options
-    app.add_option("-j,--threads", parsedArgs.nbThreads, "# Threads to be deployed");
-    app.add_option("-t,--time", parsedArgs.simDuration, "Simulation duration in seconds");
-    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
+    app.add_option("-j,--threads", parsedArgs.nbThreads, "Number of parallel threads to be used for calculation");
+    app.add_option("-t,--time", parsedArgs.simDuration, "Finish simulation after this time (in seconds)");
+    app.add_option("-d,--ndes", limits, "Finish simulation after this number of desorbed particles");
 
-    app.add_option("-f,--file", parsedArgs.inputFile, "Required input file (XML/ZIP only)")
+    app.add_option("-f,--file", parsedArgs.inputFile, "Input file to load (XML/ZIP only)")
             ->required()
             ->check(CLI::ExistingFile);
 
     CLI::Option *optOfile = app.add_option("-o,--output", parsedArgs.outputFile,
-                                           R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
+                                           "Output file name. Example: 'result.zip', default: 'out_{inputFileName}'");
     CLI::Option *optOpath = app.add_option("--outputPath", parsedArgs.outputPath,
-                                           "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-s,--statprintInterval", parsedArgs.statprintInterval, "Seconds between each stat output, zero=disabled");
-    app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, "Autosave interval in seconds, zero=disabled)");
+                                           "Output path, default: \'Results_{timestamp}\'");
+    app.add_option("-s,--statprintInterval", parsedArgs.statprintInterval, fmt::format("Statistics print interval in seconds, 0=disabled, default:{}", parsedArgs.statprintInterval));
+    app.add_option("-a,--autosaveInterval", parsedArgs.autoSaveInterval, fmt::format("Autosave interval in seconds, 0=disabled, default:600",parsedArgs.autoSaveInterval));
     app.add_flag("--writeFacetDetails", parsedArgs.outputFacetDetails,
-                   "Will write a CSV file containing all facet details including physical quantities");
+                   "When ready, write a CSV file containing all facet details (incl. physical quantities)");
     app.add_flag("--writeFacetQuantities", parsedArgs.outputFacetQuantities,
-                   "Will write a CSV file containing all physical quantities for each facet");
+                   "When ready, write a CSV file containing all physical quantities for each facet");
 
     app.add_option("--setParamsByFile", parsedArgs.paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
     app.add_option("--setParams", parsedArgs.paramChanges,
                    "Direct parameter input for ad hoc change of the given geometry parameters");
-    app.add_option("--verbosity", AppSettings::verbosity, "Restrict console output to different levels");
-    app.add_flag("--noProgress", parsedArgs.noProgress, "Log file mode: No percentage updates printed of progress");
-    app.add_flag("--loadAutosave", parsedArgs.loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_flag("-r,--reset", parsedArgs.resetOnStart, "Resets simulation status loaded from file");
-    app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
+    app.add_option("--verbosity", AppSettings::verbosity, fmt::format("Console output verbosity. Levels: 0-4. Default:{}",AppSettings::verbosity));
+    app.add_flag("--noProgress", parsedArgs.noProgress, "No percentage updates of progress (useful when output is saved to a log file)");
+    app.add_flag("--loadAutosave", parsedArgs.loadAutosave, "Load and continue autosave_ file if exists");
+    app.add_flag("-r,--reset", parsedArgs.resetOnStart, "Reset input file simulation (to 0 des.) before starting");
+    app.add_flag("--verbose", verbose, "Verbose console output (equivalent to --verbosity 4)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", parsedArgs.overwrite,
-                                             "Overwrite input file with new results")->excludes(optOfile, optOpath);
+                                             "Overwrite input file with results")->excludes(optOfile, optOpath);
     optOfile->excludes(optOverwrite);
     optOpath->excludes(optOverwrite);
     app.set_config("--config");
@@ -108,7 +108,7 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
         parsedArgs.desLimit.push_back(static_cast<size_t>(lim));
 
     if (parsedArgs.simDuration == 0 && parsedArgs.desLimit.empty()) {
-        throw Error("No end criterion has been set. Use either -t or -d\n");
+        throw Error("No stop condition set. Use either -t (--time) or -d (--ndes)\n");
     }
     return parsedArgs;
 }
@@ -282,8 +282,8 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
         }
         interfaceSettings = *loader.interfaceSettings; //persistent for saving
     }
-
-    prg.SetMessage(fmt::format("Loaded geometry ({} Mbytes)", loadedModel->memSizeCache/1024/1024));
+    loadedModel->memSizeCache = loadedModel->GetMemSize();
+    prg.SetMessage(fmt::format("Loaded geometry ({:.1f} Mbytes)", (double)loadedModel->memSizeCache/1024.0/1024.0));
 
     //InitializeGeometry();
     loadedModel->InitializeFacets();
@@ -442,7 +442,7 @@ std::string Initializer::getAutosaveFile(SettingsIO::CLIArguments& parsedArgs) {
 */
 void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> model) {
 
-    model->initialized = false;
+    
 
     try { //unti initSimModel will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
@@ -451,6 +451,7 @@ void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mod
         throw Error("Couldn't lock model mutex");
     }
 
+    model->initialized = false;
     model->structures.resize(model->sh.nbSuper); //Create structures
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {

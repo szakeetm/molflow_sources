@@ -419,7 +419,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 	for (size_t i = 0; i < nbV; i++) {
 		CameraView v;
 		v.name=file.ReadString();
-		v.projMode = file.ReadInt();
+		v.projMode = static_cast<ProjectionMode>(file.ReadInt());
 		v.camAngleOx = file.ReadDouble();
 		v.camAngleOy = file.ReadDouble();
 		v.camAngleOz = 0.0; //No support for Z angle in current SYN version
@@ -427,7 +427,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader& file, size_t strIdx, bool newStr
 		v.camOffset.x = file.ReadDouble();
 		v.camOffset.y = file.ReadDouble();
 		v.camOffset.z = file.ReadDouble();
-		v.performXY = file.ReadInt();
+		v.performXY = static_cast<CameraPlaneMode>(file.ReadInt());
 		v.lightAngleOx = v.lightAngleOy = 0.0;
 		v.vLeft = file.ReadDouble();
 		v.vRight = file.ReadDouble();
@@ -799,7 +799,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 		for (int i = 0; i < nbV; i++) {
 			CameraView v;
 			v.name=file.ReadString();
-			v.projMode = file.ReadInt();
+			v.projMode = static_cast<ProjectionMode>(file.ReadInt());
 			v.camAngleOx = file.ReadDouble();
 			v.camAngleOy = file.ReadDouble();
 			v.camAngleOz = 0.0; //No support for Z angle in current GEO version
@@ -807,7 +807,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			v.camOffset.x = file.ReadDouble();
 			v.camOffset.y = file.ReadDouble();
 			v.camOffset.z = file.ReadDouble();
-			v.performXY = file.ReadInt();
+			v.performXY = static_cast<CameraPlaneMode>(file.ReadInt());
 			v.lightAngleOx = v.lightAngleOy = 0.0;
 			v.vLeft = file.ReadDouble();
 			v.vRight = file.ReadDouble();
@@ -1075,7 +1075,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		
 		CameraView v;
 		v.name = file.ReadString();
-		v.projMode = file.ReadInt();
+		v.projMode = static_cast<ProjectionMode>(file.ReadInt());
 		v.camAngleOx = file.ReadDouble();
 		v.camAngleOy = file.ReadDouble();
 		v.camAngleOz = 0.0; //No support for Z angle in current SYN version
@@ -1084,7 +1084,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 		v.camOffset.x = file.ReadDouble();
 		v.camOffset.y = file.ReadDouble();
 		v.camOffset.z = file.ReadDouble();
-		v.performXY = file.ReadInt();
+		v.performXY = static_cast<CameraPlaneMode>(file.ReadInt());
 		v.vLeft = file.ReadDouble();
 		v.vRight = file.ReadDouble();
 		v.vTop = file.ReadDouble();
