@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLTitledPanel.h"
 #include "Geometry_shared.h"
+#include "CrossSection.h"
 #if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
@@ -48,12 +49,12 @@ extern SynRad*mApp;
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   int wD = 215;
-  int hD = 500;
+  int hD = 525;
 
   SetTitle("3D Viewer Settings");
 
   panel = new GLTitledPanel("3D Viewer settings");
-  panel->SetBounds(5,5,wD-10,345);
+  panel->SetBounds(5,5,wD-10,370);
   Add(panel);
 
   GLLabel *l4 = new GLLabel("Show facet");
@@ -139,33 +140,37 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   hideLotText->SetBounds(100, 322, 40, 18);
   hideLotText->SetEditable(false);
   Add(hideLotText);
+
+  crossSectionButton = new GLButton(0,"Cross section...");
+  crossSectionButton->SetBounds(10, 348, wD - 20, 19);
+  Add(crossSectionButton);
   
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
-  panel2->SetBounds(5,355,wD-10,95);
+  panel2->SetBounds(5,380,wD-10,95);
   Add(panel2);
   
   dirShowdirToggle = new GLToggle(0,"Show direction (selected viewer only)");
-  dirShowdirToggle->SetBounds(10,370,190,18);
+  dirShowdirToggle->SetBounds(10,395,190,18);
   Add(dirShowdirToggle);
 
   GLLabel* l11 = new GLLabel("Set for all viewers:");
-  l11->SetBounds(10, 390, 90, 18);
+  l11->SetBounds(10, 415, 90, 18);
   Add(l11);
 
   GLLabel *l7 = new GLLabel("Norme ratio");
-  l7->SetBounds(10,410,90,18);
+  l7->SetBounds(10,435,90,18);
   Add(l7);
 
   dirNormeText = new GLTextField(0,"");
-  dirNormeText->SetBounds(100,410,100,18);
+  dirNormeText->SetBounds(100,435,100,18);
   Add(dirNormeText);
 
   dirNormalizeToggle = new GLToggle(0,"Normalize");
-  dirNormalizeToggle->SetBounds(10,430,100,18);
+  dirNormalizeToggle->SetBounds(10,455,100,18);
   Add(dirNormalizeToggle);
 
   dirCenterToggle = new GLToggle(0,"Center");
-  dirCenterToggle->SetBounds(110,430,90,18);
+  dirCenterToggle->SetBounds(110,455,90,18);
   Add(dirCenterToggle);
 
   applyButton = new GLButton(0,"Apply");
@@ -324,6 +329,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  }
 
 	  GLWindow::ProcessMessage(NULL, MSG_CLOSE);
+    }
+    else if (src == crossSectionButton) {
+        if (!mApp->crossSectionWindow) mApp->crossSectionWindow = new CrossSection(mApp->worker.GetGeometry(), &mApp->worker, viewer->GetId());
+        mApp->crossSectionWindow->SetVisible(true);
     }
     break;
 
