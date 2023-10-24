@@ -278,9 +278,9 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         auto clippingNode = newView.child("Clipping");
         if (clippingNode) { //Introduced in Molflow 2.9.17 beta
             v.enableClipping = clippingNode.attribute("enabled").as_bool();
-            v.clipPlane.x = clippingNode.attribute("x").as_double();
-            v.clipPlane.y = clippingNode.attribute("y").as_double();
-            v.clipPlane.z = clippingNode.attribute("z").as_double();
+            v.clipPlane.a = clippingNode.attribute("a").as_double();
+            v.clipPlane.b = clippingNode.attribute("b").as_double();
+            v.clipPlane.c = clippingNode.attribute("c").as_double();
             v.clipPlane.d = clippingNode.attribute("d").as_double();
         }        
         interfaceSettings->views.push_back(std::move(v));

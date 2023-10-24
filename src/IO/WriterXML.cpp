@@ -279,9 +279,9 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
             newView.append_attribute("vBottom") = v.vBottom;
             auto clippingNode = newView.append_child("Clipping");
             clippingNode.append_attribute("enabled")=v.enableClipping;
-            clippingNode.append_attribute("x")=v.clipPlane.x;
-            clippingNode.append_attribute("y")=v.clipPlane.y;
-            clippingNode.append_attribute("z")=v.clipPlane.z;
+            clippingNode.append_attribute("a")=v.clipPlane.a;
+            clippingNode.append_attribute("b")=v.clipPlane.b;
+            clippingNode.append_attribute("c")=v.clipPlane.c;
             clippingNode.append_attribute("d")=v.clipPlane.d;
         }
     }
