@@ -258,24 +258,31 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->views.size() : 0;
     if (saveAllFacets) {
         for (int i = 0; i < interfaceSettings->views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
+            const auto& v = interfaceSettings->views[i];
             xml_node newView = viewNode.append_child("View");
             newView.append_attribute("id") = i;
-            newView.append_attribute("name") = interfaceSettings->views[i].name.c_str();
-            newView.append_attribute("projMode") = interfaceSettings->views[i].projMode;
-            newView.append_attribute("camAngleOx") = interfaceSettings->views[i].camAngleOx;
-            newView.append_attribute("camAngleOy") = interfaceSettings->views[i].camAngleOy;
-            newView.append_attribute("camAngleOz") = interfaceSettings->views[i].camAngleOz;
-            newView.append_attribute("camDist") = interfaceSettings->views[i].camDist;
-            newView.append_attribute("lightAngleOx") = interfaceSettings->views[i].lightAngleOx;
-            newView.append_attribute("lightAngleOy") = interfaceSettings->views[i].lightAngleOy;
-            newView.append_attribute("camOffset.x") = interfaceSettings->views[i].camOffset.x;
-            newView.append_attribute("camOffset.y") = interfaceSettings->views[i].camOffset.y;
-            newView.append_attribute("camOffset.z") = interfaceSettings->views[i].camOffset.z;
-            newView.append_attribute("performXY") = interfaceSettings->views[i].performXY;
-            newView.append_attribute("vLeft") = interfaceSettings->views[i].vLeft;
-            newView.append_attribute("vRight") = interfaceSettings->views[i].vRight;
-            newView.append_attribute("vTop") = interfaceSettings->views[i].vTop;
-            newView.append_attribute("vBottom") = interfaceSettings->views[i].vBottom;
+            newView.append_attribute("name") = v.name.c_str();
+            newView.append_attribute("projMode") = v.projMode;
+            newView.append_attribute("camAngleOx") = v.camAngleOx;
+            newView.append_attribute("camAngleOy") = v.camAngleOy;
+            newView.append_attribute("camAngleOz") = v.camAngleOz;
+            newView.append_attribute("camDist") = v.camDist;
+            newView.append_attribute("lightAngleOx") = v.lightAngleOx;
+            newView.append_attribute("lightAngleOy") = v.lightAngleOy;
+            newView.append_attribute("camOffset.x") = v.camOffset.x;
+            newView.append_attribute("camOffset.y") = v.camOffset.y;
+            newView.append_attribute("camOffset.z") = v.camOffset.z;
+            newView.append_attribute("performXY") = v.performXY;
+            newView.append_attribute("vLeft") = v.vLeft;
+            newView.append_attribute("vRight") = v.vRight;
+            newView.append_attribute("vTop") = v.vTop;
+            newView.append_attribute("vBottom") = v.vBottom;
+            auto clippingNode = newView.append_child("Clipping");
+            clippingNode.append_attribute("enabled")=v.enableClipping;
+            clippingNode.append_attribute("x")=v.clipPlane.x;
+            clippingNode.append_attribute("y")=v.clipPlane.y;
+            clippingNode.append_attribute("z")=v.clipPlane.z;
+            clippingNode.append_attribute("d")=v.clipPlane.d;
         }
     }
 
