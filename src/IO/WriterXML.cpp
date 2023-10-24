@@ -36,8 +36,10 @@ using namespace pugi;
 
 xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
     // Check whether we do a old to new format update
-    // If yes, move old scheme to new scheme by adding the root node
+    // (CLI doesn't create save files from scratch, to keep interface settings)
+    // If yes, move old scheme to new scheme by adding the root node "SimulationEnvironment"
     if(updateRootNode){
+        //Determine if original file is in old format
         bool oldFormatUsed = false;
         auto rootNode = saveDoc.document_element();
         if(!saveDoc.child("SimulationEnvironment")){
@@ -46,8 +48,9 @@ xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
                 oldFormatUsed = true;
             }
         }
-
-        if(oldFormatUsed && !useOldXMLFormat){
+        // If in old format and an update is needed, create SimulationEnvironment root and copy old children
+        // (that were originally at root level)
+        if(oldFormatUsed && !useOldXMLFormat) {
             xml_document newDoc;
             auto newHead = newDoc.append_child("SimulationEnvironment");
             newDoc.append_attribute("type") = "molflow";
@@ -62,8 +65,8 @@ xml_node XmlWriter::GetRootNode(xml_document &saveDoc) {
 
     xml_node rootNode;
     if (useOldXMLFormat) {
-        rootNode = saveDoc.root();
-    } else {
+        rootNode = saveDoc.root(); //If we keep old format, just return the original root (downgrade not supported)
+    } else { //If new format should be used
         if(updateRootNode) {
             rootNode = saveDoc.document_element();
             rootNode = saveDoc.child("SimulationEnvironment");

@@ -242,19 +242,19 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
         v->value = sumArea;
     }
     else if (iequals(v->varName, "QCONST")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->varName, "QCONST_N")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.finalOutgassingRate;
     }
     else if (iequals(v->varName, "NTOT")) {
-        if (worker->needsReload || !worker->model->initialized) {
+        if (worker->needsReload) {
             throw Error("Recalc. outgassing in global settings");
         }
         v->value = worker->model->sp.totalDesorbedMolecules;

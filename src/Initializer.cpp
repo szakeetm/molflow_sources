@@ -442,7 +442,7 @@ std::string Initializer::getAutosaveFile(SettingsIO::CLIArguments& parsedArgs) {
 */
 void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> model) {
 
-    model->initialized = false;
+    
 
     try { //unti initSimModel will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
@@ -451,6 +451,7 @@ void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> mod
         throw Error("Couldn't lock model mutex");
     }
 
+    model->initialized = false;
     model->structures.resize(model->sh.nbSuper); //Create structures
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {

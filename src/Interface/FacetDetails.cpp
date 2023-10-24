@@ -537,7 +537,13 @@ void FacetDetails::UpdateTable() {
 	for (int i = 0; i < selectedFacets.size();i++) {
 		InterfaceFacet* f = interfGeom->GetFacet(selectedFacets[i]);
 		for (size_t j = 0; j < shownColIds.size(); j++) {
-			auto cellValue = FormatCell(selectedFacets[i], f, shownColIds[j]);
+			std::string cellValue;
+			try {
+				cellValue = FormatCell(selectedFacets[i], f, shownColIds[j]);
+			}
+			catch (Error& err) {
+				cellValue = err.what();
+			}
 			facetListD->SetValueAt(j, i, cellValue);
 		}
 	}

@@ -330,7 +330,7 @@ void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std
     GLProgress_CLI prg("");
     prg.SetMessage(fmt::format("Writing file {} ...", fullOutFile), true); //Force new line
     prg.noProgress = simManager.noProgress;
-    FlowIO::XmlWriter writer(false, true);
+    FlowIO::XmlWriter writer(false, true); //Update old XML to new by default
     writer.interfaceSettings = std::make_unique<MolflowInterfaceSettings>(persistentUserSettings);
     pugi::xml_document newDoc;
     newDoc.load_file(fullOutFile.c_str());
