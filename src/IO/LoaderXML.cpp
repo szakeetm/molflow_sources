@@ -530,7 +530,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             }
 
-            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m, nbMoments),false);
+            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m+1, nbMoments),false);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();
