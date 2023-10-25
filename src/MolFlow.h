@@ -119,9 +119,10 @@ public:
 	void EmptyGeometry() override;
 	void CrashHandler(const std::exception &e);
     int  FrameMove() override;
+	
+	void SelectViewer(int s) override; //to call Molflow-specialized Viewer3dSettings
 
 protected:
-	void LoadParameterCatalog();
     int  OneTimeSceneInit() override;
     int  RestoreDeviceObjects() override;
 	int  InvalidateDeviceObjects() override;

@@ -1,3 +1,4 @@
+#include "MolFlow.h"
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
@@ -1290,7 +1291,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 
 
 		// Default initialisation
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->SetWorker(&worker);
 
 		//UpdateModelParams();
@@ -1314,14 +1315,14 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckIsolatedVertex();
 		// Set up view
 		// Default
-		viewer[0]->SetProjection(ProjectionMode::Orthographic);
-		viewer[0]->ToFrontView();
-		viewer[1]->SetProjection(ProjectionMode::Orthographic);
-		viewer[1]->ToTopView();
-		viewer[2]->SetProjection(ProjectionMode::Orthographic);
-		viewer[2]->ToSideView();
-		viewer[3]->SetProjection(ProjectionMode::Perspective);
-		viewer[3]->ToFrontView();
+		viewers[0]->SetProjection(ProjectionMode::Orthographic);
+		viewers[0]->ToFrontView();
+		viewers[1]->SetProjection(ProjectionMode::Orthographic);
+		viewers[1]->ToTopView();
+		viewers[2]->SetProjection(ProjectionMode::Orthographic);
+		viewers[2]->ToSideView();
+		viewers[3]->SetProjection(ProjectionMode::Perspective);
+		viewers[3]->ToFrontView();
 		SelectViewer(0);
 
 		ResetAutoSaveTimer();
@@ -1392,7 +1393,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		InterfaceGeometry* interfGeom = worker.GetGeometry();
 
 		//Increase BB
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->SetWorker(&worker);
 
 		//UpdateModelParams();
@@ -1417,14 +1418,14 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		/*
 		// Set up view
 		// Default
-		viewer[0]->SetProjection(ProjectionMode::Orthographic);
-		viewer[0]->ToFrontView();
-		viewer[1]->SetProjection(ProjectionMode::Orthographic);
-		viewer[1]->ToTopView();
-		viewer[2]->SetProjection(ProjectionMode::Orthographic);
-		viewer[2]->ToSideView();
-		viewer[3]->SetProjection(ProjectionMode::Perspective);
-		viewer[3]->ToFrontView();
+		viewers[0]->SetProjection(ProjectionMode::Orthographic);
+		viewers[0]->ToFrontView();
+		viewers[1]->SetProjection(ProjectionMode::Orthographic);
+		viewers[1]->ToTopView();
+		viewers[2]->SetProjection(ProjectionMode::Orthographic);
+		viewers[2]->ToSideView();
+		viewers[3]->SetProjection(ProjectionMode::Perspective);
+		viewers[3]->ToFrontView();
 		SelectViewer(0);
 		*/
 		RefreshPlotterCombos();
@@ -1571,7 +1572,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
 				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewer);
+				textureScaling->Display(&worker, viewers);
 			}
 			break;
 
@@ -1818,14 +1819,13 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			if (!viewer3DSettings)	viewer3DSettings = new Viewer3DSettings();
 			viewer3DSettings->SetVisible(!viewer3DSettings->IsVisible());
 			viewer3DSettings->Reposition();
-			viewer3DSettings->Refresh(interfGeom, viewer[curViewer]);
-
+			viewer3DSettings->Refresh(interfGeom, viewers[curViewer]);
 		}
 		else if (src == textureScalingBtn) {
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
 				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewer);
+				textureScaling->Display(&worker, viewers);
 			}
 			else {
 				textureScaling->SetVisible(false);
@@ -1868,6 +1868,12 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		//GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
+}
+
+void MolFlow::SelectViewer(int s)
+{
+	Interface::SelectViewer(s);
+	if (viewer3DSettings && viewer3DSettings->IsVisible()) viewer3DSettings->Refresh(worker.GetGeometry(),viewers[curViewer]);
 }
 
 void MolFlow::BuildPipe(double ratio, int steps) {
@@ -1915,7 +1921,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewer)
+	for (auto& view : viewers)
 		view->SetWorker(&worker);
 
 	//UpdateModelParams();
@@ -1982,7 +1988,7 @@ void MolFlow::EmptyGeometry() {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewer)
+	for (auto& view : viewers)
 		view->SetWorker(&worker);
 
 	//UpdateModelParams();
@@ -2041,71 +2047,71 @@ void MolFlow::LoadConfig() {
 		MolflowGeometry* interfGeom = worker.GetMolflowGeometry();
 
 		file.ReadKeyword("showRules"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showRule = file.ReadInt();
 		file.ReadKeyword("showNormals"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showNormal = file.ReadInt();
 		file.ReadKeyword("showUV"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showUV = file.ReadInt();
 		file.ReadKeyword("showLines"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showLine = file.ReadInt();
 		file.ReadKeyword("showLeaks"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showLeak = file.ReadInt();
 		file.ReadKeyword("showHits"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showHit = file.ReadInt();
 		file.ReadKeyword("showVolume"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showVolume = file.ReadInt();
 		file.ReadKeyword("showTexture"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showTexture = file.ReadInt();
 		file.ReadKeyword("showFacetId"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showFacetId = file.ReadInt();
 		file.ReadKeyword("showFilter"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showFilter = file.ReadInt();
 		file.ReadKeyword("showIndices"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showIndex = file.ReadInt();
 		file.ReadKeyword("showVertices"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showVertexId = file.ReadInt();
 		file.ReadKeyword("showMode"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->volumeRenderMode = static_cast<VolumeRenderMode>(file.ReadInt());
 		file.ReadKeyword("showMesh"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showMesh = file.ReadInt();
 		file.ReadKeyword("showHidden"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showHiddenFacet = file.ReadInt();
 		file.ReadKeyword("showHiddenVertex"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showHiddenVertex = file.ReadInt();
 		file.ReadKeyword("showTimeOverlay"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showTime = file.ReadInt();
 		file.ReadKeyword("texColormap"); file.ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			//viewer[i]->showColormap = 
+			//viewers[i]->showColormap = 
 			file.ReadInt();
 		file.ReadKeyword("translation"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->transStep = file.ReadDouble();
 		file.ReadKeyword("dispNumLines"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->dispNumHits = file.ReadSizeT();
 		file.ReadKeyword("dispNumLeaks"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->dispNumLeaks = file.ReadSizeT();
 		file.ReadKeyword("dirShow"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showDir = file.ReadInt();
 		file.ReadKeyword("dirNorme"); file.ReadKeyword(":");
 		interfGeom->SetNormeRatio((float)file.ReadDouble());
@@ -2114,7 +2120,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("dirCenter"); file.ReadKeyword(":");
 		interfGeom->SetCenterNorme(file.ReadInt());
 		file.ReadKeyword("angle"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->angleStep = file.ReadDouble();
 		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
 		interfGeom->texAutoScale = file.ReadInt();
@@ -2181,7 +2187,7 @@ void MolFlow::LoadConfig() {
 		if (isOpen) shortcutPanel->Open();
 		else shortcutPanel->Close();
 		file.ReadKeyword("hideLot"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->hideLot = file.ReadInt();
 		file.ReadKeyword("textureLogScale"); file.ReadKeyword(":");
 		interfGeom->texLogScale = file.ReadInt();
@@ -2194,7 +2200,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("useOldXMLFormat"); file.ReadKeyword(":");
 		useOldXMLFormat = file.ReadInt();
 		file.ReadKeyword("showTP"); file.ReadKeyword(":");
-		for (auto& view : viewer)
+		for (auto& view : viewers)
 			view->showTP = file.ReadInt();
 	}
 	catch (...) {
@@ -2211,7 +2217,7 @@ void MolFlow::LoadConfig() {
 	file.Write(name);                      \
 	file.Write(":");                       \
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
-	file.Write(viewer[i]->var," ");   \
+	file.Write(viewers[i]->var," ");   \
 	file.Write("\n");                      \
 }
 
@@ -2220,7 +2226,7 @@ void MolFlow::LoadConfig() {
 	file.Write(name);                      \
 	file.Write(":");                       \
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
-	file.Write(viewer[i]->var," ");\
+	file.Write(viewers[i]->var," ");\
 	file.Write("\n");                      \
 }
 
