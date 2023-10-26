@@ -17,8 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _VIEWER3DSETTINGSH_
-#define _VIEWER3DSETTINGSH_
+#pragma once
 
 #include "GLApp/GLWindow.h"
 class GLButton;
@@ -33,7 +32,6 @@ class GeometryViewer;
 class Viewer3DSettings : public GLWindow {
 
 public:
-
   // Construction
   Viewer3DSettings();
 
@@ -46,32 +44,31 @@ public:
 
 private:
 
-  InterfaceGeometry       *interfGeom;
-  GeometryViewer *viewer;
+  InterfaceGeometry*	interfGeom;
+  GeometryViewer*		viewer;
 
-  GLTitledPanel *panel;
-  GLCombo       *volumeRenderModeCombo;
-  GLTextField   *traStepText;
-  GLTextField   *angStepText;
-  GLTextField   *dispNumHits;
-  GLTextField   *dispNumLeaks;
-  GLToggle      *hiddenEdge;
-  GLToggle      *hiddenVertex;
-  GLToggle      *showMesh;
-  GLToggle      *dirShowdirToggle;
-  GLToggle		*showTPtoggle;
-  GLToggle      *showTimeToggle;
-  GLToggle      *dirNormalizeToggle;
-  GLToggle      *dirCenterToggle;
-  GLToggle		*antiAliasing;
-  GLToggle		*bigDots;
-  GLToggle		*hideLotselected;
-  GLTextField   *dirNormeText;
-  GLTextField   *hideLotText;
+  GLTitledPanel*	panel;
+  GLCombo*			volumeRenderModeCombo;
+  GLTextField*		traStepText;
+  GLTextField*		angStepText;
+  GLTextField*		dispNumHits;
+  GLTextField*		dispNumLeaks;
+  GLToggle*			hiddenEdge;
+  GLToggle*			hiddenVertex;
+  GLToggle*			showMesh;
+  GLToggle*			dirShowdirToggle;
+  GLToggle*			showTPtoggle;
+  GLToggle*			showTimeToggle;
+  GLToggle*			dirNormalizeToggle;
+  GLToggle*			dirCenterToggle;
+  GLToggle*			antiAliasing;
+  GLToggle*			bigDots;
+  GLToggle*			hideLotselected;
+  GLTextField*		dirNormeText;
+  GLTextField*		hideLotText;
+  GLButton*			crossSectionButton;
 
   GLButton    *applyButton;
   GLButton    *cancelButton;
 
 };
-
-#endif /* _VIEWER3DSETTINGSH_ */

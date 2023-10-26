@@ -274,7 +274,15 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         v.vRight = newView.attribute("vRight").as_double();
         v.vTop = newView.attribute("vTop").as_double();
         v.vBottom = newView.attribute("vBottom").as_double();
-        
+
+        auto clippingNode = newView.child("Clipping");
+        if (clippingNode) { //Introduced in Molflow 2.9.17 beta
+            v.enableClipping = clippingNode.attribute("enabled").as_bool();
+            v.clipPlane.a = clippingNode.attribute("a").as_double();
+            v.clipPlane.b = clippingNode.attribute("b").as_double();
+            v.clipPlane.c = clippingNode.attribute("c").as_double();
+            v.clipPlane.d = clippingNode.attribute("d").as_double();
+        }        
         interfaceSettings->views.push_back(std::move(v));
     }
 
@@ -522,7 +530,7 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                 }
             }
 
-            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m, nbMoments),false);
+            prg.SetMessage(fmt::format("Loading facet results [moment {}/{}]...", m+1, nbMoments),false);
             xml_node facetResultsNode = newMoment.child("FacetResults");
             for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
                 int facetId = newFacetResult.attribute("id").as_int();

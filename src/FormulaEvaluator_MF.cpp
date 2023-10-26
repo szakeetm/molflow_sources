@@ -92,8 +92,9 @@ bool FormulaEvaluator_MF::EvaluateVariable(std::list<Variable>::iterator v, cons
                 auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
                 if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment-1].time;
                 else time = mfModel->sp.latestMoment;
-                if (worker->needsReload) {
-                    throw Error(fmt::format("\"T{}\": Model not synchronized.",idx));
+                if (!worker->model->initialized) {
+                    //Don't dereference facets, maybe they werent' yet passed to model
+                    throw Error(fmt::format("Evaluating potentially time-dependent \"T{}\" but model not yet synchronized.",idx));
                 }
                 auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx - 1]);
                 v->value = mfModel->GetTemperatureAt(mfFacet.get(), time);

@@ -321,8 +321,9 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
 			if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment-1].time;
 			else time = mfModel->sp.latestMoment;
-			if (worker->needsReload) {
-				throw Error("Model not synchronized.");
+			if (worker->needsReload || !worker->model->initialized) {
+				//Don't dereference facets, maybe they werent' yet passed to model
+				throw Error(fmt::format("Evaluating time-dependent sticking of facet {} but model not yet synchronized.", idx+1));
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetStickingAt(mfFacet.get(), time));
@@ -337,8 +338,9 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
 			if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment-1].time;
 			else time = mfModel->sp.latestMoment;
-			if (worker->needsReload) {
-				throw Error("Model not synchronized.");
+			if (worker->needsReload || !worker->model->initialized) {
+				//Don't dereference facets, maybe they werent' yet passed to model
+				throw Error(fmt::format("Evaluating time-dependent opacity of facet {} but model not yet synchronized.", idx + 1));
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetOpacityAt(mfFacet.get(), time));
@@ -387,8 +389,9 @@ std::string FacetDetails::FormatCell(size_t idx, InterfaceFacet* f, size_t mode)
 			auto mfModel = std::static_pointer_cast<MolflowSimulationModel>(worker->model);
 			if (worker->displayedMoment != 0) time = worker->interfaceMomentCache[worker->displayedMoment-1].time;
 			else time = mfModel->sp.latestMoment;
-			if (worker->needsReload) {
-				throw Error("Model not synchronized.");
+			if (worker->needsReload || !worker->model->initialized) {
+				//Don't dereference facets, maybe they werent' yet passed to model
+				throw Error(fmt::format("Evaluating time-dependent temperature of facet {} but model not yet synchronized.", idx + 1));
 			}
 			auto mfFacet = std::static_pointer_cast<MolflowSimFacet>(worker->model->facets[idx]);
 			sprintf(ret, "%g", mfModel->GetTemperatureAt(mfFacet.get(), time));
