@@ -62,7 +62,7 @@ dnf install epel-release
 In our test setup (Windows Subsystem for Linux), we used X-Win32 window server, which required setting the display and installing mesa drivers:
 ```
 export DISPLAY=0:0
-dnf install mesa-dri-drivers
+dnf install mesa-dri-drivers dbus-x11
 ```
 
 ### CentOS 8
