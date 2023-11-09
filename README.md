@@ -10,9 +10,9 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 
 # Cloning the project (all OS)
 * Clone the Molflow project with `git clone`
-* Go into the `Molflow` directory and:
-  * `git submodule init`
-  * `git submodule update`
+* Go into the `molflow` directory and initialize the `src_shared` submodule
+* Update the `src_shared` submodule
+
 ```
 git clone https://gitlab.cern.ch/molflow_synrad/molflow.git
 cd molflow
