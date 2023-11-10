@@ -78,6 +78,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/HistogramPlotter.h"
 #include "FormulaEvaluator_MF.h"
 
+#include "../src_shared/Interface/ImguiWindow.h"
+
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
@@ -210,6 +212,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	try {
+		mApp->imWnd = new ImguiWindow(mApp);
+		mApp->imWnd->init();
 		mApp->Run();
 	}
 	catch (const std::exception& e) {
