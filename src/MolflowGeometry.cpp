@@ -932,7 +932,7 @@ void MolflowGeometry::LoadGEO(FileReader& file, GLProgress_Abstract& prg, int* v
 			sprintf(errMsg, "Facet %d has only %d vertices. ", i + 1, nbI);
 			throw Error(errMsg);
 		}
-		prg.SetProgress((float)i / sh.nbFacet);
+		prg.SetProgress((double)i / (double)sh.nbFacet);
 		facets[i] = new InterfaceFacet(nbI);
 		facets[i]->LoadGEO(file, *version, sh.nbVertex);
 		file.ReadKeyword("}");
@@ -1200,7 +1200,7 @@ void MolflowGeometry::LoadSYN(FileReader& file, GLProgress_Abstract& prg, int* v
 			sprintf(errMsg, "Facet %d has only %d vertices. ", i + 1, nbI);
 			throw Error(errMsg);
 		}
-		prg.SetProgress((float)i / sh.nbFacet);
+		prg.SetProgress((double)i / (double)sh.nbFacet);
 		facets[i] = new InterfaceFacet(nbI);
 		facets[i]->LoadSYN_facet(file, *version, sh.nbVertex);
 		file.ReadKeyword("}");
