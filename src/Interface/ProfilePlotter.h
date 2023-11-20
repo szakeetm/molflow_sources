@@ -81,7 +81,7 @@ private:
     GLButton* removeButton;
     GLButton* removeAllButton;
     GLTextField* formulaText;
-    GLButton* formulaBtn;
+    GLButton* plotExpressionBtn;
     GLToggle* logYToggle;
     GLToggle* correctForGas;
 

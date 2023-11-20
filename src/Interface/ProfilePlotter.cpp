@@ -142,8 +142,8 @@ ProfilePlotter::ProfilePlotter(Worker* work) :GLWindow() , views{}{
 	formulaText->SetEditable(true);
 	Add(formulaText);
 
-	formulaBtn = new GLButton(0, "-> Plot expression");
-	Add(formulaBtn);
+	plotExpressionBtn = new GLButton(0, "-> Plot expression");
+	Add(plotExpressionBtn);
 
 	// Center dialog
 	int wS, hS;
@@ -191,7 +191,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	selectPlottedButton->SetBounds(w-130,h-70,120,19);
 
     formulaText->SetBounds(7, h - 45, 350, 19);
-	formulaBtn->SetBounds(360, h - 45, 120, 19);;
+	plotExpressionBtn->SetBounds(360, h - 45, 120, 19);;
 	dismissButton->SetBounds(w - 100, h - 45, 90, 19);
 
 	GLWindow::SetBounds(x, y, w, h);
@@ -675,7 +675,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			Reset();
             applyFacetHighlighting();
 		}
-		else if (src == formulaBtn) {
+		else if (src == plotExpressionBtn) {
 
 			plot();
 		}
