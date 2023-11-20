@@ -63,7 +63,6 @@ public:
 private:
     int remView(int facet);
     void refreshViews();
-    void PlotUserExpression();
     void applyFacetHighlighting() const;
 
     Worker* worker;
