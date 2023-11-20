@@ -279,7 +279,7 @@ void ProfilePlotter::Update(float appTime, bool force) {
 /**
 * \brief Creates a plot from the expression given in the textbox of the form f(x)=EXPRESSION (e.g. 2*x+50)
 */
-void ProfilePlotter::plot() {
+void ProfilePlotter::PlotUserExpression() {
 
 	GLFormula formula;
 	formula.SetExpression(formulaText->GetText().c_str());
@@ -677,7 +677,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == plotExpressionBtn) {
 
-			plot();
+			PlotUserExpression();
 		}
 		else if(src == fixedLineWidthButton) {
             int linW;
