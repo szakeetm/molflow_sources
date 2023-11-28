@@ -17,8 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _TEXTURESETTINGSH_
-#define _TEXTURESETTINGSH_
+#pragma once
 
 #include "GLApp/GLWindow.h"
 class GLButton;
@@ -37,10 +36,10 @@ class TextureScaling : public GLWindow {
 public:
 
 	// Construction
-	TextureScaling();
+	TextureScaling(Worker *worker_, GeometryViewer **viewers_);
 
 	// Component methods
-	void Display(Worker *w,GeometryViewer **v);
+	void Display();
 	void Update();
 
 	// Implementation
@@ -48,27 +47,25 @@ public:
 
 private:
 
-	void UpdateSize();
+	void RecalcSwapSize();
 
-	Worker         *worker;
-	MolflowGeometry       *interfGeom;
-	GeometryViewer **viewers;
+	Worker*				worker;
+	MolflowGeometry*	interfGeom;
+	GeometryViewer**	viewers;
 
-	GLToggle      *texAutoScale;
-    GLCombo       *includeConstantFlow;
-	GLTextField   *texMinText;
-	GLTextField   *texMaxText;
-	GLLabel       *texCMinText;
-	GLLabel       *texCMaxText;
-	GLToggle      *colormapBtn;
+	GLToggle      *autoScaleToggle;
+    GLCombo       *autoscaleTimedepModeCombo;
+	GLTextField   *manualScaleMinText;
+	GLTextField   *manualScaleMaxText;
+	GLLabel       *geomMinLabel;
+	GLLabel       *geomMaxLabel;
+	GLToggle      *useColorToggle;
 	GLTextField   *swapText;
 	GLGradient    *gradient;
-	GLToggle      *logBtn;
-	GLButton    *setCurrentButton;
+	GLToggle      *logarithmicToggle;
 
-	GLCombo       *modeCombo;
+	GLButton    *setToCurrentButton;
+	GLCombo     *physicsModeCombo;
 	GLButton    *updateButton;
 
 };
-
-#endif /* _TEXTURESETTINGSH_ */

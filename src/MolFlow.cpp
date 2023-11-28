@@ -1571,8 +1571,8 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		case MENU_EDIT_TSCALING:
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
-				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewers);
+				textureScaling = new TextureScaling(&worker, viewers);
+				textureScaling->Display();
 			}
 			break;
 
@@ -1824,8 +1824,8 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		else if (src == textureScalingBtn) {
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
-				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewers);
+				textureScaling = new TextureScaling(&worker, viewers);
+				textureScaling->Display();
 			}
 			else {
 				textureScaling->SetVisible(false);
