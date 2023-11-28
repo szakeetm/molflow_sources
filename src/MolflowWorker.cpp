@@ -1181,14 +1181,14 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return model->sp.finalOutgassingRate / globalStatCache.globalHits.nbDesorbed;
+		return model->sp.finalOutgassingRate / (double)globalStatCache.globalHits.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
 		//For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
 		return (model->sp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[moment - 1].window) /
-			globalStatCache.globalHits.nbDesorbed;
+			(double)globalStatCache.globalHits.nbDesorbed;
 	}
 }
 

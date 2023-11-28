@@ -63,7 +63,6 @@ public:
 private:
     int remView(int facet);
     void refreshViews();
-    void plot();
     void applyFacetHighlighting() const;
 
     Worker* worker;
@@ -81,7 +80,7 @@ private:
     GLButton* removeButton;
     GLButton* removeAllButton;
     GLTextField* formulaText;
-    GLButton* formulaBtn;
+    GLButton* plotExpressionBtn;
     GLToggle* logYToggle;
     GLToggle* correctForGas;
 

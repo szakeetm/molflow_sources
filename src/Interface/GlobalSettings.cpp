@@ -74,7 +74,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 	worker = w;
 	int windowWidth = 580;
-	int windowHeight = 600;
+	int windowHeight = 575;
 	SetMinimumSize(windowWidth, windowHeight);
 	SetResizable(true);
 
@@ -84,7 +84,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	SetIconfiable(true);
 
 	auto *settingsPanel = new GLTitledPanel("Program settings");
-	settingsPanel->SetBounds(5, 2, 270, 292);
+	settingsPanel->SetBounds(5, 2, 270, 267);
 	Add(settingsPanel);
 
 	auto *asLabel = new GLLabel("Autosave frequency (minutes):");
@@ -109,11 +109,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	chkCheckForUpdates = new GLToggle(0, "Check for updates at startup");
 	chkCheckForUpdates->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkCheckForUpdates);
-    programSettingsPosY+=checkboxHeight;
-
-	chkAutoUpdateFormulas = new GLToggle(0, "Auto refresh formulas");
-	chkAutoUpdateFormulas->SetBounds(15, programSettingsPosY, 160, 19);
-	settingsPanel->Add(chkAutoUpdateFormulas);
     programSettingsPosY+=checkboxHeight;
 
 	chkAntiAliasing = new GLToggle(0, "Anti-Aliasing");
@@ -147,7 +142,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 
 
 	auto *simuSettingsPanel = new GLTitledPanel("Simulation settings (current file)");
-	simuSettingsPanel->SetBounds(280, 2, 290, 292);
+	simuSettingsPanel->SetBounds(280, 2, 290, 267);
 	Add(simuSettingsPanel);
 
 	auto *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -215,7 +210,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(windowWidth / 2 - 65, 298, 130, 19);
+	applyButton->SetBounds(windowWidth / 2 - 65, 273, 130, 19);
 	Add(applyButton);
 
 	processPanel = new GLTitledPanel("Process control");
@@ -234,11 +229,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	sprintf(tmp, "Number of CPU cores:     %zd", mApp->numCPU);
 	coreLabel = new GLLabel(tmp);
 	processPanel->Add(coreLabel);
-
-    /*prioToggle = new GLToggle(0, "Enable High Priority mode (can cause GUI lag)");
-    prioToggle->SetBounds(170, windowHeight - 74, 240, 19);
-    prioToggle->SetThreadStates(0);
-    procPanel->Add(prioToggle);*/
 
 	subProcLabel = new GLLabel("Number of subprocesses:");
 	processPanel->Add(subProcLabel);
@@ -263,8 +253,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
     GLContainer::RestoreDeviceObjects();
 
 	lastUpdate = 0;
-	//for (size_t i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
-	//memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
 }
 
 /**
@@ -396,17 +384,17 @@ void GlobalSettings::UpdateOutgassing() {
 
 void GlobalSettings::ResizeProcessPanel(int windowWidth, int windowHeight) {
 
-	int processPanelHeight = windowHeight - 360;
-	processPanel->SetBounds(7, 334, windowWidth - 10, processPanelHeight);
+	int processPanelHeight = windowHeight - 332;
+	processPanel->SetBounds(7, 305, windowWidth - 15, processPanelHeight);
 	processPanel->SetCompBounds(processList, 4, 18, windowWidth - 20, processPanelHeight - 73);
 
 	processPanel->SetCompBounds(coreLabel,10, processPanelHeight - 50, 120, 19);
 	processPanel->SetCompBounds(subProcLabel,10, processPanelHeight - 25, 120, 19);
 	processPanel->SetCompBounds(nbProcText,135, processPanelHeight - 27, 30, 19);
 	processPanel->SetCompBounds(restartButton,170, processPanelHeight - 27, 150, 19);
-	processPanel->SetCompBounds(maxButton,windowWidth - 195, processPanelHeight - 27, 180, 19);
+	processPanel->SetCompBounds(maxButton,windowWidth - 195, processPanelHeight - 27, 175, 19);
 
-	processList->SetColumnWidth(4, windowWidth - 285);
+	processList->SetColumnWidth(4, windowWidth - 287);
 }
 
 void GlobalSettings::SetBounds(int x, int y, int width, int height) {

@@ -142,8 +142,8 @@ ProfilePlotter::ProfilePlotter(Worker* work) :GLWindow() , views{}{
 	formulaText->SetEditable(true);
 	Add(formulaText);
 
-	formulaBtn = new GLButton(0, "-> Plot expression");
-	Add(formulaBtn);
+	plotExpressionBtn = new GLButton(0, "-> Plot expression");
+	Add(plotExpressionBtn);
 
 	// Center dialog
 	int wS, hS;
@@ -191,7 +191,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	selectPlottedButton->SetBounds(w-130,h-70,120,19);
 
     formulaText->SetBounds(7, h - 45, 350, 19);
-	formulaBtn->SetBounds(360, h - 45, 120, 19);;
+	plotExpressionBtn->SetBounds(360, h - 45, 120, 19);;
 	dismissButton->SetBounds(w - 100, h - 45, 90, 19);
 
 	GLWindow::SetBounds(x, y, w, h);
@@ -273,78 +273,6 @@ void ProfilePlotter::Update(float appTime, bool force) {
 		lastUpdate = appTime;
 		return;
 	}
-
-}
-
-/**
-* \brief Creates a plot from the expression given in the textbox of the form f(x)=EXPRESSION (e.g. 2*x+50)
-*/
-void ProfilePlotter::plot() {
-
-	GLFormula formula;
-	formula.SetExpression(formulaText->GetText().c_str());
-	if (!formula.Parse()) {
-		GLMessageBox::Display(formula.GetParseErrorMsg().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-
-	size_t nbVar = formula.GetNbVariable();
-	if (nbVar == 0) {
-		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-	if (nbVar > 1) {
-		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-	auto xVariable = formula.GetVariableAt(0);
-	if (!iequals(xVariable->varName, "x")) {
-		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-
-	GLDataView *v;
-
-	// Check that view is not already added
-	bool found = false;
-	int i = 0;
-	while (i < nbView && !found) {
-		found = (views[i]->userData1 == -1);
-		if (!found) i++;
-	}
-
-	if (found) {
-		v = views[i];
-		v->SetName(formulaText->GetText().c_str());
-		v->Reset();
-	}
-	else {
-
-		if (nbView < 50) {
-			v = new GLDataView();
-			v->SetName(formulaText->GetText().c_str());
-			v->userData1 = -1;
-			chart->GetY1Axis()->AddDataView(v);
-			views[nbView] = v;
-			nbView++;
-		}
-		else {
-			return;
-		}
-	}
-
-	// Plot
-	for (i = 0; i < 1000; i++) {
-		double x = (double)i;
-		xVariable->value = x;
-		try {
-			v->Add(x, formula.Evaluate());
-		}
-		catch (...) {
-			continue; //Eval. error, but maybe for other x it is possible to evaluate (ex. div by zero)
-		}		
-	}
-	v->CommitChange();
 
 }
 
@@ -675,9 +603,10 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			Reset();
             applyFacetHighlighting();
 		}
-		else if (src == formulaBtn) {
+		else if (src == plotExpressionBtn) {
 
-			plot();
+			chart->PlotUserExpression(formulaText->GetText(),views,nbView);
+			refreshViews();
 		}
 		else if(src == fixedLineWidthButton) {
             int linW;
