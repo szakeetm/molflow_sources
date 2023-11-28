@@ -149,8 +149,6 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 
 	RestoreDeviceObjects();
 
-	interfGeom = NULL;
-
 }
 
 /**
