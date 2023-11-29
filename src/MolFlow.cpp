@@ -1347,6 +1347,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		ImRefresh();
 	}
 	catch (const std::exception& e) {
 
