@@ -230,7 +230,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 					{ //Scope to store XML tree
 						xml_document saveDoc;
 						FlowIO::XmlWriter writer(mApp->useOldXMLFormat, false);
-						writer.interfaceSettings = InterfaceSettingsToSimModel(model);
+						writer.interfaceSettings = InterfaceSettingsToWriterSettings(model);
 
 						if (saveSelected) {
 							writer.SaveGeometry(saveDoc, mf_model, prg, GetGeometry()->GetSelectedFacets());
@@ -746,7 +746,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 				SimModelToInterfaceGeom();
 				prg.SetMessage("Applying interface settings...");
 				try {
-					SimModelToInterfaceSettings(loader.interfaceSettings,prg);
+					LoaderSettingsToInterfaceSettings(loader.interfaceSettings,prg);
 				}
 				catch (std::exception& e) { //Moments overlap check fail?
 					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
@@ -849,9 +849,20 @@ void Worker::SimModelToInterfaceGeom() {
 	interfGeom->SetInterfaceFacets(model->facets, false,0,0);
 }
 
-void Worker::SimModelToInterfaceSettings(const std::unique_ptr<MolflowInterfaceSettings>& interfaceSettings, GLProgress_GUI& prg)
+void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInterfaceSettings>& interfaceSettings, GLProgress_GUI& prg)
 {
 	userMoments = interfaceSettings->userMoments; //Copy user moment strings
+
+	//Texture settings
+	for (int i = 0; i < 3; ++i) {
+		interfGeom->texture_limits[i] = interfaceSettings->textureLimits[i];
+	}
+	interfGeom->texAutoScale = interfaceSettings->texAutoScale;
+	interfGeom->texColormap = interfaceSettings->texColormap;
+	interfGeom->texLogScale = interfaceSettings->texLogScale;
+	interfGeom->textureMode = interfaceSettings->textureMode;
+	interfGeom->texAutoScaleIncludeConstantFlow = interfaceSettings->texAutoscaleIncludeConstantFlow;
+
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	interfaceMomentCache = mf_model->tdParams.moments; //Copy parsed moments
 	
@@ -1268,7 +1279,7 @@ void Worker::AnalyzeSYNfile(const char* fileName, size_t* nbFacet, size_t* nbTex
 	}
 }
 
-std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(std::shared_ptr<SimulationModel> model) {
+std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToWriterSettings(std::shared_ptr<SimulationModel> model) {
 	//Construct user settings that writer will use
 	auto result = std::make_unique<MolflowInterfaceSettings>();
 
@@ -1276,6 +1287,16 @@ std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToSimModel(st
 	std::static_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;
 	result->selections = mApp->selections;
 	result->views = mApp->views;
+
+	//Texture settings
+	for (int i = 0; i < 3; ++i) {
+		result->textureLimits[i] = interfGeom->texture_limits[i];
+	}
+	result->texAutoScale = interfGeom->texAutoScale;
+	result->texColormap = interfGeom->texColormap;
+	result->texLogScale = interfGeom->texLogScale;
+	result->textureMode = interfGeom->textureMode;
+	result->texAutoscaleIncludeConstantFlow = interfGeom->texAutoScaleIncludeConstantFlow;
 
 	auto nbFacet = interfGeom->GetNbFacet();
 	for (size_t facetId = 0; facetId < nbFacet; facetId++) {

@@ -251,4 +251,6 @@ public:
 
 struct MolflowInterfaceSettings : InterfaceSettings {
 	std::vector<UserMoment> userMoments;
+	TEXTURE_SCALE_TYPE textureLimits[3]; //auto- and manual scaling limits for textures
+	bool texAutoscaleIncludeConstantFlow=true;
 };
