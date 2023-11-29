@@ -175,11 +175,8 @@ void TextureScaling::Update() {
 
 	if(!IsVisible() || IsIconic()) return;  
 
-	char tmp[128];
-
 	//Set autoscale minimum label
-	double autoscaleMin = 0.0;
-    double autoscaleMax = 0.0;
+	double autoscaleMin, autoscaleMax;
 	if (interfGeom->texAutoScaleIncludeConstantFlow == 0) { //moments only
 		autoscaleMin = interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
 		autoscaleMax = interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
@@ -198,6 +195,7 @@ void TextureScaling::Update() {
 	}
 
 	//Set current geometry limits
+	char tmp[128];
 	sprintf(tmp,"%.3E",autoscaleMin);
 	geomMinLabel->SetText(tmp);
 	sprintf(tmp,"%.3E",autoscaleMax);
@@ -209,6 +207,7 @@ void TextureScaling::Update() {
 	logarithmicToggle->SetState(interfGeom->texLogScale);
 	gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 	if( !interfGeom->texAutoScale ) { // Set manual texture scaling
+		//In case of manual scaling, "steady state" variable used always
 		gradient->SetMinMax(
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state,
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state
