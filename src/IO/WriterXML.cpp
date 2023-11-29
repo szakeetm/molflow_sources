@@ -317,39 +317,40 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         }
     }
 
-    //Texture Min/Max
-    xml_node textureSettingsNode = interfNode.append_child("TextureSettings");
+	//Texture Min/Max
+	xml_node textureSettingsNode = interfNode.append_child("TextureSettings");
 
-    xml_node textureLimitsNode = textureSettingsNode.append_child("Limits");
-    xml_node autoNode = textureLimitsNode.append_child("Autoscale");
-    autoNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.steady_state;
-    autoNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.steady_state;
-    autoNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.steady_state;
-    autoNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.steady_state;
-    autoNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.steady_state;
-    autoNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.steady_state;
+	xml_node textureDisplayNode = textureSettingsNode.append_child("DisplaySettings");
+	textureDisplayNode.append_attribute("autoscale") = interfaceSettings->texAutoScale;
+	textureDisplayNode.append_attribute("autoscaleIncludesConstFlow") = interfaceSettings->texAutoscaleIncludeConstantFlow;
+	textureDisplayNode.append_attribute("color") = interfaceSettings->texColormap;
+	textureDisplayNode.append_attribute("logScale") = interfaceSettings->texLogScale;
+	textureDisplayNode.append_attribute("physicsMode") = interfaceSettings->textureMode;
+	{
+		xml_node textureLimitsNode = textureSettingsNode.append_child("Limits");
+		xml_node autoNode = textureLimitsNode.append_child("Autoscale");
+		autoNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.steady_state;
+		autoNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.steady_state;
+		autoNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.steady_state;
 
-    autoNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.moments_only;
-    autoNode.child("Moments_only").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.moments_only;
-    autoNode.child("Moments_only").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.moments_only;
-    autoNode.child("Moments_only").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.moments_only;
-    autoNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.moments_only;
-    autoNode.child("Moments_only").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.moments_only;
+		autoNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.moments_only;
+		autoNode.child("Moments_only").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.moments_only;
+		autoNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.moments_only;
 
-    xml_node manualNode = textureLimitsNode.append_child("Manual"); //Manual: only "steady state" variable used
-    manualNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].manual.min.steady_state;
-    manualNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].manual.max.steady_state;
-    manualNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].manual.min.steady_state;
-    manualNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].manual.max.steady_state;
-    manualNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].manual.min.steady_state;
-    manualNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].manual.max.steady_state;
-
-    xml_node textureDisplayNode = textureSettingsNode.append_child("Display");
-    textureDisplayNode.append_attribute("autoscale") = interfaceSettings->texAutoScale;
-    textureDisplayNode.append_attribute("inclConstFlow") = interfaceSettings->texAutoscaleIncludeConstantFlow;
-    textureDisplayNode.append_attribute("colorEnable") = interfaceSettings->texColormap;
-    textureDisplayNode.append_attribute("logScale") = interfaceSettings->texLogScale;
-    textureDisplayNode.append_attribute("mode") = interfaceSettings->textureMode;
+		xml_node manualNode = textureLimitsNode.append_child("Manual"); //Manual: only "steady state" variable used
+		manualNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].manual.max.steady_state;
+		manualNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].manual.max.steady_state;
+		manualNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].manual.max.steady_state;
+	}
 }
 
 // Save XML document to file
