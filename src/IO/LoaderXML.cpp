@@ -240,50 +240,24 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         interfaceSettings->selections.push_back(std::move(s));
     }
 
-    xml_node viewNode = interfNode.child("Views");
-    for (xml_node newView : viewNode.children("View")) {
-        CameraView v;
-        v.name = newView.attribute("name").as_string();
-        v.projMode = static_cast<ProjectionMode>(newView.attribute("projMode").as_int());
-        v.camAngleOx = newView.attribute("camAngleOx").as_double();
-        v.camAngleOy = newView.attribute("camAngleOy").as_double();
-        if (newView.attribute("camAngleOz")) {
-            v.camAngleOz = newView.attribute("camAngleOz").as_double();
+    xml_node viewNode = interfNode.child("UserSavedViews");
+    if (!viewNode) { //try old format
+        for (xml_node newViewNode : interfNode.child("Views").children("View")) {
+            std::unique_ptr<CameraView> v = XmlToCameraView(newViewNode);
+            interfaceSettings->userViews.push_back(*v);
         }
-        else {
-            v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
+    }
+    else { //Views renamed to UserSavedViews and added ViewerCurrentViews in 2.9.17
+        for (xml_node newViewNode : viewNode.children("View")) {
+            std::unique_ptr<CameraView> v = XmlToCameraView(newViewNode);
+            interfaceSettings->userViews.push_back(*v);
         }
-        if (newView.attribute("lightAngleOx")) {
-            v.lightAngleOx = newView.attribute("lightAngleOx").as_double();
-        }
-        else {
-            v.lightAngleOx = 0.0;
-        }
-        if (newView.attribute("lightAngleOy")) {
-            v.lightAngleOy = newView.attribute("lightAngleOy").as_double();
-        }
-        else {
-            v.lightAngleOy = 0.0;
-        }
-        v.camDist = newView.attribute("camDist").as_double();
-        v.camOffset.x = newView.attribute("camOffset.x").as_double();
-        v.camOffset.y = newView.attribute("camOffset.y").as_double();
-        v.camOffset.z = newView.attribute("camOffset.z").as_double();
-        v.performXY = static_cast<CameraPlaneMode>(newView.attribute("performXY").as_int());
-        v.vLeft = newView.attribute("vLeft").as_double();
-        v.vRight = newView.attribute("vRight").as_double();
-        v.vTop = newView.attribute("vTop").as_double();
-        v.vBottom = newView.attribute("vBottom").as_double();
 
-        auto clippingNode = newView.child("Clipping");
-        if (clippingNode) { //Introduced in Molflow 2.9.17 beta
-            v.enableClipping = clippingNode.attribute("enabled").as_bool();
-            v.clipPlane.a = clippingNode.attribute("a").as_double();
-            v.clipPlane.b = clippingNode.attribute("b").as_double();
-            v.clipPlane.c = clippingNode.attribute("c").as_double();
-            v.clipPlane.d = clippingNode.attribute("d").as_double();
-        }        
-        interfaceSettings->views.push_back(std::move(v));
+        xml_node viewNode = interfNode.child("ViewerCurrentViews");
+        for (xml_node newViewNode : viewNode.children("View")) {
+            std::unique_ptr<CameraView> v = XmlToCameraView(newViewNode);
+            interfaceSettings->viewerCurrentViews.push_back(*v);
+        }
     }
 
     xml_node formulaNode = interfNode.child("Formulas");
@@ -1240,3 +1214,48 @@ void Loader::MoveFacetsToStructures(SimulationModel* loadModel) {
         }
     }
 }*/
+
+std::unique_ptr<CameraView> XmlLoader::XmlToCameraView(const xml_node& viewNode) {
+    CameraView v;
+    v.name = viewNode.attribute("name").as_string();
+    v.projMode = static_cast<ProjectionMode>(viewNode.attribute("projMode").as_int());
+    v.camAngleOx = viewNode.attribute("camAngleOx").as_double();
+    v.camAngleOy = viewNode.attribute("camAngleOy").as_double();
+    if (viewNode.attribute("camAngleOz")) {
+        v.camAngleOz = viewNode.attribute("camAngleOz").as_double();
+    }
+    else {
+        v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
+    }
+    if (viewNode.attribute("lightAngleOx")) {
+        v.lightAngleOx = viewNode.attribute("lightAngleOx").as_double();
+    }
+    else {
+        v.lightAngleOx = 0.0;
+    }
+    if (viewNode.attribute("lightAngleOy")) {
+        v.lightAngleOy = viewNode.attribute("lightAngleOy").as_double();
+    }
+    else {
+        v.lightAngleOy = 0.0;
+    }
+    v.camDist = viewNode.attribute("camDist").as_double();
+    v.camOffset.x = viewNode.attribute("camOffset.x").as_double();
+    v.camOffset.y = viewNode.attribute("camOffset.y").as_double();
+    v.camOffset.z = viewNode.attribute("camOffset.z").as_double();
+    v.performXY = static_cast<CameraPlaneMode>(viewNode.attribute("performXY").as_int());
+    v.vLeft = viewNode.attribute("vLeft").as_double();
+    v.vRight = viewNode.attribute("vRight").as_double();
+    v.vTop = viewNode.attribute("vTop").as_double();
+    v.vBottom = viewNode.attribute("vBottom").as_double();
+
+    auto clippingNode = viewNode.child("Clipping");
+    if (clippingNode) { //Introduced in Molflow 2.9.17 beta
+        v.enableClipping = clippingNode.attribute("enabled").as_bool();
+        v.clipPlane.a = clippingNode.attribute("a").as_double();
+        v.clipPlane.b = clippingNode.attribute("b").as_double();
+        v.clipPlane.c = clippingNode.attribute("c").as_double();
+        v.clipPlane.d = clippingNode.attribute("d").as_double();
+    }
+    return std::make_unique<CameraView>(v);
+}

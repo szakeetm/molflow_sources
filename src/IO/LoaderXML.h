@@ -33,6 +33,7 @@ struct Formulas;
 class GlobalSimuState;
 struct FacetInterfaceSetting;
 struct MolflowInterfaceSettings;
+struct CameraView;
 
 namespace FlowIO {
 
@@ -54,5 +55,6 @@ namespace FlowIO {
         static int
             LoadConvergenceValues(const std::string& inputFileName, const std::shared_ptr<Formulas> appFormulas, GLProgress_Abstract& prg);
         std::unique_ptr<MolflowInterfaceSettings> interfaceSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI };
+        std::unique_ptr<CameraView> XmlToCameraView(const pugi::xml_node& viewNode); //using unique pointer to avoid circular headers
     };
 }

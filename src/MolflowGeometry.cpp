@@ -2954,7 +2954,7 @@ void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> 
 		mApp->AddSelection(s);
 	}
 
-	for (const auto& newView : interfaceSettings.views) {
+	for (const auto& newView : interfaceSettings.userViews) {
 		mApp->AddView(newView);
 	}
 

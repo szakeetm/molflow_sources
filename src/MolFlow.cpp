@@ -1284,15 +1284,16 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		ClearAllSelections();
 		ClearAllViews();
 		ResetSimulation(false);
-
+		SetDefaultViews();
 		worker.LoadGeometry(filePath);
 
 		InterfaceGeometry* interfGeom = worker.GetGeometry();
 
 
 		// Default initialisation
-		for (auto& view : viewers)
+		for (auto& view : viewers) {
 			view->SetWorker(&worker);
+		}
 
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
@@ -1313,18 +1314,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckCollinear();
 		//interfGeom->CheckNonSimple();
 		interfGeom->CheckIsolatedVertex();
-		// Set up view
-		// Default
-		viewers[0]->SetProjection(ProjectionMode::Orthographic);
-		viewers[0]->ToFrontView();
-		viewers[1]->SetProjection(ProjectionMode::Orthographic);
-		viewers[1]->ToTopView();
-		viewers[2]->SetProjection(ProjectionMode::Orthographic);
-		viewers[2]->ToSideView();
-		viewers[3]->SetProjection(ProjectionMode::Perspective);
-		viewers[3]->ToFrontView();
-		SelectViewer(0);
-
+		
 		ResetAutoSaveTimer();
 		//UpdatePlotters();
 
@@ -1900,6 +1890,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	interfGeom->UpdateName(temp.str().c_str());
 
 	try {
+		SetDefaultViews();
 		interfGeom->BuildPipe(L, R, 0, step);
 		worker.MarkToReload();
 		//worker.CalcTotalOutgassing();
@@ -1921,8 +1912,9 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewers)
+	for (auto& view : viewers) {
 		view->SetWorker(&worker);
+	}
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
@@ -1972,6 +1964,7 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
+		SetDefaultViews();
 		interfGeom->EmptyGeometry();
 		//worker.CalcTotalOutgassing();
 		//default values
@@ -1988,8 +1981,9 @@ void MolFlow::EmptyGeometry() {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewers)
+	for (auto& view : viewers) {
 		view->SetWorker(&worker);
+	}
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);

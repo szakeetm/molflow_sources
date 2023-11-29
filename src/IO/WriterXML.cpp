@@ -30,6 +30,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation/MolflowSimFacet.h"
 #include "Simulation/MolflowSimGeom.h"
 #include "MolflowTypes.h"
+#include "GeometryTypes.h"
 
 using namespace FlowIO;
 using namespace pugi;
@@ -254,37 +255,26 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         }
     }
 
-    xml_node viewNode = interfNode.append_child("Views");
-    viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->views.size() : 0;
-    if (saveAllFacets) {
-        for (int i = 0; i < interfaceSettings->views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
-            const auto& v = interfaceSettings->views[i];
-            xml_node newView = viewNode.append_child("View");
-            newView.append_attribute("id") = i;
-            newView.append_attribute("name") = v.name.c_str();
-            newView.append_attribute("projMode") = v.projMode;
-            newView.append_attribute("camAngleOx") = v.camAngleOx;
-            newView.append_attribute("camAngleOy") = v.camAngleOy;
-            newView.append_attribute("camAngleOz") = v.camAngleOz;
-            newView.append_attribute("camDist") = v.camDist;
-            newView.append_attribute("lightAngleOx") = v.lightAngleOx;
-            newView.append_attribute("lightAngleOy") = v.lightAngleOy;
-            newView.append_attribute("camOffset.x") = v.camOffset.x;
-            newView.append_attribute("camOffset.y") = v.camOffset.y;
-            newView.append_attribute("camOffset.z") = v.camOffset.z;
-            newView.append_attribute("performXY") = v.performXY;
-            newView.append_attribute("vLeft") = v.vLeft;
-            newView.append_attribute("vRight") = v.vRight;
-            newView.append_attribute("vTop") = v.vTop;
-            newView.append_attribute("vBottom") = v.vBottom;
-            auto clippingNode = newView.append_child("Clipping");
-            clippingNode.append_attribute("enabled")=v.enableClipping;
-            clippingNode.append_attribute("a")=v.clipPlane.a;
-            clippingNode.append_attribute("b")=v.clipPlane.b;
-            clippingNode.append_attribute("c")=v.clipPlane.c;
-            clippingNode.append_attribute("d")=v.clipPlane.d;
-        }
-    }
+	if (saveAllFacets) { //don't save views when exporting part of the geometry (saveSelected)
+		xml_node viewNode = interfNode.append_child(useOldXMLFormat ? "Views" : "UserSavedViews"); // New name since 2.9.17
+		viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->userViews.size() : 0;
+
+		for (int i = 0; i < interfaceSettings->userViews.size(); i++) { 
+			const auto& v = interfaceSettings->userViews[i];
+			xml_node newView = viewNode.append_child("View");
+			newView.append_attribute("id") = i;
+			CameraViewToXml(v, newView);
+		}
+	}
+
+	if (saveAllFacets && !interfaceSettings->viewerCurrentViews.empty()) {
+		xml_node viewNode = interfNode.append_child("ViewerCurrentViews");
+
+		for (const auto& currentView : interfaceSettings->viewerCurrentViews) {
+			xml_node newView = viewNode.append_child("View");
+			CameraViewToXml(currentView, newView);
+		}
+	}
 
     xml_node formulaNode = interfNode.append_child("Formulas");
     formulaNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->userFormulas.size() : 0;
@@ -934,4 +924,29 @@ void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::v
         newConv.set_value(convText.str().c_str());
         formulaId++;
     }
+}
+
+void XmlWriter::CameraViewToXml(const CameraView& v, xml_node& targetViewNode) {
+    targetViewNode.append_attribute("name") = v.name.c_str();
+    targetViewNode.append_attribute("projMode") = v.projMode;
+    targetViewNode.append_attribute("camAngleOx") = v.camAngleOx;
+    targetViewNode.append_attribute("camAngleOy") = v.camAngleOy;
+    targetViewNode.append_attribute("camAngleOz") = v.camAngleOz;
+    targetViewNode.append_attribute("camDist") = v.camDist;
+    targetViewNode.append_attribute("lightAngleOx") = v.lightAngleOx;
+    targetViewNode.append_attribute("lightAngleOy") = v.lightAngleOy;
+    targetViewNode.append_attribute("camOffset.x") = v.camOffset.x;
+    targetViewNode.append_attribute("camOffset.y") = v.camOffset.y;
+    targetViewNode.append_attribute("camOffset.z") = v.camOffset.z;
+    targetViewNode.append_attribute("performXY") = v.performXY;
+    targetViewNode.append_attribute("vLeft") = v.vLeft;
+    targetViewNode.append_attribute("vRight") = v.vRight;
+    targetViewNode.append_attribute("vTop") = v.vTop;
+    targetViewNode.append_attribute("vBottom") = v.vBottom;
+    auto clippingNode = targetViewNode.append_child("Clipping");
+    clippingNode.append_attribute("enabled") = v.enableClipping;
+    clippingNode.append_attribute("a") = v.clipPlane.a;
+    clippingNode.append_attribute("b") = v.clipPlane.b;
+    clippingNode.append_attribute("c") = v.clipPlane.c;
+    clippingNode.append_attribute("d") = v.clipPlane.d;
 }

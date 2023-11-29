@@ -869,8 +869,11 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 	mApp->selections = interfaceSettings->selections;
 	mApp->RebuildSelectionMenus();
 
-	mApp->views = interfaceSettings->views;
+	mApp->views = interfaceSettings->userViews;
 	mApp->RebuildViewMenus();
+	for (int i = 0; i < std::min(interfaceSettings->viewerCurrentViews.size(),(size_t)MAX_VIEWER); i++) {
+		mApp->viewers[i]->SetCurrentView(interfaceSettings->viewerCurrentViews[i]);
+	}
 
 	for (auto formula : interfaceSettings->userFormulas) {
 		mApp->appFormulas->AddFormula(formula.name, formula.expression);
@@ -1286,7 +1289,12 @@ std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToWriterSetti
 	result->userMoments = this->userMoments;
 	std::static_pointer_cast<MolflowSimulationModel>(model)->tdParams.parameters = this->interfaceParameterCache;
 	result->selections = mApp->selections;
-	result->views = mApp->views;
+	result->userViews = mApp->views;
+	std::vector<CameraView> viewerCurrentViews;
+	for (int i = 0; i < MAX_VIEWER; i++) {
+		viewerCurrentViews.emplace_back(mApp->viewers[i]->GetCurrentView());
+	}
+	result->viewerCurrentViews = viewerCurrentViews;
 
 	//Texture settings
 	for (int i = 0; i < 3; ++i) {
