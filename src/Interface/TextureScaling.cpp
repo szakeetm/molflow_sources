@@ -308,8 +308,8 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
 			//Apply to window
-			manualScaleMinText->SetText(geomMaxLabel->GetText()); //Already formatted to .3f
-			manualScaleMaxText->SetText(geomMinLabel->GetText()); //Already formatted to .3f
+			manualScaleMinText->SetText(geomMinLabel->GetText()); //Already formatted to .3f
+			manualScaleMaxText->SetText(geomMaxLabel->GetText()); //Already formatted to .3f
 			autoScaleToggle->SetState(false);
 			autoscaleTimedepModeCombo->SetVisible(false);
 			interfGeom->texAutoScale=false;
