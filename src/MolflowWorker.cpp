@@ -871,8 +871,14 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 
 	mApp->views = interfaceSettings->userViews;
 	mApp->RebuildViewMenus();
-	for (int i = 0; i < std::min(interfaceSettings->viewerCurrentViews.size(),(size_t)MAX_VIEWER); i++) {
-		mApp->viewers[i]->SetCurrentView(interfaceSettings->viewerCurrentViews[i]);
+	for (int i = 0; i < MAX_VIEWER; i++) {
+		if (i < interfaceSettings->viewerCurrentViews.size()) {
+			//File contains last camera view, apply it
+			mApp->viewers[i]->SetCurrentView(interfaceSettings->viewerCurrentViews[i]);
+		}
+		else {
+			mApp->viewers[i]->AutoScale();
+		}
 	}
 
 	for (auto formula : interfaceSettings->userFormulas) {
