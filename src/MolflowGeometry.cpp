@@ -63,11 +63,7 @@ extern SynRad* mApp;
 * \brief Basic constructor that initializes a clean (none) geometry
 */
 MolflowGeometry::MolflowGeometry() {
-
-	texAutoScaleIncludeConstantFlow = true;
-
 	Clear(); //Contains resettexturelimits
-
 }
 
 /**
@@ -3065,4 +3061,28 @@ PhysicalValue InterfaceGeometry::GetPhysicalValue(InterfaceFacet* f, const Physi
 	}
 
 	return result;
+}
+
+std::tuple<double, double> MolflowGeometry::GetTextureAutoscaleMinMax() {
+	double autoscaleMin, autoscaleMax;
+	if (texAutoScaleMode == AutoscaleMomentsOnly) {
+		autoscaleMin = texture_limits[textureMode].autoscale.min.moments_only;
+		autoscaleMax = texture_limits[textureMode].autoscale.max.moments_only;
+	}
+	else if (texAutoScaleMode == AutoscaleMomentsAndConstFlow) {
+		autoscaleMin = std::min(
+			texture_limits[textureMode].autoscale.min.steady_state,
+			texture_limits[textureMode].autoscale.min.moments_only);
+		autoscaleMax = std::max(
+			texture_limits[textureMode].autoscale.max.steady_state,
+			texture_limits[textureMode].autoscale.max.moments_only);
+	}
+	else if (texAutoScaleMode == AutoscaleConstFlow) {
+		autoscaleMin = texture_limits[textureMode].autoscale.min.steady_state;
+		autoscaleMax = texture_limits[textureMode].autoscale.max.steady_state;
+	}
+	else {
+		throw Error("Unknown texture autoscale mode (enum index {})", static_cast<int>(texAutoScaleMode));
+	}
+	return { autoscaleMin, autoscaleMax };
 }

@@ -81,22 +81,7 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 			max = texture_limits[textureMode].manual.max.steady_state;
 		}
 		else { //autoscale
-			if (texAutoScaleIncludeConstantFlow == 0) { //moments only
-				min = texture_limits[textureMode].autoscale.min.moments_only;
-				max = texture_limits[textureMode].autoscale.max.moments_only;
-			}
-			else if (texAutoScaleIncludeConstantFlow == 1) { //moments and constant flow
-				min = std::min(
-					texture_limits[textureMode].autoscale.min.steady_state,
-					texture_limits[textureMode].autoscale.min.moments_only);
-				max = std::max(
-					texture_limits[textureMode].autoscale.max.steady_state,
-					texture_limits[textureMode].autoscale.max.moments_only);
-			}
-			else { // const. flow only
-				min = texture_limits[textureMode].autoscale.min.steady_state;
-				max = texture_limits[textureMode].autoscale.max.steady_state;
-			}
+			std::tie(min, max) = GetTextureAutoscaleMinMax();
 		}
 	}
 

@@ -322,7 +322,7 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
 
 	xml_node textureDisplayNode = textureSettingsNode.append_child("DisplaySettings");
 	textureDisplayNode.append_attribute("autoscale") = interfaceSettings->texAutoScale;
-	textureDisplayNode.append_attribute("autoscaleIncludesConstFlow") = interfaceSettings->texAutoscaleIncludeConstantFlow;
+	textureDisplayNode.append_attribute("autoscaleMode") = static_cast<int>(interfaceSettings->texAutoscaleMode);
 	textureDisplayNode.append_attribute("color") = interfaceSettings->texColormap;
 	textureDisplayNode.append_attribute("logScale") = interfaceSettings->texLogScale;
 	textureDisplayNode.append_attribute("physicsMode") = interfaceSettings->textureMode;

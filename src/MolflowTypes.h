@@ -199,6 +199,11 @@ TextureCell operator+(const TextureCell& lhs,const TextureCell& rhs); //non-memb
 	TEXTURE_MIN_MAX manual;
 	TEXTURE_MIN_MAX autoscale;
 };
+enum AutoScaleMode : int {
+	AutoscaleMomentsOnly,
+	AutoscaleMomentsAndConstFlow,
+	AutoscaleConstFlow
+};
 
 class AnglemapParams {
 public:

@@ -861,7 +861,7 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 	interfGeom->texColormap = interfaceSettings->texColormap;
 	interfGeom->texLogScale = interfaceSettings->texLogScale;
 	interfGeom->textureMode = interfaceSettings->textureMode;
-	interfGeom->texAutoScaleIncludeConstantFlow = interfaceSettings->texAutoscaleIncludeConstantFlow;
+	interfGeom->texAutoScaleMode = interfaceSettings->texAutoscaleMode;
 
 	auto mf_model = std::static_pointer_cast<MolflowSimulationModel>(model);
 	interfaceMomentCache = mf_model->tdParams.moments; //Copy parsed moments
@@ -1296,7 +1296,7 @@ std::unique_ptr<MolflowInterfaceSettings> Worker::InterfaceSettingsToWriterSetti
 	result->texColormap = interfGeom->texColormap;
 	result->texLogScale = interfGeom->texLogScale;
 	result->textureMode = interfGeom->textureMode;
-	result->texAutoscaleIncludeConstantFlow = interfGeom->texAutoScaleIncludeConstantFlow;
+	result->texAutoscaleMode = interfGeom->texAutoScaleMode;
 
 	auto nbFacet = interfGeom->GetNbFacet();
 	for (size_t facetId = 0; facetId < nbFacet; facetId++) {

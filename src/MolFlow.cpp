@@ -2125,7 +2125,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
 		interfGeom->texAutoScale = file.ReadInt();
 		file.ReadKeyword("autoScale_include_constant_flow"); file.ReadKeyword(":");
-		interfGeom->texAutoScaleIncludeConstantFlow = (short)file.ReadInt();
+		interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(file.ReadInt());
 
 		file.ReadKeyword("textures_min_pressure_all"); file.ReadKeyword(":");
 		interfGeom->texture_limits[0].autoscale.min.steady_state = file.ReadDouble();
@@ -2268,7 +2268,7 @@ void MolFlow::SaveConfig() {
 
 		WRITED("angle", angleStep);
 		file.Write("autoScale:"); file.Write(interfGeom->texAutoScale, "\n");
-		file.Write("autoScale_include_constant_flow:"); file.Write(interfGeom->texAutoScaleIncludeConstantFlow, "\n");
+		file.Write("autoScale_include_constant_flow:"); file.Write(static_cast<int>(interfGeom->texAutoScaleMode), "\n");
 
 		file.Write("textures_min_pressure_all:");
 		file.Write(interfGeom->texture_limits[0].autoscale.min.steady_state, "\n");

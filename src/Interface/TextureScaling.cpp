@@ -176,23 +176,7 @@ void TextureScaling::Update() {
 	if(!IsVisible() || IsIconic()) return;  
 
 	//Set autoscale minimum label
-	double autoscaleMin, autoscaleMax;
-	if (interfGeom->texAutoScaleIncludeConstantFlow == 0) { //moments only
-		autoscaleMin = interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
-		autoscaleMax = interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
-	}
-	else if (interfGeom->texAutoScaleIncludeConstantFlow == 1) { // moments and const flow
-		autoscaleMin = std::min(
-			interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state,
-			interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only);
-		autoscaleMax = std::max(
-			interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state,
-			interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only);
-	}
-	else { // const flow only
-		autoscaleMin = interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state;
-		autoscaleMax = interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state;
-	}
+	auto [autoscaleMin, autoscaleMax] = interfGeom->GetTextureAutoscaleMinMax();
 
 	//Set current geometry limits
 	char tmp[128];
@@ -203,7 +187,7 @@ void TextureScaling::Update() {
 
 	autoScaleToggle->SetState(interfGeom->texAutoScale);
 	autoscaleTimedepModeCombo->SetVisible(interfGeom->texAutoScale);
-	autoscaleTimedepModeCombo->SetSelectedIndex(interfGeom->texAutoScaleIncludeConstantFlow);
+	autoscaleTimedepModeCombo->SetSelectedIndex(static_cast<int>(interfGeom->texAutoScaleMode));
 	logarithmicToggle->SetState(interfGeom->texLogScale);
 	gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 	if( !interfGeom->texAutoScale ) { // Set manual texture scaling
@@ -275,7 +259,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
 			interfGeom->texAutoScale = autoScaleToggle->GetState();
-			interfGeom->texAutoScaleIncludeConstantFlow = autoscaleTimedepModeCombo->GetSelectedIndex();
+			interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
@@ -285,28 +269,11 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 
 		} else if (src==setToCurrentButton) {
 
-			double min, max;
-
-			if (interfGeom->texAutoScaleIncludeConstantFlow == 0) { //moments only
-				min = interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only;
-				max = interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only;
-			}
-			else if (interfGeom->texAutoScaleIncludeConstantFlow == 1) { // moments and const. flow
-				min = std::min(
-					interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state,
-					interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.moments_only);
-				max = std::max(
-					interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state,
-					interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.moments_only);
-			}
-			else { // const. flow only
-				min = interfGeom->texture_limits[interfGeom->textureMode].autoscale.min.steady_state;
-				max = interfGeom->texture_limits[interfGeom->textureMode].autoscale.max.steady_state;
-			}
+			auto [autoscaleMin, autoscaleMax] = interfGeom->GetTextureAutoscaleMinMax();
 
 			//Apply to geometry
-			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
-			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
+			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = autoscaleMin;
+			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = autoscaleMax;
 			//Apply to window
 			manualScaleMinText->SetText(geomMinLabel->GetText()); //Already formatted to .3f
 			manualScaleMaxText->SetText(geomMaxLabel->GetText()); //Already formatted to .3f
@@ -333,7 +300,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			worker->Update(0.0f);
 			Update();
 		} else if (src==this->autoscaleTimedepModeCombo) {
-			interfGeom->texAutoScaleIncludeConstantFlow = autoscaleTimedepModeCombo->GetSelectedIndex();
+			interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
 			worker->Update(0.0f);
 			Update();
 		} else if (src==logarithmicToggle) {

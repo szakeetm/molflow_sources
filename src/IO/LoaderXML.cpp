@@ -329,7 +329,7 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
 
 		xml_node textureDisplayNode = textureSettingsNode.child("DisplaySettings");
 		interfaceSettings->texAutoScale = textureDisplayNode.attribute("autoscale").as_bool();
-		interfaceSettings->texAutoscaleIncludeConstantFlow = textureDisplayNode.attribute("autoscaleIncludesConstFlow").as_bool();
+		interfaceSettings->texAutoscaleMode = static_cast<AutoScaleMode>(textureDisplayNode.attribute("autoscaleMode").as_int());
 		interfaceSettings->texColormap = textureDisplayNode.attribute("color").as_bool();
 		interfaceSettings->texLogScale = textureDisplayNode.attribute("logScale").as_bool();
 		interfaceSettings->textureMode = textureDisplayNode.attribute("physicsMode").as_int();
