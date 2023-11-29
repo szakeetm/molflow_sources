@@ -322,6 +322,43 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
                 interfaceSettings->convergencePlotterSettings.viewIds.push_back(view.attribute("formulaHash").as_int());
         }
     }
+
+    //Texture Min/Max
+    xml_node textureSettingsNode = interfNode.child("TextureSettings");
+	if (textureSettingsNode) { //Introduced in 2.9.17
+
+		xml_node textureLimitsNode = textureSettingsNode.child("Limits");
+		xml_node autoNode = textureLimitsNode.child("Autoscale");
+		interfaceSettings->textureLimits[0].autoscale.min.steady_state = autoNode.child("Constant_flow").child("Pressure").attribute("min").as_double();
+		interfaceSettings->textureLimits[0].autoscale.max.steady_state = autoNode.child("Constant_flow").child("Pressure").attribute("max").as_double();
+		interfaceSettings->textureLimits[1].autoscale.min.steady_state = autoNode.child("Constant_flow").child("Density").attribute("min").as_double();
+		interfaceSettings->textureLimits[1].autoscale.max.steady_state = autoNode.child("Constant_flow").child("Density").attribute("max").as_double();
+		interfaceSettings->textureLimits[2].autoscale.min.steady_state = autoNode.child("Constant_flow").child("Imp.rate").attribute("min").as_double();
+		interfaceSettings->textureLimits[2].autoscale.max.steady_state = autoNode.child("Constant_flow").child("Imp.rate").attribute("max").as_double();
+
+		interfaceSettings->textureLimits[0].autoscale.min.moments_only = autoNode.child("Moments_only").child("Pressure").attribute("min").as_double();
+		interfaceSettings->textureLimits[0].autoscale.max.moments_only = autoNode.child("Moments_only").child("Pressure").attribute("max").as_double();
+		interfaceSettings->textureLimits[1].autoscale.min.moments_only = autoNode.child("Moments_only").child("Density").attribute("min").as_double();
+		interfaceSettings->textureLimits[1].autoscale.max.moments_only = autoNode.child("Moments_only").child("Density").attribute("max").as_double();
+		interfaceSettings->textureLimits[2].autoscale.min.moments_only = autoNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
+		interfaceSettings->textureLimits[2].autoscale.max.moments_only = autoNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
+
+		xml_node manualNode = textureLimitsNode.child("Manual"); //Manual: only "steady state" variable used
+		interfaceSettings->textureLimits[0].manual.min.steady_state = manualNode.child("Constant_flow").child("Pressure").attribute("min").as_double();
+		interfaceSettings->textureLimits[0].manual.max.steady_state = manualNode.child("Constant_flow").child("Pressure").attribute("max").as_double();
+		interfaceSettings->textureLimits[1].manual.min.steady_state = manualNode.child("Constant_flow").child("Density").attribute("min").as_double();
+		interfaceSettings->textureLimits[1].manual.max.steady_state = manualNode.child("Constant_flow").child("Density").attribute("max").as_double();
+		interfaceSettings->textureLimits[2].manual.min.steady_state = manualNode.child("Constant_flow").child("Imp.rate").attribute("min").as_double();
+		interfaceSettings->textureLimits[2].manual.max.steady_state = manualNode.child("Constant_flow").child("Imp.rate").attribute("max").as_double();
+
+		xml_node textureDisplayNode = textureSettingsNode.child("Display");
+		interfaceSettings->texAutoScale = textureDisplayNode.attribute("autoscale").as_bool();
+		interfaceSettings->texAutoscaleIncludeConstantFlow = textureDisplayNode.attribute("inclConstFlow").as_bool();
+		interfaceSettings->texColormap = textureDisplayNode.attribute("colorEnable").as_bool();
+		interfaceSettings->texLogScale = textureDisplayNode.attribute("logScale").as_bool();
+		interfaceSettings->textureMode = textureDisplayNode.attribute("mode").as_int();
+	}
+
     return loadModel;
 }
 
