@@ -130,7 +130,7 @@ struct OutgassingMap {
 };
 
 // Density/Hit field stuff
-#define HITMAX 1E38
+
 class ProfileSlice {
 public:
 	double countEquiv=0.0;
