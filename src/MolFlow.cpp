@@ -1438,6 +1438,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		if (imWnd) ImRefresh();
 	}
 	catch (const std::exception& e) {
 
