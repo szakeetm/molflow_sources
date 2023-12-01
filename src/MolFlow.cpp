@@ -1439,7 +1439,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
-		if (imWnd) ImRefresh();
+		ImRefresh();
 	}
 	catch (const std::exception& e) {
 
@@ -1964,6 +1964,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
