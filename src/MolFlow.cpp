@@ -1697,7 +1697,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
 		}
-
+		break;
 		//TEXT --------------------------------------------------------------------
 	case MSG_TEXT_UPD:
 		if (src == facetStickingText || src == facetTemperatureText) {
