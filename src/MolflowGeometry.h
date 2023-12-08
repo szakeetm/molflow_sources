@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "PugiXML/pugixml.hpp"
 #include "Simulation/MolflowSimGeom.h"
 #include <cereal/archives/xml.hpp>
+#include "MolflowTypes.h"
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
@@ -75,24 +76,18 @@ public:
 	size_t GetGeometrySize();
 	size_t GetHitsSize(size_t nbMoments);
 
-	// Raw data buffer (geometry)
-	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
-
 	// AC matrix
 	size_t GetMaxElemNumber();
 
 	// Texture scaling
 	//TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
-	short  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values: 1 include, 0 moments only, 2 constant flow only
-
-	
+	AutoScaleMode  texAutoScaleMode = AutoscaleMomentsAndConstFlow;  // Include constant flow when calculating autoscale values: 1 include, 0 moments only, 2 constant flow only
+	std::tuple<double, double> GetTextureAutoscaleMinMax();
 
 #pragma region GeometryRender.cpp
 	void BuildFacetTextures(const std::shared_ptr<GlobalSimuState> globalState, bool renderRegularTexture, bool renderDirectionTexture);
-	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
-	void SerializeForLoader(cereal::BinaryOutputArchive&);
     void SetInterfaceFacets(std::vector<std::shared_ptr<SimulationFacet>> sFacets, bool insert, size_t vertexOffset, int structOffset) override;
 
 private:

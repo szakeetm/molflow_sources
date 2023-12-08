@@ -1285,15 +1285,16 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		ClearAllSelections();
 		ClearAllViews();
 		ResetSimulation(false);
-
+		SetDefaultViews();
 		worker.LoadGeometry(filePath);
 
 		InterfaceGeometry* interfGeom = worker.GetGeometry();
 
 
 		// Default initialisation
-		for (auto& view : viewers)
+		for (auto& view : viewers) {
 			view->SetWorker(&worker);
+		}
 
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
@@ -1314,18 +1315,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckCollinear();
 		//interfGeom->CheckNonSimple();
 		interfGeom->CheckIsolatedVertex();
-		// Set up view
-		// Default
-		viewers[0]->SetProjection(ProjectionMode::Orthographic);
-		viewers[0]->ToFrontView();
-		viewers[1]->SetProjection(ProjectionMode::Orthographic);
-		viewers[1]->ToTopView();
-		viewers[2]->SetProjection(ProjectionMode::Orthographic);
-		viewers[2]->ToSideView();
-		viewers[3]->SetProjection(ProjectionMode::Perspective);
-		viewers[3]->ToFrontView();
-		SelectViewer(0);
-
+		
 		ResetAutoSaveTimer();
 		//UpdatePlotters();
 
@@ -1574,8 +1564,8 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		case MENU_EDIT_TSCALING:
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
-				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewers);
+				textureScaling = new TextureScaling(&worker, viewers);
+				textureScaling->Display();
 			}
 			break;
 
@@ -1710,7 +1700,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
 		}
-
+		break;
 		//TEXT --------------------------------------------------------------------
 	case MSG_TEXT_UPD:
 		if (src == facetStickingText || src == facetTemperatureText) {
@@ -1827,8 +1817,8 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		else if (src == textureScalingBtn) {
 			if (!textureScaling || !textureScaling->IsVisible()) {
 				SAFE_DELETE(textureScaling);
-				textureScaling = new TextureScaling();
-				textureScaling->Display(&worker, viewers);
+				textureScaling = new TextureScaling(&worker, viewers);
+				textureScaling->Display();
 			}
 			else {
 				textureScaling->SetVisible(false);
@@ -1903,6 +1893,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	interfGeom->UpdateName(temp.str().c_str());
 
 	try {
+		SetDefaultViews();
 		interfGeom->BuildPipe(L, R, 0, step);
 		worker.MarkToReload();
 		//worker.CalcTotalOutgassing();
@@ -1924,8 +1915,9 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewers)
+	for (auto& view : viewers) {
 		view->SetWorker(&worker);
+	}
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
@@ -1976,6 +1968,7 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
+		SetDefaultViews();
 		interfGeom->EmptyGeometry();
 		//worker.CalcTotalOutgassing();
 		//default values
@@ -1992,8 +1985,9 @@ void MolFlow::EmptyGeometry() {
 	nbDesStart = 0;
 	nbHitStart = 0;
 
-	for (auto& view : viewers)
+	for (auto& view : viewers) {
 		view->SetWorker(&worker);
+	}
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
@@ -2129,7 +2123,7 @@ void MolFlow::LoadConfig() {
 		file.ReadKeyword("autoScale"); file.ReadKeyword(":");
 		interfGeom->texAutoScale = file.ReadInt();
 		file.ReadKeyword("autoScale_include_constant_flow"); file.ReadKeyword(":");
-		interfGeom->texAutoScaleIncludeConstantFlow = (short)file.ReadInt();
+		interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(file.ReadInt());
 
 		file.ReadKeyword("textures_min_pressure_all"); file.ReadKeyword(":");
 		interfGeom->texture_limits[0].autoscale.min.steady_state = file.ReadDouble();
@@ -2272,7 +2266,7 @@ void MolFlow::SaveConfig() {
 
 		WRITED("angle", angleStep);
 		file.Write("autoScale:"); file.Write(interfGeom->texAutoScale, "\n");
-		file.Write("autoScale_include_constant_flow:"); file.Write(interfGeom->texAutoScaleIncludeConstantFlow, "\n");
+		file.Write("autoScale_include_constant_flow:"); file.Write(static_cast<int>(interfGeom->texAutoScaleMode), "\n");
 
 		file.Write("textures_min_pressure_all:");
 		file.Write(interfGeom->texture_limits[0].autoscale.min.steady_state, "\n");

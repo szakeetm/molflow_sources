@@ -76,21 +76,12 @@ void MolflowGeometry::BuildFacetTextures(const std::shared_ptr<GlobalSimuState> 
 			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model->sp.finalOutgassingRate : mApp->worker.model->sp.totalDesorbedMolecules / mApp->worker.interfaceMomentCache[mApp->worker.displayedMoment - 1].window;
 		}
 
-		if (!texAutoScale) { //manual values
+		if (!texAutoScale) { //manual values: Always "steady state" variable used
 			min = texture_limits[textureMode].manual.min.steady_state;
 			max = texture_limits[textureMode].manual.max.steady_state;
 		}
 		else { //autoscale
-            if(texAutoScaleIncludeConstantFlow == 0){
-                min = texture_limits[textureMode].autoscale.min.moments_only;
-                max = texture_limits[textureMode].autoscale.max.moments_only;
-            } else if(texAutoScaleIncludeConstantFlow == 1){
-                min = std::min(texture_limits[textureMode].autoscale.min.steady_state, texture_limits[textureMode].autoscale.min.moments_only);
-                max = std::max(texture_limits[textureMode].autoscale.max.steady_state, texture_limits[textureMode].autoscale.max.moments_only);
-            } else { // == 2
-                min = texture_limits[textureMode].autoscale.min.steady_state;
-                max = texture_limits[textureMode].autoscale.max.steady_state;
-            }
+			std::tie(min, max) = GetTextureAutoscaleMinMax();
 		}
 	}
 
