@@ -30,6 +30,7 @@ struct FormulaHistoryDatapoint;
 struct TimeDependentParameters;
 struct MolflowInterfaceSettings;
 class GLProgress_Abstract;
+struct CameraView;
 
 namespace FlowIO {
 
@@ -61,5 +62,7 @@ namespace FlowIO {
         void SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFacet> facet, size_t nbTotalVertices, const TimeDependentParameters& tdParams);
 
         std::unique_ptr<MolflowInterfaceSettings> interfaceSettings; //user settings such as selections, facet view settings, parameters and moments, that must be persistent even in CLI
+
+        void CameraViewToXml(const CameraView& v, pugi::xml_node& targetViewNode);
     };
 }

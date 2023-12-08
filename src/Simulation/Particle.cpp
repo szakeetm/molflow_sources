@@ -1289,7 +1289,7 @@ bool ParticleTracer::UpdateLog(const std::shared_ptr<ParticleLog> globalLog,
         statusMutex.unlock();
         size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
         Saturate(writeNb, 0, tmpParticleLog->pLog.size());
-        globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog->pLog.begin(), tmpParticleLog->pLog.begin() + writeNb);
+        globalLog->pLog.insert(globalLog->pLog.end(), tmpParticleLog->pLog.begin(), tmpParticleLog->pLog.begin() + writeNb);
         globalLog->particleLogMutex.unlock();
         tmpParticleLog->clear();
         tmpParticleLog->pLog.shrink_to_fit();

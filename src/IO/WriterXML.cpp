@@ -30,6 +30,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation/MolflowSimFacet.h"
 #include "Simulation/MolflowSimGeom.h"
 #include "MolflowTypes.h"
+#include "GeometryTypes.h"
 
 using namespace FlowIO;
 using namespace pugi;
@@ -254,37 +255,26 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         }
     }
 
-    xml_node viewNode = interfNode.append_child("Views");
-    viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->views.size() : 0;
-    if (saveAllFacets) {
-        for (int i = 0; i < interfaceSettings->views.size(); i++) { //don't save views when exporting part of the geometry (saveSelected)
-            const auto& v = interfaceSettings->views[i];
-            xml_node newView = viewNode.append_child("View");
-            newView.append_attribute("id") = i;
-            newView.append_attribute("name") = v.name.c_str();
-            newView.append_attribute("projMode") = v.projMode;
-            newView.append_attribute("camAngleOx") = v.camAngleOx;
-            newView.append_attribute("camAngleOy") = v.camAngleOy;
-            newView.append_attribute("camAngleOz") = v.camAngleOz;
-            newView.append_attribute("camDist") = v.camDist;
-            newView.append_attribute("lightAngleOx") = v.lightAngleOx;
-            newView.append_attribute("lightAngleOy") = v.lightAngleOy;
-            newView.append_attribute("camOffset.x") = v.camOffset.x;
-            newView.append_attribute("camOffset.y") = v.camOffset.y;
-            newView.append_attribute("camOffset.z") = v.camOffset.z;
-            newView.append_attribute("performXY") = v.performXY;
-            newView.append_attribute("vLeft") = v.vLeft;
-            newView.append_attribute("vRight") = v.vRight;
-            newView.append_attribute("vTop") = v.vTop;
-            newView.append_attribute("vBottom") = v.vBottom;
-            auto clippingNode = newView.append_child("Clipping");
-            clippingNode.append_attribute("enabled")=v.enableClipping;
-            clippingNode.append_attribute("a")=v.clipPlane.a;
-            clippingNode.append_attribute("b")=v.clipPlane.b;
-            clippingNode.append_attribute("c")=v.clipPlane.c;
-            clippingNode.append_attribute("d")=v.clipPlane.d;
-        }
-    }
+	if (saveAllFacets) { //don't save views when exporting part of the geometry (saveSelected)
+		xml_node viewNode = interfNode.append_child(useOldXMLFormat ? "Views" : "UserSavedViews"); // New name since 2.9.17
+		viewNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->userViews.size() : 0;
+
+		for (int i = 0; i < interfaceSettings->userViews.size(); i++) { 
+			const auto& v = interfaceSettings->userViews[i];
+			xml_node newView = viewNode.append_child("View");
+			newView.append_attribute("id") = i;
+			CameraViewToXml(v, newView);
+		}
+	}
+
+	if (saveAllFacets && !interfaceSettings->viewerCurrentViews.empty()) {
+		xml_node viewNode = interfNode.append_child("ViewerCurrentViews");
+
+		for (const auto& currentView : interfaceSettings->viewerCurrentViews) {
+			xml_node newView = viewNode.append_child("View");
+			CameraViewToXml(currentView, newView);
+		}
+	}
 
     xml_node formulaNode = interfNode.append_child("Formulas");
     formulaNode.append_attribute("nb") = saveAllFacets ? interfaceSettings->userFormulas.size() : 0;
@@ -316,6 +306,41 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
             view.append_attribute("formulaHash") = v;
         }
     }
+
+	//Texture Min/Max
+	xml_node textureSettingsNode = interfNode.append_child("TextureSettings");
+
+	xml_node textureDisplayNode = textureSettingsNode.append_child("DisplaySettings");
+	textureDisplayNode.append_attribute("autoscale") = interfaceSettings->texAutoScale;
+	textureDisplayNode.append_attribute("autoscaleMode") = static_cast<int>(interfaceSettings->texAutoscaleMode);
+	textureDisplayNode.append_attribute("color") = interfaceSettings->texColormap;
+	textureDisplayNode.append_attribute("logScale") = interfaceSettings->texLogScale;
+	textureDisplayNode.append_attribute("physicsMode") = interfaceSettings->textureMode;
+	{
+		xml_node textureLimitsNode = textureSettingsNode.append_child("Limits");
+		xml_node autoNode = textureLimitsNode.append_child("Autoscale");
+		autoNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.steady_state;
+		autoNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.steady_state;
+		autoNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.steady_state;
+		autoNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.steady_state;
+
+		autoNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].autoscale.max.moments_only;
+		autoNode.child("Moments_only").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].autoscale.max.moments_only;
+		autoNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].autoscale.min.moments_only;
+		autoNode.child("Moments_only").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].autoscale.max.moments_only;
+
+		xml_node manualNode = textureLimitsNode.append_child("Manual"); //Manual: only "steady state" variable used
+		manualNode.append_child("Constant_flow").append_child("Pressure").append_attribute("min") = interfaceSettings->textureLimits[0].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Pressure").append_attribute("max") = interfaceSettings->textureLimits[0].manual.max.steady_state;
+		manualNode.child("Constant_flow").append_child("Density").append_attribute("min") = interfaceSettings->textureLimits[1].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Density").append_attribute("max") = interfaceSettings->textureLimits[1].manual.max.steady_state;
+		manualNode.child("Constant_flow").append_child("Imp.rate").append_attribute("min") = interfaceSettings->textureLimits[2].manual.min.steady_state;
+		manualNode.child("Constant_flow").child("Imp.rate").append_attribute("max") = interfaceSettings->textureLimits[2].manual.max.steady_state;
+	}
 }
 
 // Save XML document to file
@@ -646,26 +671,8 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
                     }
                 }
             }
-
         }
     }
-
-    //Texture Min/Max
-    xml_node minMaxNode = resultNode.append_child("TextureMinMax");
-    minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = 0.0;
-    minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = 0.0;
-    minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = 0.0;
-    minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = 0.0;
-    minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = 0.0;
-    minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = 0.0;
-
-    minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = 0.0;
-    minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = 0.0;
-    minMaxNode.child("Moments_only").append_child("Density").append_attribute("min") = 0.0;
-    minMaxNode.child("Moments_only").child("Density").append_attribute("max") = 0.0;
-    minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
-    minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
-
     return true;
 }
 
@@ -917,4 +924,29 @@ void XmlWriter::WriteConvergenceValues(pugi::xml_document& saveDoc, const std::v
         newConv.set_value(convText.str().c_str());
         formulaId++;
     }
+}
+
+void XmlWriter::CameraViewToXml(const CameraView& v, xml_node& targetViewNode) {
+    targetViewNode.append_attribute("name") = v.name.c_str();
+    targetViewNode.append_attribute("projMode") = v.projMode;
+    targetViewNode.append_attribute("camAngleOx") = v.camAngleOx;
+    targetViewNode.append_attribute("camAngleOy") = v.camAngleOy;
+    targetViewNode.append_attribute("camAngleOz") = v.camAngleOz;
+    targetViewNode.append_attribute("camDist") = v.camDist;
+    targetViewNode.append_attribute("lightAngleOx") = v.lightAngleOx;
+    targetViewNode.append_attribute("lightAngleOy") = v.lightAngleOy;
+    targetViewNode.append_attribute("camOffset.x") = v.camOffset.x;
+    targetViewNode.append_attribute("camOffset.y") = v.camOffset.y;
+    targetViewNode.append_attribute("camOffset.z") = v.camOffset.z;
+    targetViewNode.append_attribute("performXY") = v.performXY;
+    targetViewNode.append_attribute("vLeft") = v.vLeft;
+    targetViewNode.append_attribute("vRight") = v.vRight;
+    targetViewNode.append_attribute("vTop") = v.vTop;
+    targetViewNode.append_attribute("vBottom") = v.vBottom;
+    auto clippingNode = targetViewNode.append_child("Clipping");
+    clippingNode.append_attribute("enabled") = v.enableClipping;
+    clippingNode.append_attribute("a") = v.clipPlane.a;
+    clippingNode.append_attribute("b") = v.clipPlane.b;
+    clippingNode.append_attribute("c") = v.clipPlane.c;
+    clippingNode.append_attribute("d") = v.clipPlane.d;
 }
