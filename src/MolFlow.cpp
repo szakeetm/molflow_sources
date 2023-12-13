@@ -1279,11 +1279,13 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
+		ClearFacetParams();
 		ClearFormulas();
 		TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 		ClearAllSelections();
 		ClearAllViews();
 		ResetSimulation(false);
+		
 		SetDefaultViews();
 		worker.LoadGeometry(filePath);
 
@@ -1300,7 +1302,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
-		ClearFacetParams();
+		
 	nbDesStart = worker.globalStatCache.globalHits.nbDesorbed;
 		nbHitStart = worker.globalStatCache.globalHits.nbMCHit;
 			AddRecent(filePath);
@@ -1990,6 +1992,7 @@ void MolFlow::EmptyGeometry() {
 	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
+	ClearFormulas();
 	TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 	ClearAllSelections();
 	ClearAllViews();
