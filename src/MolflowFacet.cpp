@@ -1328,7 +1328,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 			for (int ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
-					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy+1][ix+1], &cellSize); //convert to double
+					angleMapCache[iy*phiWidth + ix] = std::stoull(table[iy+1][ix+1], &cellSize); //convert to double
 				}
 				catch (...) {
 					std::stringstream err;
