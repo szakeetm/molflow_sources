@@ -1355,12 +1355,12 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 				}
 				catch (...) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to a non-negative integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str());
 				}
-				if (cellSize != table[iy + 1][ix + 1].size()) {
+				if (cellSize != table[iy + 1][ix + 1].length()) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to a non-negative integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str());
 				}
 			}
