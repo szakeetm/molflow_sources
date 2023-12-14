@@ -1,20 +1,41 @@
 # Changelog
 
-## v2.9.17 beta
+## v2.9.17 beta (2023-12-14)
 
-## Bugfix
+### Feature
 
-- Fix: Histogram plotter had no values for global histograms and
-  for facet-based flight time
+- Cross section viewer (find in View menu)
+- Last camera view restored when loading a file (if saved with 2.9.17+)
+- Texture scaling settings (auto/manual limits) saved and loaded again
+- Security: hard-code updater URL to avoid tampering with updater_config.xml
+- Security (macOS, Linux): disable custom post-update scripts,
+  restrict to give executable permission by code
+- Particle logger: all processes add to log (previously only first)
+
+### Interface
+
+- Formula editor: allow to batch copy values for all moments
+- Auto-update formulas moved from Global Settings to Formula Editor
+- Easier to understand molflowCLI status messages and help
+- Allow "-inf" and "+inf" texture limits if no textures (or no moments)
+
+### Bugfix
+
+- Histogram plotter had no values for global histograms and for facet-based flight time
+- Angle map CSV import now allows 64-bit unsigned integers (previously max 2^31-1)
+- Full screen mode works again
+- Moments load progressbar off-by-one error
+- STL loading: better handle scientific numbers, give meaningful error messages
+- CLear formulas on File/New geometry
 
 ## v2.9.16 beta (2023-09-18)
 
-## Interface
+### Interface
 
 - Message boxes (error and confirmation) now accept Enter and Esc
 - Global settings right pane now shows that settings are file-based
 
-## Bugfix
+### Bugfix
 
 - Desorption limit working again (GUI & CLI)
 - No more false warnings for app updater
