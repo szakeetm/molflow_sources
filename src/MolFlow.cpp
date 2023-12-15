@@ -2406,6 +2406,7 @@ void MolFlow::RefreshPlotterCombos() {
 	if (profilePlotter) profilePlotter->Refresh();
 	if (histogramPlotter) histogramPlotter->Refresh();
 	if (convergencePlotter) convergencePlotter->Refresh();
+	ImRefresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {
