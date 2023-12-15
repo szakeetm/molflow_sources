@@ -1226,7 +1226,7 @@ void MolFlow::ImportDesorption_DES() {
 void MolFlow::SaveFile() {
 	if (!worker.fullFileName.empty()) {
 
-		auto prg = GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
+		auto prg = GLProgress_GUI("Saving file...", "Please wait");
 		prg.SetVisible(true);
 		prg.SetProgress(0.5);
 
