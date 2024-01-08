@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.9.18 beta (2024-01-08)
+
+- Hotfix after 2.9.17: formula parsing works again
+
 ## v2.9.17 beta (2023-12-14)
 
 ### Feature
@@ -26,7 +30,7 @@
 - Full screen mode works again
 - Moments load progressbar off-by-one error
 - STL loading: better handle scientific numbers, give meaningful error messages
-- CLear formulas on File/New geometry
+- Clear formulas on File/New geometry
 
 ## v2.9.16 beta (2023-09-18)
 
