@@ -852,6 +852,8 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 {
 	userMoments = interfaceSettings->userMoments; //Copy user moment strings
 
+	if (mApp->imWnd) mApp->ImLoadFromFile(interfaceSettings);
+
 	//Texture settings
 	for (int i = 0; i < 3; ++i) {
 		interfGeom->texture_limits[i] = interfaceSettings->textureLimits[i];
