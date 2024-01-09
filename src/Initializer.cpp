@@ -171,6 +171,8 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
         }
     }
 
+    loadedModel->CalcTotalOutgassing(); //Gas mass or facet outgassing / temperature might have changed by parameter changes
+
     // Set desorption limit if used
     if (initDesLimit(loadedModel, globalState, parsedArgs)) {
         throw Error("Error in Initializer::initDesLimit");
@@ -441,8 +443,6 @@ std::string Initializer::getAutosaveFile(SettingsIO::CLIArguments& parsedArgs) {
 * \brief Prepares data structures for use in simulation
 */
 void Initializer::initSimModel(const std::shared_ptr<MolflowSimulationModel> model) {
-
-    
 
     try { //unti initSimModel will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
