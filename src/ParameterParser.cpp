@@ -43,6 +43,17 @@ namespace Parameters {
         halfLife
     };
 
+    struct FacetParamChange {
+        size_t facetId;
+        FacetParam parameter;
+        double newValue;
+    };
+
+    struct SimuParamChange {
+        SimuParam parameter;
+        double newValue;
+    };
+
     //! Table that maps facet parameters against strings
     static std::unordered_map<std::string,FacetParam> const tableFac = {
             {"opacity",FacetParam::opacity},
@@ -56,8 +67,8 @@ namespace Parameters {
             {"enableDecay",SimuParam::enableDecay},
             {"halfLife",SimuParam::halfLife}
     };
-    std::vector<std::tuple<size_t, FacetParam, double>> facetParams;
-    std::vector<std::tuple<SimuParam, double>> simuParams;
+    std::vector<FacetParamChange> facetParams;
+    std::vector<SimuParamChange> simuParams;
 }
 
 //! Parse CLI argument for facet parameter changes, then add entry as a tuple for later usage
@@ -87,7 +98,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
 
         try {
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
-            splitFacetList(id_range, id_str, 1e7);
+            splitFacetList(id_range, id_str, 1e7); //performs off-by one
         } catch (const std::exception&) {
             Log::console_error("[{}] Could not parse facet id or range:\n", __FUNCTION__);
             Log::console_error("\t{}\n", id_str);
@@ -99,14 +110,19 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         Log::console_error("\t{}\n", param_str);
         return;
     }
-    auto param = tablePair->second;
-    double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
-    for(auto& id : id_range)
-        Parameters::facetParams.emplace_back(id, param, paramVal);
-    if(fromSelection)
-        Log::console_msg_master(3, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
-    else
-        Log::console_msg_master(3, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
+    Parameters::FacetParamChange fp;
+    fp.parameter = tablePair->second;
+    fp.newValue = std::strtod(paramVal_str.c_str(),nullptr);
+    for (const auto& id : id_range) {
+        fp.facetId = id;
+        Parameters::facetParams.push_back(fp);
+    }
+    if (fromSelection) {
+        Log::console_msg_master(2, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
+    }
+    else {
+        Log::console_msg_master(2, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
+    }
 }
 
 //! Parse CLI argument for simulation parameter changes, then add entry as a tuple for later usage
@@ -121,9 +137,10 @@ void parseSimu(std::istringstream& facetString){
         Log::console_error("\t{}\n", param_str);
         return;
     }
-    auto param = tablePair->second;
-    double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
-    Parameters::simuParams.emplace_back(param, paramVal);
+    Parameters::SimuParamChange sp;
+    sp.parameter = tablePair->second;
+    sp.newValue = std::strtod(paramVal_str.c_str(),nullptr);
+    Parameters::simuParams.push_back(sp);
 
     Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter {} to {}\n", param_str, paramVal_str);
 
@@ -186,20 +203,19 @@ void ParameterParser::ParseInput(const std::vector<std::string> &paramChanges, c
 
 //! Read values for parsed simulation parameters
 void ParameterParser::ChangeSimuParams(SimuParams& params){
-    for(auto& par : Parameters::simuParams){
-        auto type = std::get<0>(par);
-        switch (type) {
+    for(const auto& sp : Parameters::simuParams){
+        switch (sp.parameter) {
             case (Parameters::SimuParam::enableDecay):
-                params.enableDecay = (std::get<1>(par) > 0.0);
+                params.enableDecay = (sp.newValue > 0.0);
                 break;
             case (Parameters::SimuParam::mass):
-                params.gasMass = std::get<1>(par);
+                params.gasMass = sp.newValue;
                 break;
             case (Parameters::SimuParam::halfLife):
-                params.halfLife = std::get<1>(par);
+                params.halfLife = sp.newValue;
                 break;
             default:
-                Log::console_error("Unknown SimuParam {}\n", (size_t)(std::get<0>(par)));
+                Log::console_error("Unknown SimuParam {}\n", (size_t)(sp.parameter));
         }
     }
 }
@@ -207,41 +223,39 @@ void ParameterParser::ChangeSimuParams(SimuParams& params){
 //! Read values for parsed facet parameters
 int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> facets) {
     int nbError = 0;
-    for(auto& par : Parameters::facetParams){
-        size_t id = std::get<0>(par);
-        if(id < facets.size()) {
-            auto& facet = facets[id];
-            auto type = std::get<1>(par);
-            switch (type) {
+    for(const auto& fp : Parameters::facetParams){
+        if(fp.facetId < facets.size()) {
+            auto& facet = facets[fp.facetId];
+            switch (fp.parameter) {
                 case (Parameters::FacetParam::opacity):
-                    facet->sh.opacity = std::get<2>(par);
+                    facet->sh.opacity = fp.newValue;
                     if(facet->sh.opacity < 0.0 || facet->sh.opacity > 1.0) {
                         nbError++;
-                        Log::console_error("[ParameterChange][Facet][ID: {}] Invalid opacity on facet: {}\n", id,
+                        Log::console_error("[ParameterChange][Facet][ID: {}] Invalid opacity on facet: {}\n", fp.facetId,
                                            facet->sh.opacity);
                     }
                     break;
                 case (Parameters::FacetParam::outgassing):
-                    facet->sh.outgassing = std::get<2>(par);
+                    facet->sh.outgassing = fp.newValue * MBARLS_TO_PAM3S; //User inputs outgassing in mbar.l/s
                     break;
                 case (Parameters::FacetParam::sticking):
-                    facet->sh.sticking = std::get<2>(par);
+                    facet->sh.sticking = fp.newValue;
                     if(facet->sh.sticking < 0.0 || facet->sh.sticking > 1.0) {
                         nbError++;
                         Log::console_error(
-                                "[ParameterChange][Facet][ID: {}] Invalid sticking coefficient on facet: {}\n", id,
+                                "[ParameterChange][Facet][ID: {}] Invalid sticking coefficient on facet: {}\n", fp.facetId+1,
                                 facet->sh.sticking);
                     }
                     break;
                 case (Parameters::FacetParam::temperature):
-                    facet->sh.temperature = std::get<2>(par);
+                    facet->sh.temperature = fp.newValue;
                     break;
                 default:
-                    Log::console_error("Unknown FacetParam {}\n", (size_t)(std::get<1>(par)));
+                    Log::console_error("Unknown FacetParam {}\n", (size_t)(fp.parameter));
             }
         }
         else{
-            Log::console_error("[ParameterChange][Facet][ID: {}] Facet ID out of range\n", id);
+            Log::console_error("[ParameterChange][Facet][ID: {}] Facet ID out of range\n", fp.facetId+1);
             nbError++;
         }
     }
