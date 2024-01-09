@@ -237,6 +237,10 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     break;
                 case (Parameters::FacetParam::outgassing):
                     facet->sh.outgassing = fp.newValue * MBARLS_TO_PAM3S; //User inputs outgassing in mbar.l/s
+                    if (facet->sh.outgassing > 0.0 && facet->sh.desorbType == DES_NONE) { //User just enabled outgassing, use default
+                        facet->sh.desorbType = DES_COSINE;
+                    }
+                    //Do not do the inverse: user might want to disable outgassing but not change the type
                     break;
                 case (Parameters::FacetParam::sticking):
                     facet->sh.sticking = fp.newValue;
