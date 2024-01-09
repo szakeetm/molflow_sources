@@ -35,7 +35,8 @@ namespace Parameters {
         opacity,
         temperature,
         sticking,
-        outgassing
+        outgassing,
+        outgassingPerArea
     };
 
     //! Enum that describes the allowed global simulation parameters to change
@@ -61,7 +62,8 @@ namespace Parameters {
             {"opacity",FacetParam::opacity},
             {"temperature",FacetParam::temperature},
             {"sticking",FacetParam::sticking},
-            {"outgassing",FacetParam::outgassing}
+            {"outgassing",FacetParam::outgassing},
+            {"specificOutgassing",FacetParam::outgassingPerArea}
     };
     //! Table that maps simulation parameters against strings
     static std::unordered_map<std::string,SimuParam> const tableSim = {
@@ -241,6 +243,13 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     break;
                 case (Parameters::FacetParam::outgassing):
                     facet->sh.outgassing = fp.newValue * MBARLS_TO_PAM3S; //User inputs outgassing in mbar.l/s
+                    if (facet->sh.outgassing > 0.0 && facet->sh.desorbType == DES_NONE) { //User just enabled outgassing, use default
+                        facet->sh.desorbType = DES_COSINE;
+                    }
+                    //Do not do the inverse: user might want to disable outgassing but not change the type
+                    break;
+                case (Parameters::FacetParam::outgassingPerArea):
+                    facet->sh.outgassing = fp.newValue * MBARLS_TO_PAM3S * facet->sh.area; //User inputs outgassing in mbar.l/s/cm2
                     if (facet->sh.outgassing > 0.0 && facet->sh.desorbType == DES_NONE) { //User just enabled outgassing, use default
                         facet->sh.desorbType = DES_COSINE;
                     }
