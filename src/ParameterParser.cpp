@@ -124,12 +124,6 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         fp.facetId = id;
         Parameters::facetParams.push_back(fp);
     }
-    if (fromSelection) {
-        Log::console_msg_master(2, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
-    }
-    else {
-        Log::console_msg_master(2, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
-    }
 }
 
 //! Parse CLI argument for simulation parameter changes, then add entry as a tuple for later usage
