@@ -1098,6 +1098,7 @@ namespace {
 		outfile << "facet.42.opacity=0.5\n"
 			"facet.3.sticking=10.01\n"
 			"facet.50-90.outgassing=42e5\n"
+			"facet.91.specificOutgassing=1e-12\n"
 			"facet.100.temperature=290.92\n"
 			"simulation.mass=42.42\n"
 			"simulation.enableDecay=1\n"
@@ -1117,18 +1118,21 @@ namespace {
 
 		std::vector<std::shared_ptr<SimulationFacet>> facets(200);
 		for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<MolflowSimFacet>();
+		facets[90]->sh.area = 123;
 		ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
 		ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
-		ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
-		ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
-		ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+		ASSERT_FALSE(std::abs(facets[49]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // first
+		ASSERT_FALSE(std::abs(facets[69]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // mid
+		ASSERT_FALSE(std::abs(facets[89]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // last
+		ASSERT_FALSE(std::abs(facets[90]->sh.outgassing * PAM3S_TO_MBARLS - 1.23e-10) < 1e-15);
 		ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
 		ParameterParser::ChangeFacetParams(facets);
 		ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
 		ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
-		ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
-		ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
-		ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+		ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // first
+		ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // mid
+		ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // last
+		ASSERT_DOUBLE_EQ(facets[90]->sh.outgassing * PAM3S_TO_MBARLS, 1.23e-10);
 		ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
 
 		std::filesystem::remove(paramFile);
@@ -1142,6 +1146,7 @@ namespace {
 		params.emplace_back("facet.42.opacity=0.5");
 		params.emplace_back("facet.3.sticking=10.01");
 		params.emplace_back("facet.50-90.outgassing=42e5");
+		params.emplace_back("facet.91.specificOutgassing=1e-12");
 		params.emplace_back("facet.100.temperature=290.92");
 		params.emplace_back("simulation.mass=42.42");
 		ParameterParser::ParseInput(params, std::vector<SelectionGroup>());
@@ -1154,18 +1159,21 @@ namespace {
 
 		std::vector<std::shared_ptr<SimulationFacet>> facets(200);
 		for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<MolflowSimFacet>();
+		facets[90]->sh.area = 123;
 		ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
 		ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
-		ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
-		ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
-		ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+		ASSERT_FALSE(std::abs(facets[49]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // first
+		ASSERT_FALSE(std::abs(facets[69]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // mid
+		ASSERT_FALSE(std::abs(facets[89]->sh.outgassing * PAM3S_TO_MBARLS - 42e5) < 1e-5); // last
+		ASSERT_FALSE(std::abs(facets[90]->sh.outgassing * PAM3S_TO_MBARLS - 1.23e-10) < 1e-15);
 		ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
 		ParameterParser::ChangeFacetParams(facets);
 		ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
 		ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
-		ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
-		ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
-		ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+		ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // first
+		ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // mid
+		ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing * PAM3S_TO_MBARLS, 42e5); // last
+		ASSERT_DOUBLE_EQ(facets[90]->sh.outgassing * PAM3S_TO_MBARLS, 1.23e-10);
 		ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
 	}
 
@@ -1177,7 +1185,7 @@ namespace {
 
 		std::vector<SelectionGroup> selections;
 		SelectionGroup group;
-		group.name = "ValidSelection";
+		group.name = "Valid Selection";
 		group.facetIds = { 5, 8, 9 };
 		selections.push_back(group);
 		group.name = "InvalidSelection";
@@ -1187,7 +1195,7 @@ namespace {
 		group.facetIds = { 10, 11, 12 };
 		selections.push_back(group);
 		outfile << "facet.\"NotValid\".opacity=0.3\n"
-			"facet.\"ValidSelection\".opacity=0.5\n"
+			"facet.\"Valid Selection\".opacity=0.5\n"
 			"facet.\"InvalidSelection\".opacity=0.8\n";
 		outfile.close();
 		ParameterParser::ParseFile(paramFile, selections);
