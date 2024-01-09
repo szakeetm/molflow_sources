@@ -78,6 +78,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/HistogramSettings.h"
 #include "Interface/HistogramPlotter.h"
 #include "FormulaEvaluator_MF.h"
+#include "Interface/ImguiWindow.h"
 
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -783,6 +784,7 @@ void MolFlow::ApplyFacetParams() {
 	//worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	//if (facetAdvParams) facetAdvParams->Refresh();
@@ -1325,6 +1327,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
+		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
@@ -1687,6 +1690,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						if (vertexCoordinates) vertexCoordinates->Update();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
+						if (imWnd) imWnd->profPlot.Refresh();
 						if (pressureEvolution) pressureEvolution->Refresh();
 						if (timewisePlotter) timewisePlotter->Refresh();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1942,6 +1946,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (pressureEvolution) pressureEvolution->Reset();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
@@ -2015,6 +2020,7 @@ void MolFlow::EmptyGeometry() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
@@ -2404,6 +2410,7 @@ void MolFlow::RefreshPlotterCombos() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramPlotter) histogramPlotter->Refresh();
 	if (convergencePlotter) convergencePlotter->Refresh();
 	ImRefresh();
