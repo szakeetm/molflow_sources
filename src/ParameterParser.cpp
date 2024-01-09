@@ -22,6 +22,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/StringHelper.h"
 #include <fstream>
 #include <sstream>
+#include <iostream>
+#include <string>
 #include <vector>
 #include <tuple>
 #include <Helper/ConsoleLogger.h>
@@ -152,8 +154,9 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
     Parameters::facetParams.clear();
     Parameters::simuParams.clear();
 
-    size_t i = 0;
-    for (std::string line; inputLineStream >> line; ) {
+    size_t i = 1;
+    std::string line;
+    while (std::getline(inputLineStream, line)) {
         std::istringstream lineStream(line);
         std::string optionType;
         std::getline(lineStream, optionType, '.');
