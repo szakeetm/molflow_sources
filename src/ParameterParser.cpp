@@ -89,8 +89,13 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
             if(sel.name == id_str) {
                 id_range = sel.facetIds;
                 fromSelection = true;
+                Log::console_msg_master(2, "[ParameterChange][Facet][Group \"{}\"] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
                 break;
             }
+        }
+        if (!fromSelection) {
+            //Not found
+            Log::console_error("[{}] Selection \"{}\" not found in file, ignoring.\n", __FUNCTION__, id_str);
         }
     }
     else { // facet id or range
@@ -99,11 +104,13 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         try {
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
             splitFacetList(id_range, id_str, 1e7); //performs off-by one
+            Log::console_msg_master(2, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
         } catch (const std::exception&) {
             Log::console_error("[{}] Could not parse facet id or range:\n", __FUNCTION__);
             Log::console_error("\t{}\n", id_str);
         }
     }
+
     auto tablePair = Parameters::tableFac.find(param_str);
     if(tablePair == Parameters::tableFac.end()) {
         Log::console_error("[{}] Invalid option was given:\n", __FUNCTION__);
