@@ -2022,6 +2022,7 @@ void MolFlow::EmptyGeometry() {
 	if (profilePlotter) profilePlotter->Refresh();
 	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
+	if (imWnd) imWnd->histPlot.Reset();
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
