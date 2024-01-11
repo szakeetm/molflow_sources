@@ -1,4 +1,5 @@
 # MolFlow+
+
 A Monte Carlo simulator for Ultra High Vacuum systems
 
 **Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Pascal Rene BAEHR, Jean-Luc PONS  
@@ -9,6 +10,7 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 <img src="https://molflow.web.cern.ch/sites/molflow.web.cern.ch/files/pictures/2018-10-09%2016_14_20-PowerPoint%20Slide%20Show%20%20-%20%20Presentation1.png" alt="Molflow image" width="800"/>
 
 # Cloning the project (all OS)
+
 * Clone the Molflow project with `git clone`
 * Go into the `molflow` directory and initialize the `src_shared` submodule
 * Update the `src_shared` submodule
@@ -21,6 +23,7 @@ git submodule update
 ```
   
 # Building
+
 Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2022* or it has to be built/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS `cmake` can be installed with package managers.
 
@@ -65,19 +68,26 @@ export DISPLAY=0:0
 dnf install mesa-dri-drivers
 ```
 
+In case of missing libgsl.so.23, create a symlink for the GSL library:
+```
+ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so
+```
+
 ### CentOS 8
+
 ```
 dnf config-manager --set-enabled PowerTools
 dnf in -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 dnf in -y libglvnd-opengl libpng15 SDL2 p7zip
 dnf group install "Development Tools"
 ```
-You might have to create a symlink for the GSL library:
+In case of missing libgsl.so.23, create a symlink for the GSL library:
 ```
 ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
 ```
 
 ### CentOS 7
+
 ```
 sudo yum install epel-release
 sudo yum install p7zip SDL2 gsl libglvnd-opengl

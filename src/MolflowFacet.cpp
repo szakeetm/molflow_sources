@@ -1351,16 +1351,16 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
-					angleMapCache[iy * phiWidth + ix] = std::stoi(table[iy + 1][ix + 1], &cellSize); //convert to double
+					angleMapCache[iy * phiWidth + ix] = std::stoull(table[iy + 1][ix + 1], &cellSize); //convert to size_t
 				}
 				catch (...) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to a non-negative integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str());
 				}
-				if (cellSize != table[iy + 1][ix + 1].size()) {
+				if (cellSize != table[iy + 1][ix + 1].length()) {
 					std::stringstream err;
-					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy + 1][ix + 1];
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to a non-negative integer\nCell content: " << table[iy + 1][ix + 1];
 					throw Error(err.str());
 				}
 			}
