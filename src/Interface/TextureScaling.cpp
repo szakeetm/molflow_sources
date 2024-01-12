@@ -140,7 +140,7 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 	physicsModeCombo->SetSize(3);
 	physicsModeCombo->SetValueAt(0,"Pressure [mbar]");
 	physicsModeCombo->SetValueAt(1,"Impingement rate [1/sec/m\262]");
-	physicsModeCombo->SetValueAt(2,"Particle density [1/m3]");
+	physicsModeCombo->SetValueAt(2,"Particle density [1/m\263]");
 	physicsModeCombo->SetBounds(200,178,150,20);
 	physicsModeCombo->SetSelectedIndex(0);
 	Add(physicsModeCombo);
