@@ -173,34 +173,43 @@ void TextureScaling::RecalcSwapSize() {
 */
 void TextureScaling::Update() {
 
-	if(!IsVisible() || IsIconic()) return;  
+	if (!IsVisible() || IsIconic()) return;
 
 	//Set autoscale minimum label
 	auto [autoscaleMin, autoscaleMax] = interfGeom->GetTextureAutoscaleMinMax();
 
 	//Set current geometry limits
 	char tmp[128];
-	sprintf(tmp,"%.3E",autoscaleMin);
+	sprintf(tmp, "%.3E", autoscaleMin);
 	geomMinLabel->SetText(tmp);
-	sprintf(tmp,"%.3E",autoscaleMax);
+	sprintf(tmp, "%.3E", autoscaleMax);
 	geomMaxLabel->SetText(tmp);
 
+	//Set manual min/max text fields
+	sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state);
+	manualScaleMinText->SetText(tmp);
+	manualScaleMinText->SetEditable(!interfGeom->texAutoScale);
+	sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state);
+	manualScaleMaxText->SetText(tmp);
+	manualScaleMaxText->SetEditable(!interfGeom->texAutoScale);
+	applyButton->SetEnabled(!interfGeom->texAutoScale);
 	autoScaleToggle->SetState(interfGeom->texAutoScale);
 	autoscaleTimedepModeCombo->SetVisible(interfGeom->texAutoScale);
 	autoscaleTimedepModeCombo->SetSelectedIndex(static_cast<int>(interfGeom->texAutoScaleMode));
 	logarithmicToggle->SetState(interfGeom->texLogScale);
-	gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
-	if( !interfGeom->texAutoScale ) { // Set manual texture scaling
+	gradient->SetScale(interfGeom->texLogScale ? LOG_SCALE : LINEAR_SCALE);
+	if (!interfGeom->texAutoScale) { // Set manual texture scaling
 		//In case of manual scaling, "steady state" variable used always
 		gradient->SetMinMax(
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state,
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state
-			);
-	} else { //Set auto texture scaling
+		);
+	}
+	else { //Set auto texture scaling
 		gradient->SetMinMax(autoscaleMin, autoscaleMax);
 	}
 	useColorToggle->SetState(interfGeom->texColormap);
-	gradient->SetType(interfGeom->texColormap /*viewers[0]->showColormap*/?GRADIENT_COLOR:GRADIENT_BW );
+	gradient->SetType(interfGeom->texColormap /*viewers[0]->showColormap*/ ? GRADIENT_COLOR : GRADIENT_BW);
 	physicsModeCombo->SetSelectedIndex(interfGeom->textureMode);
 	RecalcSwapSize();
 
@@ -260,8 +269,6 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
 			
-			//interfGeom->texAutoScale = autoScaleToggle->GetState();
-			//interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
@@ -276,11 +283,6 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			//Apply to geometry
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = autoscaleMin;
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = autoscaleMax;
-			//Apply to window
-			manualScaleMinText->SetText(geomMinLabel->GetText()); //Already formatted to .3f
-			manualScaleMaxText->SetText(geomMaxLabel->GetText()); //Already formatted to .3f
-			autoScaleToggle->SetState(false);
-			autoscaleTimedepModeCombo->SetVisible(false);
 			interfGeom->texAutoScale=false;
 			try {
 				worker->Update(0.0f);
@@ -301,13 +303,8 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			interfGeom->texAutoScale = autoScaleToggle->GetState();
 			worker->Update(0.0f);
 			Update();
-		} else if (src==this->autoscaleTimedepModeCombo) {
-			interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
-			worker->Update(0.0f);
-			Update();
 		} else if (src==logarithmicToggle) {
 			interfGeom->texLogScale = logarithmicToggle->GetState();
-			gradient->SetScale(interfGeom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 			worker->Update(0.0f);
 			Update();
 		}
@@ -326,10 +323,11 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 				GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			char tmp[256];
-			sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state);
-			manualScaleMinText->SetText(tmp);
-			sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state);
-			manualScaleMaxText->SetText(tmp);
+			Update();
+		}
+		else if (src == this->autoscaleTimedepModeCombo) {
+			interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
+			worker->Update(0.0f);
 			Update();
 		}
 		break;
