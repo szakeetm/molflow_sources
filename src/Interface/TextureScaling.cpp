@@ -69,9 +69,9 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 	setToCurrentButton->SetBounds(40,70,90,19);
 	Add(setToCurrentButton);
 	
-	updateButton = new GLButton(0,"Apply");
-	updateButton->SetBounds(135,70,90,19);
-	Add(updateButton);
+	applyButton = new GLButton(0,"Apply min/max");
+	applyButton->SetBounds(135,70,90,19);
+	Add(applyButton);
 	
 	autoScaleToggle = new GLToggle(0,"Autoscale");
 	autoScaleToggle->SetBounds(130,20,80,19);
@@ -108,7 +108,7 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 	Add(panel2);
 
 	GLLabel *l4 = new GLLabel("Min:");
-	l4->SetBounds(390,30,20,19);
+	l4->SetBounds(391,31,20,19);
 	Add(l4);
 
 	geomMinLabel = new GLLabel("");
@@ -116,7 +116,7 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 	Add(geomMinLabel);
 
 	GLLabel *l5 = new GLLabel("Max:");
-	l5->SetBounds(390,65,20,19);
+	l5->SetBounds(391,66,20,19);
 	Add(l5);
 
 	geomMaxLabel = new GLLabel("");
@@ -237,7 +237,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 	switch(message) {
 	case MSG_BUTTON:
 
-		if (src==updateButton) {
+		if (src==applyButton) {
 
 			double min,max;
 
@@ -256,10 +256,12 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 				Update();
 				return;
 			}
+
 			interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state = min;
 			interfGeom->texture_limits[interfGeom->textureMode].manual.max.steady_state = max;
-			interfGeom->texAutoScale = autoScaleToggle->GetState();
-			interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
+			
+			//interfGeom->texAutoScale = autoScaleToggle->GetState();
+			//interfGeom->texAutoScaleMode = static_cast<AutoScaleMode>(autoscaleTimedepModeCombo->GetSelectedIndex());
 			try {
 				worker->Update(0.0f);
 			} catch (const std::exception &e) {
@@ -312,7 +314,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 		break;
 
 	case MSG_TEXT:
-		ProcessMessage(updateButton,MSG_BUTTON);
+		ProcessMessage(applyButton,MSG_BUTTON);
 		break;
 
 	case MSG_COMBO:
