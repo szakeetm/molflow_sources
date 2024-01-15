@@ -1330,6 +1330,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
 		if (imWnd) imWnd->profPlot.Refresh();
+		if (imWnd) imWnd->convPlot.Reload();
 		if (convergencePlotter) convergencePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
