@@ -66,11 +66,11 @@ TextureScaling::TextureScaling(Worker* worker_, GeometryViewer** viewers_):GLWin
 	Add(manualScaleMaxText);
 
 	setToCurrentButton = new GLButton(0,"Set to geom.");
-	setToCurrentButton->SetBounds(40,70,90,19);
+	setToCurrentButton->SetBounds(10,70,90,19);
 	Add(setToCurrentButton);
 	
 	applyButton = new GLButton(0,"Apply min/max");
-	applyButton->SetBounds(135,70,90,19);
+	applyButton->SetBounds(105,70,90,19);
 	Add(applyButton);
 	
 	autoScaleToggle = new GLToggle(0,"Autoscale");
