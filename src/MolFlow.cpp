@@ -78,6 +78,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/HistogramSettings.h"
 #include "Interface/HistogramPlotter.h"
 #include "FormulaEvaluator_MF.h"
+#include "Interface/ImguiWindow.h"
 
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -783,6 +784,7 @@ void MolFlow::ApplyFacetParams() {
 	//worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	//if (facetAdvParams) facetAdvParams->Refresh();
@@ -1227,7 +1229,7 @@ void MolFlow::ImportDesorption_DES() {
 void MolFlow::SaveFile() {
 	if (!worker.fullFileName.empty()) {
 
-		auto prg = GLProgress_GUI("Saving file...\nIn this beta version, you can see the progress in the console.", "Please wait");
+		auto prg = GLProgress_GUI("Saving file...", "Please wait");
 		prg.SetVisible(true);
 		prg.SetProgress(0.5);
 
@@ -1280,11 +1282,13 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
+		ClearFacetParams();
 		ClearFormulas();
 		TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 		ClearAllSelections();
 		ClearAllViews();
 		ResetSimulation(false);
+		
 		SetDefaultViews();
 		worker.LoadGeometry(filePath);
 
@@ -1301,7 +1305,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
-		ClearFacetParams();
+		
 	nbDesStart = worker.globalStatCache.globalHits.nbDesorbed;
 		nbHitStart = worker.globalStatCache.globalHits.nbMCHit;
 			AddRecent(filePath);
@@ -1325,10 +1329,13 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
+		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
+		if (imWnd) imWnd->convPlot.Reload();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
+		if (imWnd) imWnd->textScale.Load();
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1338,7 +1345,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
-		ImRefresh();
+		ImReset();
 	}
 	catch (const std::exception& e) {
 
@@ -1687,6 +1694,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						if (vertexCoordinates) vertexCoordinates->Update();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
+						if (imWnd) imWnd->profPlot.Refresh();
 						if (pressureEvolution) pressureEvolution->Refresh();
 						if (timewisePlotter) timewisePlotter->Refresh();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1942,6 +1950,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (pressureEvolution) pressureEvolution->Reset();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
@@ -1994,6 +2003,7 @@ void MolFlow::EmptyGeometry() {
 	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
+	ClearFormulas();
 	TimeDependentParameters::ClearParameters(worker.interfaceParameterCache);
 	ClearAllSelections();
 	ClearAllViews();
@@ -2015,7 +2025,9 @@ void MolFlow::EmptyGeometry() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
+	if (imWnd) imWnd->histPlot.Reset();
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
@@ -2404,8 +2416,10 @@ void MolFlow::RefreshPlotterCombos() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramPlotter) histogramPlotter->Refresh();
 	if (convergencePlotter) convergencePlotter->Refresh();
+	ImRefresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {

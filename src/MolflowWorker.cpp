@@ -852,6 +852,7 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 {
 	userMoments = interfaceSettings->userMoments; //Copy user moment strings
 
+
 	//Texture settings
 	for (int i = 0; i < 3; ++i) {
 		interfGeom->texture_limits[i] = interfaceSettings->textureLimits[i];
@@ -909,6 +910,7 @@ void Worker::LoaderSettingsToInterfaceSettings(const std::unique_ptr<MolflowInte
 		mApp->convergencePlotter->SetLogScaled(interfaceSettings->convergencePlotterSettings.logYscale);
 		mApp->convergencePlotter->SetViews(interfaceSettings->convergencePlotterSettings.viewIds);
 	}
+	if (mApp->imWnd) mApp->ImLoadFromFile(interfaceSettings);
 }
 
 std::string Worker::GetSimManagerStatus()
