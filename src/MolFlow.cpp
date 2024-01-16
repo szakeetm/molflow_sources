@@ -1329,13 +1329,10 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
-		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
-		if (imWnd) imWnd->convPlot.Reload();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
-		if (imWnd) imWnd->textScale.Load();
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
