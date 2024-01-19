@@ -963,6 +963,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
+	if (imWnd) imWnd->textPlot.Update();
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 }
@@ -1332,6 +1333,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
 		if (imWnd) imWnd->convPlot.Reload();
+		if (imWnd) imWnd->textPlot.Update();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1953,6 +1955,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
+	if (imWnd) imWnd->textPlot.Update();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureScaling) textureScaling->Update();
@@ -2029,6 +2032,7 @@ void MolFlow::EmptyGeometry() {
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (imWnd) imWnd->histPlot.Reset();
 	if (histogramPlotter) histogramPlotter->Reset();
+	if (imWnd) imWnd->textPlot.Update();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
@@ -2406,6 +2410,7 @@ void MolFlow::UpdatePlotters() {
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, forceUpdate);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, forceUpdate);
 	if (profilePlotter) profilePlotter->Update(m_fTime, forceUpdate);
+	if (imWnd) imWnd->textPlot.Update();
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
