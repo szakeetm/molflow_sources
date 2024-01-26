@@ -33,6 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "TimeSettings.h"
 #include "TimewisePlotter.h"
 #include "TimeMoments.h"
+#include "HistogramSettings.h"
 
 extern MolFlow *mApp;
 
@@ -201,6 +202,9 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 				if (mApp->timewisePlotter) {
 					mApp->timewisePlotter->Reset();
 					mApp->timewisePlotter->refreshViews();
+				}
+				if (mApp->histogramSettings && mApp->histogramSettings->IsVisible()) {
+					mApp->histogramSettings->UpdateMemoryEstimate_Current();
 				}
 			}
 		}
