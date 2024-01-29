@@ -965,6 +965,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
+	if (mApp->imWnd) mApp->imWnd->histPlot.UpdateOnFacetChange();
 }
 
 // Name: FrameMove()
