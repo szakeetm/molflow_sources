@@ -52,13 +52,13 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
 
     // Local variables for parsing and immediate processing
     bool verbose = false;
-
+    long double deslimit_double=0.0;
     SettingsIO::CLIArguments parsedArgs;
 
     // Define options
     app.add_option("-j,--threads", parsedArgs.nbThreads, "Number of parallel threads to be used for calculation");
     app.add_option("-t,--time", parsedArgs.simDuration, "Finish simulation after this time (in seconds)");
-    app.add_option("-d,--ndes", parsedArgs.desLimit, "Finish simulation after this number of desorbed particles");
+    app.add_option("-d,--ndes", deslimit_double, "Finish simulation after this number of desorbed particles");
 
     app.add_option("-f,--file", parsedArgs.inputFile, "Input file to load (XML/ZIP only)")
             ->required()
@@ -102,6 +102,11 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
     if (verbose)
         AppSettings::verbosity = 42;
 
+    constexpr long double max_sizet_double = static_cast<long double>(std::numeric_limits<size_t>::max());
+    if (deslimit_double < 0.0 || deslimit_double > max_sizet_double) {
+        throw Error("Invalid desorption limit {:.4g}, must be larger than 0 and smaller than {:.4g}\n", deslimit_double,max_sizet_double);
+    }
+    parsedArgs.desLimit = static_cast<size_t>(deslimit_double);
     if (parsedArgs.simDuration == 0 && parsedArgs.desLimit==0) {
         throw Error("No stop condition set. Use either -t (--time) or -d (--ndes)\n");
     }
