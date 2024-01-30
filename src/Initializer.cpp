@@ -52,14 +52,13 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
 
     // Local variables for parsing and immediate processing
     bool verbose = false;
-    std::vector<double> limits;
 
     SettingsIO::CLIArguments parsedArgs;
 
     // Define options
     app.add_option("-j,--threads", parsedArgs.nbThreads, "Number of parallel threads to be used for calculation");
     app.add_option("-t,--time", parsedArgs.simDuration, "Finish simulation after this time (in seconds)");
-    app.add_option("-d,--ndes", limits, "Finish simulation after this number of desorbed particles");
+    app.add_option("-d,--ndes", parsedArgs.desLimit, "Finish simulation after this number of desorbed particles");
 
     app.add_option("-f,--file", parsedArgs.inputFile, "Input file to load (XML/ZIP only)")
             ->required()
@@ -103,11 +102,7 @@ SettingsIO::CLIArguments Initializer::parseArguments(int argc, char **argv) {
     if (verbose)
         AppSettings::verbosity = 42;
 
-    //std::cout<<app.config_to_str(true,true);
-    for (auto& lim : limits)
-        parsedArgs.desLimit.push_back(static_cast<size_t>(lim));
-
-    if (parsedArgs.simDuration == 0 && parsedArgs.desLimit.empty()) {
+    if (parsedArgs.simDuration == 0 && parsedArgs.desLimit==0) {
         throw Error("No stop condition set. Use either -t (--time) or -d (--ndes)\n");
     }
     return parsedArgs;
@@ -353,36 +348,16 @@ int Initializer::initDesLimit(const std::shared_ptr<MolflowSimulationModel> mode
     catch (...) {
         return 1;
     }
-
-    model->otfParams.desorptionLimit = 0;
-
-    // Skip desorptions if limit was already reached
-    if (!parsedArgs.desLimit.empty()) {
-        size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
-        size_t listSize = parsedArgs.desLimit.size();
-        for (size_t l = 0; l < listSize; ++l) {
-            model->otfParams.desorptionLimit = parsedArgs.desLimit.front();
-            parsedArgs.desLimit.pop_front();
-
-            if (oldDesNb > model->otfParams.desorptionLimit) {
-                Log::console_msg_master(1, "Skipping desorption limit: {}\n", model->otfParams.desorptionLimit);
-            } else {
-                Log::console_msg_master(1, "Starting with desorption limit: {} from {}\n",
-                                        model->otfParams.desorptionLimit, oldDesNb);
-
-                
-                return 0;
-            }
-        }
-        if (parsedArgs.desLimit.empty()) {
-            Log::console_msg_master(1,
-                                    "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption {}\n",
-                                    oldDesNb);
-            
-            return 1;
-        }
+    
+    model->otfParams.desorptionLimit = parsedArgs.desLimit;
+    size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
+    if (oldDesNb >= model->otfParams.desorptionLimit) {
+        Log::console_msg_master(1,
+            "Desorption limit ({}) already reached (input file nbDes={}). Consider resetting the simulation (--reset argument)\n",
+            model->otfParams.desorptionLimit,oldDesNb);
+        return 1;
     }
-    return 0;
+    return 0; //Success
 }
 
 /**

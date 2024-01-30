@@ -568,8 +568,7 @@ namespace {
 			}
 			// clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
 			globalState->Reset();
-			parsedArgs.desLimit.clear();
-			parsedArgs.desLimit.emplace_back(300);
+			parsedArgs.desLimit=300;
 			Initializer::initDesLimit(model, globalState, parsedArgs);
 
 			//simManager.RefreshRNGSeed(false);
