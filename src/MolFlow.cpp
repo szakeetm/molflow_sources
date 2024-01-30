@@ -1008,7 +1008,7 @@ int MolFlow::FrameMove()
 
 
 	// Save previous state to react to changes
-	prevRunningState = runningState;
+	//prevRunningState = runningState;
 
 	return GL_OK;
 }
