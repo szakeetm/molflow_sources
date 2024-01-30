@@ -2410,6 +2410,7 @@ void MolFlow::UpdatePlotters() {
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
+	if (mApp->imWnd) mApp->imWnd->profPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
