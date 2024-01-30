@@ -168,7 +168,7 @@ std::shared_ptr<MolflowSimulationModel>  Initializer::initFromFile(SimulationMan
 
     loadedModel->CalcTotalOutgassing(); //Gas mass or facet outgassing / temperature might have changed by parameter changes
 
-    // Set desorption limit if used
+    // Verify and set desorption limit (if used)
     if (initDesLimit(loadedModel, globalState, parsedArgs)) {
         throw Error("Error in Initializer::initDesLimit");
     }
@@ -342,6 +342,7 @@ std::shared_ptr<MolflowSimulationModel> Initializer::CLILoadFromXML(const std::s
  * \return 0> error code, 0 when ok
  */
 int Initializer::initDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState, SettingsIO::CLIArguments& parsedArgs) {
+    
     try { //unti initDesLimit will throw error
         std::lock_guard<std::mutex> lock(model->modelMutex);
     }
@@ -350,12 +351,15 @@ int Initializer::initDesLimit(const std::shared_ptr<MolflowSimulationModel> mode
     }
     
     model->otfParams.desorptionLimit = parsedArgs.desLimit;
-    size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
-    if (oldDesNb >= model->otfParams.desorptionLimit) {
-        Log::console_msg_master(1,
-            "Desorption limit ({}) already reached (input file nbDes={}). Consider resetting the simulation (--reset argument)\n",
-            model->otfParams.desorptionLimit,oldDesNb);
-        return 1;
+    if (model->otfParams.desorptionLimit > 0) {
+        //Check if already reached
+        size_t oldDesNb = globalState->globalStats.globalHits.nbDesorbed;
+        if (oldDesNb >= model->otfParams.desorptionLimit) {
+            Log::console_msg_master(1,
+                "Desorption limit ({}) already reached (input file nbDes={}). Consider resetting the simulation (--reset argument)\n",
+                model->otfParams.desorptionLimit, oldDesNb);
+            return 1;
+        }
     }
     return 0; //Success
 }
