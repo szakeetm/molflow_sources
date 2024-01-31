@@ -375,7 +375,6 @@ void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool a
 		SetCurrentFileName(fileName.c_str());
 		mApp->UpdateTitle();
 	}
-	prg.Hide();
 }
 
 /**
