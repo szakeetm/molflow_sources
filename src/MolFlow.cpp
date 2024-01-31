@@ -966,6 +966,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 	if (mApp->imWnd) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 }
 
 // Name: FrameMove()
@@ -2411,6 +2412,7 @@ void MolFlow::UpdatePlotters() {
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
 	if (mApp->imWnd) mApp->imWnd->profPlot.UpdatePlotter();
+	if (mApp->imWnd) mApp->imWnd->textPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
