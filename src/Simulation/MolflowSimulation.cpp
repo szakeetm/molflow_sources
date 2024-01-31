@@ -199,7 +199,6 @@ void MolflowSimulation::ResetSimulation() {
 
         particleTracer->tmpParticleLog->clear();
     }
-    totalDesorbed = 0;
 }
 
 //Commented out: will use ResetSimulation instead, almost identical

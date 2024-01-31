@@ -265,39 +265,43 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_p
     bool endCondition = false;
     do {
         ProcessSleep(1000);
+        
+        if (model->otfParams.desorptionLimit != 0) {
+            endCondition = globalState->globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
+        }
 
         elapsedTime = simTimer.Elapsed();
-        if (model->otfParams.desorptionLimit != 0)
-            endCondition = globalState->globalStats.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
-
-        if (endCondition) {
-            // if there is a next des limit, handle that
-            if (!parsedArgs.desLimit.empty()) {
-                HandleIntermediateDesLimit(model, globalState, simManager, persistentUserSettings, endCondition, parsedArgs);
-            }
-        }
-        else if (parsedArgs.autoSaveInterval && simTimer.SecondsSinceLastAutosave() > parsedArgs.autoSaveInterval) { // autosave every x seconds
-            // Autosave
-            GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
-            prg.noProgress = simManager.noProgress;
-            FlowIO::XmlWriter writer;
-            writer.AppendSimulationStateToFile(autoSave, model, prg, globalState);
-            simTimer.UpdateLastAutoSave();
-        }
-
-        if (parsedArgs.statprintInterval && simTimer.SecondsSinceLastStatprint() > parsedArgs.statprintInterval) { // print stats every x seconds
-            // Print runtime stats
-            if ((uint64_t)elapsedTime / parsedArgs.statprintInterval <= 1) {
-                printer.PrintHeader();
-            }
-            printer.Print(elapsedTime, globalState);
-            simTimer.UpdateLastStatprintTime();
-        }
-
-        // Check for potential time end
         if (parsedArgs.simDuration > 0) {
             endCondition |= (elapsedTime >= (double)parsedArgs.simDuration);
         }
+        /*
+        if (endCondition) {
+            // if there is a next des limit, handle that
+            
+            HandleDesLimitReached(model, globalState, simManager, persistentUserSettings, parsedArgs);
+            
+        }
+        else*/
+
+        if (!endCondition) {
+            if (parsedArgs.autoSaveInterval && simTimer.SecondsSinceLastAutosave() > parsedArgs.autoSaveInterval) { // autosave every x seconds
+                // Autosave
+                GLProgress_CLI prg(fmt::format("[{:.2}s] Creating auto save file {}", elapsedTime, autoSave));
+                prg.noProgress = simManager.noProgress;
+                FlowIO::XmlWriter writer;
+                writer.AppendSimulationStateToFile(autoSave, model, prg, globalState);
+                simTimer.UpdateLastAutoSave();
+            }
+
+            if (parsedArgs.statprintInterval && simTimer.SecondsSinceLastStatprint() > parsedArgs.statprintInterval) { // print stats every x seconds
+                // Print runtime stats
+                if ((uint64_t)elapsedTime / parsedArgs.statprintInterval <= 1) {
+                    printer.PrintHeader();
+                }
+                printer.Print(elapsedTime, globalState);
+                simTimer.UpdateLastStatprintTime();
+            }
+        }        
     } while (!endCondition);
 }
 
@@ -370,8 +374,9 @@ void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std
     }
 }
 
-void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs) {
+/*
+void HandleDesLimitReached(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, SettingsIO::CLIArguments& parsedArgs) {
     // First write an intermediate output file
                 // 1. Get file name
     std::string outFile = std::filesystem::path(parsedArgs.outputPath)
@@ -423,6 +428,7 @@ void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> mo
         endCondition = true;
     }
 }
+*/
 
 //Transfers recorded angle maps from "simulation state" to "model"
 void GatherAngleMapRecordings(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState) {

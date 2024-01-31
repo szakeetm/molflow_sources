@@ -983,7 +983,7 @@ int MolFlow::FrameMove()
 	}
 	Interface::FrameMove(); //might reset lastupdate
 	char tmp[256];
-	if (globalSettings) globalSettings->SMPUpdate();
+	if (globalSettings) globalSettings->UpdateProcessList(); //Only if visible, has own frame limiter
 
 	if ((elapsedTime <= 2.0f) && runningState) {
 		hitNumber->SetText("Starting...");
@@ -1013,7 +1013,7 @@ int MolFlow::FrameMove()
 
 
 	// Save previous state to react to changes
-	prevRunningState = runningState;
+	//prevRunningState = runningState;
 
 	return GL_OK;
 }
