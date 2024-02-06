@@ -66,6 +66,6 @@ private:
 
 	GLButton    *setToCurrentButton;
 	GLCombo     *physicsModeCombo;
-	GLButton    *updateButton;
+	GLButton    *applyButton;
 
 };

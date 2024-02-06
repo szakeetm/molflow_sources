@@ -126,6 +126,7 @@ namespace {
 		));
 
 	struct Stats {
+		std::string fileName;
 		std::string commitHash;
 		double min{ -1.0 }, max{ -1.0 }, avg{ -1.0 }, med{ -1.0 };
 
@@ -165,8 +166,13 @@ namespace {
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, Stats const& r) {
-			return os << r.commitHash << " " << std::scientific << std::setprecision(8) << "max: "<< r.max << " " << "min: " << r.min
-				<< " " << "median: " << r.med << " " << "avg: " << r.avg;
+			return os << " Commit: " << r.commitHash
+				<< "\n File name: " << r.fileName
+				<< std::scientific << std::setprecision(2)
+				<< "\n Max:" <<  r.max << " hits/s"
+				<< "\n  Med:" <<  r.med << " hits/s"
+				<< "\n  Avg:" <<  r.avg << " hits/s"
+				<< "\n Min:" <<  r.min << " hits/s";
 		}
 
 		bool operator<(Stats const& other) const {
@@ -282,7 +288,7 @@ namespace {
 
 			SettingsIO::cleanup_files(parsedArgs.outputPath, parsedArgs.workPath);
 
-			Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb+1, nRuns, perfTimes.back());
+			Log::console_msg(1, "[Run {}/{}] finished with {:.2e} hits/s\n", runNb+1, nRuns, perfTimes.back());
 		};
 
 		// Compare to old performance values here
@@ -293,6 +299,7 @@ namespace {
 			Stats currentRun;
 			currentRun.commitHash = GIT_COMMIT_HASH;
 			currentRun.commitHash = currentRun.commitHash.substr(0, 8); // only first 8 hex digits
+			currentRun.fileName = testFile;
 			currentRun.min = perfTimes.front();
 			currentRun.max = perfTimes.back();
 			double sum = std::accumulate(perfTimes.begin(), perfTimes.end(), 0.0);
@@ -301,7 +308,7 @@ namespace {
 				? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
 				: perfTimes[perfTimes.size() / 2];
 
-			std::cout << "Current Run: " << currentRun << std::endl;
+			std::cout << "Results over " << nRuns << " runs:\n" << currentRun << std::endl;
 
 			std::vector<Stats> prevRun;
 			std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
@@ -568,8 +575,7 @@ namespace {
 			}
 			// clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
 			globalState->Reset();
-			parsedArgs.desLimit.clear();
-			parsedArgs.desLimit.emplace_back(300);
+			parsedArgs.desLimit=300;
 			Initializer::initDesLimit(model, globalState, parsedArgs);
 
 			//simManager.RefreshRNGSeed(false);

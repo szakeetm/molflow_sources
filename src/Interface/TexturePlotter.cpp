@@ -499,7 +499,7 @@ void TexturePlotter::SaveFile() {
 				if (j < v + wv - 1)
 					fprintf(f, "\t");
 			}
-			fprintf(f, "\r\n");
+			fprintf(f, "\n");
 		}
 		fclose(f);
 

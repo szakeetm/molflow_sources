@@ -1,3 +1,5 @@
+#pragma once
+#include "MolflowTypes.h" //MolflowInterfaceSettings
 static constexpr const char* molflowCliLogo = R"(
   __  __     _  __ _
  |  \/  |___| |/ _| |_____ __ __
@@ -21,6 +23,6 @@ void CLIMainLoop(double& elapsedTime, Chronometer& simTimer, const std::shared_p
 //void CleanUpMPI();
 void WriteResults(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
     SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, std::string& autoSave, SettingsIO::CLIArguments& parsedArgs);
-void HandleIntermediateDesLimit(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
-    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, bool& endCondition, SettingsIO::CLIArguments& parsedArgs);
+/*void HandleDesLimitReached(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState,
+    SimulationManager& simManager, MolflowInterfaceSettings& persistentUserSettings, SettingsIO::CLIArguments& parsedArgs);*/
 void GatherAngleMapRecordings(const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState);

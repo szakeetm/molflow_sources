@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 		mApp->Run();
 	}
 	catch (const std::exception& e) {
-		LockWrapper(mApp->imguiRenderLock);
+		if(!mApp->imguiRenderLock) LockWrapper(mApp->imguiRenderLock);
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -965,6 +965,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
+	if (mApp->imWnd) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 }
 
 // Name: FrameMove()
@@ -981,7 +983,7 @@ int MolFlow::FrameMove()
 	}
 	Interface::FrameMove(); //might reset lastupdate
 	char tmp[256];
-	if (globalSettings) globalSettings->SMPUpdate();
+	if (globalSettings) globalSettings->UpdateProcessList(); //Only if visible, has own frame limiter
 
 	if ((elapsedTime <= 2.0f) && runningState) {
 		hitNumber->SetText("Starting...");
@@ -1011,7 +1013,7 @@ int MolFlow::FrameMove()
 
 
 	// Save previous state to react to changes
-	prevRunningState = runningState;
+	//prevRunningState = runningState;
 
 	return GL_OK;
 }
@@ -2406,6 +2408,8 @@ void MolFlow::UpdatePlotters() {
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
+	if (mApp->imWnd) mApp->imWnd->profPlot.UpdatePlotter();
+	if (mApp->imWnd) mApp->imWnd->textPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
