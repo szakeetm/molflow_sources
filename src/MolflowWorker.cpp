@@ -752,7 +752,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
-				prg.SetMessage("Initializing geometry...");
+				prg.SetMessage("Initializing geometry...",false,true);
 				interfGeom->InitializeGeometry();
 
 				prg.SetMessage("Calculating OpenGL render data...");
