@@ -784,7 +784,7 @@ void MolFlow::ApplyFacetParams() {
 	//worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
-	if (imWnd) imWnd->profPlot.Refresh();
+	if (imWnd && imWnd->profPlot.IsVisible()) imWnd->profPlot.Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	//if (facetAdvParams) facetAdvParams->Refresh();
@@ -966,8 +966,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (imWnd) imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
-	if (mApp->imWnd) mApp->imWnd->histPlot.UpdateOnFacetChange();
-	if (mApp->imWnd) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 }
 
 // Name: FrameMove()
@@ -2414,8 +2414,8 @@ void MolFlow::UpdatePlotters() {
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
-	if (mApp->imWnd) mApp->imWnd->profPlot.UpdatePlotter();
-	if (mApp->imWnd) mApp->imWnd->textPlot.UpdatePlotter();
+	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
