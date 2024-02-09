@@ -47,7 +47,7 @@ public:
     void Refresh();
     void Update(float appTime, bool force = false);
     void Reset();
-    void ResetHighlighting();
+    void RefreshPlottedColors();
 
     // Implementation
     void ProcessMessage(GLComponent* src, int message) override;
@@ -63,7 +63,7 @@ public:
 private:
     int remView(int facet);
     void refreshViews();
-    void applyFacetHighlighting() const;
+    void applyFacetHighlighting();
 
     Worker* worker;
     GLButton* dismissButton;
