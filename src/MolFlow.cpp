@@ -2399,12 +2399,11 @@ void MolFlow::UpdatePlotters() {
 }
 
 void MolFlow::RefreshPlotterCombos() {
-	//Removes non-present views, rebuilds combobox and refreshes plotted data
+	Interface::RefreshPlotterCombos();
+	if (profilePlotter) profilePlotter->Refresh(); //Molflow/Synrad specific child class
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
-	if (profilePlotter) profilePlotter->Refresh();
-	if (histogramPlotter) histogramPlotter->Refresh();
-	if (convergencePlotter) convergencePlotter->Refresh();
+	//ImRefresh(); //To uncomment in imgui-transition branch
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {
