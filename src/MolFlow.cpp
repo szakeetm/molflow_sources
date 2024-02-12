@@ -1335,6 +1335,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (convergencePlotter) convergencePlotter->Refresh();
 		if (imWnd) imWnd->convPlot.Reload();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
+		if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
 		if (imWnd) imWnd->textScale.Load();
@@ -1956,6 +1957,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureScaling) textureScaling->Update();
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
@@ -2032,6 +2034,7 @@ void MolFlow::EmptyGeometry() {
 	if (imWnd) imWnd->histPlot.Reset();
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
