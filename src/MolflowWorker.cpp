@@ -741,7 +741,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 				interfaceParameterCache = mf_model->tdParams.parameters; //copy to cache
 
-				prg.SetMessage("Initializing geometry...");
+				prg.SetMessage("Building geometry...");
 				SimModelToInterfaceGeom();
 				prg.SetMessage("Applying interface settings...");
 				try {
@@ -751,6 +751,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					GLMessageBox::Display(e.what(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);
 					return;
 				}
+				prg.SetMessage("Initializing geometry...",false,true);
 				interfGeom->InitializeGeometry();
 
 				prg.SetMessage("Calculating OpenGL render data...");

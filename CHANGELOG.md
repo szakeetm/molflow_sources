@@ -21,6 +21,7 @@
 
 ### Bugfix
 
+- MolFlow runs on OpenGL1.1 environments again (i.e. Remote Desktop servers)
 - Inserting geometries: formula and selection group offsetting working again
 - Stop simulation correctly if desorption limit reached almost instantly after start
 - molflowCLI: allow to run simulations for very small desorption limits
