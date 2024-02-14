@@ -240,8 +240,9 @@ GlobalSettings::GlobalSettings(Worker *w) :GlobalSettingsBase(w) {
 	restartButton = new GLButton(0, "Apply and restart processes");
 	processPanel->Add(restartButton);
 
-	maxButton = new GLButton(0, "Change desorption limit");
-	processPanel->Add(maxButton);
+	desLimitButton = new GLButton(0, "Desorption limit");
+	processPanel->Add(desLimitButton);
+	UpdateDesLimitButtonText();
 
 	// Center dialog
 	int screenWidth, screenHeight;
@@ -392,7 +393,7 @@ void GlobalSettings::ResizeProcessPanel(int windowWidth, int windowHeight) {
 	processPanel->SetCompBounds(subProcLabel,10, processPanelHeight - 25, 120, 19);
 	processPanel->SetCompBounds(nbProcText,135, processPanelHeight - 27, 30, 19);
 	processPanel->SetCompBounds(restartButton,170, processPanelHeight - 27, 150, 19);
-	processPanel->SetCompBounds(maxButton,windowWidth - 195, processPanelHeight - 27, 175, 19);
+	processPanel->SetCompBounds(desLimitButton,windowWidth - 195, processPanelHeight - 27, 175, 19);
 
 	processList->SetColumnWidth(4, windowWidth - 287);
 }

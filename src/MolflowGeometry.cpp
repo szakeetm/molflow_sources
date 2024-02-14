@@ -2944,8 +2944,7 @@ void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> 
 	SetInterfaceStructures(loadedModel->structures, true,newStr, targetStructId);
 	//Parameters (needs to precede facets)
 	TimeDependentParameters::InsertParametersBeforeCatalog(work->interfaceParameterCache, loadedModel->tdParams.parameters);
-	SetInterfaceFacets(loadedModel->facets, true, oldNbVertex, newStr ? oldNbStruct : targetStructId);
-
+	
 	for (const auto& selection : interfaceSettings.selections) {
 		SelectionGroup s;
 		s.name = selection.name;
@@ -2963,6 +2962,8 @@ void MolflowGeometry::InsertModel(const std::shared_ptr<MolflowSimulationModel> 
 		mApp->OffsetFormula(expr_cpy, (int)sh.nbFacet);
 		mApp->appFormulas->AddFormula(newFormula.name, expr_cpy);
 	}
+
+	SetInterfaceFacets(loadedModel->facets, true, oldNbVertex, newStr ? oldNbStruct : targetStructId); //increases sh.nbFacet, must be after selection/formula offset
 
 	InitializeGeometry();
 }

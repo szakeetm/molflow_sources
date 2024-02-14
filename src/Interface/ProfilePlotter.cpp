@@ -244,8 +244,7 @@ void ProfilePlotter::Refresh() {
 
 	//Update values
 	refreshViews();
-    ResetHighlighting();
-
+	applyFacetHighlighting();
 }
 
 
@@ -472,16 +471,13 @@ void ProfilePlotter::Reset() {
 /**
 * \brief Resets the selection highlighting colors
 */
-void ProfilePlotter::ResetHighlighting() {
+void ProfilePlotter::RefreshPlottedColors() {
 
     plottedFacets.clear();
     for(int viewId = 0; viewId < nbView; viewId++){
         GLDataView *v = views[viewId];
         plottedFacets.insert(std::make_pair(v->userData1, v->GetColor()));
-
     }
-
-    applyFacetHighlighting();
 }
 
 /**
@@ -744,9 +740,10 @@ std::map<int,GLColor> ProfilePlotter::GetIDColorPairs() const {
 /**
 * \brief Applies or removes facet highlighting
 */
-void ProfilePlotter::applyFacetHighlighting() const {
+void ProfilePlotter::applyFacetHighlighting() {
     auto interfGeom = this->worker->GetGeometry();
-    if(useProfColToggle->GetState()){
+    if(useProfColToggle->GetState()) {
+		RefreshPlottedColors();
         interfGeom->SetPlottedFacets(plottedFacets);
     }
     else {

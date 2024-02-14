@@ -70,7 +70,7 @@ public:
 	void PlaceComponents() override;
     void UpdateFacetHits(bool allRows) override;
 	void UpdatePlotters() override;
-	void RefreshPlotterCombos();
+	void RefreshPlotterCombos() override;
 
 	//Flow/sticking coeff. conversion
 	void CalcPumpingSpeed();

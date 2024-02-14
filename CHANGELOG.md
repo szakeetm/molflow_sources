@@ -1,5 +1,34 @@
 # Changelog
 
+## v2.9.19 beta
+
+### Feature
+
+- molflowCLI: allow 'specific outgassing' parameter change
+
+### Interface
+
+- Histogram settings panel shows memory estimate of histograms
+- Show actual desorption limit in Global Settings
+- Sanitize desorption limit user input before applying
+- molflowCLI: better error reporting for parameter changes
+- Easier to understand Texture Scaling window controls
+- Select by texture type: allow 0 as min. ratio
+
+### DearImGUI interface migration
+
+[to fill by Tymoteusz]
+
+### Bugfix
+
+- MolFlow runs on OpenGL1.1 environments again (i.e. Remote Desktop servers)
+- Inserting geometries: formula and selection group offsetting working again
+- Stop simulation correctly if desorption limit reached almost instantly after start
+- molflowCLI: allow to run simulations for very small desorption limits
+- molflowCLI: --setParamsByFile with outgassing: fixed factor of 10 error
+- crash after Copy Mirror command
+- every second line empty on Texture Plotter export
+
 ## v2.9.18 beta (2024-01-08)
 
 - Hotfix after 2.9.17: formula parsing works again
