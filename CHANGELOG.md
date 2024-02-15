@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.9.19 beta
+## v2.9.19 beta (2024-02-15)
 
 ### Feature
 
@@ -9,19 +9,16 @@
 ### Interface
 
 - Histogram settings panel shows memory estimate of histograms
-- Show actual desorption limit in Global Settings
+- Show actual desorption limit in Global Settings on change button
 - Sanitize desorption limit user input before applying
-- molflowCLI: better error reporting for parameter changes
+- molflowCLI: feedback (success/error) for parameter changes
 - Easier to understand Texture Scaling window controls
 - Select by texture type: allow 0 as min. ratio
-
-### DearImGUI interface migration
-
-[to fill by Tymoteusz]
 
 ### Bugfix
 
 - MolFlow runs on OpenGL1.1 environments again (i.e. Remote Desktop servers)
+- Selection sometimes not finding facets on click fixed
 - Inserting geometries: formula and selection group offsetting working again
 - Stop simulation correctly if desorption limit reached almost instantly after start
 - molflowCLI: allow to run simulations for very small desorption limits

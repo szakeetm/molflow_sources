@@ -5,8 +5,8 @@
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 static const std::string appName = "Molflow";
-static const int appVersionId = 2918; //Compared with available updates 
-static const std::string appVersionName = "2.9.18 beta";
+static const int appVersionId = 2919; //Compared with available updates 
+static const std::string appVersionName = "2.9.19 beta";
 
 static const std::string appTitle = "Molflow+ " + appVersionName
 + " (" __DATE__ ")"
