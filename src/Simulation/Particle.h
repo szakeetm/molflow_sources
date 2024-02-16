@@ -90,6 +90,8 @@ namespace MFSim {
 
         void PerformBounce(SimulationFacet *iFacet);
 
+        void PerformScatter();
+
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
@@ -116,6 +118,7 @@ namespace MFSim {
 
         double velocity;
         double expectedDecayMoment; //for radioactive gases
+        double expectedFreePath; //for background collisions
         //size_t structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes

@@ -222,180 +222,212 @@ void DeleteChain (HitChain** head_ref){
 // Returns true if des limit reached or des error, false otherwise
 MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
-    MCStepResult result = MCStepResult::Success; //By default
+	MCStepResult result = MCStepResult::Success; //By default
 
-    {
-        const int ompIndex = threadNum;//omp_get_thread_num();
 
-        particleTracerId = ompIndex;
-        size_t i;
+	const int ompIndex = threadNum;//omp_get_thread_num();
+
+	particleTracerId = ompIndex;
+	size_t i;
 
 #if !defined(USE_OLD_BVH)
-        ray.pay = nullptr;
-        ray.tMax = 1.0e99;
-        if(lastHitFacet)
-            ray.lastIntersected = lastHitFacet->globalId;
-        else
-            ray.lastIntersected = -1;
-        ray.rng = &randomGenerator;
+	ray.pay = nullptr;
+	ray.tMax = 1.0e99;
+	if (lastHitFacet)
+		ray.lastIntersected = lastHitFacet->globalId;
+	else
+		ray.lastIntersected = -1;
+	ray.rng = &randomGenerator;
 #endif
-        // start new particle when no previous hit facet was saved
-        bool insertNewParticle = !lastHitFacet;
-        for (i = 0; i < nbStep && !exitRequested; i++) {
-            if (insertNewParticle) {
-                // quit on desorp error or limit reached
-                if((model->otfParams.desorptionLimit > 0 && remainingDes==0)){
-                    result = MCStepResult::MaxReached; // desorp limit reached
-                    break;
-                }
-                else if (!StartFromSource(ray)) {
-                    result = MCStepResult::DesorptionError;
-                    break;
-                }
-                insertNewParticle = false;
-                --remainingDes;
-            }
+	// start new particle when no previous hit facet was saved
+	bool insertNewParticle = !lastHitFacet;
+	for (i = 0; i < nbStep && !exitRequested; i++) {
+		if (insertNewParticle) {
+			// quit on desorp error or limit reached
+			if ((model->otfParams.desorptionLimit > 0 && remainingDes == 0)) {
+				result = MCStepResult::MaxReached; // desorp limit reached
+				break;
+			}
+			else if (!StartFromSource(ray)) {
+				result = MCStepResult::DesorptionError;
+				break;
+			}
+			insertNewParticle = false;
+			--remainingDes;
+		}
 
-            // Todo: Only use one method, ID or Ptr
-            if (lastHitFacet) {
-                ray.lastIntersected = lastHitFacet->globalId;
-            }
-            else {
-                ray.lastIntersected = -1;
-            }
-            //return (lastHitFacet != nullptr);
+		// Todo: Only use one method, ID or Ptr
+		if (lastHitFacet) {
+			ray.lastIntersected = lastHitFacet->globalId;
+		}
+		else {
+			ray.lastIntersected = -1;
+		}
+		//return (lastHitFacet != nullptr);
 
-            //Prepare output values
+		//Prepare output values
 #if defined(USE_OLD_BVH)
-            auto[found, collidedFacet, d] = Intersect(*this, particleTracerPtr.origin,
-                                                      particleTracerPtr.direction, model->structures[particleTracerPtr.structure].aabbTree.get());
-            //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
+		auto [found, collidedFacet, d] = Intersect(*this, particleTracerPtr.origin,
+			particleTracerPtr.direction, model->structures[particleTracerPtr.structure].aabbTree.get());
+		//printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
 #else
-            transparentHitBuffer.clear();
-            bool found;
-            MolflowSimFacet* collidedFacet;
-			double d;
-			{
-				ray.tMax = 1.0e99;
+		transparentHitBuffer.clear();
+		bool found;
+		MolflowSimFacet* collidedFacet;
+		double d;
+		{
+			ray.tMax = 1.0e99;
 
-				found = model->rayTracingStructures.at(ray.structure)->Intersect(ray);
-				if (found) {
+			found = model->rayTracingStructures.at(ray.structure)->Intersect(ray);
+			if (found) {
 
-					// first pass
-					std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
+				// first pass
+				std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
 
-					for (auto& hit : ray.transparentHits) {
-						if (ray.tMax <= hit.hit.colDistTranspPass) {
-							continue;
-						}
+				for (auto& hit : ray.transparentHits) {
+					if (ray.tMax <= hit.hit.colDistTranspPass) {
+						continue;
+					}
 
-						// Second pass for transparent hits
-						auto tpFacet = model->facets[hit.hitId].get();
-						if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
-							if (alreadyHit.count(tpFacet->globalId) == 0) {
-								tmpFacetVars[hit.hitId] = hit.hit;
-								RegisterTransparentPass(tpFacet);
-								alreadyHit.insert(tpFacet->globalId);
-							}
-						}
-						else { //BVH
+					// Second pass for transparent hits
+					auto tpFacet = model->facets[hit.hitId].get();
+					if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
+						if (alreadyHit.count(tpFacet->globalId) == 0) {
 							tmpFacetVars[hit.hitId] = hit.hit;
 							RegisterTransparentPass(tpFacet);
+							alreadyHit.insert(tpFacet->globalId);
 						}
 					}
+					else { //BVH
+						tmpFacetVars[hit.hitId] = hit.hit;
+						RegisterTransparentPass(tpFacet);
+					}
 				}
-				ray.transparentHits.clear();
 			}
+			ray.transparentHits.clear();
+		}
 
-            // hard hit
-            if(found){
-                auto& hit = ray.hardHit;
-                collidedFacet = (MolflowSimFacet*)(model->facets[hit.hitId].get());
-                tmpFacetVars[hit.hitId] = hit.hit;
-                d = hit.hit.colDistTranspPass;
-            }
+		// hard hit
+		if (found) {
+			auto& hit = ray.hardHit;
+			collidedFacet = (MolflowSimFacet*)(model->facets[hit.hitId].get());
+			tmpFacetVars[hit.hitId] = hit.hit;
+			d = hit.hit.colDistTranspPass;
+		}
 
 #endif //use old bvh
 
-            if (found) {
+		//Treat intersection result
+		if (found) {
 
-                // Move particle to intersection point
-                ray.origin = ray.origin + d * ray.direction;
+			const double previousHitTime = ray.time; //memorize for partial hits
 
-                const double lastParticleTime = ray.time; //memorize for partial hits
-                ray.time += d / 100.0 / velocity; //conversion from cm to m
+			//Check for outside of time of interest
+			double distance_until_latestMoment = 1e100;
+			if (!model->sp.calcConstantFlow) {
+				distance_until_latestMoment = velocity * 100.0 * (model->sp.latestMoment - previousHitTime);
+			}
 
-                if ((!model->sp.calcConstantFlow && (ray.time > model->sp.latestMoment))
-                    || (model->sp.enableDecay &&
-                        (expectedDecayMoment < ray.time))) {
-                    //hit time over the measured period - we create a new particle
-                    //OR particle has decayed
-                    const double remainderFlightPath = velocity * 100.0 *
-                                                       std::min(model->sp.latestMoment - lastParticleTime,
-                                                           expectedDecayMoment -
-                                                                   lastParticleTime); //distance until the point in space where the particle decayed
-                    tmpState->globalStats.distTraveled_total += remainderFlightPath * oriRatio;
-                    if (particleTracerId == 0)RecordHit(HIT_LAST);
-                    //distTraveledSinceUpdate += distanceTraveled;
-                    insertNewParticle = true;
-                    lastHitFacet=nullptr;
-                    ray.lastIntersected = -1;
-                } else { //hit within measured time, particle still alive
-                    if (collidedFacet->sh.teleportDest != 0) { //Teleport
-                        IncreaseDistanceCounters(d * oriRatio);
-                        PerformTeleport(collidedFacet);
-                    }
+			//Check for particle decay
+			double distance_until_decay = 1e100;
+			if (model->sp.enableDecay) {
+				distance_until_decay = velocity * 100.0 * (expectedDecayMoment - previousHitTime);
+			}
 
-                    else { //Not teleport
-                        IncreaseDistanceCounters(d * oriRatio);
-                        const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
-                        if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
-                            if (stickingProbability == 1.0 ||
-                                ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
-                                //Absorbed
-                                RecordAbsorb(collidedFacet);
-                                //currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
-                                //distTraveledSinceUpdate += distanceTraveled;
-                                insertNewParticle = true;
-                                lastHitFacet=nullptr;
-                                ray.lastIntersected = -1;
-                            } else {
-                                //Reflected
-                                PerformBounce(collidedFacet);
-                            }
-                        } else { //Low flux mode
-                            if (stickingProbability > 0.0) {
-                                const double oriRatioBeforeCollision = oriRatio; //Local copy
-                                oriRatio *= (stickingProbability); //Sticking part
-                                RecordAbsorb(collidedFacet);
-                                oriRatio =
-                                        oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
-                            } else
-                                oriRatio *= (1.0 - stickingProbability);
-                            if (oriRatio > model->otfParams.lowFluxCutoff) {
-                                PerformBounce(collidedFacet);
-                            } else { //eliminate remainder and create new particle
-                                insertNewParticle = true;
-                                lastHitFacet=nullptr;
-                                ray.lastIntersected = -1;
-                            }
-                        }
-                    }
-                } //end hit within measured time
-            } //end intersection found
-            else {
-                // No intersection found: Leak
-                tmpState->globalStats.nbLeakTotal++;
-                if (particleTracerId == 0)RecordLeakPos();
-                insertNewParticle = true;
-                ray.lastIntersected = -1;
-                lastHitFacet=nullptr;
-                ray.lastIntersected = -1;
-            }
-        }
-    } // omp parallel
+			//Check for background gas collision
+			double distance_until_scatter = 1e100;
+			if (model->sp.enableBackgroundCollisions) {
+				distance_until_scatter = expectedFreePath;
+			}
 
-    return result;
+			double travel_path = std::min({ d,distance_until_latestMoment,distance_until_decay,distance_until_scatter });
+
+			// Move particle to intersection point
+			ray.origin = ray.origin + travel_path * ray.direction;
+			ray.time += travel_path / 100.0 / velocity; //conversion from cm to m
+
+			if (IsEqual(travel_path, d)) {
+				//regular collision, no event during flight
+				if (collidedFacet->sh.teleportDest != 0) { //Teleport
+					IncreaseDistanceCounters(d * oriRatio);
+					PerformTeleport(collidedFacet);
+				}
+				else { //Not teleport
+					IncreaseDistanceCounters(d * oriRatio);
+					const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
+					if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
+						if (stickingProbability == 1.0 ||
+							((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
+							//Absorbed
+							RecordAbsorb(collidedFacet);
+							//currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
+							//distTraveledSinceUpdate += distanceTraveled;
+							insertNewParticle = true;
+							lastHitFacet = nullptr;
+							ray.lastIntersected = -1;
+						}
+						else {
+							//Reflected
+							PerformBounce(collidedFacet);
+						}
+					}
+					else { //Low flux mode
+						if (stickingProbability > 0.0) {
+							const double oriRatioBeforeCollision = oriRatio; //Local copy
+							oriRatio *= (stickingProbability); //Sticking part
+							RecordAbsorb(collidedFacet);
+							oriRatio =
+								oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
+						}
+						else {
+							oriRatio *= (1.0 - stickingProbability);
+						}
+
+						if (oriRatio > model->otfParams.lowFluxCutoff) {
+							PerformBounce(collidedFacet);
+						}
+						else { //eliminate remainder and create new particle
+							insertNewParticle = true;
+							lastHitFacet = nullptr;
+							ray.lastIntersected = -1;
+						}
+					}
+				}
+			}
+			else if (IsEqual(travel_path, distance_until_latestMoment)) {
+				//over latest moment
+				tmpState->globalStats.distTraveled_total += distance_until_latestMoment * oriRatio;
+				if (particleTracerId == 0) RecordHit(HIT_LAST);
+				insertNewParticle = true;
+				lastHitFacet = nullptr;
+				ray.lastIntersected = -1;
+			}
+			else if (IsEqual(travel_path, distance_until_decay)) {
+				//particle decayed
+				tmpState->globalStats.distTraveled_total += distance_until_decay * oriRatio;
+				if (particleTracerId == 0) RecordHit(HIT_LAST);
+				insertNewParticle = true;
+				lastHitFacet = nullptr;
+				ray.lastIntersected = -1;
+			}
+			else if (IsEqual(travel_path, distance_until_scatter)) {
+				//background gas collision
+                IncreaseDistanceCounters(distance_until_scatter);
+                PerformScattering();
+			}
+
+		}
+		else {
+			// No intersection found: Leak
+			tmpState->globalStats.nbLeakTotal++;
+			if (particleTracerId == 0)RecordLeakPos();
+			insertNewParticle = true;
+			ray.lastIntersected = -1;
+			lastHitFacet = nullptr;
+			ray.lastIntersected = -1;
+		}
+	}
+	return result;
 }
 
 void ParticleTracer::IncreaseDistanceCounters(double distanceIncrement) {
@@ -495,6 +527,12 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         //Solution: t=TAU*-log(1-randomGenerator.rnd()) and 1-randomGenerator.rnd()=randomGenerator.rnd() therefore t=half_life/ln2*-log(randomGenerator.rnd())
     } else {
         expectedDecayMoment = 1e100; //never decay
+    }
+    if (model->sp.enableBackgroundCollisions) {
+        expectedFreePath = GeneratePoissonRnd(hardsphere_lambda, randomGenerator.rnd());
+    }
+    else { //never collide
+        expectedFreePath = 1e100; //never collide
     }
     //temperature = src->sh.temperature; //Thermalize particle
     nbBounces = 0;
@@ -698,11 +736,11 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0, nullVector, nullVector, nullVector);
         ray.structure = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
-            if (particleTracerId == 0)RecordHit(HIT_MOVING);
+            if (particleTracerId == 0) RecordHit(HIT_MOVING);
             Physics::TreatMovingFacet(model, ray.origin, ray.direction, velocity);
         } else {
             // Count this hit as a transparent pass
-            if (particleTracerId == 0)RecordHit(HIT_TRANS);
+            if (particleTracerId == 0) RecordHit(HIT_TRANS);
         }
         LogHit(iFacet);
 
@@ -829,6 +867,46 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     } else if (particleTracerId == 0)RecordHit(HIT_REF);
     lastHitFacet = iFacet;
     //nbPHit++;
+}
+
+void ParticleTracer::PerformScatter() {
+    //background gas scattering
+    //Count scattering as MC hits
+    tmpState->globalStats.globalHits.nbMCHit++; //global
+    tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
+
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
+
+    nbBounces++;
+    if (particleTracerId == 0) {
+        RecordHit(HIT_SCATTER);
+    }
+
+    const double b = Physics::GenerateImpactParameter(model->sp.scattering.rho, randomGenerator.rnd());
+    const double scatterTheta = Physics::GetScatteringAngle(b, model->sp.scattering.rho, model->sp.scattering.massRatio);
+    const double randomAzimuth = 2.0 * PI * randomGenerator.rnd();
+    //Construct random orthonormal base
+    Vector3d randomVector;
+    if (ray.direction.x != 0.0) {
+        randomVector = Vector3d(0.0, 0.0, 1.0); //Z
+    }
+    else if (ray.direction.y != 0.0) {
+        randomVector = Vector3d(1.0, 0.0, 1.0); //X
+    }
+    else {
+        randomVector = Vector3d(1.0, 0.0, 0.0); //X
+    }
+
+    // Generate two orthonormal vectors
+    Vector3d u_n = CrossProduct(ray.direction, randomVector).Normalized();
+
+    Vector3d v_n = CrossProduct(ray.direction, u_n).Normalized();
+
+    ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
+    velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
 }
 
 /*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet
@@ -1236,8 +1314,8 @@ void ParticleTracer::Reset() {
     teleportedFrom = -1;
 
     velocity = 0.0;
-    expectedDecayMoment = 0.0;
-
+    expectedDecayMoment = 1e100;
+    expectedFreePath = 1e100;
     tmpState->Reset();
     lastHitFacet = nullptr;
     ray.lastIntersected = -1;
