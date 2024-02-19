@@ -369,6 +369,9 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 						else {
 							//Reflected
 							PerformBounce(collidedFacet);
+                            if (model->sp.scattering.enabled) {
+                                expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                            }
 						}
 					}
 					else { //Low flux mode
@@ -385,6 +388,9 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 						if (oriRatio > model->otfParams.lowFluxCutoff) {
 							PerformBounce(collidedFacet);
+                            if (model->sp.scattering.enabled) {
+                                expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                            }
 						}
 						else { //eliminate remainder and create new particle
 							insertNewParticle = true;
@@ -416,9 +422,12 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
                     insertNewParticle = true;
-                    lastHitFacet = nullptr;
                     ray.lastIntersected = -1;
                 }
+                else {
+                    expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                }
+                lastHitFacet = nullptr; //To allow coming back to where it came from
 			}
 
 		}
@@ -427,7 +436,6 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 			tmpState->globalStats.nbLeakTotal++;
 			if (particleTracerId == 0)RecordLeakPos();
 			insertNewParticle = true;
-			ray.lastIntersected = -1;
 			lastHitFacet = nullptr;
 			ray.lastIntersected = -1;
 		}
@@ -890,9 +898,6 @@ bool ParticleTracer::PerformScatter() {
     }
 
     nbBounces++;
-    if (particleTracerId == 0) {
-        RecordHit(HIT_SCATTER);
-    }
 
     const double b = Physics::GenerateImpactParameter(model->sp.scattering.rho, randomGenerator.rnd());
     const double scatterTheta = Physics::GetScatteringAngle(b, model->sp.scattering.rho, model->sp.scattering.massRatio);
@@ -919,8 +924,14 @@ bool ParticleTracer::PerformScatter() {
 
     if (velocity < model->sp.scattering.velocityCutoffRatio) {
         return false; //Reached Brownian motion
+        if (particleTracerId == 0) {
+            RecordHit(HIT_TRANS);
+        }
     }
     else {
+        if (particleTracerId == 0) {
+            RecordHit(HIT_SCATTER);
+        }
         return true;
     }
 }
