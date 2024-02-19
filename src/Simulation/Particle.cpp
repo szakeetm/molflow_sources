@@ -336,7 +336,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 			//Check for background gas collision
 			double distance_until_scatter = 1e100;
-			if (model->sp.enableBackgroundCollisions) {
+			if (model->sp.scattering.enabled) {
 				distance_until_scatter = expectedFreePath;
 			}
 
@@ -413,7 +413,12 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 			else if (IsEqual(travel_path, distance_until_scatter)) {
 				//background gas collision
                 IncreaseDistanceCounters(distance_until_scatter);
-                PerformScattering();
+                bool scatterSuccess = PerformScatter();
+                if (!scatterSuccess) { //Reached Brownian motion
+                    insertNewParticle = true;
+                    lastHitFacet = nullptr;
+                    ray.lastIntersected = -1;
+                }
 			}
 
 		}
@@ -512,12 +517,16 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     lastMomentIndex = 0;
     auto mfSrc = std::static_pointer_cast<MolflowSimFacet>(src); //access extended properties
     //Currently all desorbing facets are const. temp and thus const. temp:
-    if (model->sp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K,mfSrc->sqrtTemp, randomGenerator.rnd());
-    else
-        velocity =
-                145.469 * std::sqrt(src->sh.temperature / model->sp.gasMass);  //sqrt(8*R/PI/1000)=145.47
+    if (model->sp.useMaxwellDistribution) {
+        velocity = Physics::GenerateRandomVelocity(model->maxwell_CDF_1K, mfSrc->sqrtTemp, randomGenerator.rnd());
+    }
+    else {
+        velocity = 145.469 * std::sqrt(src->sh.temperature / model->sp.gasMass);  //sqrt(8*R/PI/1000)=145.47
+    }
 
+    initialVelocity = velocity;
     oriRatio = 1.0;
+
     if (model->sp.enableDecay) { //decaying gas
         expectedDecayMoment =
                 ray.time + model->sp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
@@ -528,8 +537,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     } else {
         expectedDecayMoment = 1e100; //never decay
     }
-    if (model->sp.enableBackgroundCollisions) {
-        expectedFreePath = GeneratePoissonRnd(hardsphere_lambda, randomGenerator.rnd());
+    if (model->sp.scattering.enabled) {
+        expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath, randomGenerator.rnd());
     }
     else { //never collide
         expectedFreePath = 1e100; //never collide
@@ -869,7 +878,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
     //nbPHit++;
 }
 
-void ParticleTracer::PerformScatter() {
+bool ParticleTracer::PerformScatter() {
     //background gas scattering
     //Count scattering as MC hits
     tmpState->globalStats.globalHits.nbMCHit++; //global
@@ -907,6 +916,13 @@ void ParticleTracer::PerformScatter() {
 
     ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
     velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
+
+    if (velocity < model->sp.scattering.velocityCutoffRatio) {
+        return false; //Reached Brownian motion
+    }
+    else {
+        return true;
+    }
 }
 
 /*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet

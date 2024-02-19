@@ -78,5 +78,5 @@ double Physics::GetScatteringAngle(const double b, const double rho, const doubl
 
 double Physics::GetPostScatteringVelocity(const double pre_collision_velocity, const double rho, const double b, const double theta, const double massRatio) {
     //v_new^2 = v_old^2 / (1 + (m_tp / m_bg * rho / b * sin(theta))^2
-    return pow(pre_collision_velocity, 2.0) / (1.0 + pow(massRatio*rho/b*sin(theta), 2.0));
+    return sqrt(pow(pre_collision_velocity, 2.0) / (1.0 + pow(massRatio*rho/b*sin(theta), 2.0)));
 }

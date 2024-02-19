@@ -90,7 +90,7 @@ namespace MFSim {
 
         void PerformBounce(SimulationFacet *iFacet);
 
-        void PerformScatter();
+        bool PerformScatter();
 
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
@@ -117,6 +117,7 @@ namespace MFSim {
         int teleportedFrom;   // We memorize where the particle came from: we can teleport back
 
         double velocity;
+        double initialVelocity; //Used to check for reaching Brownian motion if background collisions are enabled
         double expectedDecayMoment; //for radioactive gases
         double expectedFreePath; //for background collisions
         //size_t structureId;        // Current structure
