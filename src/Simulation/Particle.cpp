@@ -538,7 +538,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         expectedDecayMoment = 1e100; //never decay
     }
     if (model->sp.scattering.enabled) {
-        expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath, randomGenerator.rnd());
+        expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
     }
     else { //never collide
         expectedFreePath = 1e100; //never collide
