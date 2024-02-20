@@ -319,42 +319,52 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 		//Treat intersection result
 		if (found) {
+            //default: simple hit
+            double travel_path = d;
+            ParticleEventType event = ParticleEvent_FacetHit;
 
 			const double previousHitTime = ray.time; //memorize for partial hits
 
 			//Check for outside of time of interest
-			double distance_until_latestMoment = 1e100;
 			if (!model->sp.calcConstantFlow) {
-				distance_until_latestMoment = velocity * 100.0 * (model->sp.latestMoment - previousHitTime);
+				double distance_until_latestMoment = velocity * 100.0 * (model->sp.latestMoment - previousHitTime);
+                if (distance_until_latestMoment < travel_path) {
+                    travel_path = distance_until_latestMoment;
+                    event = ParticleEvent_Overtime;
+                }
 			}
 
 			//Check for particle decay
-			double distance_until_decay = 1e100;
 			if (model->sp.enableDecay) {
-				distance_until_decay = velocity * 100.0 * (expectedDecayMoment - previousHitTime);
+				double distance_until_decay = velocity * 100.0 * (expectedDecayMoment - previousHitTime);
+                if (distance_until_decay < travel_path) {
+                    travel_path = distance_until_decay;
+                    event = ParticleEvent_Decay;
+                }
 			}
 
 			//Check for background gas collision
-			double distance_until_scatter = 1e100;
 			if (model->sp.scattering.enabled) {
-                double expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
-				distance_until_scatter = expectedFreePath;
+                double distance_until_scatter = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                if (distance_until_scatter < travel_path) {
+                    travel_path = distance_until_scatter;
+                    event = ParticleEvent_Scatter;
+                }
 			}
 
-			double travel_path = std::min({ d,distance_until_latestMoment,distance_until_decay,distance_until_scatter });
-
-			// Move particle to intersection point
+			// Move particle to event point
 			ray.origin = ray.origin + travel_path * ray.direction;
 			ray.time += travel_path / 100.0 / velocity; //conversion from cm to m
 
-			if (IsEqual(travel_path, d)) {
+            switch (event) {
+            case ParticleEvent_FacetHit:
 				//regular collision, no event during flight
 				if (collidedFacet->sh.teleportDest != 0) { //Teleport
-					IncreaseDistanceCounters(d * oriRatio);
+					IncreaseDistanceCounters(travel_path * oriRatio);
 					PerformTeleport(collidedFacet);
 				}
 				else { //Not teleport
-					IncreaseDistanceCounters(d * oriRatio);
+					IncreaseDistanceCounters(travel_path * oriRatio);
 					const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
 					if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
 						if (stickingProbability == 1.0 ||
@@ -394,37 +404,32 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 						}
 					}
 				}
-			}
-			else if (IsEqual(travel_path, distance_until_latestMoment)) {
+                break;
+            case ParticleEvent_Overtime:
 				//over latest moment
-				tmpState->globalStats.distTraveled_total += distance_until_latestMoment * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
 				if (particleTracerId == 0) RecordHit(HIT_LAST);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
 				ray.lastIntersected = -1;
-			}
-			else if (IsEqual(travel_path, distance_until_decay)) {
+                break;
+            case ParticleEvent_Decay:
 				//particle decayed
-				tmpState->globalStats.distTraveled_total += distance_until_decay * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
 				if (particleTracerId == 0) RecordHit(HIT_LAST);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
 				ray.lastIntersected = -1;
-			}
-			else if (IsEqual(travel_path, distance_until_scatter)) {
+                break;
+            case ParticleEvent_Scatter:
 				//background gas collision
-                IncreaseDistanceCounters(distance_until_scatter);
-                bool scatterSuccess = PerformScatter();
-                if (!scatterSuccess) { //Reached Brownian motion
+                IncreaseDistanceCounters(travel_path * oriRatio);
+                if (!PerformScatter()) { //Reached Brownian motion
                     insertNewParticle = true;
                     ray.lastIntersected = -1;
                 }
-                else {
-                    
-                }
                 lastHitFacet = nullptr; //To allow coming back to where it came from
 			}
-
 		}
 		else {
 			// No intersection found: Leak
