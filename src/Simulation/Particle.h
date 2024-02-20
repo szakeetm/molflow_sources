@@ -45,13 +45,6 @@ namespace MFSim {
         MaxReached
     };
 
-    enum ParticleEventType {
-        ParticleEvent_FacetHit,
-        ParticleEvent_Overtime,
-        ParticleEvent_Decay,
-        ParticleEvent_Scatter
-    };
-
 /**
 * \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
  */
