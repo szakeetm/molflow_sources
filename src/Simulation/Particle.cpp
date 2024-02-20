@@ -337,6 +337,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 			//Check for background gas collision
 			double distance_until_scatter = 1e100;
 			if (model->sp.scattering.enabled) {
+                double expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
 				distance_until_scatter = expectedFreePath;
 			}
 
@@ -369,9 +370,6 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 						else {
 							//Reflected
 							PerformBounce(collidedFacet);
-                            if (model->sp.scattering.enabled) {
-                                expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
-                            }
 						}
 					}
 					else { //Low flux mode
@@ -388,9 +386,6 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 						if (oriRatio > model->otfParams.lowFluxCutoff) {
 							PerformBounce(collidedFacet);
-                            if (model->sp.scattering.enabled) {
-                                expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
-                            }
 						}
 						else { //eliminate remainder and create new particle
 							insertNewParticle = true;
@@ -425,7 +420,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                     ray.lastIntersected = -1;
                 }
                 else {
-                    expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                    
                 }
                 lastHitFacet = nullptr; //To allow coming back to where it came from
 			}
@@ -545,12 +540,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     } else {
         expectedDecayMoment = 1e100; //never decay
     }
-    if (model->sp.scattering.enabled) {
-        expectedFreePath = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
-    }
-    else { //never collide
-        expectedFreePath = 1e100; //never collide
-    }
+
     //temperature = src->sh.temperature; //Thermalize particle
     nbBounces = 0;
     distanceTraveled = 0;
@@ -922,6 +912,7 @@ bool ParticleTracer::PerformScatter() {
     ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
     velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
 
+    /*
     if (velocity < model->sp.scattering.velocityCutoffRatio) {
         return false; //Reached Brownian motion
         if (particleTracerId == 0) {
@@ -929,11 +920,14 @@ bool ParticleTracer::PerformScatter() {
         }
     }
     else {
+    */
         if (particleTracerId == 0) {
             RecordHit(HIT_SCATTER);
         }
         return true;
+        /*
     }
+    */
 }
 
 /*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet
@@ -1342,7 +1336,7 @@ void ParticleTracer::Reset() {
 
     velocity = 0.0;
     expectedDecayMoment = 1e100;
-    expectedFreePath = 1e100;
+    //expectedFreePath = 1e100;
     tmpState->Reset();
     lastHitFacet = nullptr;
     ray.lastIntersected = -1;

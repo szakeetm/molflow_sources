@@ -249,15 +249,6 @@ void MolflowSimulationModel::PrepareToRun() {
 
     initialized = false;
 
-
-    //Debug for background gas  
-    sp.scattering.enabled = true;
-    sp.scattering.meanFreePath_cm = 5;
-    sp.scattering.massRatio = 3.0;
-    sp.scattering.rho = 3.0;
-    sp.scattering.velocityCutoffRatio = 0.01; //destroy particle if reaches Brownian motion
-
-
     std::string errLog;
 
     //determine latest moment
