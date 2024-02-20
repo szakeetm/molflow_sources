@@ -413,14 +413,14 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 			}
 			else if (IsEqual(travel_path, distance_until_scatter)) {
 				//background gas collision
-                IncreaseDistanceCounters(distance_until_scatter);
+                IncreaseDistanceCounters(distance_until_scatter * oriRatio);
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
                     insertNewParticle = true;
                     ray.lastIntersected = -1;
                 }
                 else {
-                    
+                    //Successful scatter, nothing else to do
                 }
                 lastHitFacet = nullptr; //To allow coming back to where it came from
 			}
