@@ -423,7 +423,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 break;
             case ParticleEvent_Scatter:
 				//background gas collision
-                IncreaseDistanceCounters(distance_until_scatter * oriRatio);
+                IncreaseDistanceCounters(travel_path * oriRatio);
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
                     insertNewParticle = true;
