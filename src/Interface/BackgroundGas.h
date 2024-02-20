@@ -50,7 +50,6 @@ private:
   
   GLTextField	*mfpTextbox;
   GLTextField	*massTextbox;
-  GLTextField	*rhoTextbox;
   
   GLButton	*applyButton;
 

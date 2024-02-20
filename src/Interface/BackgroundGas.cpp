@@ -43,11 +43,11 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	interfGeom = g;
 	work = w;
 	
-	int wD = 300;
-	int hD = 215;
+	int wD = 280;
+	int hD = 200;
 	
 	GLTitledPanel* groupBox1 = new GLTitledPanel("Background gas");
-	groupBox1->SetBounds(15, 30, wD-20, hD-85);
+	groupBox1->SetBounds(15, 30, wD-25, hD-90);
 	Add(groupBox1);
 
 	GLLabel* label1 = new GLLabel("Enables collision with a static background gas");
@@ -59,7 +59,7 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	groupBox1->Add(enableCheckbox);
 
 	GLLabel* label2 = new GLLabel("Mean free path (cm):");
-	groupBox1->SetCompBounds(label2, 22, 50, 107, 13);
+	groupBox1->SetCompBounds(label2, 10, 50, 107, 13);
 	groupBox1->Add(label2);
 
 	mfpTextbox = new GLTextField(0,"");
@@ -67,24 +67,16 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	groupBox1->Add(mfpTextbox);
 
 
-	GLLabel* label3 = new GLLabel("Mass ratio:");
-	groupBox1->SetCompBounds(label3, 22, 75, 107, 13);
+	GLLabel* label3 = new GLLabel("Mass ratio (simu/bg):");
+	groupBox1->SetCompBounds(label3, 10, 75, 107, 13);
 	groupBox1->Add(label3);
 
 	massTextbox = new GLTextField(0, "");
 	SetCompBoundsRelativeTo(label3, massTextbox, 110, 0, 100, 20);
 	groupBox1->Add(massTextbox);
 
-	GLLabel* label4 = new GLLabel("Rho:");
-	groupBox1->SetCompBounds(label4, 22, 100, 107, 13);
-	groupBox1->Add(label4);
-
-	rhoTextbox = new GLTextField(0, "");
-	SetCompBoundsRelativeTo(label4, rhoTextbox, 110, 0, 100, 20);
-	groupBox1->Add(rhoTextbox);
-
 	applyButton = new GLButton(0, "Apply");
-	applyButton->SetBounds(130, wD/2-40, 80, 21);
+	applyButton->SetBounds(wD/2-40, hD-50, 80, 21);
 	Add(applyButton);
 
 	
