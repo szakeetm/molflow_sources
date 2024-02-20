@@ -882,10 +882,12 @@ bool ParticleTracer::PerformScatter() {
     tmpState->globalStats.globalHits.nbMCHit++; //global
     tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
 
+    /* //no recording on scatter so no moment lookup
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
+    */
 
     nbBounces++;
 
