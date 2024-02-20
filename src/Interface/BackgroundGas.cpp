@@ -93,12 +93,7 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 
 	
 	SetTitle("Collisions with background gas");
-	// Center dialog
-	int wS, hS;
-	GLToolkit::GetScreenSize(&wS, &hS);
-	int xD = (wS - wD) / 2;
-	int yD = (hS - hD) / 2;
-	SetBounds(xD, yD, wD, hD);
+	SetBounds(17, 30, wD, hD);
 
 	Update();
 }
