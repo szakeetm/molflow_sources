@@ -83,12 +83,8 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	SetCompBoundsRelativeTo(label4, rhoTextbox, 110, 0, 100, 20);
 	groupBox1->Add(rhoTextbox);
 
-	updateButton = new GLButton(0, "Update");
-	updateButton->SetBounds(40, 170, 75, 21);
-	Add(updateButton);
-
 	applyButton = new GLButton(0, "Apply");
-	applyButton->SetBounds(130, 170, 75, 21);
+	applyButton->SetBounds(130, wD/2-40, 80, 21);
 	Add(applyButton);
 
 	
@@ -109,12 +105,9 @@ void BackgroundGas::ProcessMessage(GLComponent *src,int message) {
 
 	case MSG_BUTTON:
 
-		if(src==updateButton) {
-			Update();
+		if (src == applyButton) { //Apply
 
-		}
-		else if (src == applyButton) { //Apply
-			double mfp_cm, massRatio, rho;
+			double mfp_cm, massRatio;
 
 			if (!(mfpTextbox->GetNumber(&mfp_cm))) {
 				GLMessageBox::Display("Invalid mean free path", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -124,19 +117,51 @@ void BackgroundGas::ProcessMessage(GLComponent *src,int message) {
 				GLMessageBox::Display("Invalid mass ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (!(rhoTextbox->GetNumber(&rho))) {
-				GLMessageBox::Display("Invalid rho", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			
+			if (mApp->AskToReset()) {
+				work->model->sp.scattering.enabled = (bool)enableCheckbox->GetState();
+				work->model->sp.scattering.meanFreePath_cm = mfp_cm;
+				work->model->sp.scattering.massRatio = massRatio;
+
+				work->MarkToReload();
+				mApp->changedSinceSave = true;
 				return;
 			}
-			
-			work->model->sp.scattering.enabled = (bool)enableCheckbox->GetState();
-			work->model->sp.scattering.meanFreePath_cm = mfp_cm;
-			work->model->sp.scattering.massRatio = massRatio;
-			work->model->sp.scattering.rho = rho;
 		}
 		break;
 	case MSG_TEXT_UPD:
-		
+		/*
+		if (src == densityTextbox) {
+			double density,sigma;
+			if (densityTextbox->GetNumber(&density) && sigmaTextbox->GetNumber(&sigma)) {
+				mfpTextbox->SetText(100.0 / (density * sigma)); //m->cm
+			}
+		}
+		else if (src == sigmaTextbox) {
+			double density, sigma;
+			if (sigmaTextbox->GetNumber(&sigma) && densityTextbox->GetNumber(&density)) {
+				mfpTextbox->SetText(100.0 / (density * sigma)); //m->cm
+			}
+		}
+		else if (src == mfpTextbox) {
+			double mfp_cm, sigma; //let's keep sigma fixed, random choice
+			if (mfpTextbox->GetNumber(&mfp_cm) && sigmaTextbox->GetNumber(&sigma)) {
+				densityTextbox->SetText(1.0 / (mfp_cm * 0.01 * sigma));
+			}
+		}
+		else if (src == massRatioTextbox) {
+			double massRatio;
+			if (massRatioTextbox->GetNumber(&massRatio)) {
+				massTextbox->SetText(work->model->sp.gasMass / massRatio);
+			}
+		}
+		else if (src == massTextbox) {
+			double mass;
+			if (massTextbox->GetNumber(&mass)) {
+				massRatioTextbox->SetText(work->model->sp.gasMass / mass);
+			}
+		}
+		*/
 		break;
 	}
 	GLWindow::ProcessMessage(src,message);
@@ -150,7 +175,6 @@ void BackgroundGas::Update() {
 	
 	enableCheckbox->SetState(work->model->sp.scattering.enabled);
 	mfpTextbox->SetText(work->model->sp.scattering.meanFreePath_cm);
-	rhoTextbox->SetText(work->model->sp.scattering.rho);
 	massTextbox->SetText(work->model->sp.scattering.massRatio);
 
 }

@@ -52,7 +52,6 @@ private:
   GLTextField	*massTextbox;
   GLTextField	*rhoTextbox;
   
-  GLButton	*updateButton;
   GLButton	*applyButton;
 
   InterfaceGeometry     *interfGeom;
