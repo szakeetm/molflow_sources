@@ -125,8 +125,8 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
     xml_node scatteringNode = simuParamNode.child("Gas").child("Scattering");
     if (scatteringNode) {
         loadModel->sp.scattering.enabled = scatteringNode.attribute("enabled").as_bool();
-        loadModel->sp.scattering.massRatio = scatteringNode.append_attribute("massRatio").as_double();
-        loadModel->sp.scattering.meanFreePath_cm = scatteringNode.append_attribute("meanFreePath_cm").as_double();
+        loadModel->sp.scattering.massRatio = scatteringNode.attribute("massRatio").as_double();
+        loadModel->sp.scattering.meanFreePath_cm = scatteringNode.attribute("meanFreePath_cm").as_double();
     }
 
     xml_node lowFluxNode = simuParamNode.child("LowFluxMode");
