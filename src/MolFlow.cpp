@@ -972,11 +972,16 @@ int MolFlow::FrameMove()
 {
 	bool runningState = worker.IsRunning();
 	double elapsedTime = worker.simuTimer.Elapsed();
-	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
-		if (textureScaling) textureScaling->UpdateAutoScaleLimits();
-		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
+	bool oneSecSinceLastUpdate = m_fTime - lastUpdate >= 1.0f;
+	bool justStopped = !runningState && worker.simuTimer.isActive;
+	bool needsWorkerUpdate = ((runningState && oneSecSinceLastUpdate) || justStopped);
+	
+	Interface::FrameMove(); //might perform Worker::Update(), updates m_fTime, lastupdate
+	
+	if (needsWorkerUpdate) {
+		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits(); //Do after Worker::Update() recalculated limits
 	}
-	Interface::FrameMove(); //might reset lastupdate
+
 	char tmp[256];
 	if (globalSettings) globalSettings->UpdateProcessList(); //Only if visible, has own frame limiter
 
@@ -1458,6 +1463,7 @@ void MolFlow::StartStopSimulation() {
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
+		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits();
 	}
 
 	// Frame rate measurement
