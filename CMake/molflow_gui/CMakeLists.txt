@@ -88,6 +88,7 @@ set(SRC_FILES
         ${UI_DIR}/ImportDesorption.cpp
         ${UI_DIR}/MomentsEditor.cpp
         ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/BackgroundGas.cpp
 		${UI_DIR}/MeasureForce.cpp
         ${UI_DIR}/OutgassingMapWindow.cpp
         ${UI_DIR}/ParameterEditor.cpp

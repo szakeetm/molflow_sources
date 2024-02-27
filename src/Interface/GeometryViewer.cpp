@@ -217,6 +217,14 @@ void GeometryViewer::DrawLinesAndHits() {
 				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
 		glEnd();
 
+		glColor3f(1.0f, 0.3f, 1.0f);
+		//}
+		glBegin(GL_POINTS);
+		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
+			if (hitCache.hitCache[i].type == HIT_SCATTER)
+				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
+		glEnd();
+
 		// Trans
 		pointSize = (bigDots) ? 3.0f : 2.0f;
 		glPointSize(pointSize);

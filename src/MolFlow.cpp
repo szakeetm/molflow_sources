@@ -61,6 +61,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/ImportDesorption.h"
 #include "Interface/TimeSettings.h"
 #include "Interface/Movement.h"
+#include "Interface/BackgroundGas.h"
 #include "Interface/MeasureForce.h"
 #include "Interface/FacetAdvParams.h"
 #include "Interface/FacetDetails.h"
@@ -171,6 +172,7 @@ MolFlow* mApp;
 
 #define MENU_TOOLS_MOVINGPARTS 410
 #define MENU_TOOLS_MEASUREFORCE 420
+#define MENU_TOOLS_BACKGROUNDGAS 430
 
 #define MENU_SELECT_HASDESFILE 361
 #define MENU_FACET_OUTGASSINGMAP 362
@@ -283,6 +285,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Tools")->Add(nullptr);
 	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_TOOLS_MOVINGPARTS);
 	menu->GetSubMenu("Tools")->Add("Measure forces...", MENU_TOOLS_MEASUREFORCE);
+	menu->GetSubMenu("Tools")->Add("Background gas...", MENU_TOOLS_BACKGROUNDGAS);
 
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 
@@ -1039,6 +1042,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(importDesorption);
 	RVALIDATE_DLG(timeSettings);
 	RVALIDATE_DLG(movement);
+	RVALIDATE_DLG(backgroundGas);
 	RVALIDATE_DLG(measureForces);
 	RVALIDATE_DLG(outgassingMapWindow);
 	RVALIDATE_DLG(parameterEditor);
@@ -1069,6 +1073,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(importDesorption);
 	IVALIDATE_DLG(timeSettings);
 	IVALIDATE_DLG(movement);
+	IVALIDATE_DLG(backgroundGas);
 	IVALIDATE_DLG(measureForces);
 	IVALIDATE_DLG(outgassingMapWindow);
 	IVALIDATE_DLG(parameterEditor);
@@ -1340,6 +1345,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
+		if (backgroundGas) backgroundGas->Update();
 		if (measureForces) measureForces->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
@@ -1564,6 +1570,12 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			if (!measureForces) measureForces = new MeasureForce(interfGeom, &worker);
 			measureForces->Update();
 			measureForces->SetVisible(true);
+			break;
+
+		case MENU_TOOLS_BACKGROUNDGAS:
+			if (!backgroundGas) backgroundGas = new BackgroundGas(interfGeom, &worker);
+			backgroundGas->Update();
+			backgroundGas->SetVisible(true);
 			break;
 
 		case MENU_EDIT_TSCALING:
@@ -1957,6 +1969,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
+	if (backgroundGas) backgroundGas->Update();
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
@@ -2026,6 +2039,7 @@ void MolFlow::EmptyGeometry() {
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
+	if (backgroundGas) backgroundGas->Update();
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();

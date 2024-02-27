@@ -60,6 +60,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define HIT_TELEPORTSOURCE 5
 #define HIT_TELEPORTDEST 6
 #define HIT_MOVING 7
+#define HIT_SCATTER 8
 #define HIT_LAST 10
 
 #define MC_MODE 0         // Monte Carlo simulation mode
