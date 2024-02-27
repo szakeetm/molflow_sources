@@ -973,7 +973,7 @@ int MolFlow::FrameMove()
 	bool runningState = worker.IsRunning();
 	double elapsedTime = worker.simuTimer.Elapsed();
 	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
-		if (textureScaling) textureScaling->Update();
+		if (textureScaling) textureScaling->UpdateAutoScaleLimits();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
 	}
 	Interface::FrameMove(); //might reset lastupdate
