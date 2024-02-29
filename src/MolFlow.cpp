@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 		mApp->Run();
 	}
 	catch (const std::exception& e) {
-		LockWrapper(mApp->imguiRenderLock);
+		LockWrapper lw(mApp->imguiRenderLock);
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
