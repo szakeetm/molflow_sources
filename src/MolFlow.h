@@ -25,6 +25,7 @@ class Worker;
 class ImportDesorption;
 class TimeSettings;
 class Movement;
+class BackgroundGas;
 class MeasureForce;
 class FacetAdvParams;
 class FacetDetails;
@@ -104,6 +105,7 @@ public:
 	ImportDesorption*		importDesorption = nullptr;
 	TimeSettings*			timeSettings = nullptr;
 	Movement*				movement = nullptr;
+	BackgroundGas*			backgroundGas = nullptr;
 	MeasureForce*			measureForces = nullptr;
     FacetAdvParams*			facetAdvParams = nullptr;
     PressureEvolution*		pressureEvolution = nullptr;
