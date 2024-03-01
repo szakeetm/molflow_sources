@@ -173,17 +173,11 @@ void TextureScaling::RecalcSwapSize() {
 */
 void TextureScaling::Update() {
 
+	char tmp[128];
+
 	if (!IsVisible() || IsIconic()) return;
 
-	//Set autoscale minimum label
-	auto [autoscaleMin, autoscaleMax] = interfGeom->GetTextureAutoscaleMinMax();
-
-	//Set current geometry limits
-	char tmp[128];
-	sprintf(tmp, "%.3E", autoscaleMin);
-	geomMinLabel->SetText(tmp);
-	sprintf(tmp, "%.3E", autoscaleMax);
-	geomMaxLabel->SetText(tmp);
+	UpdateAutoScaleLimits();
 
 	//Set manual min/max text fields
 	sprintf(tmp,"%g",interfGeom->texture_limits[interfGeom->textureMode].manual.min.steady_state);
@@ -197,7 +191,24 @@ void TextureScaling::Update() {
 	autoscaleTimedepModeCombo->SetVisible(interfGeom->texAutoScale);
 	autoscaleTimedepModeCombo->SetSelectedIndex(static_cast<int>(interfGeom->texAutoScaleMode));
 	logarithmicToggle->SetState(interfGeom->texLogScale);
-	gradient->SetScale(interfGeom->texLogScale ? LOG_SCALE : LINEAR_SCALE);
+	useColorToggle->SetState(interfGeom->texColormap);
+	gradient->SetType(interfGeom->texColormap /*viewers[0]->showColormap*/ ? GRADIENT_COLOR : GRADIENT_BW);
+	physicsModeCombo->SetSelectedIndex(interfGeom->textureMode);
+	RecalcSwapSize();
+
+}
+
+void TextureScaling::UpdateAutoScaleLimits() {
+		//Set autoscale minimum label
+	auto [autoscaleMin, autoscaleMax] = interfGeom->GetTextureAutoscaleMinMax();
+
+	//Set current geometry limits
+	char tmp[128];
+	sprintf(tmp, "%.3E", autoscaleMin);
+	geomMinLabel->SetText(tmp);
+	sprintf(tmp, "%.3E", autoscaleMax);
+	geomMaxLabel->SetText(tmp);
+		gradient->SetScale(interfGeom->texLogScale ? LOG_SCALE : LINEAR_SCALE);
 	if (!interfGeom->texAutoScale) { // Set manual texture scaling
 		//In case of manual scaling, "steady state" variable used always
 		gradient->SetMinMax(
@@ -208,11 +219,6 @@ void TextureScaling::Update() {
 	else { //Set auto texture scaling
 		gradient->SetMinMax(autoscaleMin, autoscaleMax);
 	}
-	useColorToggle->SetState(interfGeom->texColormap);
-	gradient->SetType(interfGeom->texColormap /*viewers[0]->showColormap*/ ? GRADIENT_COLOR : GRADIENT_BW);
-	physicsModeCombo->SetSelectedIndex(interfGeom->textureMode);
-	RecalcSwapSize();
-
 }
 
 /**

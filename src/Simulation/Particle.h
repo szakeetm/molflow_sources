@@ -45,6 +45,13 @@ namespace MFSim {
         MaxReached
     };
 
+    enum ParticleEventType {
+        ParticleEvent_FacetHit,
+        ParticleEvent_Overtime,
+        ParticleEvent_Decay,
+        ParticleEvent_Scatter
+    };
+
 /**
 * \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
  */
@@ -90,6 +97,8 @@ namespace MFSim {
 
         void PerformBounce(SimulationFacet *iFacet);
 
+        bool PerformScatter();
+
         void RecordHistograms(SimulationFacet *iFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
@@ -115,7 +124,9 @@ namespace MFSim {
         int teleportedFrom;   // We memorize where the particle came from: we can teleport back
 
         double velocity;
+        double initialVelocity; //Used to check for reaching Brownian motion if background collisions are enabled
         double expectedDecayMoment; //for radioactive gases
+        //double expectedFreePath; //for background collisions
         //size_t structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes

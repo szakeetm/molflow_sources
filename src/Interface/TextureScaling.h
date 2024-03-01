@@ -41,6 +41,7 @@ public:
 	// Component methods
 	void Display();
 	void Update();
+	void UpdateAutoScaleLimits();
 
 	// Implementation
 	void ProcessMessage(GLComponent *src,int message);

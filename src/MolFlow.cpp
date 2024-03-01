@@ -61,6 +61,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/ImportDesorption.h"
 #include "Interface/TimeSettings.h"
 #include "Interface/Movement.h"
+#include "Interface/BackgroundGas.h"
 #include "Interface/MeasureForce.h"
 #include "Interface/FacetAdvParams.h"
 #include "Interface/FacetDetails.h"
@@ -172,6 +173,7 @@ MolFlow* mApp;
 
 #define MENU_TOOLS_MOVINGPARTS 410
 #define MENU_TOOLS_MEASUREFORCE 420
+#define MENU_TOOLS_BACKGROUNDGAS 430
 
 #define MENU_SELECT_HASDESFILE 361
 #define MENU_FACET_OUTGASSINGMAP 362
@@ -215,7 +217,7 @@ int main(int argc, char* argv[])
 		mApp->Run();
 	}
 	catch (const std::exception& e) {
-		LockWrapper(mApp->imguiRenderLock);
+		LockWrapper lw(mApp->imguiRenderLock);
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -285,6 +287,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Tools")->Add(nullptr);
 	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_TOOLS_MOVINGPARTS);
 	menu->GetSubMenu("Tools")->Add("Measure forces...", MENU_TOOLS_MEASUREFORCE);
+	menu->GetSubMenu("Tools")->Add("Background gas...", MENU_TOOLS_BACKGROUNDGAS);
 
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 
@@ -977,11 +980,16 @@ int MolFlow::FrameMove()
 {
 	bool runningState = worker.IsRunning();
 	double elapsedTime = worker.simuTimer.Elapsed();
-	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
-		if (textureScaling) textureScaling->Update();
-		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
+	bool oneSecSinceLastUpdate = m_fTime - lastUpdate >= 1.0f;
+	bool justStopped = !runningState && worker.simuTimer.isActive;
+	bool needsWorkerUpdate = ((runningState && oneSecSinceLastUpdate) || justStopped);
+	
+	Interface::FrameMove(); //might perform Worker::Update(), updates m_fTime, lastupdate
+	
+	if (needsWorkerUpdate) {
+		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits(); //Do after Worker::Update() recalculated limits
 	}
-	Interface::FrameMove(); //might reset lastupdate
+
 	char tmp[256];
 	if (globalSettings) globalSettings->UpdateProcessList(); //Only if visible, has own frame limiter
 
@@ -1039,6 +1047,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(importDesorption);
 	RVALIDATE_DLG(timeSettings);
 	RVALIDATE_DLG(movement);
+	RVALIDATE_DLG(backgroundGas);
 	RVALIDATE_DLG(measureForces);
 	RVALIDATE_DLG(outgassingMapWindow);
 	RVALIDATE_DLG(parameterEditor);
@@ -1069,6 +1078,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(importDesorption);
 	IVALIDATE_DLG(timeSettings);
 	IVALIDATE_DLG(movement);
+	IVALIDATE_DLG(backgroundGas);
 	IVALIDATE_DLG(measureForces);
 	IVALIDATE_DLG(outgassingMapWindow);
 	IVALIDATE_DLG(parameterEditor);
@@ -1344,6 +1354,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
+		if (backgroundGas) backgroundGas->Update();
 		if (measureForces) measureForces->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
@@ -1469,6 +1480,7 @@ void MolFlow::StartStopSimulation() {
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
+		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits();
 	}
 
 	// Frame rate measurement
@@ -1569,6 +1581,12 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 			if (!measureForces) measureForces = new MeasureForce(interfGeom, &worker);
 			measureForces->Update();
 			measureForces->SetVisible(true);
+			break;
+
+		case MENU_TOOLS_BACKGROUNDGAS:
+			if (!backgroundGas) backgroundGas = new BackgroundGas(interfGeom, &worker);
+			backgroundGas->Update();
+			backgroundGas->SetVisible(true);
 			break;
 
 		case MENU_EDIT_TSCALING:
@@ -1965,6 +1983,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
+	if (backgroundGas) backgroundGas->Update();
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
@@ -2038,6 +2057,7 @@ void MolFlow::EmptyGeometry() {
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
+	if (backgroundGas) backgroundGas->Update();
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
