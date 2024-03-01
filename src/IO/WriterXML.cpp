@@ -145,6 +145,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     simuParamNode.child("Gas").append_attribute(
             "enableDecay") = (int) model->sp.enableDecay; //backward compatibility: 0 or 1
     simuParamNode.child("Gas").append_attribute("halfLife") = model->sp.halfLife;
+    xml_node scatteringNode = simuParamNode.child("Gas").append_child("Scattering");
+    scatteringNode.append_attribute("enabled") = model->sp.scattering.enabled;
+    scatteringNode.append_attribute("massRatio") = model->sp.scattering.massRatio;
+    scatteringNode.append_attribute("meanFreePath_cm") = model->sp.scattering.meanFreePath_cm;
 
     auto lowFluxNode = simuParamNode.append_child("LowFluxMode");
     lowFluxNode.append_attribute("enabled") = model->otfParams.lowFluxMode;

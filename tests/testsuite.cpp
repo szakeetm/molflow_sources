@@ -219,7 +219,7 @@ namespace {
 
 		size_t nbFails = 0;
 		bool fastEnough = false;
-		const size_t nRuns = 5;
+		const size_t nRuns = 10;
 		const size_t keepNEntries = 20;
 		std::vector<double> perfTimes;
 		for (size_t runNb = 0; runNb < nRuns; ++runNb) {
@@ -308,7 +308,7 @@ namespace {
 				? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
 				: perfTimes[perfTimes.size() / 2];
 
-			std::cout << "Results over " << nRuns << " runs:\n" << currentRun << std::endl;
+			std::cout << "\nResults over " << nRuns << " runs:\n" << currentRun << "\n\n";
 
 			std::vector<Stats> prevRun;
 			std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
