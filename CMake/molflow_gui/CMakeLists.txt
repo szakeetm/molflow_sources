@@ -175,7 +175,7 @@ if(MSVC)
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)]]
+    
 else() #not MSVC
     if(APPLE)
         #link to self-build sdl shared lib
