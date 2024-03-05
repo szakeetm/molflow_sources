@@ -83,9 +83,6 @@ add_subdirectory(CMake/molflow_sim)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
-    IF (WIN32)
-        add_subdirectory(CMake/png_zlib_win_library)
-    ENDIF(WIN32)
     add_dependencies(molflow shared_simulator shared_interface compress)
 endif()
 
