@@ -208,8 +208,8 @@ else() #not MSVC
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PNG_INCLUDE_DIRS})
 
-    find_package(CURL CONFIG REQUIRED)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
+    #find_package(CURL CONFIG REQUIRED)
+    #target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
