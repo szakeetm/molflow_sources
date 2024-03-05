@@ -22,7 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <set>
 #include <map>
-#include "PugiXML/pugixml.hpp"
+#include <pugixml.hpp>
 
 class GLProgress_Abstract;
 class MolflowSimulationModel;

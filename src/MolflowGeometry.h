@@ -20,7 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 
 #include "Geometry_shared.h"
-#include "PugiXML/pugixml.hpp"
+#include <pugixml.hpp>
 #include "Simulation/MolflowSimGeom.h"
 #include <cereal/archives/xml.hpp>
 #include "MolflowTypes.h"

@@ -18,6 +18,9 @@ set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 set(HEADER_DIR_3 ../../include)
 
+set(HEADER_DIR_EXTERNAL ../../src_shared/external)
+
+
 IF (WIN32)
     # set stuff for windows
     set(HEADER_DIR_4 ../../include/windows_only)
@@ -130,7 +133,8 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 #target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml truncatedgaussian)
+find_package(pugixml CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml truncatedgaussian)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -140,6 +144,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_5}
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
+        ${HEADER_DIR_EXTERNAL}
         )
 
 if(MSVC)

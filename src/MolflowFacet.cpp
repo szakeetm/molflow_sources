@@ -19,7 +19,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "Facet_shared.h"
 #include "File.h"
-#include "PugiXML/pugixml.hpp"
+#include "pugixml.hpp"
 using namespace pugi;
 #include "MolflowTypes.h"
 #include <sstream>
