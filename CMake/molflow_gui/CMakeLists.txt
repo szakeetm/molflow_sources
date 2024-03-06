@@ -17,7 +17,6 @@ set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
 set(HEADER_DIR_6 ../../include)
-set(HEADER_DIR_EXTERNAL ../../src_shared/external)
 
 IF (WIN32)
     # set stuff for windows
@@ -142,7 +141,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         ${HEADER_DIR_8}
-        ${HEADER_DIR_EXTERNAL}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)

@@ -18,8 +18,6 @@ set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 set(HEADER_DIR_3 ../../include)
 
-set(HEADER_DIR_EXTERNAL ../../src_shared/external)
-
 
 IF (WIN32)
     # set stuff for windows
@@ -144,7 +142,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_5}
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
-        ${HEADER_DIR_EXTERNAL}
         )
 
 if(MSVC)
