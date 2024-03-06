@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflowCLI)
+set(PROJECT_NAME molflow_cli)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -129,7 +129,7 @@ if(USE_MPI)
     endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflow_sim)
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 
@@ -139,18 +139,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
         ${HEADER_DIR_5}
-        ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         )
-
-
-
-if(MSVC)
-        set(HEADER_DIR_6 ../include/windows_only)
-        target_include_directories(${PROJECT_NAME} PUBLIC
-                ${HEADER_DIR_6}
-                )
-endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 

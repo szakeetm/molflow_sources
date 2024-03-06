@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflowSim)
+set(PROJECT_NAME molflow_sim)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -129,8 +129,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
-#target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_simulator)
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml truncatedgaussian)
 
@@ -140,7 +139,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
         ${HEADER_DIR_5}
-        ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         )
 

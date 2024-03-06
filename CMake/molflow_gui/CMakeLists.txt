@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflow)
+set(PROJECT_NAME molflow_gui)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -13,23 +13,11 @@ set(IO_DIR ../../src/IO)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
-#set(HEADER_DIR_3 ../../src_shared/GLApp)
-#set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
-#set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
-set(HEADER_DIR_6 ../../include)
 
-IF (WIN32)
-    # set stuff for windows
-
-    set(HEADER_DIR_7 ../../include/windows_only)
-    set(HEADER_DIR_8 ../../include/windows_only/png)
-
-    set(LINK_DIR_1 ../../lib_external/win/${MY_BUILD_TYPE})
-    set(DLL_DIR ../../lib_external/win/dll)
-ELSEIF(APPLE)
+#TODO: This has to go
+IF(APPLE)
     # set stuff for mac os
-    set(HEADER_DIR_7 "../../include/mac_only")
-    set(LINK_DIR_1 ../../lib_external/mac)
+    
 ELSE()
     # set stuff for other systems
 
@@ -128,8 +116,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_interface)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflow_sim)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -138,7 +126,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
         ${HEADER_DIR_5}
-        ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         ${HEADER_DIR_8}
         )
