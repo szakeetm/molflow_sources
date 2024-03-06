@@ -143,7 +143,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_5}
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}   
-        ${HEADER_DIR_EXTERNAL}
+        #${HEADER_DIR_EXTERNAL}
         )
 
 

@@ -40,7 +40,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <Helper/Chronometer.h>
 #include <Helper/StringHelper.h>
 #include <Helper/ConsoleLogger.h>
-#include <ZipLib/ZipFile.h>
+#include <ziplib/Source/ZipLib/ZipFile.h>
 #include "versionId.h"
 #include "Helper/GLProgress_CLI.hpp"
 #include "MolflowCLI.hpp"
