@@ -10,10 +10,10 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME png_zlib_win_library)
 
 # Folders files
-set(C_DIR_1 ../../include/windows_only/zlib/)
-set(HEADER_DIR_1 ../../include/windows_only/zlib/)
-set(C_DIR_2 ../../include/windows_only/png/)
-set(HEADER_DIR_2 ../../include/windows_only/png/)
+set(C_DIR_1 ${CMAKE_HOME_DIRECTORY}/include/windows_only/zlib/)
+set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/include/windows_only/zlib/)
+set(C_DIR_2 ${CMAKE_HOME_DIRECTORY}/include/windows_only/png/)
+set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/include/windows_only/png/)
 
 ################# CMake Project ############################
 # The main options of project                              #

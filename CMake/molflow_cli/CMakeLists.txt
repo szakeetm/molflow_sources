@@ -7,33 +7,33 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflowCLI) #sets executable name
 
 # Folders files
-set(CPP_DIR_1 ../../src)
-set(SIMU_DIR ../../src/Simulation)
-set(IO_DIR ../../src/IO)
-set(CPP_DIR_2 ../../src_shared)
-set(CPP_DIR_3 ../../src_shared/GLApp)
-set(HELPER_DIR ../../src_shared/Helper)
+set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
+set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
+set(CPP_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(CPP_DIR_3 ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
+set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
 
-set(HEADER_DIR_1 ../../src)
-set(HEADER_DIR_2 ../../src_shared)
-set(HEADER_DIR_3 ../../include)
+set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(HEADER_DIR_3 ${CMAKE_HOME_DIRECTORY}/include)
 
 IF (WIN32)
     # set stuff for windows
-    set(HEADER_DIR_4 ../../include/windows_only)
+    set(HEADER_DIR_4 ${CMAKE_HOME_DIRECTORY}/include/windows_only)
 
-    set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_2 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
-    set(LINK_DIR_1 ../../lib_external/mac)
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
     # set stuff for other systems
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
     IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ../../lib_external/linux_fedora)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
     ELSE()
-        set(LINK_DIR_1 ../../lib_external/linux_debian)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
     ENDIF()
 ENDIF()
 
@@ -109,7 +109,7 @@ set(SRC_FILES
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
-include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake) #Help macOS find OpenMP
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")

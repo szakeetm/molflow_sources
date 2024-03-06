@@ -52,10 +52,10 @@ execute_process(
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
-        ../src/IO/CSVExporter.cpp
-        ../src_shared/File.cpp
-        ../src_shared/FlowMPI.h #contains templates
-        ../src_shared/FlowMPI.cpp
+        ${CMAKE_HOME_DIRECTORY}/src/IO/CSVExporter.cpp
+        ${CMAKE_HOME_DIRECTORY}/src_shared/File.cpp
+        ${CMAKE_HOME_DIRECTORY}/src_shared/FlowMPI.h #contains templates
+        ${CMAKE_HOME_DIRECTORY}/src_shared/FlowMPI.cpp
         )
 
 # Now simply link against gtest or gtest_main as needed. Eg
@@ -70,19 +70,19 @@ target_link_libraries(testsuite PRIVATE gtest_main molflow_sim)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
-target_include_directories(testsuite PRIVATE ../include ../src_shared ../src)
+target_include_directories(testsuite PRIVATE ${CMAKE_HOME_DIRECTORY}/include ${CMAKE_HOME_DIRECTORY}/src_shared ${CMAKE_HOME_DIRECTORY}/src)
 # set the path to the library folder
 IF (WIN32)
 
-    set(LINK_DIR_1 ../lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ../lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_2 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
-    set(LINK_DIR_1 ../lib_external/mac)
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
     IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ../lib_external/linux_fedora)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
     ELSE()
-        set(LINK_DIR_1 ../lib_external/linux_debian)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
     ENDIF()
 ENDIF()
 target_link_directories(testsuite PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -101,5 +101,5 @@ target_compile_features(testsuite PRIVATE cxx_std_17)
 
 file(COPY
         ./TestCases
-        ../copy_to_build/parameter_catalog
+        ${CMAKE_HOME_DIRECTORY}/copy_to_build/parameter_catalog
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)

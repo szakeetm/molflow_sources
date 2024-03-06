@@ -7,12 +7,12 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflow)
 
 # Folders files
-set(CPP_DIR_1 ../../src)
-set(UI_DIR ../../src/Interface)
-set(IO_DIR ../../src/IO)
+set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
+set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
 
-set(HEADER_DIR_1 ../../src)
-set(HEADER_DIR_2 ../../src_shared)
+set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
 
 #TODO: This has to go
 IF(APPLE)
@@ -24,9 +24,9 @@ ELSE()
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
     #[[ #no more linux libraries
     IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ../../lib_external/linux_fedora)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
     ELSE()
-        set(LINK_DIR_1 ../../lib_external/linux_debian)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
     ENDIF()]]
 ENDIF()
 
@@ -109,7 +109,7 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES} )
 endif()
 
-include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)  #Help macOS find OpenMP
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
