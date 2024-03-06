@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflow_gui)
+set(PROJECT_NAME molflow)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
