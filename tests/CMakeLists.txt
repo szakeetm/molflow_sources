@@ -72,11 +72,7 @@ target_compile_definitions(testsuite PRIVATE
 
 target_include_directories(testsuite PRIVATE ${CMAKE_HOME_DIRECTORY}/include ${CMAKE_HOME_DIRECTORY}/src_shared ${CMAKE_HOME_DIRECTORY}/src)
 # set the path to the library folder
-IF (WIN32)
-
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
-ELSEIF(APPLE)
+IF(APPLE)
     set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
     IF(os_version_suffix MATCHES "\\.el[1-9]")
@@ -87,14 +83,6 @@ ELSE()
 ENDIF()
 target_link_directories(testsuite PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
-if(MSVC)
-    # zip extraction
-    target_link_libraries(testsuite PRIVATE
-            #bzip2.lib
-            #lzma.lib
-            #zlib.lib
-            )
-endif(MSVC)
 
 target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
