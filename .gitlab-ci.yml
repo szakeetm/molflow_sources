@@ -106,7 +106,7 @@ build-windows:
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Configure project in:"+($pwd).path
-    - powershell -command "$env:VCPKG_DEFAULT_BINARY_CACHE = 'C:\vcpkg_binary_cache'""
+    - powershell -command "$env:VCPKG_DEFAULT_BINARY_CACHE = 'C:\vcpkg_binary_cache'"
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
