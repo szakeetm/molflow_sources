@@ -10,7 +10,7 @@
 		"curl"
 	],
     "overrides": [
-        { "name": "sdl2", "version": "2.24.2" }
+        { "name": "sdl2", "version": "2.28.5" }
     ],
 	"builtin-baseline": "b051745c68faa6f65c493371d564c4eb8af34dad"
 }
