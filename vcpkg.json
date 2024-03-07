@@ -10,11 +10,5 @@
 		"curl",
 		"cimg"
 	],
-	"overrides": [
-		{
-			"name": "sdl2",
-			"version": "2.28.5"
-		}
-	],
-	"builtin-baseline": "fba75d09065fcc76a25dcf386b1d00d33f5175af"
+	"builtin-baseline": "9d47b24eacbd1cd94f139457ef6cd35e5d92cc84"
 }
