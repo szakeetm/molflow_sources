@@ -214,6 +214,24 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
 - Use as explained by the MPI service of choice, e.g. with `mpirun`
     `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
 
+## Build using vcpkg
+
+Detailed instructions coming soon, after testing.
+
+Working as of 2024.03.07:
+
+- `git clone https://github.com/microsoft/vcpkg.git`
+- `cd vcpkg`
+- `git checkout 2024.01.12` - Works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
+- `./vcpkg integrate install` - note toolchain location
+- On all platforms: `./vcpkg install cereal cimg curl fmt gsl libpng zlib pugixml sdl2`
+- On Fedora (SDL2 problem): `./vcpkg install cereal cimg curl fmt gsl libpng zlib pugixml`
+  - Install `SDL2-devel` with yum or dnf
+- Navigate to molflow repo, and from a `build` or similar dir:
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`
+- `make`
+
 # Running
 
 ## Windows
