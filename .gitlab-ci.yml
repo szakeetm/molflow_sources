@@ -102,17 +102,17 @@ build-windows:
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
-    - Set-Variable -Name "VsbuildPath" -Value "C:\BuildTools_VS2022"
-    - Set-Variable -Name "VcpkgPath" -Value "C:\vcpkg"
-    - Set-Variable -Name "VcpkgCachePath" -Value "C:\vcpkg_binary_cache"
+    - Set-Variable -Name "VsbuildPath" - Value "C:\BuildTools_VS2022"
+    - Set-Variable -Name "VcpkgPath" - Value "C:\vcpkg"
+    - Set-Variable -Name "VcpkgCachePath" - Value "C:\vcpkg_binary_cache"
     - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
-    - New-Item -ItemType Directory -Path $buildpath
+    - mkdir -P $buildpath
     - cd $buildpath
-    - echo "VcPkg binary cache location:" + $env:VCPKG_DEFAULT_BINARY_CACHE
+    - echo "VcPkg binary cache location:" + %VCPKG_DEFAULT_BINARY_CACHE%
     - echo "Configure project in:"+($pwd).path
-    - & "$VsbuildPath\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -DCMAKE_TOOLCHAIN_FILE="$VcpkgPath\scripts\buildsystems\vcpkg.cmake" -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -G Ninja $buildpath\..
+    - $VsbuildPath\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=$VcpkgPath\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
-    - & "$VsbuildPath\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" --build $buildpath --config Release -- -j 4
+    - $VsbuildPath\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
