@@ -105,8 +105,8 @@ build-windows:
     - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
     - mkdir -P $buildpath
     - cd $buildpath
-    - echo "Init project in:"+($pwd).path
-    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -G Ninja $buildpath\..
+    - echo "Configure project in:"+($pwd).path
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
@@ -131,7 +131,7 @@ build-test-windows:
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Init project in:"+($pwd).path
-    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON -G Ninja $buildpath\..
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
