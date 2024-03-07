@@ -1,5 +1,5 @@
 ﻿{
-    "dependencies": [
+	"dependencies": [
 		"sdl2",
 		"fmt",
 		"gsl",
@@ -9,8 +9,11 @@
 		"pugixml",
 		"curl"
 	],
-    "overrides": [
-        { "name": "sdl2", "version": "2.28.5" }
-    ],
-	"builtin-baseline": "b051745c68faa6f65c493371d564c4eb8af34dad"
+	"overrides": [
+		{
+			"name": "sdl2",
+			"version": "2.28.5"
+		}
+	],
+	"builtin-baseline": "fba75d09065fcc76a25dcf386b1d00d33f5175af"
 }
