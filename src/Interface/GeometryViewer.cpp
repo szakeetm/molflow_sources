@@ -179,6 +179,7 @@ void GeometryViewer::DrawLinesAndHits() {
 				glDisable(GL_BLEND);
 			}
 		}
+
 	}
 
 	// Hits
@@ -193,47 +194,88 @@ void GeometryViewer::DrawLinesAndHits() {
 
 		float pointSize = (bigDots) ? 3.0f : 2.0f;
 		glPointSize(pointSize);
-		glBegin(GL_POINTS);
+
+		// Define arrays for positions and colors
+		std::vector<GLfloat> vertices; vertices.reserve(3*nbHits);
+		std::vector<GLfloat> colors; colors.reserve(3 * nbHits);
+
 		for (size_t i = 0; i < nbHits; i++) {
 			switch (hitCache.hitCache[i].type) {
 			case HIT_DES:
-				glColor3f(0.3f, 0.3f, 1.0f);
+				colors.push_back(0.3f);
+				colors.push_back(0.3f);
+				colors.push_back(1.0f);
 				break;
 			case HIT_REF:
 				if (mApp->whiteBg) { //whitebg
-					glColor3f(0.2f, 0.2f, 0.2f);
+					colors.push_back(0.2f);
+					colors.push_back(0.2f);
+					colors.push_back(0.2f);
 				}
 				else {
-					glColor3f(0.0f, 1.0f, 0.0f);
-				}				
+					colors.push_back(0.0f);
+					colors.push_back(1.0f);
+					colors.push_back(0.0f);
+				}
 				break;
 			case HIT_ABS:
-				glColor3f(1.0f, 0.0f, 0.0f);
+				colors.push_back(1.0f);
+				colors.push_back(0.0f);
+				colors.push_back(0.0f);
 				break;
 			case HIT_MOVING:
-				glColor3f(1.0f, 0.0f, 1.0f);
+				colors.push_back(1.0f);
+				colors.push_back(0.0f);
+				colors.push_back(1.0f);
 				break;
 			case HIT_SCATTER:
-				glColor3f(1.0f, 0.3f, 1.0f);
+				colors.push_back(1.0f);
+				colors.push_back(0.3f);
+				colors.push_back(1.0f);
 				break;
 			case HIT_VOLUME_DECAY:
-				glColor3f(0.5f, 1.0f, 1.0f);
-				break;
 			case HIT_TRANS:
-				glColor3f(0.5f, 1.0f, 1.0f);
+				colors.push_back(0.5f);
+				colors.push_back(1.0f);
+				colors.push_back(1.0f);
 				break;
 			case HIT_TELEPORTSOURCE:
 			case HIT_TELEPORTDEST:
 				if (!mApp->whiteBg) {
-					glColor3f(1.0f, 0.7f, 0.2f);
+					colors.push_back(1.0f);
+					colors.push_back(0.7f);
+					colors.push_back(0.2f);
 				}
 				else {
-					glColor3f(1.0f, 0.0f, 1.0f);
+					colors.push_back(1.0f);
+					colors.push_back(0.0f);
+					colors.push_back(1.0f);
 				}
 				break;
 			}
-			glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
+			vertices.push_back(hitCache.hitCache[i].pos.x);
+			vertices.push_back(hitCache.hitCache[i].pos.y);
+			vertices.push_back(hitCache.hitCache[i].pos.z);
 		}
-		glEnd();
+
+		// Enable vertex arrays
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+
+		// Set data pointers
+		glVertexPointer(3, GL_FLOAT, 0, vertices.data());
+		glColorPointer(3, GL_FLOAT, 0, colors.data());
+
+		// Draw the points
+		glDrawArrays(GL_POINTS, 0, nbHits);
+
+		// Disable vertex arrays
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+
+
+
+
 	}
 }
