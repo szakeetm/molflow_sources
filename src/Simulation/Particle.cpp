@@ -923,22 +923,19 @@ bool ParticleTracer::PerformScatter() {
     ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
     velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
 
-    /*
-    if (velocity < model->sp.scattering.velocityCutoffRatio) {
-        return false; //Reached Brownian motion
+    
+    if (model->sp.scattering.enableCutoff && velocity < model->sp.scattering.cutoffSpeed) {
         if (particleTracerId == 0) {
-            RecordHit(HIT_TRANS);
+            RecordHit(HIT_ABS);
         }
+        return false; //Reached Brownian motion
     }
     else {
-    */
         if (particleTracerId == 0) {
             RecordHit(HIT_SCATTER);
         }
         return true;
-        /*
     }
-    */
 }
 
 /*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet

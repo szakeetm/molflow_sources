@@ -127,6 +127,11 @@ std::shared_ptr<MolflowSimulationModel> XmlLoader::LoadGeometry(const std::strin
         loadModel->sp.scattering.enabled = scatteringNode.attribute("enabled").as_bool();
         loadModel->sp.scattering.massRatio = scatteringNode.attribute("massRatio").as_double();
         loadModel->sp.scattering.meanFreePath_cm = scatteringNode.attribute("meanFreePath_cm").as_double();
+        xml_node cutoffNode = scatteringNode.child("LowSpeedCutoff");
+        if (cutoffNode) {
+            loadModel->sp.scattering.enableCutoff = cutoffNode.attribute("enabled").as_bool();
+            loadModel->sp.scattering.cutoffSpeed = cutoffNode.attribute("speed").as_double();
+        }
     }
 
     xml_node lowFluxNode = simuParamNode.child("LowFluxMode");
