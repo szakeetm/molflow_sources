@@ -408,7 +408,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
             case ParticleEvent_Overtime:
 				//over latest moment
 				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
-				if (particleTracerId == 0) RecordHit(HIT_LAST);
+				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
 				ray.lastIntersected = -1;
@@ -416,7 +416,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
             case ParticleEvent_Decay:
 				//particle decayed
 				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
-				if (particleTracerId == 0) RecordHit(HIT_LAST);
+				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
 				ray.lastIntersected = -1;
@@ -426,10 +426,12 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 IncreaseDistanceCounters(travel_path * oriRatio);
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
+                    if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
                     insertNewParticle = true;
                     ray.lastIntersected = -1;
                 }
                 else {
+                    if (particleTracerId == 0) RecordHit(HIT_SCATTER);
                     //Successful scatter, nothing else to do
                 }
                 lastHitFacet = nullptr; //To allow coming back to where it came from
@@ -925,15 +927,9 @@ bool ParticleTracer::PerformScatter() {
 
     
     if (model->sp.scattering.enableCutoff && velocity < model->sp.scattering.cutoffSpeed) {
-        if (particleTracerId == 0) {
-            RecordHit(HIT_ABS);
-        }
         return false; //Reached Brownian motion
     }
     else {
-        if (particleTracerId == 0) {
-            RecordHit(HIT_SCATTER);
-        }
         return true;
     }
 }
