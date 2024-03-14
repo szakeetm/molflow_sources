@@ -131,6 +131,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 #target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
+target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
