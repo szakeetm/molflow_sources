@@ -165,8 +165,6 @@ if(MSVC)
             #libcurl_a_x64.lib
             SDL2.lib
             SDL2main.lib
-            #libgsl.lib
-            #libgslcblas.lib
             lzma.lib
             #zlib.lib
             opengl32#.lib
@@ -207,9 +205,6 @@ elseif(NOT MSVC)
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
 
-    find_package(GSL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
-
     find_package(CURL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
 
@@ -219,7 +214,6 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
@@ -253,7 +247,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncated_normal)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
     target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 

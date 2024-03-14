@@ -133,8 +133,6 @@ if(MSVC)
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     target_link_libraries(${PROJECT_NAME}
-            #libgsl.lib
-            #libgslcblas.lib
             kernel32.lib
             user32.lib
             gdi32.lib
@@ -147,7 +145,6 @@ if(MSVC)
             uuid.lib
             odbc32.lib
             odbccp32.lib)
-    target_link_libraries(${PROJECT_NAME} truncatedgaussian)
 endif(MSVC)
 if(NOT MSVC)
 
@@ -158,8 +155,6 @@ if(NOT MSVC)
         #target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
     endif()
 
-    find_package(GSL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 
     find_package(CURL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
@@ -167,7 +162,6 @@ if(NOT MSVC)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    target_link_libraries(${PROJECT_NAME} ${GSL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${CURL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} Threads::Threads)
     target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES})

@@ -34,7 +34,7 @@ See *readme.txt*  for required packages to build.
 * Compile source files with *compile_linux.sh* and link with *link_linux_fedora.sh*. The resulting binaries are written in *bin/linux_fedora*  
 * Update: you can now build the project with CMake: run *cmake .* in the folder containing *CMakeLists.txt*, then run *make*. The resulting binaries can be run from the *bin* folder
 ## Mac
-* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, gsl, curl, p7zip  
+* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, curl, p7zip  
 * The compile and link scripts are in the *build_mac* folder.  The resulting binaries are written in *bin/mac* 
 * Compile source files with *compile_mac.sh* and link with *link_mac.sh*. The resulting binaries are written in *bin/mac* 
 * Update: you can now build the project with CMake: run *cmake .* in the folder containing *CMakeLists.txt*, then run *make*. The resulting binaries can be run from the *bin* folder
@@ -43,7 +43,7 @@ See *readme.txt*  for required packages to build.
 ## Windows
 Use the shortcut (that changes the working directory and launches *molflow.exe*) in *bin\win\release*
 ## Linux (Debian)
-* Install dependencies with the *apt* package manager, like *libsdl2-2.0*, *gsl-bin*, *libatlas-base-dev*  
+* Install dependencies with the *apt* package manager, like *libsdl2-2.0*, *libatlas-base-dev*  
 * In the *bin/linux_debian* folder, make *molflow* and *compress* executable
 * Run *molflow*  
 
@@ -54,7 +54,7 @@ Use the shortcut (that changes the working directory and launches *molflow.exe*)
 
 [Detailed instructions here](https://molflow.web.cern.ch/node/302)
 ## Mac
-* Use Homebrew to install dependencies, like *sdl2*, *libpng*, *gsl*, *gcc*  
+* Use Homebrew to install dependencies, like *sdl2*, *libpng*, *gcc*  
 * In the *bin/mac* folder, make *molflow* and *compress* executable
 * Run *molflow*  
 
