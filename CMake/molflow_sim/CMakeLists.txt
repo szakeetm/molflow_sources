@@ -160,5 +160,6 @@ if(MSVC)
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 else() #Not MSVC
-
+    find_package(SDL2 CONFIG REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 endif()
