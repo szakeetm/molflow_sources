@@ -91,12 +91,14 @@ void GeometryViewer::DrawLinesAndHits() {
 	// Lines
 	if (showLine && hitCache.hitCacheSize) {
 
+		size_t nbLines = std::min(dispNumHits, hitCache.hitCacheSize);
+
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_CULL_FACE);
 		
 		size_t count = 0;
-		while (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
+		while (count < nbLines && hitCache.hitCache[count].type != 0) {
 
 			//Regular (green) line color
 			if (mApp->whiteBg) { //whitebg
@@ -112,13 +114,13 @@ void GeometryViewer::DrawLinesAndHits() {
 			}
 
 			glBegin(GL_LINE_STRIP);
-			while (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != HIT_ABS) { //While hits are consecutive
+			while (count < nbLines && hitCache.hitCache[count].type != HIT_ABS && hitCache.hitCache[count].type != HIT_VOLUME_DECAY) { //While hits are consecutive
 
 				//change color in case of teleport
 				if (hitCache.hitCache[count].type == HIT_TELEPORTSOURCE) {
 					glVertex3d(hitCache.hitCache[count].pos.x, hitCache.hitCache[count].pos.y, hitCache.hitCache[count].pos.z); //Draw regular line until TP source
 					glEnd(); //Finish regular line
-					if (showTP && (count+1)<std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count+1].type == HIT_TELEPORTDEST) {
+					if (showTP && (count+1)< nbLines && hitCache.hitCache[count+1].type == HIT_TELEPORTDEST) {
 						//Switch to orange dashed line
 						if (!mApp->whiteBg) {
 							glColor3f(1.0f, 0.7f, 0.2f);
@@ -167,7 +169,7 @@ void GeometryViewer::DrawLinesAndHits() {
 				}
 			}
 			//Treat absorption
-			if (count < std::min(dispNumHits, hitCache.hitCacheSize) && hitCache.hitCache[count].type != 0) {
+			if (count < nbLines && hitCache.hitCache[count].type != 0) {
 				glVertex3d(hitCache.hitCache[count].pos.x, hitCache.hitCache[count].pos.y, hitCache.hitCache[count].pos.z);
 				count++;
 			}
@@ -177,98 +179,103 @@ void GeometryViewer::DrawLinesAndHits() {
 				glDisable(GL_BLEND);
 			}
 		}
+
 	}
 
 	// Hits
 	if (showHit) {
+
+		size_t nbHits = std::min(dispNumHits, hitCache.hitCacheSize);
 
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_BLEND);
 		glDisable(GL_CULL_FACE);
 
-		// Refl
 		float pointSize = (bigDots) ? 3.0f : 2.0f;
 		glPointSize(pointSize);
-		if (mApp->whiteBg) { //whitebg
-			glColor3f(0.2f, 0.2f, 0.2f);
-		}
-		else {
-			glColor3f(0.0f, 1.0f, 0.0f);
-		}
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_REF)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
 
-		// Moving Refl
+		// Define arrays for positions and colors
+		std::vector<GLfloat> vertices; vertices.reserve(3*nbHits);
+		std::vector<GLfloat> colors; colors.reserve(3 * nbHits);
 
-		glPointSize(pointSize);
-		/*if (mApp->whiteBg) { //whitebg
-			glColor3f(0.2f, 0.2f, 0.2f);
-		}
-		else {*/
-		glColor3f(1.0f, 0.0f, 1.0f);
-		//}
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_MOVING)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
-
-		glColor3f(1.0f, 0.3f, 1.0f);
-		//}
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_SCATTER)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
-
-		// Trans
-		pointSize = (bigDots) ? 3.0f : 2.0f;
-		glPointSize(pointSize);
-		glColor3f(0.5f, 1.0f, 1.0f);
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_TRANS)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
-
-		// Teleport
-		if (showTP) {
-			//pointSize=(bigDots)?3.0f:2.0f;
-			glPointSize(pointSize);
-			if (!mApp->whiteBg) {
-				glColor3f(1.0f, 0.7f, 0.2f);
+		for (size_t i = 0; i < nbHits; i++) {
+			switch (hitCache.hitCache[i].type) {
+			case HIT_DES:
+				colors.push_back(0.3f);
+				colors.push_back(0.3f);
+				colors.push_back(1.0f);
+				break;
+			case HIT_REF:
+				if (mApp->whiteBg) { //whitebg
+					colors.push_back(0.2f);
+					colors.push_back(0.2f);
+					colors.push_back(0.2f);
+				}
+				else {
+					colors.push_back(0.0f);
+					colors.push_back(1.0f);
+					colors.push_back(0.0f);
+				}
+				break;
+			case HIT_ABS:
+				colors.push_back(1.0f);
+				colors.push_back(0.0f);
+				colors.push_back(0.0f);
+				break;
+			case HIT_MOVING:
+				colors.push_back(1.0f);
+				colors.push_back(0.0f);
+				colors.push_back(1.0f);
+				break;
+			case HIT_SCATTER:
+				colors.push_back(1.0f);
+				colors.push_back(0.3f);
+				colors.push_back(1.0f);
+				break;
+			case HIT_VOLUME_DECAY:
+			case HIT_TRANS:
+				colors.push_back(0.5f);
+				colors.push_back(1.0f);
+				colors.push_back(1.0f);
+				break;
+			case HIT_TELEPORTSOURCE:
+			case HIT_TELEPORTDEST:
+				if (!mApp->whiteBg) {
+					colors.push_back(1.0f);
+					colors.push_back(0.7f);
+					colors.push_back(0.2f);
+				}
+				else {
+					colors.push_back(1.0f);
+					colors.push_back(0.0f);
+					colors.push_back(1.0f);
+				}
+				break;
 			}
-			else {
-				glColor3f(1.0f, 0.0f, 1.0f);
-			}
-			glBegin(GL_POINTS);
-			for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, hitCache.hitCache[i].type))
-					glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-			glEnd();
+			vertices.push_back(hitCache.hitCache[i].pos.x);
+			vertices.push_back(hitCache.hitCache[i].pos.y);
+			vertices.push_back(hitCache.hitCache[i].pos.z);
 		}
 
-		// Abs
-		glPointSize(pointSize);
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_ABS)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
+		// Enable vertex arrays
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
 
-		// Des
-		glColor3f(0.3f, 0.3f, 1.0f);
-		glBegin(GL_POINTS);
-		for (size_t i = 0; i < std::min(dispNumHits, hitCache.hitCacheSize); i++)
-			if (hitCache.hitCache[i].type == HIT_DES)
-				glVertex3d(hitCache.hitCache[i].pos.x, hitCache.hitCache[i].pos.y, hitCache.hitCache[i].pos.z);
-		glEnd();
+		// Set data pointers
+		glVertexPointer(3, GL_FLOAT, 0, vertices.data());
+		glColorPointer(3, GL_FLOAT, 0, colors.data());
+
+		// Draw the points
+		glDrawArrays(GL_POINTS, 0, nbHits);
+
+		// Disable vertex arrays
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+
+
+
 
 	}
-
 }

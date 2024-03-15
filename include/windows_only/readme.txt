@@ -5,4 +5,3 @@ libpng 1.6.36
 zlib 1.2.11
 SDL2 2.24.2
 libcurl 7.63
-gsl

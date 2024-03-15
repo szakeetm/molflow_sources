@@ -149,7 +149,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     scatteringNode.append_attribute("enabled") = model->sp.scattering.enabled;
     scatteringNode.append_attribute("massRatio") = model->sp.scattering.massRatio;
     scatteringNode.append_attribute("meanFreePath_cm") = model->sp.scattering.meanFreePath_cm;
-
+    xml_node cutoffNode = scatteringNode.append_child("LowSpeedCutoff");
+    cutoffNode.append_attribute("enabled") = model->sp.scattering.enableCutoff;
+    cutoffNode.append_attribute("speed") = model->sp.scattering.cutoffSpeed;
+    
     auto lowFluxNode = simuParamNode.append_child("LowFluxMode");
     lowFluxNode.append_attribute("enabled") = model->otfParams.lowFluxMode;
     lowFluxNode.append_attribute("cutoff") = model->otfParams.lowFluxCutoff;
