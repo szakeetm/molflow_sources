@@ -48,12 +48,14 @@ private:
   GLToggle* enableCheckbox;
   
   
-  GLTextField	*mfpTextbox;
-  GLTextField	*massTextbox;
+  GLTextField*	mfpTextbox;
+  GLTextField*	massTextbox;
+  GLTextField*	cutoffSpeedTextbox;
+  GLToggle* cutoffToggle;
   
-  GLButton	*applyButton;
+  GLButton*		applyButton;
 
-  InterfaceGeometry     *interfGeom;
-  Worker	   *work;
+  InterfaceGeometry*	interfGeom;
+  Worker*				work;
 
 };
