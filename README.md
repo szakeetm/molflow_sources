@@ -39,7 +39,7 @@ With Visual Studio's CMake support, you can now open the main folder containing 
 
 ```
 sudo apt install build-essential git cmake gcc g++
-sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libgsl-dev libcurl4-gnutls-dev gsl-bin libatlas-base-dev p7zip
+sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libcurl4-gnutls-dev libatlas-base-dev p7zip
 ```
 ## Prepare for building - Fedora Linux (like CentOS)
 
@@ -54,7 +54,7 @@ dnf install -y git cmake gcc g++
 Install required packages to compile molflow:
 
 ```
-dnf install -y gsl-devel zlib-devel libpng-devel gtk3-devel libcurl-devel SDL2-devel p7zip
+dnf install -y zlib-devel libpng-devel gtk3-devel libcurl-devel SDL2-devel p7zip
 ```
 Some packages might require enabling the `crb` repo:
 ```
@@ -68,11 +68,6 @@ export DISPLAY=0:0
 dnf install mesa-dri-drivers
 ```
 
-In case of missing libgsl.so.23, create a symlink for the GSL library:
-```
-ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so
-```
-
 ### CentOS 8
 
 ```
@@ -81,16 +76,12 @@ dnf in -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 dnf in -y libglvnd-opengl libpng15 SDL2 p7zip
 dnf group install "Development Tools"
 ```
-In case of missing libgsl.so.23, create a symlink for the GSL library:
-```
-ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
-```
 
 ### CentOS 7
 
 ```
 sudo yum install epel-release
-sudo yum install p7zip SDL2 gsl libglvnd-opengl
+sudo yum install p7zip SDL2 libglvnd-opengl
 ```
 
 If your CMake is outdated, install a newer version:
@@ -105,7 +96,7 @@ sudo make install
 
 ## Prepare for building - macOS
 
-* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, gsl, curl, p7zip  
+* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, curl, p7zip  
 
 The procedure looks as follows:
 1. Install command line tools
@@ -114,7 +105,7 @@ The procedure looks as follows:
   - from https://brew.sh/
   - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 3. Install cmake and the necessary dependencies
-  - `brew install cmake libpng gsl sdl2 p7zip libomp libcurl`
+  - `brew install cmake libpng sdl2 p7zip libomp libcurl`
 
 ## Manual build with CMake (Linux/MacOS)
 
@@ -173,7 +164,7 @@ The installation path can be changed by adding an installation prefix to the CMa
 
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install cmake libpng gsl sdl2 p7zip libomp
+brew install cmake libpng sdl2 p7zip libomp
 ```
 
 2) then we clone and build the repo:
@@ -214,6 +205,24 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
 - Use as explained by the MPI service of choice, e.g. with `mpirun`
     `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
 
+## Build using vcpkg
+
+Detailed instructions coming soon, after testing.
+
+Working as of 2024.03.07:
+
+- `git clone https://github.com/microsoft/vcpkg.git`
+- `cd vcpkg`
+- `git checkout 2024.01.12` - Works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
+- `./vcpkg integrate install` - note toolchain location
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
+- On Fedora (SDL2 problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
+  - Install `SDL2-devel` with yum or dnf
+- Navigate to molflow repo, and from a `build` or similar dir:
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`
+- `make`
+
 # Running
 
 ## Windows
@@ -233,7 +242,7 @@ Detailed instructions:
 
 ## macOS
 
-* Use Homebrew to install dependencies, like `sdl2`, `libpng`, `gsl`, `gcc`
+* Use Homebrew to install dependencies, like `sdl2`, `libpng`, `gcc`
 * In the `release/bin` folder, make `molflow` and `compress` executable
 * Run `./molflow`
 

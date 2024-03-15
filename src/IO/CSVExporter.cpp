@@ -280,7 +280,7 @@ namespace FlowIO {
                      i++) { // First 3 vertices are by def on a plane
                     const Vector3d &p = model->vertices3[facet->indices[i]];
                     double d = A * p.x + B * p.y + C * p.z + D;
-                    planarityError = std::max(abs(d), planarityError);
+                    planarityError = std::max(std::abs(d), planarityError);
                 }
                 ret = fmt::format("{}", planarityError);
                 break;
