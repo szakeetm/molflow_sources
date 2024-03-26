@@ -98,7 +98,7 @@ release_job:
 build-windows:
   stage: build
   before_script:
-    - echo "Building Windows $CI_COMMIT_BRANCH"
+    - echo "Building Windows branch $CI_COMMIT_BRANCH commit $CI_COMMIT_SHORT_SHA"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -110,7 +110,7 @@ build-windows:
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
@@ -125,9 +125,9 @@ build-test-windows:
   needs:
     - job: build-windows
   before_script:
-    - echo "Building Windows Test $CI_COMMIT_BRANCH"
+    - echo "Building Windows Test $CI_COMMIT_BRANCH CI_COMMIT_SHORT_SHA"
   script:
-    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
+    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build_test")
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Init project in:"+($pwd).path
@@ -135,7 +135,7 @@ build-test-windows:
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
@@ -148,9 +148,7 @@ build-test-windows:
 .build-unix:
   stage: build
   before_script:
-    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
-    - echo "Current Changelog is the following:"
-    - echo "`cat parsed_changelog.txt`"
+    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_SHORT_SHA $CI_PIPELINE_ID"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -162,7 +160,7 @@ build-test-windows:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -175,9 +173,9 @@ build-test-windows:
 .build-test-unix:
   stage: build-test
   before_script:
-    - echo "Building Test $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - echo "Building Test $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_SHORT_SHA $CI_PIPELINE_ID"
   script:
-    - buildpath=$(pwd)"/build"
+    - buildpath=$(pwd)"/build_test"
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
@@ -185,7 +183,7 @@ build-test-windows:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -214,9 +212,7 @@ build-fedora:
 build-fedora-mpi:
   stage: build
   before_script:
-    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID with MPI"
-    - echo "Current Changelog is the following:"
-    - echo "`cat parsed_changelog.txt`"
+    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_SHORT_SHA $CI_PIPELINE_ID with MPI"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -230,7 +226,7 @@ build-fedora-mpi:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID'_'MPI
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID'_'MPI
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -323,11 +319,11 @@ build-test-macos-arm:
   stage: test
   allow_failure: true
   before_script:
-    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_SHORT_SHA $CI_PIPELINE_ID"
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml" --gtest_fail_fast
     - mv report.xml "$PROJPATH/report.xml"
@@ -381,11 +377,11 @@ test-windows:
   stage: test
   allow_failure: true
   before_script:
-    - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
+    - Write-Host "Testing Windows $CI_COMMIT_BRANCH CI_COMMIT_SHORT_SHA"
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - $AllArgs = @("--gtest_filter=`-*ResultsWrong*:*PerformanceOkay*`  --gtest_output='xml:report.xml' --gtest_fail_fast")
     - powershell.exe -c "./testsuite.exe $AllArgs"
@@ -406,12 +402,12 @@ test-windows:
   stage: benchmark
   allow_failure: true
   before_script:
-    - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_SHORT_SHA $CI_PIPELINE_ID"
     - mkdir -p ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || cp ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
     - ./testsuite --gtest_filter="*PerformanceOkay*" --gtest_output="xml:benchmark.xml" --gtest_fail_fast
@@ -420,7 +416,7 @@ test-windows:
     - mv benchmark.xml $PROJPATH"/benchmark.xml"
   after_script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - rm -rf ./tests
   artifacts:
@@ -470,7 +466,7 @@ benchmark-windows:
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
@@ -480,7 +476,7 @@ benchmark-windows:
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
   after_script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - Remove-Item -Recurse -Force ("./tests")
   artifacts:
@@ -500,12 +496,12 @@ benchmark-windows:
     - Get-ChildItem ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
     - Write-Host $FNAME
     - Write-Host $TAG_SUFFIX
     - Write-Host $CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_TAG
-    - Write-Host $env:CI_COMMIT_REF_NAME
+    - Write-Host $env:CI_COMMIT_SHORT_SHA
     - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
     - Set-Location ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
   rules:
@@ -527,11 +523,11 @@ benchmark-windows:
     - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID
     - echo $FNAME
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
-    - echo $CI_COMMIT_REF_NAME
+    - echo $CI_COMMIT_SHORT_SHA
     - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
@@ -596,11 +592,11 @@ build-artifact-fedora-mpi:
     - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID'_'MPI
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_SHORT_SHA'_'$CI_PIPELINE_ID'_'MPI
     - echo $FNAME
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
-    - echo $CI_COMMIT_REF_NAME
+    - echo $CI_COMMIT_SHORT_SHA
     - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
