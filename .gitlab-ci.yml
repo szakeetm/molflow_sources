@@ -13,6 +13,7 @@ variables:
   #DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
   #LINUX_AMD64_BINARY: "myawesomerelease-linux-amd64-${PACKAGE_VERSION}"
 
+
 stages:
   - prepare
   - build
