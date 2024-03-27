@@ -98,7 +98,7 @@ release_job:
 build-windows:
   stage: build
   variables:
-    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
+    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/runner_${CI_RUNNER_ID}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
@@ -124,7 +124,7 @@ build-windows:
 build-test-windows:
   stage: build-test
   variables:
-    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}_test
+    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/runner_${CI_RUNNER_ID}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}_test
   needs:
     - job: build-windows
   before_script:
@@ -152,7 +152,7 @@ build-test-windows:
 .build-unix:
   stage: build
   variables:
-    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
+    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/runner_${CI_RUNNER_ID}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
@@ -178,7 +178,7 @@ build-test-windows:
 .build-test-unix:
   stage: build-test
   variables:
-    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}_test
+    GIT_CLONE_PATH: ${CI_BUILDS_DIR}/runner_${CI_RUNNER_ID}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}_test
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
