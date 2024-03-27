@@ -101,6 +101,15 @@ build-windows:
     - echo "Building Windows branch $CI_COMMIT_BRANCH commit $CI_COMMIT_SHORT_SHA"
     - git submodule sync --recursive
     - git submodule update --init --recursive
+    - ls
+    - Set-Variable -Name "workfoldername" -Value ($CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_SHORT_SHA + "_" + $env:CI_PIPELINE_ID)
+    - $sourcePath = Get-Location
+    - $destinationPath = Join-Path -Path $sourcePath -ChildPath $workfoldername
+    - New-Item -Path $destinationPath -ItemType Directory -Force
+    - Copy-Item -Path $sourcePath\* -Destination $destinationPath -Recurse
+    - ls
+    - ls $workfoldername
+
   script:
     - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
     - mkdir -P $buildpath
