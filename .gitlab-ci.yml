@@ -100,7 +100,6 @@ build-windows:
   variables:
     GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
   before_script:
-    - echo "Building Windows $CI_COMMIT_BRANCH"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -129,7 +128,8 @@ build-test-windows:
   needs:
     - job: build-windows
   before_script:
-    - echo "Building Windows Test $CI_COMMIT_BRANCH"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
   script:
     - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
     - mkdir -P $buildpath
@@ -154,9 +154,6 @@ build-test-windows:
   variables:
     GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}
   before_script:
-    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
-    - echo "Current Changelog is the following:"
-    - echo "`cat parsed_changelog.txt`"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -183,7 +180,8 @@ build-test-windows:
   variables:
     GIT_CLONE_PATH: ${CI_BUILDS_DIR}/${APP_NAME}/${CI_COMMIT_BRANCH}/${CI_COMMIT_SHORT_SHA}_pipeline${CI_PIPELINE_ID}_test
   before_script:
-    - echo "Building Test $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
   script:
     - buildpath=$(pwd)"/build"
     - mkdir -p $buildpath
