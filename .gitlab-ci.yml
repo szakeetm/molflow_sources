@@ -121,6 +121,7 @@ build-windows:
 
 build-test-windows:
   stage: build-test
+  interruptible: true
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
@@ -167,6 +168,7 @@ build-test-windows:
 
 .build-test-unix:
   stage: build-test
+  interruptible: true
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
@@ -299,6 +301,7 @@ build-test-macos-arm:
 
 .test-unix:
   stage: test
+  interruptible: true
   allow_failure: true
   before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
@@ -357,6 +360,7 @@ test-macos-arm:
 
 test-windows:
   stage: test
+  interruptible: true
   allow_failure: true
   before_script:
     - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
@@ -382,6 +386,7 @@ test-windows:
 
 .benchmark-unix:
   stage: benchmark
+  interruptible: true
   allow_failure: true
   before_script:
     - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
@@ -441,6 +446,7 @@ benchmark-macos-arm:
 
 benchmark-windows:
   stage: benchmark
+  interruptible: true
   allow_failure: true
   before_script:
     - Write-Host "Benchmarking Windows $CI_COMMIT_BRANCH"
