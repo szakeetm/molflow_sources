@@ -139,7 +139,7 @@ build-test-windows:
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_test -ItemType "directory" -Force
-    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\") -Recurse -Force
+    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\" -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
