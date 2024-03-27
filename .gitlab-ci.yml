@@ -139,7 +139,7 @@ build-test-windows:
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_test -ItemType "directory" -Force
-    - Copy-Item (($outputpath) + "\*") -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + (${FNAME}_test) + "\") -Recurse -Force
+    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\") -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
@@ -376,7 +376,7 @@ test-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + (${FNAME}_test) + "\tests")
+    - Set-Location "C:\" + ($APP_NAME_CAPS) + "_CI\" + (${FNAME}) + "_test\tests")
     - $AllArgs = @("--gtest_filter=`-*ResultsWrong*:*PerformanceOkay*`  --gtest_output='xml:report.xml' --gtest_fail_fast")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path "report.xml" -Destination (($PROJPATH) + "\report.xml")
