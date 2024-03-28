@@ -418,6 +418,7 @@ test-windows:
 
 benchmark-debian:
   extends: .benchmark-unix
+  needs: build-test-debian
   variables:
     OS_NAME: "debian"
   tags:
@@ -425,6 +426,7 @@ benchmark-debian:
 
 benchmark-fedora:
   extends: .benchmark-unix
+  needs: build-test-fedora
   variables:
     OS_NAME: "fedora"
   tags:
@@ -432,6 +434,7 @@ benchmark-fedora:
 
 benchmark-macos:
   extends: .benchmark-unix
+  needs: build-test-macos
   variables:
     OS_NAME: "mac"
   tags:
@@ -441,6 +444,7 @@ benchmark-macos:
 
 benchmark-macos-arm:
   extends: .benchmark-unix
+  needs: build-test-macos-arm
   variables:
     OS_NAME: "mac_arm"
   tags:
@@ -450,6 +454,7 @@ benchmark-macos-arm:
 
 benchmark-windows:
   stage: benchmark
+  needs: build-test-windows
   interruptible: true
   allow_failure: true
   before_script:
