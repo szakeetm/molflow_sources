@@ -25,6 +25,7 @@ stages:
 
 prepare_job:
   stage: prepare                                              # This stage must run before the release stage
+  interruptible: false #tag pipelines should not be interrupted on new tag
   image: alpine:latest
   rules:
     - if: $CI_COMMIT_TAG
@@ -97,8 +98,8 @@ release_job:
 
 build-windows:
   stage: build
+  interruptible: true
   before_script:
-    - echo "Building Windows $CI_COMMIT_BRANCH"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -122,12 +123,12 @@ build-windows:
 
 build-test-windows:
   stage: build-test
-  needs:
-    - job: build-windows
+  interruptible: true
   before_script:
-    - echo "Building Windows Test $CI_COMMIT_BRANCH"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
   script:
-    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
+    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build_test")
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Init project in:"+($pwd).path
@@ -138,8 +139,8 @@ build-test-windows:
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
-    - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
-    - Copy-Item (($outputpath) + "\*") -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
+    - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_test -ItemType "directory" -Force
+    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\" -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
@@ -147,10 +148,8 @@ build-test-windows:
 
 .build-unix:
   stage: build
+  interruptible: true
   before_script:
-    - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
-    - echo "Current Changelog is the following:"
-    - echo "`cat parsed_changelog.txt`"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -167,17 +166,17 @@ build-test-windows:
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'$FNAME'/' || true
-    - ls ~/$APP_NAME_CAPS'_CI/'
-    - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
   after_script:
     - echo "Finished"
 
 .build-test-unix:
   stage: build-test
+  interruptible: true
   before_script:
-    - echo "Building Test $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
   script:
-    - buildpath=$(pwd)"/build"
+    - buildpath=$(pwd)"/build_test"
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
@@ -188,10 +187,8 @@ build-test-windows:
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
-    - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
-    - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'$FNAME'/' || true
-    - ls ~/$APP_NAME_CAPS'_CI/'
-    - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - mkdir -p ~/$APP_NAME_CAPS'_CI/'${FNAME}_test
+    - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/ || true
   after_script:
     - echo "Finished"
 
@@ -213,16 +210,15 @@ build-fedora:
 
 build-fedora-mpi:
   stage: build
+  interruptible: true
   before_script:
     - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID with MPI"
-    - echo "Current Changelog is the following:"
-    - echo "`cat parsed_changelog.txt`"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
     - source /etc/profile.d/modules.sh
     - module load mpi
-    - buildpath=$(pwd)"/build"
+    - buildpath=$(pwd)"/build_mpi"
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
@@ -233,10 +229,8 @@ build-fedora-mpi:
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID'_'MPI
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
-    - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
-    - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'$FNAME'/' || true
-    - ls ~/$APP_NAME_CAPS'_CI/'
-    - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - mkdir -p ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi
+    - cp -r $outputpath/* ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/ || true
   after_script:
     - echo "Finished"
   variables:
@@ -250,7 +244,6 @@ build-macos:
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
-  needs: []
   tags:
     - macos
   rules:
@@ -266,7 +259,6 @@ build-macos-arm:
   variables:
     OS_NAME: "mac_arm"
     OS_FULL_NAME: "mac_arm"
-  needs: []
   tags:
     - macos-arm
   rules:
@@ -279,8 +271,6 @@ build-macos-arm:
 
 build-test-debian:
   extends: .build-test-unix
-  needs:
-    - job: build-debian
   variables:
     OS_NAME: "debian"
     OS_FULL_NAME: "linux_debian"
@@ -289,8 +279,6 @@ build-test-debian:
 
 build-test-fedora:
   extends: .build-test-unix
-  needs:
-    - job: build-fedora
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_debian"
@@ -299,8 +287,6 @@ build-test-fedora:
 
 build-test-macos:
   extends: .build-test-unix
-  needs:
-    - job: build-macos
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -310,8 +296,6 @@ build-test-macos:
 
 build-test-macos-arm:
   extends: .build-test-unix
-  needs:
-    - job: build-macos-arm
   variables:
     OS_NAME: "mac_arm"
     OS_FULL_NAME: "mac_arm"
@@ -321,6 +305,7 @@ build-test-macos-arm:
 
 .test-unix:
   stage: test
+  interruptible: true
   allow_failure: true
   before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
@@ -328,7 +313,7 @@ build-test-macos-arm:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/tests
     - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml" --gtest_fail_fast
     - mv report.xml "$PROJPATH/report.xml"
   after_script:
@@ -379,6 +364,7 @@ test-macos-arm:
 
 test-windows:
   stage: test
+  interruptible: true
   allow_failure: true
   before_script:
     - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
@@ -386,7 +372,7 @@ test-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\tests"
     - $AllArgs = @("--gtest_filter=`-*ResultsWrong*:*PerformanceOkay*`  --gtest_output='xml:report.xml' --gtest_fail_fast")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path "report.xml" -Destination (($PROJPATH) + "\report.xml")
@@ -404,6 +390,7 @@ test-windows:
 
 .benchmark-unix:
   stage: benchmark
+  interruptible: true
   allow_failure: true
   before_script:
     - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
@@ -412,7 +399,7 @@ test-windows:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/tests
     - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || cp ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
     - ./testsuite --gtest_filter="*PerformanceOkay*" --gtest_output="xml:benchmark.xml" --gtest_fail_fast
     - ls .
@@ -421,7 +408,7 @@ test-windows:
   after_script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test
     - rm -rf ./tests
   artifacts:
     when: always
@@ -431,6 +418,8 @@ test-windows:
 
 benchmark-debian:
   extends: .benchmark-unix
+  needs:
+    - job: build-test-debian
   variables:
     OS_NAME: "debian"
   tags:
@@ -438,6 +427,8 @@ benchmark-debian:
 
 benchmark-fedora:
   extends: .benchmark-unix
+  needs:
+    - job: build-test-fedora
   variables:
     OS_NAME: "fedora"
   tags:
@@ -445,6 +436,8 @@ benchmark-fedora:
 
 benchmark-macos:
   extends: .benchmark-unix
+  needs:
+    - job: build-test-macos
   variables:
     OS_NAME: "mac"
   tags:
@@ -454,6 +447,8 @@ benchmark-macos:
 
 benchmark-macos-arm:
   extends: .benchmark-unix
+  needs:
+    - job: build-test-macos-arm
   variables:
     OS_NAME: "mac_arm"
   tags:
@@ -463,6 +458,9 @@ benchmark-macos-arm:
 
 benchmark-windows:
   stage: benchmark
+  needs:
+    - job: build-test-windows
+  interruptible: true
   allow_failure: true
   before_script:
     - Write-Host "Benchmarking Windows $CI_COMMIT_BRANCH"
@@ -471,7 +469,7 @@ benchmark-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\tests"
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_filter=`*PerformanceOkay*` --gtest_output=xml:benchmark.xml --gtest_fail_fast")
@@ -481,7 +479,7 @@ benchmark-windows:
   after_script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\"
     - Remove-Item -Recurse -Force ("./tests")
   artifacts:
     when: always
@@ -601,10 +599,7 @@ build-artifact-fedora-mpi:
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
     - echo $CI_COMMIT_REF_NAME
-    - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - ls ~/$APP_NAME_CAPS'_CI/'
-    - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI || true
+    - cp -r ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI || true
     - cd ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI/
   rules:
     - if: '($CI_COMMIT_TAG)'
