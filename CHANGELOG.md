@@ -1,5 +1,28 @@
 # Changelog
 
+## v2.9.22 beta (2024-04-03)
+
+### Feature
+
+- Experimental support for hard-sphere collisions with static background gas
+  - See website blog post for more info 
+
+### Bugfix
+
+- Don't update manual texture limit textboxes on every second
+- Fixed Facet Coordinates window crash when inserting vertex with no facet sel.
+- Crash (mostly on macOS) when issuing an "unselect all" command
+
+### Fedora Linux
+
+- Removed outdated shared libraries, MolFlow+ is now built on AlmaLinux 9
+
+### License
+
+- Removed GNU Scientific Library dependencies, moving to closed source
+  - Discussion in progress about the long term. Probably the physics (molflowCLI)
+  - will remain open-source, and the GUI closed-source
+
 ## v2.9.21 beta (2024-02-19)
 
 ### Feature

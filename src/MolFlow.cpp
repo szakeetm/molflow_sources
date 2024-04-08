@@ -78,6 +78,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/ParticleLogger.h"
 #include "Interface/HistogramSettings.h"
 #include "Interface/HistogramPlotter.h"
+#include "Interface/CrossSection.h"
 #include "FormulaEvaluator_MF.h"
 #include "Interface/ImguiWindow.h"
 
@@ -1056,6 +1057,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(parameterEditor);
 	RVALIDATE_DLG(pressureEvolution);
 	RVALIDATE_DLG(timewisePlotter);
+	RVALIDATE_DLG(crossSectionWindow);
 
 	return GL_OK;
 }
@@ -1087,6 +1089,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(parameterEditor);
 	IVALIDATE_DLG(pressureEvolution);
 	IVALIDATE_DLG(timewisePlotter);
+	RVALIDATE_DLG(crossSectionWindow);
 
 	return GL_OK;
 }
