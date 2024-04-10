@@ -345,7 +345,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 			//Check for background gas collision
 			if (model->sp.scattering.enabled) {
-                double distance_until_scatter = GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                double distance_until_scatter = expectedScatterPath - distanceTraveled;
                 if (distance_until_scatter < travel_path) {
                     travel_path = distance_until_scatter;
                     event = ParticleEvent_Scatter;
@@ -360,11 +360,11 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
             case ParticleEvent_FacetHit:
 				//regular collision, no event during flight
 				if (collidedFacet->sh.teleportDest != 0) { //Teleport
-					IncreaseDistanceCounters(travel_path * oriRatio);
+					IncreaseDistanceCounters(travel_path );
 					PerformTeleport(collidedFacet);
 				}
 				else { //Not teleport
-					IncreaseDistanceCounters(travel_path * oriRatio);
+					IncreaseDistanceCounters(travel_path);
 					const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
 					if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
 						if (stickingProbability == 1.0 ||
@@ -407,7 +407,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 break;
             case ParticleEvent_Overtime:
 				//over latest moment
-				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
@@ -415,7 +415,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 break;
             case ParticleEvent_Decay:
 				//particle decayed
-				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
 				lastHitFacet = nullptr;
@@ -423,7 +423,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 break;
             case ParticleEvent_Scatter:
 				//background gas collision
-                IncreaseDistanceCounters(travel_path * oriRatio);
+                IncreaseDistanceCounters(travel_path);
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
                     if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
@@ -550,6 +550,12 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
         //Solution: t=TAU*-log(1-randomGenerator.rnd()) and 1-randomGenerator.rnd()=randomGenerator.rnd() therefore t=half_life/ln2*-log(randomGenerator.rnd())
     } else {
         expectedDecayMoment = 1e100; //never decay
+    }
+
+    if (model->sp.scattering.enabled) { //decaying gas
+        expectedScatterPath = GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm,randomGenerator.rnd()); 
+    } else {
+        expectedScatterPath = 1e100; //never decay
     }
 
     //temperature = src->sh.temperature; //Thermalize particle
@@ -925,6 +931,7 @@ bool ParticleTracer::PerformScatter() {
     ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
     velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
 
+    expectedScatterPath = distanceTraveled + GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm,randomGenerator.rnd());
     
     if (model->sp.scattering.enableCutoff && velocity < model->sp.scattering.cutoffSpeed) {
         return false; //Reached Brownian motion
@@ -1340,7 +1347,7 @@ void ParticleTracer::Reset() {
 
     velocity = 0.0;
     expectedDecayMoment = 1e100;
-    //expectedFreePath = 1e100;
+    expectedScatterPath = 1e100; //total path since creation
     tmpState->Reset();
     lastHitFacet = nullptr;
     ray.lastIntersected = -1;
