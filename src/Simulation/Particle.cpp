@@ -136,7 +136,8 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         return; //LEAK
     }
 
-    ray.structure = model->facets[destIndex]->sh.superIdx;
+    destination = model->facets[destIndex].get();
+    ray.structure = destination->sh.superIdx;
     teleportedFrom = destIndex;
 
     int momentIndex = -1;
