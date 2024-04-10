@@ -345,7 +345,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 			//Check for background gas collision
 			if (model->sp.scattering.enabled) {
-                double distance_until_scatter = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                double distance_until_scatter = GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
                 if (distance_until_scatter < travel_path) {
                     travel_path = distance_until_scatter;
                     event = ParticleEvent_Scatter;
@@ -542,9 +542,9 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     oriRatio = 1.0;
 
     if (model->sp.enableDecay) { //decaying gas
-        expectedDecayMoment =
-                ray.time + model->sp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
-        //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
+        double tau = 1.44269 * model->sp.halfLife; //TAU = half_life/ln2; 1.44269=1/ln2
+        expectedDecayMoment = ray.time + GenerateExponentialRnd(tau,randomGenerator.rnd()); 
+        //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU)
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
         //Solution: t=TAU*-log(1-randomGenerator.rnd()) and 1-randomGenerator.rnd()=randomGenerator.rnd() therefore t=half_life/ln2*-log(randomGenerator.rnd())
