@@ -111,6 +111,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         }
     } else destIndex = iFacet->sh.teleportDest - 1;
 
+    /*
     //Look in which superstructure is the destination facet:
     size_t facId = 0;
     for(auto& fac : model->facets){
@@ -125,8 +126,8 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
             break;
         }
     }
-
-    if (!found) {
+    */
+    if (destIndex>=model->sh.nbFacet) { //invalid target
         /*char err[128];
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
         SetThreadError(err);*/
@@ -134,6 +135,9 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         lastHitFacet = iFacet;
         return; //LEAK
     }
+
+    ray.structure = model->facets[destIndex]->sh.superIdx;
+    teleportedFrom = destIndex;
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
