@@ -232,6 +232,15 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 	particleTracerId = ompIndex;
 	size_t i;
 
+    //Initialize ray tracer
+    ray.pay = nullptr;
+	ray.tMax = 1.0e99;
+	if (lastHitFacetPtr)
+		ray.lastIntersectedId = lastHitFacetPtr->globalId;
+	else
+		ray.lastIntersectedId = -1;
+	ray.rng = &randomGenerator;
+
 	// start new particle when no previous hit facet was saved
 	bool insertNewParticle = !lastHitFacetPtr;
 	for (i = 0; i < nbStep && !exitRequested; i++) {
