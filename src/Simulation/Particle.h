@@ -89,17 +89,17 @@ namespace MFSim {
 
         void RecordAngleMap(const SimulationFacet *collidedFacet);
 
-        void PerformTeleport(SimulationFacet *iFacet);
+        void PerformTeleport(SimulationFacet *teleportSourceFacet);
 
         void RegisterTransparentPass(SimulationFacet *facet);
 
-        void RecordAbsorb(SimulationFacet *iFacet);
+        void RecordAbsorb(SimulationFacet *absorbFacet);
 
-        void PerformBounce(SimulationFacet *iFacet);
+        void PerformBounce(SimulationFacet *bounceFacet);
 
         bool PerformScatter();
 
-        void RecordHistograms(SimulationFacet *iFacet, int m);
+        void RecordHistograms(SimulationFacet *histogramFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
             ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
@@ -130,11 +130,12 @@ namespace MFSim {
         //size_t structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
-        int lastHitFacetId = -1; //id of last hit facet, that ray tracer should avoid. If -1, insert new particle
+        int lastHitFacetId = -1; //id of last hit facet, that ray tracer should avoid. Remembered to persist across multiple SimulationNBStep(n) calls
+        bool insertNewParticleAtNextStep = true; //Remembered to persist across multiple SimulationNBStep(n) calls
         MersenneTwister randomGenerator;
         std::shared_ptr<MolflowSimulationModel> model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
+        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, hit details for intersect routine
 
         bool exitRequested{false};
 
