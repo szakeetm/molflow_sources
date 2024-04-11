@@ -159,8 +159,8 @@ void ParticleTracer::PerformTeleport(SimulationFacet *teleportSourceFacet) {
                                             teleportSourceFacet->sh.N);
     ray.direction = PolarToCartesian(destination->sh.nU, destination->sh.nV, destination->sh.N, inTheta, inPhi, false);
     // Move particle to teleport destination point
-    double u = tmpFacetVars[teleportSourceFacet->globalId].colU;
-    double v = tmpFacetVars[teleportSourceFacet->globalId].colV;
+    double u = facetHitDetails[teleportSourceFacet->globalId].colU;
+    double v = facetHitDetails[teleportSourceFacet->globalId].colV;
     ray.origin = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
     if (particleTracerId == 0)RecordHit(HIT_TELEPORTDEST);
     int nbTry = 0;
@@ -195,7 +195,6 @@ void ParticleTracer::PerformTeleport(SimulationFacet *teleportSourceFacet) {
     IncreaseFacetCounter(teleportSourceFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
                          nullVector, nullVector, nullVector);
-    tmpFacetVars[teleportSourceFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += velocity*abs(DOT3(
     particle.direction.x, particle.direction.y, particle.direction.z,
@@ -267,7 +266,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 		    // Treat hard hit
 			auto& hit = ray.hardHit;
 			collidedFacet = (MolflowSimFacet*)(model->facets[hit.facetId].get());
-			tmpFacetVars[hit.facetId] = hit.hitDetails;
+			facetHitDetails[hit.facetId] = hit.hitDetails;
 			d = hit.hitDetails.colDistTranspPass;
 		
 		    //Treat intersection result
@@ -315,13 +314,13 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                     SimulationFacet* tpHitFacetPtr = model->facets[transparentHit.facetId].get();
                     if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
                         if (alreadyTreatedFacetIds.count(tpHitFacetPtr->globalId) == 0) {
-                            tmpFacetVars[transparentHit.facetId] = transparentHit.hitDetails;
+                            facetHitDetails[transparentHit.facetId] = transparentHit.hitDetails;
                             RegisterTransparentPass(tpHitFacetPtr);
                             alreadyTreatedFacetIds.insert(tpHitFacetPtr->globalId);
                         }
                     }
                     else { //BVH
-                        tmpFacetVars[transparentHit.facetId] = transparentHit.hitDetails;
+                        facetHitDetails[transparentHit.facetId] = transparentHit.hitDetails;
                         RegisterTransparentPass(tpHitFacetPtr);
                     }
                 }
@@ -561,8 +560,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
             // (U,V) -> (x,y,z)
             ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
+            facetHitDetails[src->globalId].colU = u;
+            facetHitDetails[src->globalId].colV = v;
             found = true;
 
         }
@@ -579,11 +578,11 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
             double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
             ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
+            facetHitDetails[src->globalId].colU = u;
+            facetHitDetails[src->globalId].colV = v;
         } else {
-            tmpFacetVars[src->globalId].colU = 0.5;
-            tmpFacetVars[src->globalId].colV = 0.5;
+            facetHitDetails[src->globalId].colU = 0.5;
+            facetHitDetails[src->globalId].colV = 0.5;
             ray.origin = src->sh.center;
         }
 
@@ -659,7 +658,6 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
     // Count
 
-    tmpFacetVars[src->globalId].isHit = true;
 /*#pragma omp critical
     {
         totalDesorbed++;
@@ -999,8 +997,8 @@ void
 ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHit, double velocity_factor,
 	double ortSpeedFactor) {
 
-	size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-	size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+	size_t tu = (size_t)(facetHitDetails[f->globalId].colU * f->sh.texWidth_precise);
+	size_t tv = (size_t)(facetHitDetails[f->globalId].colV * f->sh.texHeight_precise);
 	size_t add = tu + tv * (f->sh.texWidth);
 	double ortVelocity = (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
 		std::abs(Dot(ray.direction,
@@ -1025,8 +1023,8 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 }
 
 void ParticleTracer::RecordDirectionVector(const SimulationFacet *f, int m) {
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+    size_t tu = (size_t) (facetHitDetails[f->globalId].colU * f->sh.texWidth_precise);
+    size_t tv = (size_t) (facetHitDetails[f->globalId].colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
 
     {
@@ -1060,7 +1058,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
         size_t pos = (size_t) (
-                (f->sh.profileType == PROFILE_U ? tmpFacetVars[f->globalId].colU : tmpFacetVars[f->globalId].colV) *
+                (f->sh.profileType == PROFILE_U ? facetHitDetails[f->globalId].colU : facetHitDetails[f->globalId].colV) *
                 (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
             {
@@ -1112,7 +1110,7 @@ ParticleTracer::LogHit(SimulationFacet *f) {
         model->otfParams.logFacetId == f->globalId &&
         tmpParticleLog->pLog.size() < tmpParticleLog->pLog.capacity()) {
         ParticleLoggerItem log;
-        log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
+        log.facetHitPosition = Vector2d(facetHitDetails[f->globalId].colU, facetHitDetails[f->globalId].colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(ray.direction, f->sh.nU, f->sh.nV, f->sh.N);
         log.oriRatio = oriRatio;
         log.particleDecayMoment = expectedDecayMoment;
@@ -1255,7 +1253,7 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time +
-                                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, lastMomentIndex)) > 0) {
+                                         facetHitDetails[facet->globalId].colDistTranspPass / 100.0 / velocity, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -1264,7 +1262,6 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
                          2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity * directionFactor,
                          nullVector,nullVector,nullVector);
 
-    tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
         RecordHitOnTexture(facet, momentIndex,
                            true, 2.0, 2.0);
@@ -1302,13 +1299,13 @@ void ParticleTracer::Reset() {
     //randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();
-    tmpFacetVars.clear();
+    facetHitDetails.clear();
 }
 
 size_t ParticleTracer::GetMemSize() const {
     size_t size = 0;
     size += tmpState->GetMemSize(); //local counter
-    size += tmpFacetVars.capacity() * sizeof(FacetHitDetails);
+    size += facetHitDetails.capacity() * sizeof(FacetHitDetail);
     size += tmpParticleLog->pLog.capacity() * sizeof(ParticleLoggerItem);
     return size;
 }
