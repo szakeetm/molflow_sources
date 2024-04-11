@@ -253,9 +253,11 @@ void GeometryViewer::DrawLinesAndHits() {
 				}
 				break;
 			}
-			vertices.push_back(hitCache.hitCache[i].pos.x);
-			vertices.push_back(hitCache.hitCache[i].pos.y);
-			vertices.push_back(hitCache.hitCache[i].pos.z);
+			if (hitCache.hitCache[i].type!=HIT_LAST) {
+				vertices.push_back(hitCache.hitCache[i].pos.x);
+				vertices.push_back(hitCache.hitCache[i].pos.y);
+				vertices.push_back(hitCache.hitCache[i].pos.z);
+			}
 		}
 
 		// Enable vertex arrays
