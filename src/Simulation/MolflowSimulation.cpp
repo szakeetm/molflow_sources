@@ -10,28 +10,7 @@
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
 
-/*
-MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
 
-    totalDesorbed = o.totalDesorbed;
-
-    lastLogUpdateOK = o.lastLogUpdateOK;
-
-    model = o.model;
-
-    particleTracers = o.particleTracers;
-    for(auto& particleTracer : particleTracers) {
-        particleTracer.lastHitFacet = nullptr;
-        particleTracer.ray.lastIntersected = -1;
-        particleTracer.model = (MolflowSimulationModel*) model.get();
-    }
-
-
-    globalState = o.globalState;
-    globParticleLog = o.globParticleLog;
-
-}
-*/
 
 int MolflowSimulation::ReinitializeParticleLog() {
 
