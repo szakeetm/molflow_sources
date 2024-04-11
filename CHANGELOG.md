@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.9.23 beta
+
+### Bugfix
+
+- Fix mixed up hit colors
+- Record on transparent facets only if they are before a volume event's location
+
 ## v2.9.22 beta (2024-04-03)
 
 ### Feature
