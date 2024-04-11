@@ -260,6 +260,7 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 		
         ray.tMax = 1.0e99;
 
+        ray.transparentHits.clear();
         bool found = model->rayTracingStructures.at(ray.structure)->Intersect(ray); //populates transparentHitBuffer
         if (found) {
 
@@ -408,7 +409,6 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 			if (particleTracerId == 0) RecordLeakPos();
 			insertNewParticleAtNextStep = true;
 		}
-        ray.transparentHits.clear();
 	} //end MCStep
     lastHitFacetId = ray.lastIntersectedId; //save for next call
 	return result;
