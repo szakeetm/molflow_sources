@@ -130,7 +130,7 @@ namespace MFSim {
         //size_t structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
-        SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
+        SimulationFacet* lastHitFacetPtr=nullptr;     // Last hitted facet, nullptr by default
         MersenneTwister randomGenerator;
         std::shared_ptr<MolflowSimulationModel> model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call

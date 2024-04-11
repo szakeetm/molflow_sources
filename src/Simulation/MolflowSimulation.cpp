@@ -6,12 +6,9 @@
 #include <Helper/ConsoleLogger.h>
 #include "Helper/StringHelper.h"
 #include "Particle.h"
-#if defined(USE_OLD_BVH)
-// currently always have SuperStructure
-#else
+
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
-#endif
 
 /*
 MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {

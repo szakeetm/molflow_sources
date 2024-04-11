@@ -106,7 +106,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
             sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
             SetThreadError(err);*/
             if (particleTracerId == 0)RecordHit(HIT_REF);
-            lastHitFacet = iFacet;
+            lastHitFacetPtr = iFacet;
             return; //LEAK
         }
     } else destIndex = iFacet->sh.teleportDest - 1;
@@ -132,7 +132,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
         SetThreadError(err);*/
         if (particleTracerId == 0)RecordHit(HIT_REF);
-        lastHitFacet = iFacet;
+        lastHitFacetPtr = iFacet;
         return; //LEAK
     }
 
@@ -180,7 +180,7 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         nbTry++;
     }
 
-    lastHitFacet = destination;
+    lastHitFacetPtr = destination;
 
     //Count hits on teleport facets
     /*iFacet->sh.tmpCounter.hit.nbAbsEquiv++;
@@ -224,31 +224,19 @@ void DeleteChain (HitChain** head_ref){
 
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
-// Returns true if des limit reached or des error, false otherwise
 MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
 	MCStepResult result = MCStepResult::Success; //By default
-
-
 	const int ompIndex = threadNum;//omp_get_thread_num();
 
 	particleTracerId = ompIndex;
 	size_t i;
 
-#if !defined(USE_OLD_BVH)
-	ray.pay = nullptr;
-	ray.tMax = 1.0e99;
-	if (lastHitFacet)
-		ray.lastIntersected = lastHitFacet->globalId;
-	else
-		ray.lastIntersected = -1;
-	ray.rng = &randomGenerator;
-#endif
 	// start new particle when no previous hit facet was saved
-	bool insertNewParticle = !lastHitFacet;
+	bool insertNewParticle = !lastHitFacetPtr;
 	for (i = 0; i < nbStep && !exitRequested; i++) {
 		if (insertNewParticle) {
-			// quit on desorp error or limit reached
+			// do checks. quit on desorp error or limit reached
 			if ((model->otfParams.desorptionLimit > 0 && remainingDes == 0)) {
 				result = MCStepResult::MaxReached; // desorp limit reached
 				break;
@@ -262,72 +250,38 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 		}
 
 		// Todo: Only use one method, ID or Ptr
-		if (lastHitFacet) {
-			ray.lastIntersected = lastHitFacet->globalId;
+		if (lastHitFacetPtr) {
+			ray.lastIntersectedId = lastHitFacetPtr->globalId;
 		}
 		else {
-			ray.lastIntersected = -1;
+			ray.lastIntersectedId = -1;
 		}
 		//return (lastHitFacet != nullptr);
 
 		//Prepare output values
-#if defined(USE_OLD_BVH)
-		auto [found, collidedFacet, d] = Intersect(*this, particleTracerPtr.origin,
-			particleTracerPtr.direction, model->structures[particleTracerPtr.structure].aabbTree.get());
-		//printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
-#else
+
 		transparentHitBuffer.clear();
-		bool found;
 		MolflowSimFacet* collidedFacet;
 		double d;
-		{
-			ray.tMax = 1.0e99;
+		
+        ray.tMax = 1.0e99;
 
-			found = model->rayTracingStructures.at(ray.structure)->Intersect(ray);
-			if (found) {
+        bool found = model->rayTracingStructures.at(ray.structure)->Intersect(ray); //populates transparentHitBuffer
+        if (found) {
 
-				// first pass
-				std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
-
-				for (auto& hit : ray.transparentHits) {
-					if (ray.tMax <= hit.hit.colDistTranspPass) {
-						continue;
-					}
-
-					// Second pass for transparent hits
-					auto tpFacet = model->facets[hit.hitId].get();
-					if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
-						if (alreadyHit.count(tpFacet->globalId) == 0) {
-							tmpFacetVars[hit.hitId] = hit.hit;
-							RegisterTransparentPass(tpFacet);
-							alreadyHit.insert(tpFacet->globalId);
-						}
-					}
-					else { //BVH
-						tmpFacetVars[hit.hitId] = hit.hit;
-						RegisterTransparentPass(tpFacet);
-					}
-				}
-			}
-			ray.transparentHits.clear();
-		}
-
-		// hard hit
-		if (found) {
+		    // Treat hard hit
 			auto& hit = ray.hardHit;
-			collidedFacet = (MolflowSimFacet*)(model->facets[hit.hitId].get());
-			tmpFacetVars[hit.hitId] = hit.hit;
-			d = hit.hit.colDistTranspPass;
-		}
-
-#endif //use old bvh
-
-		//Treat intersection result
-		if (found) {
+			collidedFacet = (MolflowSimFacet*)(model->facets[hit.facetId].get());
+			tmpFacetVars[hit.facetId] = hit.hitDetails;
+			d = hit.hitDetails.colDistTranspPass;
+		
+		    //Treat intersection result
+		
             //default: simple hit
             double travel_path = d;
             ParticleEventType event = ParticleEvent_FacetHit;
 
+            //Check for events in volume
 			const double previousHitTime = ray.time; //memorize for partial hits
 
 			//Check for outside of time of interest
@@ -357,6 +311,27 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 }
 			}
 
+            //Treat transparent passes
+            std::set<size_t> alreadyTreatedFacetIds; // account for duplicate hits on kdtree
+
+            for (auto& transparentHit : ray.transparentHits) {
+                if (transparentHit.hitDetails.colDistTranspPass < travel_path) { //Only if transparent pass closer than hard hit or volume event
+
+                    SimulationFacet* tpHitFacetPtr = model->facets[transparentHit.facetId].get();
+                    if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
+                        if (alreadyTreatedFacetIds.count(tpHitFacetPtr->globalId) == 0) {
+                            tmpFacetVars[transparentHit.facetId] = transparentHit.hitDetails;
+                            RegisterTransparentPass(tpHitFacetPtr);
+                            alreadyTreatedFacetIds.insert(tpHitFacetPtr->globalId);
+                        }
+                    }
+                    else { //BVH
+                        tmpFacetVars[transparentHit.facetId] = transparentHit.hitDetails;
+                        RegisterTransparentPass(tpHitFacetPtr);
+                    }
+                }
+            }
+
 			// Move particle to event point
 			ray.origin = ray.origin + travel_path * ray.direction;
 			ray.time += travel_path / 100.0 / velocity; //conversion from cm to m
@@ -379,8 +354,8 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 							//currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
 							//distTraveledSinceUpdate += distanceTraveled;
 							insertNewParticle = true;
-							lastHitFacet = nullptr;
-							ray.lastIntersected = -1;
+							lastHitFacetPtr = nullptr;
+							ray.lastIntersectedId = -1;
 						}
 						else {
 							//Reflected
@@ -404,8 +379,8 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 						}
 						else { //eliminate remainder and create new particle
 							insertNewParticle = true;
-							lastHitFacet = nullptr;
-							ray.lastIntersected = -1;
+							lastHitFacetPtr = nullptr;
+							ray.lastIntersectedId = -1;
 						}
 					}
 				}
@@ -415,16 +390,16 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
-				lastHitFacet = nullptr;
-				ray.lastIntersected = -1;
+				lastHitFacetPtr = nullptr;
+				ray.lastIntersectedId = -1;
                 break;
             case ParticleEvent_Decay:
 				//particle decayed
 				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
 				insertNewParticle = true;
-				lastHitFacet = nullptr;
-				ray.lastIntersected = -1;
+				lastHitFacetPtr = nullptr;
+				ray.lastIntersectedId = -1;
                 break;
             case ParticleEvent_Scatter:
 				//background gas collision
@@ -433,24 +408,25 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
                 if (!scatterSuccess) { //Reached Brownian motion
                     if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
                     insertNewParticle = true;
-                    ray.lastIntersected = -1;
+                    ray.lastIntersectedId = -1;
                 }
                 else {
                     if (particleTracerId == 0) RecordHit(HIT_SCATTER);
                     //Successful scatter, nothing else to do
                 }
-                lastHitFacet = nullptr; //To allow coming back to where it came from
+                lastHitFacetPtr = nullptr; //To allow coming back to where it came from
 			}
-		}
+		} //found
 		else {
 			// No intersection found: Leak
 			tmpState->globalStats.nbLeakTotal++;
-			if (particleTracerId == 0)RecordLeakPos();
+			if (particleTracerId == 0) RecordLeakPos();
 			insertNewParticle = true;
-			lastHitFacet = nullptr;
-			ray.lastIntersected = -1;
+			lastHitFacetPtr = nullptr;
+			ray.lastIntersectedId = -1;
 		}
-	}
+        ray.transparentHits.clear();
+	} //end MCStep
 	return result;
 }
 
@@ -528,8 +504,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     }
 
     auto& src = model->facets[i];
-    lastHitFacet = src.get();
-    ray.lastIntersected = lastHitFacet->globalId;
+    lastHitFacetPtr = src.get();
+    ray.lastIntersectedId = lastHitFacetPtr->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->sp.latestMoment);
@@ -894,7 +870,7 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         if (particleTracerId == 0)
             RecordHit(HIT_MOVING);
     } else if (particleTracerId == 0)RecordHit(HIT_REF);
-    lastHitFacet = iFacet;
+    lastHitFacetPtr = iFacet;
     //nbPHit++;
 }
 
@@ -1354,8 +1330,8 @@ void ParticleTracer::Reset() {
     expectedDecayMoment = 1e100;
     expectedScatterPath = 1e100; //total path since creation
     tmpState->Reset();
-    lastHitFacet = nullptr;
-    ray.lastIntersected = -1;
+    lastHitFacetPtr = nullptr;
+    ray.lastIntersectedId = -1;
     //randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();
