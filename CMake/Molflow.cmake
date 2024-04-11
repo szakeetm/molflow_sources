@@ -100,11 +100,11 @@ if(MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 endif(MSVC)
 
-set(COPY_DIR ./copy_to_build/)
+set(COPY_DIR copy_to_build)
 
 # Windows DLL files
 IF (WIN32)
-    set(DLL_DIR ./lib_external/win/dll)
+    set(DLL_DIR lib_external/win/dll)
     file(GLOB DLL_FILES
             ${DLL_DIR}/*.dll
             )
