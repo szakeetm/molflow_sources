@@ -109,7 +109,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
         tmpResults->Resize(model);
 
         // Init tmp vars per thread
-        //particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
+        //particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, FacetHitDetails());
 
         // Update the progress string in a thread-safe manner
 #pragma omp critical
@@ -169,7 +169,7 @@ void MolflowSimulation::ResetSimulation() {
     {
         auto& particleTracer = particleTracers[i];
         particleTracer->Reset();
-        particleTracer->tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer->tmpFacetVars.assign(model->sh.nbFacet, FacetHitDetails());
         particleTracer->model = std::static_pointer_cast<MolflowSimulationModel>(model);
         particleTracer->totalDesorbed = 0;
 
@@ -188,7 +188,7 @@ void MolflowSimulation::ClearSimulation() {
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, FacetHitDetails());
         particleTracer.tmpState.Reset();
         particleTracer.model = (MolflowSimulationModel*)model.get();
         particleTracer.totalDesorbed = 0;

@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <mutex>
 #include "RayTracing/Ray.h"
 
-struct SimulationFacetTempVar;
+struct FacetHitDetails;
 class MolflowSimulationModel;
 class GlobalSimuState;
 struct ParticleLog;
@@ -135,7 +135,7 @@ namespace MFSim {
         MersenneTwister randomGenerator;
         std::shared_ptr<MolflowSimulationModel> model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, hit details for intersect routine
+        std::vector <FacetHitDetails> tmpFacetVars; //One per SimulationFacet, hit details for intersect routine
 
         bool exitRequested{false};
 

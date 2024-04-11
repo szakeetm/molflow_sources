@@ -1308,7 +1308,7 @@ void ParticleTracer::Reset() {
 size_t ParticleTracer::GetMemSize() const {
     size_t size = 0;
     size += tmpState->GetMemSize(); //local counter
-    size += tmpFacetVars.capacity() * sizeof(SimulationFacetTempVar);
+    size += tmpFacetVars.capacity() * sizeof(FacetHitDetails);
     size += tmpParticleLog->pLog.capacity() * sizeof(ParticleLoggerItem);
     return size;
 }
