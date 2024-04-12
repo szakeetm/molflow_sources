@@ -80,6 +80,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/HistogramPlotter.h"
 #include "Interface/CrossSection.h"
 #include "FormulaEvaluator_MF.h"
+#include "Interface/ImguiWindow.h"
 
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -217,6 +218,7 @@ int main(int argc, char* argv[])
 		mApp->Run();
 	}
 	catch (const std::exception& e) {
+		LockWrapper lw(mApp->imguiRenderLock);
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -786,6 +788,7 @@ void MolFlow::ApplyFacetParams() {
 	//worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd && imWnd->profPlot.IsVisible()) imWnd->profPlot.Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	//if (facetAdvParams) facetAdvParams->Refresh();
@@ -966,6 +969,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 }
 
 // Name: FrameMove()
@@ -1339,10 +1344,14 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
+		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
+		if (imWnd) imWnd->convPlot.Reload();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
+		if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
+		if (imWnd) imWnd->textScale.Load();
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1353,6 +1362,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		ImReset();
 	}
 	catch (const std::exception& e) {
 
@@ -1443,6 +1453,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		ImRefresh();
 	}
 	catch (const std::exception& e) {
 
@@ -1707,6 +1718,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						if (vertexCoordinates) vertexCoordinates->Update();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
+						if (imWnd) imWnd->profPlot.Refresh();
 						if (pressureEvolution) pressureEvolution->Refresh();
 						if (timewisePlotter) timewisePlotter->Refresh();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1962,9 +1974,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (pressureEvolution) pressureEvolution->Reset();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureScaling) textureScaling->Update();
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
@@ -1977,6 +1991,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
@@ -2036,9 +2051,12 @@ void MolFlow::EmptyGeometry() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
 	if (histogramSettings) histogramSettings->Refresh({});
+	if (imWnd) imWnd->histPlot.Reset();
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
@@ -2419,6 +2437,8 @@ void MolFlow::UpdatePlotters() {
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
+	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
+	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
@@ -2426,7 +2446,9 @@ void MolFlow::RefreshPlotterCombos() {
 	if (profilePlotter) profilePlotter->Refresh(); //Molflow/Synrad specific child class
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
-	//ImRefresh(); //To uncomment in imgui-transition branch
+	if (profilePlotter) profilePlotter->Refresh();
+	if (imWnd) imWnd->profPlot.Refresh();
+	ImRefresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {
