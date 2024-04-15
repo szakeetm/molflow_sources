@@ -17,6 +17,7 @@ stages:
   - prepare
   - build
   - build-artifact
+  - gui-test
   - build-test
   - test
   - benchmark
@@ -120,6 +121,20 @@ build-windows:
     - echo "Finished"
   tags:
     - windows
+
+gui-test-windows:
+  stage: gui-test
+  script:
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}
+    - "./molflow.exe --ImTest"
+  tags:
+    - windows
+
+gui-test-unix:
+  stage: gui-test
+  script:
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}
+    - "./molflow --ImTest"
 
 build-test-windows:
   stage: build-test
