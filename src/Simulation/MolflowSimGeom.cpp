@@ -137,33 +137,6 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
 
     std::lock_guard<std::mutex> lock(modelMutex);
 
-#if defined(USE_OLD_BVH)
-    std::vector<std::vector<SimulationFacet*>> facetPointers;
-    facetPointers.resize(this->sh.nbSuper);
-    for(auto& sFac : this->facets){
-        // TODO: Build structures
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(sFac.get());
-            }
-        }
-        else {
-            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
-        }
-    }
-
-    // Build all AABBTrees
-    size_t maxDepth=0;
-    for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-        auto& structure = this->structures[s];
-        if(structure.aabbTree)
-            structure.aabbTree.reset();
-        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
-        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
-        //delete tree; // pointer unnecessary because of make_shared
-    }
-
-#else
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
     primPointers.resize(this->sh.nbSuper);
     for(auto& sFac : this->facets){
@@ -209,7 +182,6 @@ int MolflowSimulationModel::BuildAccelStructure(const std::shared_ptr<GlobalSimu
                 this->rayTracingStructures.emplace_back(std::make_unique<BVHAccel>(primPointers[s], bvh_width, split));
         }
     }
-#endif // old_bvb
 
     timer.Stop();
 

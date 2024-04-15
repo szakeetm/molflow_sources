@@ -6,35 +6,11 @@
 #include <Helper/ConsoleLogger.h>
 #include "Helper/StringHelper.h"
 #include "Particle.h"
-#if defined(USE_OLD_BVH)
-// currently always have SuperStructure
-#else
+
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
-#endif
-
-/*
-MolflowSimulation::MolflowSimulation(MolflowSimulation&& o) noexcept {
-
-    totalDesorbed = o.totalDesorbed;
-
-    lastLogUpdateOK = o.lastLogUpdateOK;
-
-    model = o.model;
-
-    particleTracers = o.particleTracers;
-    for(auto& particleTracer : particleTracers) {
-        particleTracer.lastHitFacet = nullptr;
-        particleTracer.ray.lastIntersected = -1;
-        particleTracer.model = (MolflowSimulationModel*) model.get();
-    }
 
 
-    globalState = o.globalState;
-    globParticleLog = o.globParticleLog;
-
-}
-*/
 
 int MolflowSimulation::ReinitializeParticleLog() {
 
@@ -133,7 +109,7 @@ size_t MolflowSimulation::LoadSimulation(ProcCommData& procInfo, LoadStatus_abst
         tmpResults->Resize(model);
 
         // Init tmp vars per thread
-        //particleTracer.tmpFacetVars.assign(simModelPtr->sh.nbFacet, SimulationFacetTempVar());
+        //particleTracer.facetHitDetails.assign(simModelPtr->sh.nbFacet, FacetHitDetail());
 
         // Update the progress string in a thread-safe manner
 #pragma omp critical
@@ -193,7 +169,7 @@ void MolflowSimulation::ResetSimulation() {
     {
         auto& particleTracer = particleTracers[i];
         particleTracer->Reset();
-        particleTracer->tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer->facetHitDetails.assign(model->sh.nbFacet, FacetHitDetail());
         particleTracer->model = std::static_pointer_cast<MolflowSimulationModel>(model);
         particleTracer->totalDesorbed = 0;
 
@@ -212,7 +188,7 @@ void MolflowSimulation::ClearSimulation() {
     for (int i = 0; i < particleTracers.size(); i++)
     {
         auto& particleTracer = particleTracers[i];
-        particleTracer.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particleTracer.facetHitDetails.assign(model->sh.nbFacet, FacetHitDetail());
         particleTracer.tmpState.Reset();
         particleTracer.model = (MolflowSimulationModel*)model.get();
         particleTracer.totalDesorbed = 0;

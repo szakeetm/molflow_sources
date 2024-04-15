@@ -74,25 +74,26 @@ bool ParticleTracer::UpdateMCHits(const std::shared_ptr<GlobalSimuState> globalS
 }
 
 // Compute particle teleport
-void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
+void ParticleTracer::PerformTeleport(SimulationFacet *teleportSourceFacet) {
 
     //Search destination
     SimulationFacet *destination;
     bool found = false;
     bool revert = false;
     int destIndex;
-    if (iFacet->sh.teleportDest == -1) {
+    if (teleportSourceFacet->sh.teleportDest == -1) {
         destIndex = teleportedFrom;
         if (destIndex == -1) {
             /*char err[128];
-            sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
+            sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", teleportSourceFacet->globalId + 1);
             SetThreadError(err);*/
             if (particleTracerId == 0)RecordHit(HIT_REF);
-            lastHitFacet = iFacet;
+            ray.lastIntersectedId = teleportSourceFacet->globalId;
             return; //LEAK
         }
-    } else destIndex = iFacet->sh.teleportDest - 1;
+    } else destIndex = teleportSourceFacet->sh.teleportDest - 1;
 
+    /*
     //Look in which superstructure is the destination facet:
     size_t facId = 0;
     for(auto& fac : model->facets){
@@ -102,20 +103,24 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
             if (destination->sh.superIdx != -1) {
                 ray.structure = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
             }
-            teleportedFrom = static_cast<int>(iFacet->globalId); //memorize where the particle came from
+            teleportedFrom = static_cast<int>(teleportSourceFacet->globalId); //memorize where the particle came from
             found = true;
             break;
         }
     }
-
-    if (!found) {
+    */
+    if (destIndex>=model->sh.nbFacet) { //invalid target
         /*char err[128];
-        sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
+        sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", teleportSourceFacet->globalId + 1, teleportSourceFacet->sh.teleportDest);
         SetThreadError(err);*/
         if (particleTracerId == 0)RecordHit(HIT_REF);
-        lastHitFacet = iFacet;
+        ray.lastIntersectedId = teleportSourceFacet->globalId;
         return; //LEAK
     }
+
+    destination = model->facets[destIndex].get();
+    ray.structure = destination->sh.superIdx;
+    teleportedFrom = destIndex;
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
@@ -123,21 +128,21 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
     }
     // Count this hit as a transparent pass
     if (particleTracerId == 0) RecordHit(HIT_TELEPORTSOURCE);
-    if (/*iFacet->texture && */iFacet->sh.countTrans)
-        RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 2.0);
-    if (/*iFacet->direction && */iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, momentIndex);
-    ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
-    LogHit(iFacet);
-    if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
+    if (/*teleportSourceFacet->texture && */teleportSourceFacet->sh.countTrans)
+        RecordHitOnTexture(teleportSourceFacet, momentIndex, true, 2.0, 2.0);
+    if (/*teleportSourceFacet->direction && */teleportSourceFacet->sh.countDirection)
+        RecordDirectionVector(teleportSourceFacet, momentIndex);
+    ProfileFacet(teleportSourceFacet, momentIndex, true, 2.0, 2.0);
+    LogHit(teleportSourceFacet);
+    if (teleportSourceFacet->sh.anglemapParams.record) RecordAngleMap(teleportSourceFacet);
 
     // Relaunch particle from new facet
-    auto[inTheta, inPhi] = CartesianToPolar(ray.direction, iFacet->sh.nU, iFacet->sh.nV,
-                                            iFacet->sh.N);
+    auto[inTheta, inPhi] = CartesianToPolar(ray.direction, teleportSourceFacet->sh.nU, teleportSourceFacet->sh.nV,
+                                            teleportSourceFacet->sh.N);
     ray.direction = PolarToCartesian(destination->sh.nU, destination->sh.nV, destination->sh.N, inTheta, inPhi, false);
     // Move particle to teleport destination point
-    double u = tmpFacetVars[iFacet->globalId].colU;
-    double v = tmpFacetVars[iFacet->globalId].colV;
+    double u = facetHitDetails[teleportSourceFacet->globalId].colU;
+    double v = facetHitDetails[teleportSourceFacet->globalId].colV;
     ray.origin = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
     if (particleTracerId == 0)RecordHit(HIT_TELEPORTDEST);
     int nbTry = 0;
@@ -157,22 +162,21 @@ void ParticleTracer::PerformTeleport(SimulationFacet *iFacet) {
         nbTry++;
     }
 
-    lastHitFacet = destination;
+    ray.lastIntersectedId = destination->globalId;
 
     //Count hits on teleport facets
-    /*iFacet->sh.tmpCounter.hit.nbAbsEquiv++;
+    /*teleportSourceFacet->sh.tmpCounter.hit.nbAbsEquiv++;
     destination->sh.tmpCounter.hit.nbDesorbed++;*/
 
     double ortVelocity =
-            velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
+            velocity * std::abs(Dot(ray.direction, teleportSourceFacet->sh.N));
     //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
-    /*iFacet->sh.tmpCounter.hit.nbMCHit++;
-    iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
-    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
+    /*teleportSourceFacet->sh.tmpCounter.hit.nbMCHit++;
+    teleportSourceFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
+    teleportSourceFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    IncreaseFacetCounter(teleportSourceFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
                          nullVector, nullVector, nullVector);
-    tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += velocity*abs(DOT3(
     particle.direction.x, particle.direction.y, particle.direction.z,
@@ -201,110 +205,60 @@ void DeleteChain (HitChain** head_ref){
 
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
-// Returns true if des limit reached or des error, false otherwise
 MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
 	MCStepResult result = MCStepResult::Success; //By default
-
-
 	const int ompIndex = threadNum;//omp_get_thread_num();
 
 	particleTracerId = ompIndex;
 	size_t i;
 
-#if !defined(USE_OLD_BVH)
-	ray.pay = nullptr;
+    //Initialize ray tracer
+    ray.pay = nullptr;
 	ray.tMax = 1.0e99;
-	if (lastHitFacet)
-		ray.lastIntersected = lastHitFacet->globalId;
-	else
-		ray.lastIntersected = -1;
+	ray.lastIntersectedId = lastHitFacetId; //Remembered from previous SimulationMCStep call
 	ray.rng = &randomGenerator;
-#endif
-	// start new particle when no previous hit facet was saved
-	bool insertNewParticle = !lastHitFacet;
+
 	for (i = 0; i < nbStep && !exitRequested; i++) {
-		if (insertNewParticle) {
-			// quit on desorp error or limit reached
+		if (insertNewParticleAtNextStep) {
+			// do checks. quit on desorp error or limit reached
 			if ((model->otfParams.desorptionLimit > 0 && remainingDes == 0)) {
 				result = MCStepResult::MaxReached; // desorp limit reached
 				break;
 			}
-			else if (!StartFromSource(ray)) {
+			else if (!StartFromSource(ray)) { //sets ray.lastIntersectedId
 				result = MCStepResult::DesorptionError;
 				break;
 			}
-			insertNewParticle = false;
+			insertNewParticleAtNextStep = false;
 			--remainingDes;
 		}
 
-		// Todo: Only use one method, ID or Ptr
-		if (lastHitFacet) {
-			ray.lastIntersected = lastHitFacet->globalId;
-		}
-		else {
-			ray.lastIntersected = -1;
-		}
-		//return (lastHitFacet != nullptr);
-
 		//Prepare output values
-#if defined(USE_OLD_BVH)
-		auto [found, collidedFacet, d] = Intersect(*this, particleTracerPtr.origin,
-			particleTracerPtr.direction, model->structures[particleTracerPtr.structure].aabbTree.get());
-		//printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
-#else
+
 		transparentHitBuffer.clear();
-		bool found;
 		MolflowSimFacet* collidedFacet;
 		double d;
-		{
-			ray.tMax = 1.0e99;
+		
+        ray.tMax = 1.0e99;
 
-			found = model->rayTracingStructures.at(ray.structure)->Intersect(ray);
-			if (found) {
+        ray.transparentHits.clear();
+        bool found = model->rayTracingStructures.at(ray.structure)->Intersect(ray); //populates transparentHitBuffer
+        if (found) {
 
-				// first pass
-				std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
-
-				for (auto& hit : ray.transparentHits) {
-					if (ray.tMax <= hit.hit.colDistTranspPass) {
-						continue;
-					}
-
-					// Second pass for transparent hits
-					auto tpFacet = model->facets[hit.hitId].get();
-					if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
-						if (alreadyHit.count(tpFacet->globalId) == 0) {
-							tmpFacetVars[hit.hitId] = hit.hit;
-							RegisterTransparentPass(tpFacet);
-							alreadyHit.insert(tpFacet->globalId);
-						}
-					}
-					else { //BVH
-						tmpFacetVars[hit.hitId] = hit.hit;
-						RegisterTransparentPass(tpFacet);
-					}
-				}
-			}
-			ray.transparentHits.clear();
-		}
-
-		// hard hit
-		if (found) {
+		    // Treat hard hit
 			auto& hit = ray.hardHit;
-			collidedFacet = (MolflowSimFacet*)(model->facets[hit.hitId].get());
-			tmpFacetVars[hit.hitId] = hit.hit;
-			d = hit.hit.colDistTranspPass;
-		}
-
-#endif //use old bvh
-
-		//Treat intersection result
-		if (found) {
+			collidedFacet = (MolflowSimFacet*)(model->facets[hit.facetId].get());
+			facetHitDetails[hit.facetId] = hit.hitDetails;
+			d = hit.hitDetails.colDistTranspPass;
+		
+		    //Treat intersection result
+		
             //default: simple hit
             double travel_path = d;
             ParticleEventType event = ParticleEvent_FacetHit;
 
+            //Check for events in volume
 			const double previousHitTime = ray.time; //memorize for partial hits
 
 			//Check for outside of time of interest
@@ -327,12 +281,33 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 
 			//Check for background gas collision
 			if (model->sp.scattering.enabled) {
-                double distance_until_scatter = GeneratePoissonRnd(model->sp.scattering.meanFreePath_cm, randomGenerator.rnd());
+                double distance_until_scatter = expectedScatterPath - distanceTraveled;
                 if (distance_until_scatter < travel_path) {
                     travel_path = distance_until_scatter;
                     event = ParticleEvent_Scatter;
                 }
 			}
+
+            //Treat transparent passes
+            std::set<size_t> alreadyTreatedFacetIds; // account for duplicate hits on kdtree
+
+            for (auto& transparentHit : ray.transparentHits) {
+                if (transparentHit.hitDetails.colDistTranspPass < travel_path) { //Only if transparent pass closer than hard hit or volume event
+
+                    SimulationFacet* tpHitFacetPtr = model->facets[transparentHit.facetId].get();
+                    if (model->sp.accel_type == AccelType::KD) { // account for duplicate hits on kdtree
+                        if (alreadyTreatedFacetIds.count(tpHitFacetPtr->globalId) == 0) {
+                            facetHitDetails[transparentHit.facetId] = transparentHit.hitDetails;
+                            RegisterTransparentPass(tpHitFacetPtr);
+                            alreadyTreatedFacetIds.insert(tpHitFacetPtr->globalId);
+                        }
+                    }
+                    else { //BVH
+                        facetHitDetails[transparentHit.facetId] = transparentHit.hitDetails;
+                        RegisterTransparentPass(tpHitFacetPtr);
+                    }
+                }
+            }
 
 			// Move particle to event point
 			ray.origin = ray.origin + travel_path * ray.direction;
@@ -342,22 +317,19 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
             case ParticleEvent_FacetHit:
 				//regular collision, no event during flight
 				if (collidedFacet->sh.teleportDest != 0) { //Teleport
-					IncreaseDistanceCounters(travel_path * oriRatio);
+					IncreaseDistanceCounters(travel_path);
 					PerformTeleport(collidedFacet);
+                    
 				}
 				else { //Not teleport
-					IncreaseDistanceCounters(travel_path * oriRatio);
+					IncreaseDistanceCounters(travel_path);
 					const double stickingProbability = model->GetStickingAt(collidedFacet, ray.time);
 					if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
 						if (stickingProbability == 1.0 ||
 							((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
 							//Absorbed
 							RecordAbsorb(collidedFacet);
-							//currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
-							//distTraveledSinceUpdate += distanceTraveled;
-							insertNewParticle = true;
-							lastHitFacet = nullptr;
-							ray.lastIntersected = -1;
+							insertNewParticleAtNextStep = true;
 						}
 						else {
 							//Reflected
@@ -380,54 +352,47 @@ MCStepResult ParticleTracer::SimulationMCStep(size_t nbStep, size_t threadNum, s
 							PerformBounce(collidedFacet);
 						}
 						else { //eliminate remainder and create new particle
-							insertNewParticle = true;
-							lastHitFacet = nullptr;
-							ray.lastIntersected = -1;
+							insertNewParticleAtNextStep = true;
 						}
 					}
 				}
                 break;
             case ParticleEvent_Overtime:
 				//over latest moment
-				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
-				insertNewParticle = true;
-				lastHitFacet = nullptr;
-				ray.lastIntersected = -1;
+				insertNewParticleAtNextStep = true;
                 break;
             case ParticleEvent_Decay:
 				//particle decayed
-				tmpState->globalStats.distTraveled_total += travel_path * oriRatio;
+				tmpState->globalStats.distTraveled_total += travel_path;
 				if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
-				insertNewParticle = true;
-				lastHitFacet = nullptr;
-				ray.lastIntersected = -1;
+				insertNewParticleAtNextStep = true;
                 break;
             case ParticleEvent_Scatter:
 				//background gas collision
-                IncreaseDistanceCounters(travel_path * oriRatio);
+                IncreaseDistanceCounters(travel_path);
                 bool scatterSuccess = PerformScatter();
                 if (!scatterSuccess) { //Reached Brownian motion
                     if (particleTracerId == 0) RecordHit(HIT_VOLUME_DECAY);
-                    insertNewParticle = true;
-                    ray.lastIntersected = -1;
+                    insertNewParticleAtNextStep = true;
                 }
                 else {
                     if (particleTracerId == 0) RecordHit(HIT_SCATTER);
                     //Successful scatter, nothing else to do
                 }
-                lastHitFacet = nullptr; //To allow coming back to where it came from
+                ray.lastIntersectedId = -1; //Allow to hit any facet after volumetric scatter
+                break;
 			}
-		}
+		} //found
 		else {
 			// No intersection found: Leak
 			tmpState->globalStats.nbLeakTotal++;
-			if (particleTracerId == 0)RecordLeakPos();
-			insertNewParticle = true;
-			lastHitFacet = nullptr;
-			ray.lastIntersected = -1;
+			if (particleTracerId == 0) RecordLeakPos();
+			insertNewParticleAtNextStep = true;
 		}
-	}
+	} //end MCStep
+    lastHitFacetId = ray.lastIntersectedId; //save for next call
 	return result;
 }
 
@@ -505,8 +470,7 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     }
 
     auto& src = model->facets[i];
-    lastHitFacet = src.get();
-    ray.lastIntersected = lastHitFacet->globalId;
+    ray.lastIntersectedId = src->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src.get(), randomGenerator.rnd(), model->sp.latestMoment);
@@ -524,14 +488,20 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
     oriRatio = 1.0;
 
     if (model->sp.enableDecay) { //decaying gas
-        expectedDecayMoment =
-                ray.time + model->sp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
-        //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
+        double tau = 1.44269 * model->sp.halfLife; //TAU = half_life/ln2; 1.44269=1/ln2
+        expectedDecayMoment = ray.time + GenerateExponentialRnd(tau,randomGenerator.rnd()); 
+        //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU)
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
         //Solution: t=TAU*-log(1-randomGenerator.rnd()) and 1-randomGenerator.rnd()=randomGenerator.rnd() therefore t=half_life/ln2*-log(randomGenerator.rnd())
     } else {
         expectedDecayMoment = 1e100; //never decay
+    }
+
+    if (model->sp.scattering.enabled) { //decaying gas
+        expectedScatterPath = GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm,randomGenerator.rnd()); 
+    } else {
+        expectedScatterPath = 1e100; //never decay
     }
 
     //temperature = src->sh.temperature; //Thermalize particle
@@ -572,8 +542,8 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
             // (U,V) -> (x,y,z)
             ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
+            facetHitDetails[src->globalId].colU = u;
+            facetHitDetails[src->globalId].colV = v;
             found = true;
 
         }
@@ -590,11 +560,11 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
             double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
             ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
+            facetHitDetails[src->globalId].colU = u;
+            facetHitDetails[src->globalId].colV = v;
         } else {
-            tmpFacetVars[src->globalId].colU = 0.5;
-            tmpFacetVars[src->globalId].colV = 0.5;
+            facetHitDetails[src->globalId].colU = 0.5;
+            facetHitDetails[src->globalId].colV = 0.5;
             ray.origin = src->sh.center;
         }
 
@@ -670,7 +640,6 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
     // Count
 
-    tmpFacetVars[src->globalId].isHit = true;
 /*#pragma omp critical
     {
         totalDesorbed++;
@@ -718,46 +687,46 @@ bool ParticleTracer::StartFromSource(Ray& ray) {
 
 /**
 * \brief Perform a bounce from a facet by logging the hit and sometimes relaunching it
-* \param iFacet facet corresponding to the bounce event
+* \param bounceFacet facet corresponding to the bounce event
 */
-void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
+void ParticleTracer::PerformBounce(SimulationFacet *bounceFacet) {
 
     bool revert = false;
     tmpState->globalStats.globalHits.nbMCHit++; //global
     tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
 
     // Handle super structure link facet. Can be
-    if (iFacet->sh.superDest) {
+    if (bounceFacet->sh.superDest) {
         int momentIndex = -1;
         if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
             lastMomentIndex = momentIndex - 1;
         }
 
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0, nullVector, nullVector, nullVector);
-        ray.structure = iFacet->sh.superDest - 1;
-        if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
+        IncreaseFacetCounter(bounceFacet, momentIndex, 1, 0, 0, 0, 0, nullVector, nullVector, nullVector);
+        ray.structure = bounceFacet->sh.superDest - 1;
+        if (bounceFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
             if (particleTracerId == 0) RecordHit(HIT_MOVING);
             Physics::TreatMovingFacet(model, ray.origin, ray.direction, velocity);
         } else {
             // Count this hit as a transparent pass
             if (particleTracerId == 0) RecordHit(HIT_TRANS);
         }
-        LogHit(iFacet);
+        LogHit(bounceFacet);
 
-        ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
-        if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-        if (/*iFacet->texture &&*/ iFacet->sh.countTrans)
-            RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 2.0);
-        if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-            RecordDirectionVector(iFacet, momentIndex);
+        ProfileFacet(bounceFacet, momentIndex, true, 2.0, 2.0);
+        if (bounceFacet->sh.anglemapParams.record) RecordAngleMap(bounceFacet);
+        if (/*bounceFacet->texture &&*/ bounceFacet->sh.countTrans)
+            RecordHitOnTexture(bounceFacet, momentIndex, true, 2.0, 2.0);
+        if (/*bounceFacet->direction &&*/ bounceFacet->sh.countDirection)
+            RecordDirectionVector(bounceFacet, momentIndex);
 
         return;
 
     }
 
-    if (iFacet->sh.is2sided) {
+    if (bounceFacet->sh.is2sided) {
         // We may need to revert normal in case of 2 sided hit
-        revert = Dot(ray.direction, iFacet->sh.N) > 0.0;
+        revert = Dot(ray.direction, bounceFacet->sh.N) > 0.0;
     }
 
     //Texture/Profile incoming hit
@@ -765,11 +734,11 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
 
     //Register (orthogonal) velocity
     double ortVelocity =
-            velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
+            velocity * std::abs(Dot(ray.direction, bounceFacet->sh.N));
 
-    /*iFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
-    iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    /*bounceFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
+    bounceFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
+    bounceFacet->sh.tmpCounter.hit.sum_v_ort += (model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time, lastMomentIndex)) > 0) {
@@ -780,92 +749,92 @@ void ParticleTracer::PerformBounce(SimulationFacet *iFacet) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
+        IncreaseFacetCounter(bounceFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
         (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
+        IncreaseFacetCounter(bounceFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
             (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
     nbBounces++;
-    if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
-        RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
-    if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, momentIndex);
-    LogHit(iFacet);
-    ProfileFacet(iFacet, momentIndex, true, 1.0, 1.0);
-    if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
+    if (/*bounceFacet->texture &&*/ bounceFacet->sh.countRefl)
+        RecordHitOnTexture(bounceFacet, momentIndex, true, 1.0, 1.0);
+    if (/*bounceFacet->direction &&*/ bounceFacet->sh.countDirection)
+        RecordDirectionVector(bounceFacet, momentIndex);
+    LogHit(bounceFacet);
+    ProfileFacet(bounceFacet, momentIndex, true, 1.0, 1.0);
+    if (bounceFacet->sh.anglemapParams.record) RecordAngleMap(bounceFacet);
 
     // Relaunch particle
-    UpdateVelocity(iFacet);
+    UpdateVelocity(bounceFacet);
     //Sojourn time
-    if (iFacet->sh.enableSojournTime) {
-        double A = exp(-iFacet->sh.sojournE / (8.31 * model->GetTemperatureAt(static_cast<const MolflowSimFacet*>(iFacet),ray.time)));
-        ray.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+    if (bounceFacet->sh.enableSojournTime) {
+        double A = exp(-bounceFacet->sh.sojournE / (8.31 * model->GetTemperatureAt(static_cast<const MolflowSimFacet*>(bounceFacet),ray.time)));
+        ray.time += -log(randomGenerator.rnd()) / (A * bounceFacet->sh.sojournFreq);
         momentIndex = LookupMomentIndex(ray.time, lastMomentIndex); //reflection might happen in another moment
     }
 
-    if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-        ray.direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
+    if (bounceFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
+        ray.direction = PolarToCartesian(bounceFacet->sh.nU, bounceFacet->sh.nV, bounceFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
                                      randomGenerator.rnd() * 2.0 * PI,
                                      revert);
     } else {
         double reflTypeRnd = randomGenerator.rnd();
-        if (reflTypeRnd < iFacet->sh.reflection.diffusePart) {
+        if (reflTypeRnd < bounceFacet->sh.reflection.diffusePart) {
             //diffuse reflection
             //See docs/theta_gen.png for further details on angular distribution generation
-            ray.direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
+            ray.direction = PolarToCartesian(bounceFacet->sh.nU, bounceFacet->sh.nV, bounceFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
                                          randomGenerator.rnd() * 2.0 * PI,
                                          revert);
-        } else if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart)) {
+        } else if (reflTypeRnd < (bounceFacet->sh.reflection.diffusePart + bounceFacet->sh.reflection.specularPart)) {
             //specular reflection
-            auto[inTheta, inPhi] = CartesianToPolar(ray.direction, iFacet->sh.nU, iFacet->sh.nV,
-                                                    iFacet->sh.N);
-            ray.direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, PI - inTheta, inPhi, false);
+            auto[inTheta, inPhi] = CartesianToPolar(ray.direction, bounceFacet->sh.nU, bounceFacet->sh.nV,
+                                                    bounceFacet->sh.N);
+            ray.direction = PolarToCartesian(bounceFacet->sh.nU, bounceFacet->sh.nV, bounceFacet->sh.N, PI - inTheta, inPhi, false);
 
         } else {
             //Cos^N reflection
-            ray.direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(
-                            std::pow(randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))),
+            ray.direction = PolarToCartesian(bounceFacet->sh.nU, bounceFacet->sh.nV, bounceFacet->sh.N, std::acos(
+                            std::pow(randomGenerator.rnd(), 1.0 / (bounceFacet->sh.reflection.cosineExponent + 1.0))),
                                          randomGenerator.rnd() * 2.0 * PI, revert);
         }
     }
 
-    if (iFacet->sh.isMoving) {
+    if (bounceFacet->sh.isMoving) {
         Physics::TreatMovingFacet(model, ray.origin, ray.direction, velocity);
     }
 
     //Texture/Profile outgoing particle
     //Register outgoing velocity
-    ortVelocity = velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
+    ortVelocity = velocity * std::abs(Dot(ray.direction, bounceFacet->sh.N));
 
 
     if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = - 1.0 * velocity * ray.direction; //sum impulse unchanged
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
-        IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
+        IncreaseFacetCounter(bounceFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
-        IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
+        IncreaseFacetCounter(bounceFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
             (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
-    if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
-        RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
+    if (/*bounceFacet->texture &&*/ bounceFacet->sh.countRefl)
+        RecordHitOnTexture(bounceFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
-    ProfileFacet(iFacet, momentIndex, false, 1.0, 1.0);
+    ProfileFacet(bounceFacet, momentIndex, false, 1.0, 1.0);
     //no particle.direction count on outgoing, neither angle map
 
-    if (iFacet->sh.isMoving && model->sp.motionType) {
+    if (bounceFacet->sh.isMoving && model->sp.motionType) {
         if (particleTracerId == 0)
             RecordHit(HIT_MOVING);
     } else if (particleTracerId == 0)RecordHit(HIT_REF);
-    lastHitFacet = iFacet;
+    ray.lastIntersectedId = bounceFacet->globalId;
     //nbPHit++;
 }
 
@@ -907,6 +876,7 @@ bool ParticleTracer::PerformScatter() {
     ray.direction = PolarToCartesian(u_n, v_n, ray.direction, scatterTheta, randomAzimuth, false);
     velocity = Physics::GetPostScatteringVelocity(velocity, model->sp.scattering.rho, b, scatterTheta, model->sp.scattering.massRatio);
 
+    expectedScatterPath = distanceTraveled + GenerateExponentialRnd(model->sp.scattering.meanFreePath_cm,randomGenerator.rnd());
     
     if (model->sp.scattering.enableCutoff && velocity < model->sp.scattering.cutoffSpeed) {
         return false; //Reached Brownian motion
@@ -916,24 +886,7 @@ bool ParticleTracer::PerformScatter() {
     }
 }
 
-/*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet
-    *//*double particle.directionFactor = abs(DOT3(
-        particle.direction.x, particle.direction.y, particle.direction.z,
-        iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-    iFacet->sh.tmpCounter.hit.nbMCHit++;
-    iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (velocity*directionFactor);
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->sp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
-    iFacet->isHit = true;
-    if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, particle.time + iFacet->colDist / 100.0 / velocity,
-        true, 2.0, 2.0);
-    if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, particle.time + iFacet->colDist / 100.0 / velocity);
-    ProfileFacet(iFacet, particle.time + iFacet->colDist / 100.0 / velocity,
-        true, 2.0, 2.0);
-    RecordHit(HIT_TRANS);
-    lastHit = iFacet;*//*
-}*/
-
-void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
+void ParticleTracer::RecordAbsorb(SimulationFacet *absorbFacet) {
     tmpState->globalStats.globalHits.nbMCHit++; //global
     tmpState->globalStats.globalHits.nbHitEquiv += oriRatio;
     tmpState->globalStats.globalHits.nbAbsEquiv += oriRatio;
@@ -943,42 +896,42 @@ void ParticleTracer::RecordAbsorb(SimulationFacet *iFacet) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    RecordHistograms(iFacet, momentIndex);
+    RecordHistograms(absorbFacet, momentIndex);
 
     if (particleTracerId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
-            velocity * std::abs(Dot(ray.direction, iFacet->sh.N));
+            velocity * std::abs(Dot(ray.direction, absorbFacet->sh.N));
     
     if (model->sp.enableForceMeasurement) {
         Vector3d velocityVector = velocity * ray.direction;
         Vector3d velocity_sqr = Vector3d(Square(velocityVector.x), Square(velocityVector.y), Square(velocityVector.z));
         Vector3d impulse_momentum = CrossProduct(ray.origin - model->sp.torqueRefPoint, velocityVector);
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
+        IncreaseFacetCounter(absorbFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
         (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
         velocityVector, velocity_sqr, impulse_momentum);
     }
     else {
-        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
+        IncreaseFacetCounter(absorbFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
             (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
             nullVector, nullVector, nullVector);
     }
-    LogHit(iFacet);
-    ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
-    if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-    if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
-        RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
-    if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, momentIndex);
+    LogHit(absorbFacet);
+    ProfileFacet(absorbFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
+    if (absorbFacet->sh.anglemapParams.record) RecordAngleMap(absorbFacet);
+    if (/*absorbFacet->texture &&*/ absorbFacet->sh.countAbs)
+        RecordHitOnTexture(absorbFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
+    if (/*absorbFacet->direction &&*/ absorbFacet->sh.countDirection)
+        RecordDirectionVector(absorbFacet, momentIndex);
 }
 
-void ParticleTracer::RecordHistograms(SimulationFacet *iFacet, int m) {
+void ParticleTracer::RecordHistograms(SimulationFacet *histogramFacet, int m) {
     //Record in global and facet histograms
     size_t binIndex;
 
     auto &tmpGlobalHistograms = tmpState->globalHistograms;
-    auto &facetHistogram = tmpState->facetStates[iFacet->globalId].momentResults;
+    auto &facetHistogram = tmpState->facetStates[histogramFacet->globalId].momentResults;
     auto &globHistParams = model->sp.globalHistogramParams;
-    auto &facHistParams = iFacet->sh.facetHistogramParams;
+    auto &facHistParams = histogramFacet->sh.facetHistogramParams;
 
     for (const int moment : {0, m}) { //Record for const.flow(0) and for actual moment(m)
         if (moment < 0) {
@@ -1026,8 +979,8 @@ void
 ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHit, double velocity_factor,
 	double ortSpeedFactor) {
 
-	size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-	size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+	size_t tu = (size_t)(facetHitDetails[f->globalId].colU * f->sh.texWidth_precise);
+	size_t tv = (size_t)(facetHitDetails[f->globalId].colV * f->sh.texHeight_precise);
 	size_t add = tu + tv * (f->sh.texWidth);
 	double ortVelocity = (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
 		std::abs(Dot(ray.direction,
@@ -1052,8 +1005,8 @@ ParticleTracer::RecordHitOnTexture(const SimulationFacet* f, int m, bool countHi
 }
 
 void ParticleTracer::RecordDirectionVector(const SimulationFacet *f, int m) {
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
+    size_t tu = (size_t) (facetHitDetails[f->globalId].colU * f->sh.texWidth_precise);
+    size_t tv = (size_t) (facetHitDetails[f->globalId].colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
 
     {
@@ -1087,7 +1040,7 @@ ParticleTracer::ProfileFacet(const SimulationFacet *f, int m, bool countHit, dou
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
         size_t pos = (size_t) (
-                (f->sh.profileType == PROFILE_U ? tmpFacetVars[f->globalId].colU : tmpFacetVars[f->globalId].colV) *
+                (f->sh.profileType == PROFILE_U ? facetHitDetails[f->globalId].colU : facetHitDetails[f->globalId].colV) *
                 (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
             {
@@ -1139,7 +1092,7 @@ ParticleTracer::LogHit(SimulationFacet *f) {
         model->otfParams.logFacetId == f->globalId &&
         tmpParticleLog->pLog.size() < tmpParticleLog->pLog.capacity()) {
         ParticleLoggerItem log;
-        log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
+        log.facetHitPosition = Vector2d(facetHitDetails[f->globalId].colU, facetHitDetails[f->globalId].colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(ray.direction, f->sh.nU, f->sh.nV, f->sh.N);
         log.oriRatio = oriRatio;
         log.particleDecayMoment = expectedDecayMoment;
@@ -1282,7 +1235,7 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(ray.time +
-                                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, lastMomentIndex)) > 0) {
+                                         facetHitDetails[facet->globalId].colDistTranspPass / 100.0 / velocity, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -1291,7 +1244,6 @@ void ParticleTracer::RegisterTransparentPass(SimulationFacet *facet) {
                          2.0 * (model->sp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity * directionFactor,
                          nullVector,nullVector,nullVector);
 
-    tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
         RecordHitOnTexture(facet, momentIndex,
                            true, 2.0, 2.0);
@@ -1322,20 +1274,20 @@ void ParticleTracer::Reset() {
 
     velocity = 0.0;
     expectedDecayMoment = 1e100;
-    //expectedFreePath = 1e100;
+    expectedScatterPath = 1e100; //total path since creation
     tmpState->Reset();
-    lastHitFacet = nullptr;
-    ray.lastIntersected = -1;
+    lastHitFacetId = -1;
+    insertNewParticleAtNextStep = true;
     //randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();
-    tmpFacetVars.clear();
+    facetHitDetails.clear();
 }
 
 size_t ParticleTracer::GetMemSize() const {
     size_t size = 0;
     size += tmpState->GetMemSize(); //local counter
-    size += tmpFacetVars.capacity() * sizeof(SimulationFacetTempVar);
+    size += facetHitDetails.capacity() * sizeof(FacetHitDetail);
     size += tmpParticleLog->pLog.capacity() * sizeof(ParticleLoggerItem);
     return size;
 }
