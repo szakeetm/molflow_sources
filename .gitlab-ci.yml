@@ -130,11 +130,13 @@ gui-test-windows:
   tags:
     - windows
 
-gui-test-unix:
+gui-test-debian:
   stage: gui-test
   script:
     - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}
     - "./molflow --ImTest"
+  tags:
+    - debian
 
 build-test-windows:
   stage: build-test
