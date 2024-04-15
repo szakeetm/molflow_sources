@@ -193,7 +193,9 @@ MolFlow* mApp;
 int main(int argc, char* argv[])
 {
 	mApp = new MolFlow();
-
+	for (int i = 0; i < argc; i++) {
+		mApp->argv.push_back(argv[i]);
+	}
 #ifndef _WIN32
 	//Change working directory to executable path (if launched by dbl-click)
 	std::string myPath = FileUtils::GetPath(argv[0]);
