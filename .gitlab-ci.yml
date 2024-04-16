@@ -19,6 +19,7 @@ stages:
   - build-artifact
   - build-test
   - test
+  - build-test-gui
   - test-gui
   - benchmark
   - upload
@@ -725,16 +726,16 @@ build-artifact-windows-tags:
 
 # ImGui Tests:
 .build-ImTest-unix:
-  stage: build-test
+  stage: build-test-gui
   interruptible: true
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
-    - buildpath=$(pwd)"/build_im_test"
-    - mkdir -p $buildpath
-    - cd $buildpath
     - echo "Init project in:" $(pwd)
+    - buildpath=$(pwd)"/build_im_test"
+    - mkdir build_im_test
+    - cd $buildpath
     - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DNO_INTERFACE=1 -DUSE_TESTS=OFF $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Debug -- -j 4
@@ -752,6 +753,7 @@ build-artifact-windows-tags:
     before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
     script:
+    - export PROJPATH=$(pwd)
     - export PATH=$(pwd)"/build_im_test"
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
@@ -760,13 +762,13 @@ build-artifact-windows-tags:
     - echo "Finished"
 
 build-ImTest-Debian:
-    stage: build-test
+    stage: build-test-gui
     extends: .build-ImTest-unix
     variables:
         OS_NAME: "debian"
         OS_FULL_NAME: "linux_debian"
     tags:
-    - debian
+        - debian
 
 im-test-Debian:
     stage: test-gui
