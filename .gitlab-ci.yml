@@ -733,7 +733,7 @@ build-artifact-windows-tags:
     - buildpath=$(pwd)"/build_im_test"
     - mkdir build_im_test
     - cd $buildpath
-    - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DNO_INTERFACE=1 -DUSE_TESTS=OFF $buildpath/..
+    - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DUSE_TESTS=OFF $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Debug -- -j 4
     - export DATE=`date +%Y_%m_%d`
@@ -744,7 +744,7 @@ build-artifact-windows-tags:
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/ || true
     - echo "Built"
 #-------------
-    - ./outputpath/molflow --ImTest
+    - ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/molflow --ImTest
     after_script:
     - echo "Finished"
 
