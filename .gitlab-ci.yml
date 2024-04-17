@@ -19,8 +19,6 @@ stages:
   - build-artifact
   - build-test
   - test
-  - build-test-gui
-  - test-gui
   - benchmark
   - upload
   - release
@@ -724,14 +722,13 @@ build-artifact-windows-tags:
   tags:
     - windows
 
-# ImGui Tests:
-.build-ImTest-unix:
-  stage: build-test-gui
-  interruptible: true
-  before_script:
+.im-test-unix:
+    stage: test
+    before_script:
+    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
     - git submodule sync --recursive
     - git submodule update --init --recursive
-  script:
+    script:
     - echo "Init project in:" $(pwd)
     - buildpath=$(pwd)"/build_im_test"
     - mkdir build_im_test
@@ -745,39 +742,18 @@ build-artifact-windows-tags:
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/ || true
-  after_script:
-    - echo "Finished"
-
-.im-test-unix:
-    stage: test-gui
-    before_script:
-    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
-    script:
-    - export PROJPATH=$(pwd)
-    - export PATH=$(pwd)"/build_im_test"
-    - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - ./build_im_test/molflow --ImTest
+    - echo "Built"
+#-------------
+    - ./outputpath/molflow --ImTest
     after_script:
     - echo "Finished"
 
-build-ImTest-Debian:
-    stage: build-test-gui
-    extends: .build-ImTest-unix
-    variables:
-        OS_NAME: "debian"
-        OS_FULL_NAME: "linux_debian"
-    tags:
-        - debian
-
 im-test-Debian:
-    stage: test-gui
+    stage: test
     extends:
     - .im-test-unix
     variables:
         OS_NAME: "debian"
         OS_FULL_NAME: "linux_debian"
-    needs:
-       - job: build-ImTest-Debian
     tags:
         - debian
