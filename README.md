@@ -235,8 +235,8 @@ Set up vcpkg:
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
 - `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
-- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
-- `./vcpkg integrate install` - note the toolchain location in the command's output
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
+- `./vcpkg integrate install` - note down the toolchain location in the command's output
 
 Get and build dependencies fro MolFlow:
 
