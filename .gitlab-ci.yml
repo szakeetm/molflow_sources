@@ -735,7 +735,7 @@ build-artifact-windows-tags:
     - cd $buildpath
     - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DUSE_TESTS=OFF $buildpath/..
     - echo "Starting build in:" $buildpath
-    - cmake --build $buildpath --config Debug -- -j 4
+    - cmake --build $buildpath --config DEBUG -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
