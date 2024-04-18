@@ -240,13 +240,15 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
-- On Fedora (omit SDL2, as it has a problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
-  - Install `SDL2-devel` with yum or dnf instead
+- On all platforms but Fedora: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
+- On Fedora
+  - Omit SDL2, as it has a problem (MolFlow throws SDL_Init() failed on launch):  
+  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
+  - Install `SDL2-devel` with yum or dnf instead: `dnf install SDL2-devel`
 
 Build MolFlow:
 
-- Navigate to molflow repo, and from a `build` or similar dir:
+- Navigate to molflow repo, and from a `build` or similar subdir:
 - `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
 - `make`
 
