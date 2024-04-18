@@ -211,6 +211,12 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
 Detailed instructions coming soon, after testing.
 
 Working as of 2024.03.07:
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS (x64)
+* macOS (arm64)
+* Ubuntu 22.04 LTS (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
@@ -228,7 +234,7 @@ Working as of 2024.03.07:
 
 ## Windows
 
-Run `molflow.exe` (in the `bin/release` directory if you built it yourself)
+Run `molflow.exe` (in the `out/x64-release/bin` directory if you built it yourself with Viual Studio on an Intel CPU)
 
 ## Linux
 
