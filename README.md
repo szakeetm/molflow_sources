@@ -24,6 +24,15 @@ git submodule update
   
 # Building
 
+As of April 2024, MolFlow is tested to build and run on:
+
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS 14 (x64)
+* macOS 14 (arm64)
+* Ubuntu 22.04 LTS (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
+
 Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2022* or it has to be built/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS `cmake` can be installed with package managers.
 
@@ -213,10 +222,12 @@ Detailed instructions coming soon, after testing.
 Working as of 2024.03.07:
 * Windows 10, 11, Server 2016, Server 2019 (x64)
 * Windows 11 (arm64, through Parallels Desktop)
-* macOS (x64)
-* macOS (arm64)
+* macOS 14 (x64)
+* macOS 14 (arm64)
 * Ubuntu 22.04 LTS (Debian)
 * CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
+
+Commands:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
