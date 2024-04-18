@@ -238,7 +238,7 @@ Set up vcpkg:
 - `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
 - `./vcpkg integrate install` - note down the toolchain location in the command's output
 
-Get and build dependencies fro MolFlow:
+Get and build dependencies for MolFlow:
 
 - On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
 - On Fedora (omit SDL2, as it has a problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
