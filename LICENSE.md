@@ -18,3 +18,16 @@ GNU General Public License for more details.
 
 Full license text:
 <https://www.gnu.org/licenses/gpl-3.0.en.html>
+
+## Open-source libraries used:
+
+- [SDL2](https://www.libsdl.org/)
+- [Curl](https://curl.se/libcurl/)
+- [LibPng](http://www.libpng.org/pub/png/libpng.html)
+- [GCC](https://gcc.gnu.org/)
+- [7-zip and lib7zip wrapper](https://7-zip.org/ and https://github.com/stonewell/lib7zip)
+- [NativeFileDialog extended](https://github.com/btzy/nativefiledialog-extended)
+- [GTK3](https://www.gtk.org/) on Linux.
+- [pugixml](https://github.com/zeux/pugixml)
+- [cereal](https://github.com/USCiLab/cereal)
+- [fmt](https://github.com/fmtlib/fmt)
