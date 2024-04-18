@@ -125,8 +125,9 @@ make -j8
 ## CMake configuration flags
 
 * `CMAKE_BUILD_TYPE`
-  * by default `RELEASE`
-  * can set to `DEBUG`
+  * by default `Release`
+  * can set to `Debug`
+  * these two options are case sensitive!
 * `USE_TESTS`
   * by default `OFF`
   * set to `ON` to build `testsuite.exe` that runs molflowCLI unit tests
@@ -213,14 +214,14 @@ Working as of 2024.03.07:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
-- `git checkout 2024.01.12` - Works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
 - `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
-- `./vcpkg integrate install` - note toolchain location
+- `./vcpkg integrate install` - note the toolchain location in the command's output
 - On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
-- On Fedora (SDL2 problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
-  - Install `SDL2-devel` with yum or dnf
+- On Fedora (omit SDL2, as it has a problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
+  - Install `SDL2-devel` with yum or dnf instead
 - Navigate to molflow repo, and from a `build` or similar dir:
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
 - `make`
 
 # Running
@@ -231,8 +232,9 @@ Run `molflow.exe` (in the `bin/release` directory if you built it yourself)
 
 ## Linux
 
-* In the `release/bin` folder, make `molflow`, `molflowCLI` and `compress` executable:  
-`chmod +x molflow molflowCLI compress`
+* Make `molflow`, `molflowCLI` and `compress` executable:  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`  
 
 Detailed instructions: 
@@ -242,8 +244,10 @@ Detailed instructions:
 
 ## macOS
 
-* Use Homebrew to install dependencies, like `sdl2`, `libpng`, `gcc`
-* In the `release/bin` folder, make `molflow` and `compress` executable
+* Use Homebrew to install dependencies, like `brew install sdl2 libpng gsl gcc p7zip libomp`
+* Make `molflow`, `molflowCLI` and `compress` executable  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`
 
 [Detailed instructions (macOS)](https://molflow.web.cern.ch/node/294)
