@@ -106,7 +106,6 @@ set(SRC_FILES
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
-        ${CMAKE_HOME_DIRECTORY}/src_shared/RayTracing/Ray.cpp
         ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp/GLFormula.h
         
         ${HELPER_DIR}/GLProgress_CLI.cpp
