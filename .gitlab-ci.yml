@@ -158,7 +158,7 @@ build-test-windows:
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
-    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/administrator/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF $buildpath/..
+    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/${ADMIN_USER}/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
@@ -181,7 +181,7 @@ build-test-windows:
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
-    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/administrator/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON $buildpath/..
+    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/${ADMIN_USER}/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
@@ -198,6 +198,7 @@ build-debian:
   variables:
     OS_NAME: "debian"
     OS_FULL_NAME: "linux_debian"
+    ADMIN_USER: "administrator"
   tags:
     - debian
 
@@ -206,6 +207,7 @@ build-fedora:
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_fedora"
+    ADMIN_USER: "admin"
   tags:
     - fedora
 
@@ -223,7 +225,7 @@ build-fedora-mpi:
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
-    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/administrator/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -DUSE_MPI=ON -DNO_INTERFACE=ON $buildpath/..
+    - cmake -DCMAKE_TOOLCHAIN_FILE=/home/${ADMIN_USER}/Desktop/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF -DUSE_MPI=ON -DNO_INTERFACE=ON $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
@@ -237,6 +239,7 @@ build-fedora-mpi:
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_fedora"
+    ADMIN_USER: "admin"
   tags:
     - fedora
 
