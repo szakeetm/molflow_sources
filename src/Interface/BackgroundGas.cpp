@@ -1,23 +1,3 @@
-/*
-Program:     MolFlow+ / Synrad+
-Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
-Copyright:   E.S.R.F / CERN
-Website:     https://cern.ch/molflow
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
-*/
-
 
 #include "BackgroundGas.h"
 #include "GLApp/GLTitledPanel.h"
@@ -43,8 +23,8 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	interfGeom = g;
 	work = w;
 	
-	int wD = 280;
-	int hD = 200;
+	int wD = 260;
+	int hD = 225;
 	
 	GLTitledPanel* groupBox1 = new GLTitledPanel("Background gas");
 	groupBox1->SetBounds(15, 30, wD-25, hD-90);
@@ -75,6 +55,14 @@ BackgroundGas::BackgroundGas(InterfaceGeometry *g,Worker *w):GLWindow() {
 	SetCompBoundsRelativeTo(label3, massTextbox, 110, 0, 100, 20);
 	groupBox1->Add(massTextbox);
 
+	cutoffToggle = new GLToggle(0, "Cutoff below (m/s):");
+	SetCompBoundsRelativeTo(label3, cutoffToggle, 0, 25, 100, 20);
+	groupBox1->Add(cutoffToggle);
+
+	cutoffSpeedTextbox = new GLTextField(0, "");
+	SetCompBoundsRelativeTo(massTextbox, cutoffSpeedTextbox, 0, 25, 100, 20);
+	groupBox1->Add(cutoffSpeedTextbox);
+
 	applyButton = new GLButton(0, "Apply");
 	applyButton->SetBounds(wD/2-40, hD-50, 80, 21);
 	Add(applyButton);
@@ -99,7 +87,7 @@ void BackgroundGas::ProcessMessage(GLComponent *src,int message) {
 
 		if (src == applyButton) { //Apply
 
-			double mfp_cm, massRatio;
+			double mfp_cm, massRatio, cutoffSpeed;
 
 			if (!(mfpTextbox->GetNumber(&mfp_cm))) {
 				GLMessageBox::Display("Invalid mean free path", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -109,11 +97,21 @@ void BackgroundGas::ProcessMessage(GLComponent *src,int message) {
 				GLMessageBox::Display("Invalid mass ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
+
+			bool cutoffEnabled = cutoffToggle->GetState() == 1;
+			if (cutoffEnabled) {
+				if (!(cutoffSpeedTextbox->GetNumber(&cutoffSpeed))) {
+					GLMessageBox::Display("Invalid cutoff speed", "Error", GLDLG_OK, GLDLG_ICONERROR);
+					return;
+				}
+			}
 			
 			if (mApp->AskToReset()) {
 				work->model->sp.scattering.enabled = (bool)enableCheckbox->GetState();
 				work->model->sp.scattering.meanFreePath_cm = mfp_cm;
 				work->model->sp.scattering.massRatio = massRatio;
+				work->model->sp.scattering.enableCutoff = cutoffEnabled;
+				if (cutoffEnabled) work->model->sp.scattering.cutoffSpeed = cutoffSpeed;
 
 				work->MarkToReload();
 				mApp->changedSinceSave = true;
@@ -168,5 +166,6 @@ void BackgroundGas::Update() {
 	enableCheckbox->SetState(work->model->sp.scattering.enabled);
 	mfpTextbox->SetText(work->model->sp.scattering.meanFreePath_cm);
 	massTextbox->SetText(work->model->sp.scattering.massRatio);
-
+	cutoffToggle->SetState((int)work->model->sp.scattering.enableCutoff);
+	cutoffSpeedTextbox->SetText(work->model->sp.scattering.cutoffSpeed);
 }

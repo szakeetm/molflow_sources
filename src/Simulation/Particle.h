@@ -1,22 +1,4 @@
-/*
-Program:     MolFlow+ / Synrad+
-Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
-Copyright:   E.S.R.F / CERN
-Website:     https://cern.ch/molflow
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
-*/
 
 #pragma once
 
@@ -26,7 +8,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <mutex>
 #include "RayTracing/Ray.h"
 
-struct SimulationFacetTempVar;
+struct FacetHitDetail;
 class MolflowSimulationModel;
 class GlobalSimuState;
 struct ParticleLog;
@@ -89,17 +71,17 @@ namespace MFSim {
 
         void RecordAngleMap(const SimulationFacet *collidedFacet);
 
-        void PerformTeleport(SimulationFacet *iFacet);
+        void PerformTeleport(SimulationFacet *teleportSourceFacet);
 
         void RegisterTransparentPass(SimulationFacet *facet);
 
-        void RecordAbsorb(SimulationFacet *iFacet);
+        void RecordAbsorb(SimulationFacet *absorbFacet);
 
-        void PerformBounce(SimulationFacet *iFacet);
+        void PerformBounce(SimulationFacet *bounceFacet);
 
         bool PerformScatter();
 
-        void RecordHistograms(SimulationFacet *iFacet, int m);
+        void RecordHistograms(SimulationFacet *histogramFacet, int m);
 
         bool UpdateHitsAndLog(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<ParticleLog> particleLog,
             ThreadState& myState, std::string& myStatus, std::mutex& statusMutex, size_t timeout_ms);
@@ -126,15 +108,16 @@ namespace MFSim {
         double velocity;
         double initialVelocity; //Used to check for reaching Brownian motion if background collisions are enabled
         double expectedDecayMoment; //for radioactive gases
-        //double expectedFreePath; //for background collisions
+        double expectedScatterPath; //for background collisions
         //size_t structureId;        // Current structure
         std::unique_ptr<GlobalSimuState> tmpState=std::make_unique<GlobalSimuState>(); //Thread-local "unadded" results, that are reset to 0 when added to global state. Pointer to break circular includes
         std::unique_ptr<ParticleLog> tmpParticleLog=std::make_unique<ParticleLog>(); //Pointer to break circular includes
-        SimulationFacet* lastHitFacet=nullptr;     // Last hitted facet, nullptr by default
+        int lastHitFacetId = -1; //id of last hit facet, that ray tracer should avoid. Remembered to persist across multiple SimulationNBStep(n) calls
+        bool insertNewParticleAtNextStep = true; //Remembered to persist across multiple SimulationNBStep(n) calls
         MersenneTwister randomGenerator;
         std::shared_ptr<MolflowSimulationModel> model;
         std::vector<SimulationFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SimulationFacetTempVar> tmpFacetVars; //One per SimulationFacet, for intersect routine
+        std::vector <FacetHitDetail> facetHitDetails; //One per SimulationFacet, hit details for intersect routine
 
         bool exitRequested{false};
 

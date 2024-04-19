@@ -131,7 +131,8 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_simulator)
 find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml truncatedgaussian)
+target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
+target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -160,5 +161,6 @@ if(MSVC)
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 else() #Not MSVC
-
+    find_package(SDL2 CONFIG REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 endif()

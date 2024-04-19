@@ -5,7 +5,7 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 **Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Pascal Rene BAEHR, Jean-Luc PONS  
 **Website:** https://cern.ch/molflow  
 **Copyright:** CERN (2024)  
-**License:** GNU GPLv2 or later
+**License:** GNU GPL v3. [Details](https://molflow.docs.cern.ch/about/#license)
 
 <img src="https://molflow.web.cern.ch/sites/molflow.web.cern.ch/files/pictures/2018-10-09%2016_14_20-PowerPoint%20Slide%20Show%20%20-%20%20Presentation1.png" alt="Molflow image" width="800"/>
 
@@ -24,6 +24,15 @@ git submodule update
   
 # Building
 
+As of April 2024, MolFlow is tested to build and run on:
+
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS 14 (x64)
+* macOS 14 (arm64)
+* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
+
 Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2022* or it has to be built/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS `cmake` can be installed with package managers.
 
@@ -39,7 +48,7 @@ With Visual Studio's CMake support, you can now open the main folder containing 
 
 ```
 sudo apt install build-essential git cmake gcc g++
-sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libgsl-dev libcurl4-gnutls-dev gsl-bin libatlas-base-dev p7zip
+sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libcurl4-gnutls-dev libatlas-base-dev p7zip
 ```
 ## Prepare for building - Fedora Linux (like CentOS)
 
@@ -54,7 +63,7 @@ dnf install -y git cmake gcc g++
 Install required packages to compile molflow:
 
 ```
-dnf install -y gsl-devel zlib-devel libpng-devel gtk3-devel libcurl-devel SDL2-devel p7zip
+dnf install -y zlib-devel libpng-devel gtk3-devel libcurl-devel SDL2-devel p7zip
 ```
 Some packages might require enabling the `crb` repo:
 ```
@@ -68,11 +77,6 @@ export DISPLAY=0:0
 dnf install mesa-dri-drivers
 ```
 
-In case of missing libgsl.so.23, create a symlink for the GSL library:
-```
-ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so
-```
-
 ### CentOS 8
 
 ```
@@ -81,16 +85,12 @@ dnf in -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 dnf in -y libglvnd-opengl libpng15 SDL2 p7zip
 dnf group install "Development Tools"
 ```
-In case of missing libgsl.so.23, create a symlink for the GSL library:
-```
-ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
-```
 
 ### CentOS 7
 
 ```
 sudo yum install epel-release
-sudo yum install p7zip SDL2 gsl libglvnd-opengl
+sudo yum install p7zip SDL2 libglvnd-opengl
 ```
 
 If your CMake is outdated, install a newer version:
@@ -105,7 +105,7 @@ sudo make install
 
 ## Prepare for building - macOS
 
-* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, gsl, curl, p7zip  
+* Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, curl, p7zip  
 
 The procedure looks as follows:
 1. Install command line tools
@@ -114,7 +114,7 @@ The procedure looks as follows:
   - from https://brew.sh/
   - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 3. Install cmake and the necessary dependencies
-  - `brew install cmake libpng gsl sdl2 p7zip libomp libcurl`
+  - `brew install cmake libpng sdl2 p7zip libomp libcurl`
 
 ## Manual build with CMake (Linux/MacOS)
 
@@ -134,8 +134,9 @@ make -j8
 ## CMake configuration flags
 
 * `CMAKE_BUILD_TYPE`
-  * by default `RELEASE`
-  * can set to `DEBUG`
+  * by default `Release`
+  * can set to `Debug`
+  * these two options are case sensitive!
 * `USE_TESTS`
   * by default `OFF`
   * set to `ON` to build `testsuite.exe` that runs molflowCLI unit tests
@@ -173,7 +174,7 @@ The installation path can be changed by adding an installation prefix to the CMa
 
 ```
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install cmake libpng gsl sdl2 p7zip libomp
+brew install cmake libpng sdl2 p7zip libomp
 ```
 
 2) then we clone and build the repo:
@@ -216,32 +217,52 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
 
 ## Build using vcpkg
 
-Detailed instructions coming soon, after testing.
+The most unified way to fulfill dependencies on all platforms.  
+Detailed instructions coming soon, after testing.  
+Currently the `from_vcpkg` branch works, which will soon be merged to `master`.
 
-Working as of 2024.03.07:
+Working as of 2024.03.07 (MolFlow 2.9.21):
+
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS 14 (x64)
+* macOS 14 (arm64)
+* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
+
+Set up vcpkg:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
-- `git checkout 2024.01.12` - Works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
-- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
-- `./vcpkg integrate install` - note toolchain location
-- On all platforms: `./vcpkg install cereal cimg curl fmt gsl libpng zlib pugixml sdl2`
-- On Fedora (SDL2 problem): `./vcpkg install cereal cimg curl fmt gsl libpng zlib pugixml`
-  - Install `SDL2-devel` with yum or dnf
-- Navigate to molflow repo, and from a `build` or similar dir:
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`
+- `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
+- `./vcpkg integrate install` - note down the toolchain location in the command's output
+
+Get and build dependencies for MolFlow:
+
+- On all platforms but Fedora: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
+- On Fedora
+  - Omit SDL2, as it has a problem (MolFlow throws SDL_Init() failed on launch):  
+  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
+  - Install `SDL2-devel` with yum or dnf instead: `dnf install SDL2-devel`
+
+Build MolFlow:
+
+- Navigate to molflow repo, and from a `build` or similar subdir:
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
 - `make`
 
 # Running
 
 ## Windows
 
-Run `molflow.exe` (in the `bin/release` directory if you built it yourself)
+Run `molflow.exe` (in the `out/x64-release/bin` directory if you built it yourself with Viual Studio on an Intel CPU)
 
 ## Linux
 
-* In the `release/bin` folder, make `molflow`, `molflowCLI` and `compress` executable:  
-`chmod +x molflow molflowCLI compress`
+* Make `molflow`, `molflowCLI` and `compress` executable:  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`  
 
 Detailed instructions: 
@@ -251,8 +272,10 @@ Detailed instructions:
 
 ## macOS
 
-* Use Homebrew to install dependencies, like `sdl2`, `libpng`, `gsl`, `gcc`
-* In the `release/bin` folder, make `molflow` and `compress` executable
+* Use Homebrew to install dependencies, like `brew install sdl2 libpng gsl gcc p7zip libomp`
+* Make `molflow`, `molflowCLI` and `compress` executable  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`
 
 [Detailed instructions (macOS)](https://molflow.web.cern.ch/node/294)

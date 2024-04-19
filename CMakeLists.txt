@@ -13,8 +13,6 @@ message("-- os_version_suffix:      ${os_version_suffix}")
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #Use new BVH by default
-#priority: USE_OLD_BVH > USE_KDTREE
-option(USE_OLD_BVH "simulation will use old bvh structure by default" OFF)
 option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
@@ -30,7 +28,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified, will use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE MATCHES Debug)
+if(CMAKE_BUILD_TYPE MATCHES Debug) #case sensitive "Debug"!
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
     MESSAGE("Debug build mode, added DEBUG preprocessor macro.")
@@ -42,10 +40,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 # Defines Flags for Windows and Linux. #
 ########################################
 
-if(USE_OLD_BVH)
-    MESSAGE("Simulation with old BVH...")
-    ADD_DEFINITIONS(-DUSE_OLD_BVH)
-elseif(USE_KDTREE)
+if(USE_KDTREE)
     MESSAGE("Simulation with KDTREE...")
     ADD_DEFINITIONS(-DUSE_KDTREE)
 else()
