@@ -239,7 +239,7 @@ build-fedora-mpi:
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_fedora"
-    ADMIN_USER: "admin"
+    VCPKG_FOLDER: "/home/gitlab-runner/vcpkg"
   tags:
     - fedora
 
