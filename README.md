@@ -242,9 +242,10 @@ Get and build dependencies for MolFlow:
 
 - On all platforms but Fedora: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
 - On Fedora
-  - Omit SDL2, as it has a problem (MolFlow throws SDL_Init() failed on launch):  
-  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
+  - Omit installing SDL2 with vcpkg, as building it from source might cause a [known problem](https://stackoverflow.com/questions/75258597/):   
+  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`  
   - Install `SDL2-devel` with yum or dnf instead: `dnf install SDL2-devel`
+  - Note: The vcpkg package `curl` requires `openssl`, which needs perl to build: before running the `vcpkg install` command, you can install the (heavy) perl module: `sudo dnf install perl`
 
 Build MolFlow:
 
