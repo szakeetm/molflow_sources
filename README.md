@@ -2,7 +2,7 @@
 
 A Monte Carlo simulator for Ultra High Vacuum systems
 
-**Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Pascal Rene BAEHR, Jean-Luc PONS  
+**Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Jean-Luc PONS  
 **Website:** https://cern.ch/molflow  
 **Copyright:** CERN (2024)  
 **License:** GNU GPL v3. [Details](https://molflow.docs.cern.ch/about/#license)
