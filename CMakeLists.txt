@@ -95,7 +95,6 @@ if(NOT NO_INTERFACE)
     add_dependencies(molflow src_shared_simulator src_shared_interface compress)
 endif()
 
-add_dependencies(molflow_core ziplib)
 add_dependencies(molflowCLI molflow_core)
 
 option(USE_TESTS "Build the tests" OFF)

@@ -9,24 +9,6 @@ set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 #CLI specific folders
 #none
 
-IF (WIN32)
-    # set stuff for windows
-
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
-ELSEIF(APPLE)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
-ELSE()
-    # set stuff for other systems
-
-    # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    #[[ #No more linux dependencies
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
-    ENDIF()]]
-ENDIF()
-
 
 
 ############## CMake Project ################

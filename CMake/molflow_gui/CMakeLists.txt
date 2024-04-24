@@ -9,22 +9,6 @@ set(PROJECT_NAME molflow)
 # GUI-specific folders files
 set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
 
-#TODO: This has to go
-IF(APPLE)
-    # set stuff for mac os
-    
-ELSE()
-    # set stuff for other systems
-
-    # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    #[[ #no more linux libraries
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
-    ENDIF()]]
-ENDIF()
-
 ############## CMake Project ################
 #        The main options of project        #
 #############################################
