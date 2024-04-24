@@ -7,38 +7,26 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflow)
 
 # Folders files
-set(CPP_DIR_1 ../../src)
-set(UI_DIR ../../src/Interface)
-set(IO_DIR ../../src/IO)
+set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
+set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
 
-set(HEADER_DIR_1 ../../src)
-set(HEADER_DIR_2 ../../src_shared)
-#set(HEADER_DIR_3 ../../src_shared/GLApp)
-#set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
-#set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
-set(HEADER_DIR_6 ../../include)
+set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
 
-IF (WIN32)
-    # set stuff for windows
-
-    set(HEADER_DIR_7 ../../include/windows_only)
-    set(HEADER_DIR_8 ../../include/windows_only/png)
-
-    set(LINK_DIR_1 ../../lib_external/win/${MY_BUILD_TYPE})
-    set(DLL_DIR ../../lib_external/win/dll)
-ELSEIF(APPLE)
+#TODO: This has to go
+IF(APPLE)
     # set stuff for mac os
-    set(HEADER_DIR_7 "../../include/mac_only")
-    set(LINK_DIR_1 ../../lib_external/mac)
+    
 ELSE()
     # set stuff for other systems
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
     #[[ #no more linux libraries
     IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ../../lib_external/linux_fedora)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
     ELSE()
-        set(LINK_DIR_1 ../../lib_external/linux_debian)
+        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
     ENDIF()]]
 ENDIF()
 
@@ -121,15 +109,15 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES} )
 endif()
 
-include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)  #Help macOS find OpenMP
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_interface)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -138,7 +126,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
         ${HEADER_DIR_5}
-        ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         ${HEADER_DIR_8}
         )
@@ -168,14 +155,12 @@ if(MSVC)
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            SDL2.lib
-            SDL2main.lib
             opengl32
             user32.lib
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)]]
+    
 else() #not MSVC
     if(APPLE)
         #link to self-build sdl shared lib
@@ -208,8 +193,8 @@ else() #not MSVC
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PNG_INCLUDE_DIRS})
 
-    find_package(CURL REQUIRED)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
+    #find_package(CURL CONFIG REQUIRED)
+    #target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)

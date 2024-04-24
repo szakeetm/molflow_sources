@@ -2,10 +2,10 @@
 
 A Monte Carlo simulator for Ultra High Vacuum systems
 
-**Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Pascal Rene BAEHR, Jean-Luc PONS  
+**Authors:** Roberto KERSEVAN, Marton ADY, Tymoteusz MROCZKOWSKI, Jean-Luc PONS  
 **Website:** https://cern.ch/molflow  
 **Copyright:** CERN (2024)  
-**License:** Free to download and use, no implied warranty. [Details](https://molflow.docs.cern.ch/about/)
+**License:** GNU GPL v3. [Details](https://molflow.docs.cern.ch/about/#license)
 
 <img src="https://molflow.web.cern.ch/sites/molflow.web.cern.ch/files/pictures/2018-10-09%2016_14_20-PowerPoint%20Slide%20Show%20%20-%20%20Presentation1.png" alt="Molflow image" width="800"/>
 
@@ -23,6 +23,15 @@ git submodule update
 ```
   
 # Building
+
+As of April 2024, MolFlow is tested to build and run on:
+
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS 14 (x64)
+* macOS 14 (arm64)
+* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
 
 Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2022* or it has to be built/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS `cmake` can be installed with package managers.
@@ -125,8 +134,9 @@ make -j8
 ## CMake configuration flags
 
 * `CMAKE_BUILD_TYPE`
-  * by default `RELEASE`
-  * can set to `DEBUG`
+  * by default `Release`
+  * can set to `Debug`
+  * these two options are case sensitive!
 * `USE_TESTS`
   * by default `OFF`
   * set to `ON` to build `testsuite.exe` that runs molflowCLI unit tests
@@ -207,32 +217,53 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
 
 ## Build using vcpkg
 
-Detailed instructions coming soon, after testing.
+The most unified way to fulfill dependencies on all platforms.  
+Detailed instructions coming soon, after testing.  
+Currently the `from_vcpkg` branch works, which will soon be merged to `master`.
 
-Working as of 2024.03.07:
+Working as of 2024.03.07 (MolFlow 2.9.21):
+
+* Windows 10, 11, Server 2016, Server 2019 (x64)
+* Windows 11 (arm64, through Parallels Desktop)
+* macOS 14 (x64)
+* macOS 14 (arm64)
+* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
+* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
+
+Set up vcpkg:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
-- `git checkout 2024.01.12` - Works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
-- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat`
-- `./vcpkg integrate install` - note toolchain location
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
-- On Fedora (SDL2 problem): `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`
-  - Install `SDL2-devel` with yum or dnf
-- Navigate to molflow repo, and from a `build` or similar dir:
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"`
+- `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
+- `./vcpkg integrate install` - note down the toolchain location in the command's output
+
+Get and build dependencies for MolFlow:
+
+- On all platforms but Fedora: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
+- On Fedora
+  - Omit installing SDL2 with vcpkg, as building it from source might cause a [known problem](https://stackoverflow.com/questions/75258597/):   
+  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`  
+  - Install `SDL2-devel` with yum or dnf instead: `dnf install SDL2-devel`
+  - Note: The vcpkg package `curl` requires `openssl`, which needs perl to build: before running the `vcpkg install` command, you can install the (heavy) perl module: `sudo dnf install perl`
+
+Build MolFlow:
+
+- Navigate to molflow repo, and from a `build` or similar subdir:
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
 - `make`
 
 # Running
 
 ## Windows
 
-Run `molflow.exe` (in the `bin/release` directory if you built it yourself)
+Run `molflow.exe` (in the `out/x64-release/bin` directory if you built it yourself with Viual Studio on an Intel CPU)
 
 ## Linux
 
-* In the `release/bin` folder, make `molflow`, `molflowCLI` and `compress` executable:  
-`chmod +x molflow molflowCLI compress`
+* Make `molflow`, `molflowCLI` and `compress` executable:  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`  
 
 Detailed instructions: 
@@ -242,8 +273,10 @@ Detailed instructions:
 
 ## macOS
 
-* Use Homebrew to install dependencies, like `sdl2`, `libpng`, `gcc`
-* In the `release/bin` folder, make `molflow` and `compress` executable
+* Use Homebrew to install dependencies, like `brew install sdl2 libpng gsl gcc p7zip libomp`
+* Make `molflow`, `molflowCLI` and `compress` executable  
+  `chmod +x molflow molflowCLI compress`  
+  (No need if you built it from source)
 * Run `./molflow`
 
 [Detailed instructions (macOS)](https://molflow.web.cern.ch/node/294)
