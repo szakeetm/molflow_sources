@@ -6,17 +6,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 
-# Folders files
-set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
-set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
-
-set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
-
+#CLI specific folders
+#none
 
 IF (WIN32)
     # set stuff for windows

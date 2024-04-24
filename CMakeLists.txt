@@ -72,9 +72,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
+# Project-wide folders
+
+set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
+set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
+set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(GLAPP_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
+set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
+
+set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
-add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_core)
+add_subdirectory(CMake/molflow_cli)
+
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
