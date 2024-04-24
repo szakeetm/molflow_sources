@@ -7,16 +7,15 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 
 # Folders files
-set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
 set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
 set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(CPP_DIR_3 ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
+set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
 set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
 
-set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_3 ${CMAKE_HOME_DIRECTORY}/include)
+set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 
 
 IF (WIN32)
@@ -69,25 +68,25 @@ endif()
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/SimulationManager.cpp
-        ${CPP_DIR_2}/ShMemory.cpp
-        ${CPP_DIR_2}/Process.cpp
-        ${CPP_DIR_2}/GLApp/GLFormula.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        ${CPP_DIR_SRC_SHARED}/ShMemory.cpp
+        ${CPP_DIR_SRC_SHARED}/Process.cpp
+        ${CPP_DIR_SRC_SHARED}/GLApp/GLFormula.cpp
 
-        ${CPP_DIR_2}/Vector.cpp
-        ${CPP_DIR_2}/Distributions.cpp
-        ${CPP_DIR_2}/GLApp/GLFormula.h
+        ${CPP_DIR_SRC_SHARED}/Vector.cpp
+        ${CPP_DIR_SRC_SHARED}/Distributions.cpp
+        ${CPP_DIR_SRC_SHARED}/GLApp/GLFormula.h
 
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
 
-        ${CPP_DIR_1}/ParameterParser.cpp
-        ${CPP_DIR_1}/Initializer.cpp
+        ${CPP_DIR_SRC}/ParameterParser.cpp
+        ${CPP_DIR_SRC}/Initializer.cpp
 
-        ${CPP_DIR_1}/TimeMoments.cpp
+        ${CPP_DIR_SRC}/TimeMoments.cpp
 
-        ${CPP_DIR_1}/MolflowTypes.cpp
-        ${CPP_DIR_2}/Buffer_shared.cpp
+        ${CPP_DIR_SRC}/MolflowTypes.cpp
+        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
 
         ${SIMU_DIR}/MolflowSimulation.cpp
         ${SIMU_DIR}/SimulationMC.cpp
@@ -99,11 +98,11 @@ set(SRC_FILES
         ${SIMU_DIR}/MolflowSimFacet.cpp
         ${SIMU_DIR}/MolflowSimGeom.cpp
 
-        ${CPP_DIR_2}/SimulationController.cpp
-        ${CPP_DIR_2}/SimulationManager.cpp
-        ${CPP_DIR_2}/IntersectAABB_shared.cpp
-        ${CPP_DIR_2}/Polygon.cpp
-        ${CPP_DIR_2}/Random.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationController.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
+        ${CPP_DIR_SRC_SHARED}/Random.cpp
         ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp/GLFormula.h
         
         ${HELPER_DIR}/GLProgress_CLI.cpp
@@ -117,7 +116,10 @@ link_directories(${LINK_DIR_1})
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
+IF(APPLE)
 include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)  #Help macOS find OpenMP
+ENDIF()
+
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
@@ -125,22 +127,16 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_simulator)
+
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${HEADER_DIR_1}
-        ${HEADER_DIR_2}
-        ${HEADER_DIR_3}
-        ${HEADER_DIR_5}
-        ${HEADER_DIR_7}
+        ${HEADER_DIR_SRC}
+        ${HEADER_DIR_SRC_SHARED}
+        ${HEADER_DIR_INCLUDE}
         )
-
-if(MSVC)
-        set(HEADER_DIR_6 ${CMAKE_HOME_DIRECTORY}/include/windows_only)
-        target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR_6})
-endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
@@ -155,6 +151,5 @@ if(MSVC)
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 else() #Not MSVC
-    find_package(SDL2 CONFIG REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+
 endif()
