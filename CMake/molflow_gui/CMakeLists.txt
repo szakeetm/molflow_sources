@@ -117,7 +117,7 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_interface)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflow_sim)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}

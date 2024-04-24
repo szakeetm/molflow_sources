@@ -74,22 +74,22 @@ include(CMake/Molflow.cmake)
 
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 add_subdirectory(CMake/molflow_cli)
-add_subdirectory(CMake/molflow_sim)
+add_subdirectory(CMake/molflow_core)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
     add_dependencies(molflow src_shared_simulator src_shared_interface compress)
 endif()
 
-add_dependencies(molflow_sim ziplib)
-add_dependencies(molflowCLI molflow_sim)
+add_dependencies(molflow_core ziplib)
+add_dependencies(molflowCLI molflow_core)
 
 option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
-    add_dependencies(testsuite molflow_sim molflowCLI)
+    add_dependencies(testsuite molflow_core molflowCLI)
 endif()
 
 # Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)

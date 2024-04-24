@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflow_sim)
+set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 
 # Folders files
 set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
@@ -21,10 +21,8 @@ set(HEADER_DIR_3 ${CMAKE_HOME_DIRECTORY}/include)
 
 IF (WIN32)
     # set stuff for windows
-    set(HEADER_DIR_4 ${CMAKE_HOME_DIRECTORY}/include/windows_only)
 
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
     set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
@@ -115,9 +113,7 @@ set(SRC_FILES
 )
 
 # set the path to the library folder
-link_directories(${LINK_DIR_1}
-        ${LINK_DIR_2}
-        )
+link_directories(${LINK_DIR_1})
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
@@ -137,7 +133,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
         ${HEADER_DIR_2}
         ${HEADER_DIR_3}
-        ${HEADER_DIR_4}
         ${HEADER_DIR_5}
         ${HEADER_DIR_7}
         )

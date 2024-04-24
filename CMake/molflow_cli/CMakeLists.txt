@@ -7,23 +7,21 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflowCLI) #sets executable name
 
 # Folders files
-set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
 set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
 set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(CPP_DIR_3 ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
+set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(GLAPP_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
 set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
 
-set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_3 ${CMAKE_HOME_DIRECTORY}/include)
+set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 
+
+#Add manually added libraries from lib_external folder, os-dependent
 IF (WIN32)
-    # set stuff for windows
-    set(HEADER_DIR_4 ${CMAKE_HOME_DIRECTORY}/include/windows_only)
-
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
     set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
@@ -69,33 +67,33 @@ endif()
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_1}/MolflowCLI.cpp
-        ${CPP_DIR_2}/SimulationManager.cpp
-        ${CPP_DIR_2}/ShMemory.cpp
-        ${CPP_DIR_2}/Process.cpp
+        ${CPP_DIR_SRC}/MolflowCLI.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        ${CPP_DIR_SRC_SHARED}/ShMemory.cpp
+        ${CPP_DIR_SRC_SHARED}/Process.cpp
 
-        ${CPP_DIR_2}/Vector.cpp
-        ${CPP_DIR_2}/Distributions.cpp
+        ${CPP_DIR_SRC_SHARED}/Vector.cpp
+        ${CPP_DIR_SRC_SHARED}/Distributions.cpp
 
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
-        ${CPP_DIR_1}/Initializer.cpp
-        ${CPP_DIR_1}/ParameterParser.cpp
-        ${CPP_DIR_2}/File.cpp
+        ${CPP_DIR_SRC}/Initializer.cpp
+        ${CPP_DIR_SRC}/ParameterParser.cpp
+        ${CPP_DIR_SRC_SHARED}/File.cpp
 
-        ${CPP_DIR_1}/TimeMoments.cpp
+        ${CPP_DIR_SRC}/TimeMoments.cpp
 
-        ${CPP_DIR_1}/MolflowTypes.cpp
-        ${CPP_DIR_2}/Buffer_shared.cpp
+        ${CPP_DIR_SRC}/MolflowTypes.cpp
+        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
 
         #${SIMU_DIR}/MolflowSimulation.cpp
         #${SIMU_DIR}/SimulationMC.cpp
-        ${CPP_DIR_2}/IntersectAABB_shared.cpp
-        ${CPP_DIR_2}/Polygon.cpp
-        ${CPP_DIR_2}/Random.cpp
+        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
+        ${CPP_DIR_SRC_SHARED}/Random.cpp
 
-        ${CPP_DIR_2}/FlowMPI.h #contains templates
-        ${CPP_DIR_2}/FlowMPI.cpp
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.h #contains templates
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
 
         ${IO_DIR}/CSVExporter.cpp
         ${IO_DIR}/CSVExporter.h
@@ -109,7 +107,10 @@ set(SRC_FILES
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
+IF(APPLE)
 include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake) #Help macOS find OpenMP
+ENDIF()
+
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
@@ -129,24 +130,22 @@ if(USE_MPI)
     endif()
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC molflow_sim)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
+
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${HEADER_DIR_1}
-        ${HEADER_DIR_2}
-        ${HEADER_DIR_3}
-        ${HEADER_DIR_4}
-        ${HEADER_DIR_5}
-        ${HEADER_DIR_7}
+        ${HEADER_DIR_SRC}
+        ${HEADER_DIR_SRC_SHARED}
+        ${HEADER_DIR_INCLUDE}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 
 # set the path to the library folder
-target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
+target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1}})
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
@@ -159,12 +158,6 @@ if(MSVC)
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
-    # zip extraction
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-            #bzip2.lib
-            #lzma.lib
-            #zlib.lib
-            )
 endif(MSVC)
 if(NOT MSVC)
 
