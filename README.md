@@ -240,11 +240,14 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml imgui[opengl2-binding,sdl2-binding] sdl2 cereal2`
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml imgui[opengl2-binding,sdl2-binding] implot sdl2`
 - On Fedora
+  - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
+  `sudo dnf install perl`
   - If molflow fails to launch after building with "SDL_Init() failed", you have to install the `alsa` feature of sdl2:  
     `./vcpkg install sdl2[alsa]`  
     then reconfigure and rebuild
+  
 - On macOS
   - The new default shell, `zsh`, is interpreting the [] brackets, so put package names with features within parentheses:  
     `./vcpkg install "imgui[opengl2-binding,sdl2-binding]"`
