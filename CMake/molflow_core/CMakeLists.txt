@@ -99,10 +99,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_simulator)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_core)
 
-find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

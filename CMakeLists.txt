@@ -97,7 +97,7 @@ add_subdirectory(CMake/molflow_cli)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
-    add_dependencies(molflow src_shared_simulator src_shared_interface compress)
+    add_dependencies(molflow src_shared_core src_shared_gui compress)
 endif()
 
 add_dependencies(molflowCLI molflow_core)
