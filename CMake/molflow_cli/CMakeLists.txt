@@ -122,9 +122,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
 
-find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
-
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}
         ${HEADER_DIR_SRC_SHARED}
