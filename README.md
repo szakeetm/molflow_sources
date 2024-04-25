@@ -234,23 +234,26 @@ Set up vcpkg:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
 - `cd vcpkg`
-- `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
+- `git checkout 2024.03.25` - This vcpkg version, with its packages, works on all platforms
 - `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
 - `./vcpkg integrate install` - note down the toolchain location in the command's output
 
 Get and build dependencies for MolFlow:
 
 - On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml imgui[opengl2-binding,sdl2-binding] implot sdl2`
+- On Windows
+  - The `cereal2` library requires the `pkgconf` port:  
+    `./vcpkg install pkgconf`
+- On macOS
+  - The new default shell, `zsh`, is interpreting the [] brackets, so put package names with features within parentheses:  
+    `./vcpkg install "imgui[opengl2-binding,sdl2-binding]"`
 - On Fedora
   - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
   `sudo dnf install perl`
   - If molflow fails to launch after building with "SDL_Init() failed", you have to install the `alsa` feature of sdl2:  
     `./vcpkg install sdl2[alsa]`  
     then reconfigure and rebuild
-  
-- On macOS
-  - The new default shell, `zsh`, is interpreting the [] brackets, so put package names with features within parentheses:  
-    `./vcpkg install "imgui[opengl2-binding,sdl2-binding]"`
+
 
 Build MolFlow:
 
