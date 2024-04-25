@@ -17,6 +17,7 @@ option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
+option(ENABLE_IMGUI_TESTS "build ImGui graphical tests" OFF)
 
 option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
 if(NO_INTERFACE)
@@ -32,6 +33,10 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) #case sensitive "Debug"!
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
     MESSAGE("Debug build mode, added DEBUG preprocessor macro.")
+endif()
+if(ENABLE_IMGUI_TESTS)
+    ADD_DEFINITIONS(-DENABLE_IMGUI_TESTSS)
+    MESSAGE("Building ImGui tests.")
 endif()
 message(STATUS "Build type used: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_VERBOSE_MAKEFILE OFF)
