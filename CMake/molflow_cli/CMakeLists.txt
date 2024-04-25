@@ -7,16 +7,6 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME molflowCLI) #sets executable name
 
 # Folders files
-set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
-set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(GLAPP_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
-set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
-
-set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 
 
 #Add manually added libraries from lib_external folder, os-dependent
@@ -131,9 +121,6 @@ if(USE_MPI)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
-
-find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}

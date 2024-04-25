@@ -6,29 +6,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 set(PROJECT_NAME molflow)
 
-# Folders files
-set(CPP_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
+# GUI-specific folders files
 set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
-set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-
-set(HEADER_DIR_1 ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_2 ${CMAKE_HOME_DIRECTORY}/src_shared)
-
-#TODO: This has to go
-IF(APPLE)
-    # set stuff for mac os
-    
-ELSE()
-    # set stuff for other systems
-
-    # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    #[[ #no more linux libraries
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
-    ENDIF()]]
-ENDIF()
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -88,17 +67,17 @@ set(SRC_FILES
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
 
-        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
-        ${CPP_DIR_1}/MolFlow.cpp
-        ${CPP_DIR_1}/MolflowFacet.cpp
-        ${CPP_DIR_1}/MolflowGeometry.cpp
-        ${CPP_DIR_1}/MolflowTypes.cpp
-        ${CPP_DIR_1}/MolflowWorker.cpp
-        ${CPP_DIR_1}/TimeMoments.cpp
+        ${CPP_DIR_SRC}/FormulaEvaluator_MF.cpp
+        ${CPP_DIR_SRC}/MolFlow.cpp
+        ${CPP_DIR_SRC}/MolflowFacet.cpp
+        ${CPP_DIR_SRC}/MolflowGeometry.cpp
+        ${CPP_DIR_SRC}/MolflowTypes.cpp
+        ${CPP_DIR_SRC}/MolflowWorker.cpp
+        ${CPP_DIR_SRC}/TimeMoments.cpp
 
-        ${HEADER_DIR_2}/FlowMPI.h
-        ${HEADER_DIR_2}/FlowMPI.cpp
-        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
+        ${HEADER_DIR_SRC_SHARED}/FlowMPI.h
+        ${HEADER_DIR_SRC_SHARED}/FlowMPI.cpp
+        ${HEADER_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
 
         )
 
@@ -109,25 +88,23 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES} )
 endif()
 
+if(APPLE)
 include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)  #Help macOS find OpenMP
+endif()
+
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_interface)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_gui)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${HEADER_DIR_1}
+        ${HEADER_DIR_SRC}
         ${UI_DIR}
-        ${HEADER_DIR_2}
-        ${HEADER_DIR_3}
-        ${HEADER_DIR_4}
-        ${HEADER_DIR_5}
-        ${HEADER_DIR_7}
-        ${HEADER_DIR_8}
+        ${HEADER_DIR_SRC_SHARED}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
@@ -152,7 +129,7 @@ if(MSVC)
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
 
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    find_package(OpenGL REQUIRED)
+    
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} PRIVATE
             opengl32
@@ -163,48 +140,10 @@ if(MSVC)
     
 else() #not MSVC
     if(APPLE)
-        #link to self-build sdl shared lib
         target_link_libraries(${PROJECT_NAME} PRIVATE "-framework AppKit")
     else()
-        # Use the package PkgConfig to detect GTK+ headers/library files
-        #[[FIND_PACKAGE(PkgConfig REQUIRED)
-        PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
-        # Setup CMake to use GTK+, tell the compiler where to look for headers
-        # and to the linker where to look for libraries
-        INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
-        LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
-
-        # Add other flags to the compiler
-        ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
-
-        target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES})
-
-        find_package(X11 REQUIRED)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})]]
     endif()
-
-    find_package(OpenGL REQUIRED)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${OPENGL_INCLUDE_DIRS})
-
-    find_package(SDL2 REQUIRED)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
-
-    find_package(PNG REQUIRED)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PNG_INCLUDE_DIRS})
-
-    #find_package(CURL CONFIG REQUIRED)
-    #target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
-
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
 
     #for shared memory
     find_library(LIBRT rt)

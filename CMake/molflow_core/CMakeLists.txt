@@ -6,35 +6,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 
-# Folders files
-set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
-set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
-
-set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
-
-
-IF (WIN32)
-    # set stuff for windows
-
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
-ELSEIF(APPLE)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
-ELSE()
-    # set stuff for other systems
-
-    # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    #[[ #No more linux dependencies
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
-    ENDIF()]]
-ENDIF()
+#CLI specific folders
+#none
 
 
 
@@ -126,10 +99,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_simulator)
+target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_core)
 
-find_package(pugixml CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml::pugixml)
 target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

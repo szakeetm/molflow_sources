@@ -17,6 +17,7 @@ option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
+option(ENABLE_IMGUI_TESTS "build ImGui graphical tests" OFF)
 
 option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
 if(NO_INTERFACE)
@@ -32,6 +33,10 @@ if(CMAKE_BUILD_TYPE MATCHES Debug) #case sensitive "Debug"!
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
     MESSAGE("Debug build mode, added DEBUG preprocessor macro.")
+endif()
+if(ENABLE_IMGUI_TESTS)
+    ADD_DEFINITIONS(-DENABLE_IMGUI_TESTS)
+    MESSAGE("Building ImGui tests.")
 endif()
 message(STATUS "Build type used: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -72,16 +77,29 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
+# Project-wide folders
+
+set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
+set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
+set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(GLAPP_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
+set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
+
+set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
+set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
+set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
-add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_core)
+add_subdirectory(CMake/molflow_cli)
+
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
-    add_dependencies(molflow src_shared_simulator src_shared_interface compress)
+    add_dependencies(molflow src_shared_core src_shared_gui compress)
 endif()
 
-add_dependencies(molflow_core ziplib)
 add_dependencies(molflowCLI molflow_core)
 
 option(USE_TESTS "Build the tests" OFF)
