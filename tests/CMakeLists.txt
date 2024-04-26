@@ -70,7 +70,7 @@ target_compile_definitions(testsuite PRIVATE
 target_include_directories(testsuite PRIVATE ${CMAKE_HOME_DIRECTORY}/include ${CMAKE_HOME_DIRECTORY}/src_shared ${CMAKE_HOME_DIRECTORY}/src)
 # set the path to the library folder
 IF(APPLE)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
+    #set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
     IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)

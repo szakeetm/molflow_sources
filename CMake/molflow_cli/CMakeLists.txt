@@ -13,7 +13,7 @@ set(PROJECT_NAME molflowCLI) #sets executable name
 IF (WIN32)
     set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
+    #set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
 ELSE()
     # set stuff for other systems
 
