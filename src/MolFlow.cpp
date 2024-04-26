@@ -955,6 +955,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
 }
 
