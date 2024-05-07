@@ -8,6 +8,7 @@ set(PROJECT_NAME molflow)
 
 # GUI-specific folders files
 set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
+set(IMGUI_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/external/imgui) #need to define here as well, since MolFlow.cpp includes ImguiWindow.h
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -105,6 +106,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}
         ${UI_DIR}
         ${HEADER_DIR_SRC_SHARED}
+        ${IMGUI_DIR}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
