@@ -118,26 +118,12 @@ ENDIF()
 set(COPY_FILES ${COPY_DIR}/desorption_yields
         ${COPY_DIR}/images
         ${COPY_DIR}/parameter_catalog
-        ${COPY_DIR}/Roboto-Medium.ttf
-        ${COPY_DIR}/DroidSans.ttf
-        ${COPY_DIR}/FreeMono.ttf
-        ${COPY_DIR}/fa-regular-400.ttf
-        ${COPY_DIR}/fa-solid-900.ttf
+        ${COPY_DIR}/fonts
         )
 
 IF (WIN32)
     set(COPY_FILES ${COPY_FILES}
             ${COPY_DIR}/7za.exe
-            )
-ELSEIF(NOT APPLE)
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/7za
-            )
-ENDIF()
-
-IF(${OS_NAME} STREQUAL "linux_fedora")
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/launch_molflow.sh
             )
 ENDIF()
 

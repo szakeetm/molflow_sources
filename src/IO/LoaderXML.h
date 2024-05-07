@@ -4,7 +4,7 @@
 
 #include <set>
 #include <map>
-#include "PugiXML/pugixml.hpp"
+#include <pugixml.hpp>
 
 class GLProgress_Abstract;
 class MolflowSimulationModel;

@@ -5,7 +5,7 @@
 #include <Helper/StringHelper.h>
 #include <Helper/ConsoleLogger.h>
 #include <Helper/GLProgress_abstract.hpp>
-#include "PugiXML/pugixml.hpp"
+#include <pugixml.hpp>
 
 #include "WriterXML.h"
 #include "versionId.h"
