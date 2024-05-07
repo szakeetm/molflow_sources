@@ -40,15 +40,6 @@ On Linux and macOS `cmake` can be installed with package managers.
 
 The most unified way to fulfill dependencies on all platforms.
 
-Working as of 2024.03.07 (MolFlow 2.9.21):
-
-* Windows 10, 11, Server 2016, Server 2019 (x64)
-* Windows 11 (arm64, through Parallels Desktop)
-* macOS 14 (x64)
-* macOS 14 (arm64)
-* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
-* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
-
 Set up vcpkg:
 
 - `git clone https://github.com/microsoft/vcpkg.git`
@@ -59,17 +50,11 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml imgui[opengl2-binding,sdl2-binding] implot sdl2`
-- On Windows
-  - The `cereal2` library requires the `pkgconf` port:  
-    `./vcpkg install pkgconf`
-- On macOS
-  - The new default shell, `zsh`, is interpreting the [] brackets, so put package names with features within parentheses:  
-    `./vcpkg install "imgui[opengl2-binding,sdl2-binding]"`
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
 - On Fedora
-  - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
-  `sudo dnf install perl`
-  - If molflow fails to launch after building with "SDL_Init() failed", you have to install the `alsa` feature of sdl2:  
+    - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
+    `sudo dnf install perl`
+    - If molflow fails to launch after building with "SDL_Init() failed", you have to install the `alsa` feature of sdl2:  
     `./vcpkg install sdl2[alsa]`  
     then reconfigure and rebuild
 
