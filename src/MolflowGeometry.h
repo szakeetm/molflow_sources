@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Geometry_shared.h"
-#include "PugiXML/pugixml.hpp"
+#include <pugixml.hpp>
 #include "Simulation/MolflowSimGeom.h"
 #include <cereal/archives/xml.hpp>
 #include "MolflowTypes.h"

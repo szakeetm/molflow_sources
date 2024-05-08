@@ -51,9 +51,8 @@
 #include "SynRad.h"
 #endif
 
-#include <ZipLib/ZipArchive.h>
-//#include "ziplib/ZipArchiveEntry.h"
-#include <ZipLib/ZipFile.h>
+#include <ziplib/Source/ZipLib/ZipArchive.h>
+#include <ziplib/Source/ZipLib/ZipFile.h>
 //#include "File.h" //File utils (Get extension, etc)
 //#include "ProcessControl.h"
 #include "versionId.h"

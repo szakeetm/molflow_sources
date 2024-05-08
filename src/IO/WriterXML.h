@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <PugiXML/pugixml.hpp>
+#include <pugixml.hpp>
 #include <string>
 
 class MolflowSimFacet;

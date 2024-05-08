@@ -46,60 +46,35 @@ execute_process(
         COMMAND git rev-parse HEAD
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_COMMIT_HASH
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
 
 
-link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
-        ../src/IO/CSVExporter.cpp
-        ../src_shared/File.cpp
-        ../src_shared/FlowMPI.h #contains templates
-        ../src_shared/FlowMPI.cpp
+        ${IO_DIR}/CSVExporter.cpp
+        ${CPP_DIR_SRC_SHARED}/File.cpp
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.h #contains templates
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
         )
 
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite testsuite.cpp ${EXTRA_SRC})
 
-
-#[[set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")]]
 set_target_properties(testsuite PROPERTIES EXECUTABLE_OUTPUT_DIRECTORY ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
 set_target_properties(testsuite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
-target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
+target_link_libraries(testsuite PRIVATE gtest_main molflow_core)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
-target_include_directories(testsuite PRIVATE ../include ../src_shared ../src)
-# set the path to the library folder
-IF (WIN32)
+target_include_directories(testsuite PRIVATE ${CMAKE_HOME_DIRECTORY}/include ${CMAKE_HOME_DIRECTORY}/src_shared ${CMAKE_HOME_DIRECTORY}/src)
 
-    set(LINK_DIR_1 ../lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ../lib_external/win/${MY_BUILD_TYPE})
-ELSEIF(APPLE)
-    set(LINK_DIR_1 ../lib_external/mac)
-ELSE()
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ../lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ../lib_external/linux_debian)
-    ENDIF()
-ENDIF()
 target_link_directories(testsuite PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
-if(MSVC)
-    # zip extraction
-    target_link_libraries(testsuite PRIVATE
-            #bzip2.lib
-            #lzma.lib
-            #zlib.lib
-            )
-endif(MSVC)
 
 target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
 
 file(COPY
         ./TestCases
-        ../copy_to_build/parameter_catalog
+        ${CMAKE_HOME_DIRECTORY}/copy_to_build/parameter_catalog
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
