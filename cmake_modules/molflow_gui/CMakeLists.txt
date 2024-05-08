@@ -145,24 +145,3 @@ if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
-
-#required preprocessor definitions by the auto-updater
-IF (WIN32)
-    
-ELSEIF(APPLE)
-    
-ELSE()
-    string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
-    message("-- os_version_suffix:      ${os_version_suffix}")
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        add_definitions(
-            -D__LINUX_FEDORA
-        )
-        message("Assuming Fedora-based Linux")
-    ELSE()
-        add_definitions(
-            -D__LINUX_DEBIAN
-        )
-        message("Assuming Debian-based Linux")
-    ENDIF()
-ENDIF()
