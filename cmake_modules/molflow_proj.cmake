@@ -38,9 +38,9 @@ add_definitions(
 
 #required preprocessor definitions by the auto-updater
 IF (WIN32)
-    
+    #WIN32 defined by default
 ELSEIF(APPLE)
-    
+    #__MACOSX__ defined by default
 ELSE()
     string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
     message("-- os_version_suffix:      ${os_version_suffix}")
@@ -48,12 +48,12 @@ ELSE()
         add_definitions(
             -D__LINUX_FEDORA
         )
-        message("Assuming Fedora-based Linux")
+        message("Assuming Fedora-based Linux, defining __LINUX_FEDORA")
     ELSE()
         add_definitions(
             -D__LINUX_DEBIAN
         )
-        message("Assuming Debian-based Linux")
+        message("Assuming Debian-based Linux, defining __LINUX_DEBIAN")
     ENDIF()
 ENDIF()
 
