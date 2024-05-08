@@ -6,27 +6,6 @@ set(PROJECT_NAME molflow)
 set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
 set(IMGUI_DIR ${CPP_DIR_SRC_SHARED}/external/imgui) #need to define here and in shared code as well, since MolFlow.cpp includes ImguiWindow.h
 
-#required preprocessor definitions by the auto-updater
-IF (WIN32)
-    
-ELSEIF(APPLE)
-    
-ELSE()
-    string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
-    message("-- os_version_suffix:      ${os_version_suffix}")
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        add_definitions(
-            -D__LINUX_FEDORA
-        )
-        message("Assuming Fedora-based Linux")
-    ELSE()
-        add_definitions(
-            -D__LINUX_DEBIAN
-        )
-        message("Assuming Debian-based Linux")
-    ENDIF()
-ENDIF()
-
 ############## CMake Project ################
 #        The main options of project        #
 #############################################
