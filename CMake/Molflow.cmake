@@ -1,15 +1,3 @@
-IF (WIN32)
-    set(OS_NAME "win")
-ELSEIF(APPLE)
-    set(OS_NAME "mac")
-ELSE()
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(OS_NAME "linux_fedora")
-    ELSE()
-        set(OS_NAME "linux_debian")
-    ENDIF()
-ENDIF()
-
 IF (CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     set(MY_BUILD_TYPE "debug")
 ELSE()
@@ -44,16 +32,6 @@ message("${PROJECT_NAME}: Executable output dir: ${CMAKE_EXECUTABLE_OUTPUT_DIREC
 add_definitions(
         -DMOLFLOW #to distinguish from SYNRAD in the source files
 )
-
-if (OS_NAME STREQUAL "linux_fedora" )
-    add_definitions(
-            -D__LINUX_FEDORA
-    )
-elseif(OS_NAME STREQUAL "linux_debian")
-    add_definitions(
-            -D__LINUX_DEBIAN
-    )
-endif ()
 
 if(NOT MSVC)
     add_compile_options(

@@ -7,18 +7,11 @@ message("-- CMAKE_SYSTEM_NAME:      ${CMAKE_SYSTEM_NAME}")
 message("-- CMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 message("-- CMAKE_SYSTEM:           ${CMAKE_SYSTEM}")
 
-string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
-message("-- os_version_suffix:      ${os_version_suffix}")
-
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
 #Use new BVH by default
 option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
-
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
 option(ENABLE_IMGUI_TESTS "build ImGui graphical tests" OFF)
-
 option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
 if(NO_INTERFACE)
     message(STATUS "Will not build GUI related libraries and executables.")
@@ -29,10 +22,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified, will use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE MATCHES Debug) #case sensitive "Debug"!
+if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo) # case sensitive "Debug" and "RelWithDebInfo"
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
-    MESSAGE("Debug build mode, added DEBUG preprocessor macro.")
+    MESSAGE("Added DEBUG preprocessor macro.")
 endif()
 if(ENABLE_IMGUI_TESTS)
     ADD_DEFINITIONS(-DENABLE_IMGUI_TESTSS)
@@ -46,12 +39,13 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 ########################################
 
 if(USE_KDTREE)
-    MESSAGE("Simulation with KDTREE...")
+    MESSAGE("Will use K-D Tree (adding USE_KDTREE macro)")
     ADD_DEFINITIONS(-DUSE_KDTREE)
 else()
-    MESSAGE("Simulation with new BVH (default)...")
-    #ADD_DEFINITIONS(-DUSE_KDTREE)
+    MESSAGE("Will use new BVH (default)")
 endif()
+
+set(CMAKE_CXX_STANDARD 17)
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
@@ -59,20 +53,20 @@ if(MSVC)
         string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue (/ZI) instead of default /Zi
     endif()
 else() #not MSVC
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++")
+        string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++") #instead of stdlibc++
     endif()
 endif()
 
 if(USE_PROFILING)
+    MESSAGE("Setting profiling flags.")
     string(APPEND CMAKE_C_FLAGS " -O0 -pg")
     string(APPEND CMAKE_CXX_FLAGS " -O0 -pg")
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -pg")
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pg")
 endif(USE_PROFILING)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS OFF) # Don't generate .json files
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
