@@ -52,10 +52,10 @@ execute_process(
 
 
 set(EXTRA_SRC
-        ${CMAKE_HOME_DIRECTORY}/src/IO/CSVExporter.cpp
-        ${CMAKE_HOME_DIRECTORY}/src_shared/File.cpp
-        ${CMAKE_HOME_DIRECTORY}/src_shared/FlowMPI.h #contains templates
-        ${CMAKE_HOME_DIRECTORY}/src_shared/FlowMPI.cpp
+        ${IO_DIR}/CSVExporter.cpp
+        ${CPP_DIR_SRC_SHARED}/File.cpp
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.h #contains templates
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
         )
 
 # Now simply link against gtest or gtest_main as needed. Eg

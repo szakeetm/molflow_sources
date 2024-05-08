@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
-project(molflow_proj)
+project(molflow_proj) #does not build anything on its own, includes molflowCLI or molflow projects from the cmake_modules folder
 
 message("-- CMAKE_SYSTEM_INFO_FILE: ${CMAKE_SYSTEM_INFO_FILE}")
 message("-- CMAKE_SYSTEM_NAME:      ${CMAKE_SYSTEM_NAME}")
@@ -34,9 +34,6 @@ endif()
 message(STATUS "Build type used: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-################# Flags ################
-# Defines Flags for Windows and Linux. #
-########################################
 
 if(USE_KDTREE)
     MESSAGE("Will use K-D Tree (adding USE_KDTREE macro)")
@@ -45,43 +42,9 @@ else()
     MESSAGE("Will use new BVH (default)")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-
-# https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
-if(MSVC)
-    if(CMAKE_BUILD_TYPE MATCHES Debug)
-        string(REGEX REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}") #Edit and continue (/ZI) instead of default /Zi
-    endif()
-else() #not MSVC
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        string(APPEND CMAKE_CXX_FLAGS " -stdlib=libc++") #instead of stdlibc++
-    endif()
-endif()
-
-if(USE_PROFILING)
-    MESSAGE("Setting profiling flags.")
-    string(APPEND CMAKE_C_FLAGS " -O0 -pg")
-    string(APPEND CMAKE_CXX_FLAGS " -O0 -pg")
-    string(APPEND CMAKE_EXE_LINKER_FLAGS " -pg")
-    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -pg")
-endif(USE_PROFILING)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS OFF) # Don't generate .json files
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
-include(CMake/Molflow.cmake)
 
-# Project-wide folders
-set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
-set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
-set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(GLAPP_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp)
-set(HELPER_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/Helper)
-
-set(HEADER_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
-set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
-set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+include(cmake_modules/molflow_proj.cmake) # Technical details offloaded to keep this root CMakeLists.txt file easily readable
 
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 add_subdirectory(cmake_modules/molflow_core)
