@@ -34,7 +34,7 @@ set(SRC_FILES
 
        
         
-        ${SIMU_DIR}/AnglemapGeneration.cpp
+        
         ${SIMU_DIR}/CDFGeneration.cpp
         ${SIMU_DIR}/IDGeneration.cpp
         ${SIMU_DIR}/MolflowSimFacet.cpp
