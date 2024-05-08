@@ -55,20 +55,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${INTERFACE_DIR} #geometrytypes.h for example
         )
 
-
-option(USE_MPI FALSE)
-if(USE_MPI)
-    message(STATUS "MPI use requested (USE_MPI is TRUE), finding...")
-    find_package(MPI REQUIRED)
-    if(MPI_FOUND)
-    message(STATUS "Detected MPI version: ${MPI_CXX_VERSION}")
-    set(USE_MPI TRUE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC -DUSE_MPI)
-    target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${MPI_INCLUDE_PATH})
-    target_link_libraries(${PROJECT_NAME} PUBLIC MPI::MPI_CXX)
-    endif()
-endif()
-
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
