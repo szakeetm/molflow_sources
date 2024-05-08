@@ -84,11 +84,11 @@ set(HEADER_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
 set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
-add_subdirectory(CMake/molflow_core)
-add_subdirectory(CMake/molflow_cli)
+add_subdirectory(cmake_modules/molflow_core)
+add_subdirectory(cmake_modules/molflow_cli)
 
 if(NOT NO_INTERFACE)
-    add_subdirectory(CMake/molflow_gui)
+    add_subdirectory(cmake_modules/molflow_gui)
     add_dependencies(molflow src_shared_core src_shared_gui compress)
 endif()
 
