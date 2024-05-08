@@ -34,31 +34,7 @@ endif()
 
 set(SRC_FILES
         ${CPP_DIR_SRC}/MolflowCLI.cpp
-        #${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        #${CPP_DIR_SRC_SHARED}/ShMemory.cpp
-        #${CPP_DIR_SRC_SHARED}/Process.cpp
-
-        #${CPP_DIR_SRC_SHARED}/Vector.cpp
-
-        #${IO_DIR}/LoaderXML.cpp
-        #${IO_DIR}/WriterXML.cpp
         ${CPP_DIR_SRC}/Initializer.cpp
-        #${CPP_DIR_SRC}/ParameterParser.cpp
-        #${CPP_DIR_SRC_SHARED}/File.cpp
-
-        #${CPP_DIR_SRC}/TimeMoments.cpp
-
-        #${CPP_DIR_SRC}/MolflowTypes.cpp
-        #${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
-
-        #${SIMU_DIR}/MolflowSimulation.cpp
-        #${SIMU_DIR}/SimulationMC.cpp
-        #${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
-        #${CPP_DIR_SRC_SHARED}/Polygon.cpp
-        #${CPP_DIR_SRC_SHARED}/Random.cpp
-
-        #${CPP_DIR_SRC_SHARED}/FlowMPI.h #contains templates
-        #${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
 
         ${IO_DIR}/CSVExporter.cpp
         ${IO_DIR}/CSVExporter.h
@@ -68,7 +44,7 @@ set(SRC_FILES
         ${HELPER_DIR}/GLProgress_abstract.cpp
         ${HELPER_DIR}/GLProgress_abstract.hpp
 
-        )
+)
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
@@ -85,24 +61,13 @@ if(USE_MPI)
     endif()
 endif()
 
-#IF(APPLE)
-#    include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
-#ENDIF()
-
-find_package(OpenMP REQUIRED)
-#if(OpenMP_CXX_FOUND)
-#    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
-#    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
-#endif()
-#target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
-
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}
         ${HEADER_DIR_SRC_SHARED}
         ${HEADER_DIR_INCLUDE}
         ${INTERFACE_DIR} #geometrytypes.h for example
         ${HEADER_DIR_EXTERNAL} #Ziplib etc.
-        )
+)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC molflow_core)
 # set the path to the library folder
@@ -113,7 +78,6 @@ if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG") #no whole program optimization for debug
     endif()
     
-
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -122,6 +86,3 @@ endif(MSVC)
 if(NOT MSVC)
 
 endif(NOT MSVC)
-
-find_package(cereal CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)

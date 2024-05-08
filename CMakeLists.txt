@@ -1,3 +1,13 @@
+# CMake structure:
+# Separated GUI/CLI/common parts, also separated MOLFLOW/SYNRAD/shared parts
+#
+# src_shared_core: GUI/CLI, Molflow/Synrad
+# src_shared_gui: GUI, Molflow/Synrad -> depends on src_shared_core
+#
+# molflow_core: GUI/CLI, Molflow -> depends on src_shared_core
+# molflow_cli: CLI, Molflow -> depends on molflow_core
+# molflow_gui: GUI, Molflow -> depends on molflow_core and src_shared_gui
+
 cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 project(molflow_proj) #does not build anything on its own, includes molflowCLI or molflow projects from the cmake_modules folder
