@@ -1,14 +1,7 @@
 cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
-################### Variables. ####################
-# Change if you want modify path or other values. #
-###################################################
-
-set(PROJECT_NAME molflow_core) #shared GUI and CLI part
-
-#CLI specific folders
-#none
-
+#shared GUI and CLI part, built as library that GUI or CLI links against
+set(PROJECT_NAME molflow_core)
 
 
 ############## CMake Project ################
@@ -16,6 +9,7 @@ set(PROJECT_NAME molflow_core) #shared GUI and CLI part
 #############################################
 
 project(${PROJECT_NAME} CXX)
+set(CMAKE_CXX_STANDARD 17)
 
 # Definition of Macros
 add_definitions(
@@ -30,11 +24,11 @@ add_definitions(
 if(MSVC)
 
 else() #not MSVC
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++") #default on macOS: libstdc++
     endif()
 endif()
+
 
 ################ Files ################
 #   --   Add files to project.   --   #
@@ -45,22 +39,24 @@ set(SRC_FILES
         ${CPP_DIR_SRC_SHARED}/ShMemory.cpp
         ${CPP_DIR_SRC_SHARED}/Process.cpp
         ${CPP_DIR_SRC_SHARED}/GLApp/GLFormula.cpp
-
+        #${CPP_DIR_SRC_SHARED}/GLApp/GLFormula.h
         ${CPP_DIR_SRC_SHARED}/Vector.cpp
         ${CPP_DIR_SRC_SHARED}/Distributions.cpp
-        ${CPP_DIR_SRC_SHARED}/GLApp/GLFormula.h
-
+        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationController.cpp
+        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
+        ${CPP_DIR_SRC_SHARED}/Random.cpp
+        
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
 
         ${CPP_DIR_SRC}/ParameterParser.cpp
         ${CPP_DIR_SRC}/Initializer.cpp
-
         ${CPP_DIR_SRC}/TimeMoments.cpp
-
         ${CPP_DIR_SRC}/MolflowTypes.cpp
-        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
-
+        
         ${SIMU_DIR}/MolflowSimulation.cpp
         ${SIMU_DIR}/SimulationMC.cpp
         ${SIMU_DIR}/Particle.cpp
@@ -70,22 +66,12 @@ set(SRC_FILES
         ${SIMU_DIR}/IDGeneration.cpp
         ${SIMU_DIR}/MolflowSimFacet.cpp
         ${SIMU_DIR}/MolflowSimGeom.cpp
-
-        ${CPP_DIR_SRC_SHARED}/SimulationController.cpp
-        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
-        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
-        ${CPP_DIR_SRC_SHARED}/Random.cpp
-        ${CMAKE_HOME_DIRECTORY}/src_shared/GLApp/GLFormula.h
         
         ${HELPER_DIR}/GLProgress_CLI.cpp
         ${HELPER_DIR}/GLProgress_CLI.hpp
         ${HELPER_DIR}/GLProgress_abstract.cpp
         ${HELPER_DIR}/GLProgress_abstract.hpp
 )
-
-# set the path to the library folder
-link_directories(${LINK_DIR_1})
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 

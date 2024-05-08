@@ -1,20 +1,17 @@
 cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
-################### Variables. ####################
-# Change if you want modify path or other values. #
-###################################################
-
+# GUI-specific folders files, builds molflow executable
 set(PROJECT_NAME molflow)
 
-# GUI-specific folders files
 set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
-set(IMGUI_DIR ${CMAKE_HOME_DIRECTORY}/src_shared/external/imgui) #need to define here as well, since MolFlow.cpp includes ImguiWindow.h
+set(IMGUI_DIR ${CPP_DIR_SRC_SHARED}/external/imgui) #need to define here and in shared code as well, since MolFlow.cpp includes ImguiWindow.h
 
 ############## CMake Project ################
 #        The main options of project        #
 #############################################
 
 project(${PROJECT_NAME} CXX)
+set(CMAKE_CXX_STANDARD 17)
 
 # Definition of Macros
 add_definitions(
@@ -37,7 +34,6 @@ ENDIF()
 if(MSVC)
 
 else() #not MSVC
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
@@ -76,9 +72,9 @@ set(SRC_FILES
         ${CPP_DIR_SRC}/MolflowWorker.cpp
         ${CPP_DIR_SRC}/TimeMoments.cpp
 
-        ${HEADER_DIR_SRC_SHARED}/FlowMPI.h
-        ${HEADER_DIR_SRC_SHARED}/FlowMPI.cpp
-        ${HEADER_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        #${HEADER_DIR_SRC_SHARED}/FlowMPI.h
+        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
+        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
 
         )
 
@@ -126,9 +122,6 @@ if(MSVC)
     #if(CMAKE_BUILD_TYPE STREQUAL "Debug") #Always show console for CLI builds as error reporting not complete
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
     #endif()
-
-    # set the path to the library folder
-    target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
 
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     

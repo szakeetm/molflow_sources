@@ -1,37 +1,14 @@
 cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
-################### Variables. ####################
-# Change if you want modify path or other values. #
-###################################################
-
-set(PROJECT_NAME molflowCLI) #sets executable name
-
-# Folders files
-
-
-#Add manually added libraries from lib_external folder, os-dependent
-IF (WIN32)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/win/${MY_BUILD_TYPE})
-ELSEIF(APPLE)
-    set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/mac)
-ELSE()
-    # set stuff for other systems
-
-    # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_fedora)
-    ELSE()
-        set(LINK_DIR_1 ${CMAKE_HOME_DIRECTORY}/lib_external/linux_debian)
-    ENDIF()
-ENDIF()
-
-
+#Command-line interface, builds molflowCLI executable
+set(PROJECT_NAME molflowCLI)
 
 ############## CMake Project ################
 #        The main options of project        #
 #############################################
 
 project(${PROJECT_NAME} CXX)
+set(CMAKE_CXX_STANDARD 17)
 
 # Definition of Macros
 add_definitions(
@@ -46,7 +23,6 @@ add_definitions(
 if(MSVC)
 
 else() #not msvc
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
@@ -132,7 +108,6 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 
 # set the path to the library folder
-target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1}})
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     if(NOT CMAKE_BUILD_TYPE MATCHES Debug)

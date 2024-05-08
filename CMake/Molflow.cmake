@@ -1,16 +1,13 @@
 IF (WIN32)
     set(OS_NAME "win")
-    set(OS_RELPATH "")
 ELSEIF(APPLE)
     set(OS_NAME "mac")
-    set(OS_RELPATH "")
 ELSE()
     IF(os_version_suffix MATCHES "\\.el[1-9]")
         set(OS_NAME "linux_fedora")
     ELSE()
         set(OS_NAME "linux_debian")
     ENDIF()
-    set(OS_RELPATH "")
 ENDIF()
 
 IF (CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
@@ -23,21 +20,20 @@ ENDIF()
 # Defines outputs , depending Debug or Release. #
 #################################################
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/lib/")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/lib/")
-set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OS_RELPATH}/bin/")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OS_RELPATH}/bin/")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/lib/")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/lib/")
+set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/bin/")
 
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}) #to build executable in main folder
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
 # Messages
-message("${PROJECT_NAME}: MAIN PROJECT: ${CMAKE_PROJECT_NAME}")
-message("${PROJECT_NAME}: CURR PROJECT: ${CMAKE_CURRENT_SOURCE_DIR}")
-message("${PROJECT_NAME}: CURR BIN DIR: ${CMAKE_CURRENT_BINARY_DIR}")
-# Messages
-message("${PROJECT_NAME}: CMAKE_LIBRARY_OUTPUT_DIRECTORY: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-message("${PROJECT_NAME}: CMAKE_ARCHIVE_OUTPUT_DIRECTORY: ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
-message("${PROJECT_NAME}: CMAKE_EXECUTABLE_OUTPUT_DIRECTORY: ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}")
+message("${PROJECT_NAME}: Project dir: ${CMAKE_PROJECT_NAME}")
+message("${PROJECT_NAME}: Source dir: ${CMAKE_CURRENT_SOURCE_DIR}")
+message("${PROJECT_NAME}: Binary dir: ${CMAKE_CURRENT_BINARY_DIR}")
+message("${PROJECT_NAME}: Library output dir: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+message("${PROJECT_NAME}: Archive output dir: ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+message("${PROJECT_NAME}: Executable output dir: ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}")
 
 
 ############## CMake Project ################
@@ -46,7 +42,7 @@ message("${PROJECT_NAME}: CMAKE_EXECUTABLE_OUTPUT_DIRECTORY: ${CMAKE_EXECUTABLE_
 
 # Definition of Macros
 add_definitions(
-        -DMOLFLOW
+        -DMOLFLOW #to distinguish from SYNRAD in the source files
 )
 
 if (OS_NAME STREQUAL "linux_fedora" )
@@ -88,8 +84,7 @@ else() #MSVC
     )
     # Multi-processor compilation
     add_compile_options(
-        "$<$<CONFIG:Debug>:/MP>"
-        "$<$<CONFIG:Release>:/MP>"
+        /MP
     )
 endif()
 #disable generation of appname.manifest file
@@ -102,7 +97,7 @@ endif(MSVC)
 
 set(COPY_DIR copy_to_build)
 
-# Windows DLL files
+# Windows DLL files (on other OS libraries are linked statically)
 IF (WIN32)
     set(DLL_DIR lib_external/win/dll)
     file(GLOB DLL_FILES
@@ -123,7 +118,7 @@ set(COPY_FILES ${COPY_DIR}/desorption_yields
 
 IF (WIN32)
     set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/7za.exe
+            ${COPY_DIR}/7za.exe #no system-wide 7-zip installation
             )
 ENDIF()
 
