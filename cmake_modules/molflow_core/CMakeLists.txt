@@ -31,8 +31,7 @@ set(SRC_FILES
         ${CPP_DIR_SRC}/TimeMoments.cpp
         ${CPP_DIR_SRC}/MolflowTypes.cpp
         
-        ${SIMU_DIR}/MolflowSimulation.cpp
-        ${SIMU_DIR}/SimulationMC.cpp
+
        
         
         ${SIMU_DIR}/AnglemapGeneration.cpp
