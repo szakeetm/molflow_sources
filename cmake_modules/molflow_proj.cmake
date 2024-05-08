@@ -26,10 +26,15 @@ set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
 set(GLAPP_DIR ${CPP_DIR_SRC_SHARED}/GLApp)
 set(GLCHART_DIR ${GLAPP_DIR}/GLChart)
 set(HELPER_DIR ${CPP_DIR_SRC_SHARED}/Helper)
+set(INTERFACE_DIR ${CPP_DIR_SRC_SHARED}/Interface) #Also used by cli (camera views saving, etc)
 
 set(HEADER_DIR_SRC ${CPP_DIR_SRC}) #same for .cpp and .h
 set(HEADER_DIR_SRC_SHARED ${CPP_DIR_SRC_SHARED}) #same for .cpp and .h
 set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+set(HEADER_DIR_EXTERNAL ${HEADER_DIR_SRC_SHARED}/external)
+
+set(IMGUI_DIR ${HEADER_DIR_EXTERNAL}/imgui)
+set(IMPLOT_DIR ${HEADER_DIR_EXTERNAL}/implot)
 
 # Definition of Macros
 add_definitions(

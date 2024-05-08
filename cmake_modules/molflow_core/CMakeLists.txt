@@ -35,17 +35,17 @@ endif()
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        ${CPP_DIR_SRC_SHARED}/ShMemory.cpp
-        ${CPP_DIR_SRC_SHARED}/Process.cpp
-        ${CPP_DIR_SRC_SHARED}/Vector.cpp
-        ${CPP_DIR_SRC_SHARED}/Distributions.cpp
-        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
-        ${CPP_DIR_SRC_SHARED}/SimulationController.cpp
-        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
-        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
-        ${CPP_DIR_SRC_SHARED}/Random.cpp
+        #${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        #${CPP_DIR_SRC_SHARED}/ShMemory.cpp
+        #${CPP_DIR_SRC_SHARED}/Process.cpp
+        #${CPP_DIR_SRC_SHARED}/Vector.cpp
+        #${CPP_DIR_SRC_SHARED}/Distributions.cpp
+        #${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
+        #${CPP_DIR_SRC_SHARED}/SimulationController.cpp
+        #${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
+        #${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        #${CPP_DIR_SRC_SHARED}/Polygon.cpp
+        #${CPP_DIR_SRC_SHARED}/Random.cpp
         
         ${GLAPP_DIR}/GLFormula.cpp
 
@@ -75,23 +75,24 @@ set(SRC_FILES
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
-IF(APPLE)
-    include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
-ENDIF()
+#IF(APPLE)
+#    include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
+#ENDIF()
 
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
+#find_package(OpenMP REQUIRED)
+#if(OpenMP_CXX_FOUND)
+#    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+#    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+#endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_core)
-target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
+target_link_libraries(${PROJECT_NAME} PUBLIC truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}
         ${HEADER_DIR_SRC_SHARED}
         ${HEADER_DIR_INCLUDE}
+        ${INTERFACE_DIR} #geometrytypes.h for example
         )
 
 if(MSVC)

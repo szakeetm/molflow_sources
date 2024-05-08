@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # GUI-specific folders files, builds molflow executable
 set(PROJECT_NAME molflow)
 
-set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
-set(IMGUI_DIR ${CPP_DIR_SRC_SHARED}/external/imgui) #need to define here and in shared code as well, since MolFlow.cpp includes ImguiWindow.h
+set(UI_DIR ${CPP_DIR_SRC}/Interface)
+
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -68,13 +68,13 @@ set(SRC_FILES
         ${CPP_DIR_SRC}/MolFlow.cpp
         ${CPP_DIR_SRC}/MolflowFacet.cpp
         ${CPP_DIR_SRC}/MolflowGeometry.cpp
-        ${CPP_DIR_SRC}/MolflowTypes.cpp
+        #${CPP_DIR_SRC}/MolflowTypes.cpp
         ${CPP_DIR_SRC}/MolflowWorker.cpp
-        ${CPP_DIR_SRC}/TimeMoments.cpp
+        #${CPP_DIR_SRC}/TimeMoments.cpp
 
         #${HEADER_DIR_SRC_SHARED}/FlowMPI.h
-        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
-        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
+        #${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
+        #${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
 
         )
 
@@ -93,7 +93,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${UI_DIR}
         ${HEADER_DIR_SRC_SHARED}
         ${IMGUI_DIR}
-        )
+)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
@@ -140,8 +140,8 @@ IF(APPLE)
     include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
 ENDIF()
 
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
+#find_package(OpenMP REQUIRED)
+#if(OpenMP_CXX_FOUND)
+#    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+#    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+#endif()
