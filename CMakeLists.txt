@@ -72,7 +72,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
 # Project-wide folders
-
 set(CPP_DIR_SRC ${CMAKE_HOME_DIRECTORY}/src)
 set(SIMU_DIR ${CMAKE_HOME_DIRECTORY}/src/Simulation)
 set(IO_DIR ${CMAKE_HOME_DIRECTORY}/src/IO)
@@ -88,7 +87,6 @@ add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 add_subdirectory(CMake/molflow_core)
 add_subdirectory(CMake/molflow_cli)
 
-
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_gui)
     add_dependencies(molflow src_shared_core src_shared_gui compress)
@@ -103,46 +101,3 @@ if(USE_TESTS)
     add_subdirectory(tests)
     add_dependencies(testsuite molflow_core molflowCLI)
 endif()
-
-# Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)
-# molflow GUI not supported right now, as extra folders are needed
-
-#SET(MOLFLOW_INSTALL_DIR ${CMAKE_INSTALL_BINDIR})
-SET(MOLFLOW_INSTALL_DIR molflow)
-
-include(GNUInstallDirs)
-
-# if no path is provided, use user home path
-# e.g. /home/user/molflow
-# cmake --install . --prefix /usr/local/bin/
-# will install to /usr/local/bin/molflow
-# cmake -DCMAKE_INSTALL_PREFIX:PATH=/Users/pascal/molflow_test/ .
-#
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "..." FORCE)
-endif()
-
-install(CODE "MESSAGE(\"Installing in home directory ${CMAKE_INSTALL_PREFIX}\")")
-install(DIRECTORY copy_to_build/images
-        copy_to_build/desorption_yields
-        copy_to_build/parameter_catalog
-        DESTINATION ${MOLFLOW_INSTALL_DIR}
-        #USE_SOURCE_PERMISSIONS
-        PATTERN "images/*"
-        PATTERN "desorption_yields/*"
-        PATTERN "parameter_catalog/*"
-        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ GROUP_WRITE
-        )
-
-if(NOT NO_INTERFACE)
-    install(TARGETS molflow
-            CONFIGURATIONS Release
-            RUNTIME
-            DESTINATION ${MOLFLOW_INSTALL_DIR}
-    )
-endif()
-install(TARGETS molflowCLI
-        CONFIGURATIONS Release
-        RUNTIME
-        DESTINATION ${MOLFLOW_INSTALL_DIR}
-        )

@@ -192,18 +192,6 @@ Usage example (for an MPI build without the GUI):
 cmake .. -DUSE_MPI=ON -DNO_INTERFACE=ON
 ```
 
-## CMake / make installation
-
-Given a default Cmake build procedure `mkdir build && cd build && cmake ..` Molflow can be installed into the users home folder by `cmake --install .` --> ~/molflow/
-
-To change the directory, the installation prefix can be adjusted `cmake --install . --prefix ~/Apps/` --> ~/Apps/molflow
-
-For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
-
-The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
-
-On Linux, the dependency part is different (using `apt` or `yum`), but the second part is the same.
-
 ## Branches
 
 * For MolFlow, `master` is the 2.9 beta, and `master_2.8` is the 2.8 public
