@@ -36,23 +36,57 @@ As of April 2024, MolFlow is tested to build and run on:
 Molflow uses `cmake` for its build system. On Windows it comes with *Visual Studio 2022* or it has to be built/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS `cmake` can be installed with package managers.
 
-## Windows
+## Install dependencies using vcpkg
+
+The most unified way to fulfill dependencies on all platforms.
+
+Set up vcpkg:
+
+- `git clone https://github.com/microsoft/vcpkg.git`
+- `cd vcpkg`
+- `git checkout 2024.03.25` - This vcpkg version, with its packages, works on all platforms
+- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
+- `./vcpkg integrate install` - note down the toolchain location in the command's output (on Windows, with Visual Studio installed, this is not necessary)
+
+Get and build dependencies for MolFlow:
+
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2`
+- On Fedora
+    - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
+    `sudo dnf install perl`
+    - If molflow fails to launch after building with "SDL_Init() failed", you have to install the `alsa` feature of sdl2:  
+    `./vcpkg install sdl2[alsa]`  
+    then reconfigure and rebuild
+
+
+## Build MolFlow
+
+### Windows
 
 In Windows, you need to clone the project (see below) and open in Visual Studio Community 2022.
 
 With Visual Studio's CMake support, you can now open the main folder containing *CMakeLists.txt* (File->Open Folder) and build the project directly (Build / Build All in menu or F7)
 
-## Prepare for building - Debian Linux (like Ubuntu)
+### Other platforms (Linux, macOS)
 
-### Ubuntu 20
+- Navigate to molflow repo, and from a `build` or similar subdir:
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
+- `make`
+
+
+## Alternatives to vcpkg
+
+### Debian Linux (like Ubuntu)
+
+#### Ubuntu 20
 
 ```
 sudo apt install build-essential git cmake gcc g++
 sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libcurl4-gnutls-dev libatlas-base-dev p7zip
 ```
-## Prepare for building - Fedora Linux (like CentOS)
+### Fedora Linux (like CentOS)
 
-### CentOS 9 stream
+#### CentOS 9 stream
 
 Set up build tools:
 
@@ -77,7 +111,7 @@ export DISPLAY=0:0
 dnf install mesa-dri-drivers
 ```
 
-### CentOS 8
+#### CentOS 8
 
 ```
 dnf config-manager --set-enabled PowerTools
@@ -86,7 +120,7 @@ dnf in -y libglvnd-opengl libpng15 SDL2 p7zip
 dnf group install "Development Tools"
 ```
 
-### CentOS 7
+#### CentOS 7
 
 ```
 sudo yum install epel-release
@@ -103,7 +137,7 @@ make
 sudo make install
 ```
 
-## Prepare for building - macOS
+### macOS
 
 * Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, curl, p7zip  
 
@@ -116,7 +150,7 @@ The procedure looks as follows:
 3. Install cmake and the necessary dependencies
   - `brew install cmake libpng sdl2 p7zip libomp libcurl`
 
-## Manual build with CMake (Linux/MacOS)
+### Manual build with CMake (Linux/MacOS)
 
 * Go to the project root folder `cd molflow`
 * Create a build directory `mkdir build`
@@ -158,40 +192,6 @@ Usage example (for an MPI build without the GUI):
 cmake .. -DUSE_MPI=ON -DNO_INTERFACE=ON
 ```
 
-## CMake / make installation
-
-Given a default Cmake build procedure `mkdir build && cd build && cmake ..` Molflow can be installed into the users home folder by `cmake --install .` --> ~/molflow/
-
-To change the directory, the installation prefix can be adjusted `cmake --install . --prefix ~/Apps/` --> ~/Apps/molflow
-
-For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
-
-The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
-
-## Build example on Mac
-
-1) We install Homebrew and dependencies:
-
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install cmake libpng sdl2 p7zip libomp
-```
-
-2) then we clone and build the repo:
-
-```
-git checkout https://gitlab.cern.ch/molflow_synrad/molflow.git
-cd molflow
-git submodule init
-git submodule update
-mkdir build
-cd build
-cmake ..
-make -j8
-```
-
-On Linux, the dependency part is different (using `apt` or `yum`), but the second part is the same.
-
 ## Branches
 
 * For MolFlow, `master` is the 2.9 beta, and `master_2.8` is the 2.8 public
@@ -214,44 +214,6 @@ On Linux, the dependency part is different (using `apt` or `yum`), but the secon
     - `cmake -DCMAKE_C_COMPILER=/path_to_custom_gcc -DCMAKE_CXX_COMPILER=/path_to_custom_g++ -DNO_INTERFACE=ON -DUSE_MPI=ON ..`
 - Use as explained by the MPI service of choice, e.g. with `mpirun`
     `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
-
-## Build using vcpkg
-
-The most unified way to fulfill dependencies on all platforms.  
-Detailed instructions coming soon, after testing.  
-Currently the `from_vcpkg` branch works, which will soon be merged to `master`.
-
-Working as of 2024.03.07 (MolFlow 2.9.21):
-
-* Windows 10, 11, Server 2016, Server 2019 (x64)
-* Windows 11 (arm64, through Parallels Desktop)
-* macOS 14 (x64)
-* macOS 14 (arm64)
-* Ubuntu 22.04 LTS (natively and on Windows Subsystem for Linux) (Debian)
-* CentOs 9 Stream, AlmaLinux 9 (natively and on Windows Subsystem for Linux) (Fedora)
-
-Set up vcpkg:
-
-- `git clone https://github.com/microsoft/vcpkg.git`
-- `cd vcpkg`
-- `git checkout 2024.01.12` - This vcpkg version, with its packages, works on all platforms (avoids SDL 2.30+ causing failed start on Windows Remote Desktop)
-- `./bootstrap-vcpkg.sh` or `./bootstrap-vcpkg.bat` - it downloads the platform-specific `vcpkg` executable
-- `./vcpkg integrate install` - note down the toolchain location in the command's output
-
-Get and build dependencies for MolFlow:
-
-- On all platforms but Fedora: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
-- On Fedora
-  - Omit installing SDL2 with vcpkg, as building it from source might cause a [known problem](https://stackoverflow.com/questions/75258597/):   
-  `./vcpkg install cereal cimg curl fmt libpng zlib pugixml`  
-  - Install `SDL2-devel` with yum or dnf instead: `dnf install SDL2-devel`
-  - Note: The vcpkg package `curl` requires `openssl`, which needs perl to build: before running the `vcpkg install` command, you can install the (heavy) perl module: `sudo dnf install perl`
-
-Build MolFlow:
-
-- Navigate to molflow repo, and from a `build` or similar subdir:
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake"` (toolchain location as you noted down)
-- `make`
 
 # Running
 
