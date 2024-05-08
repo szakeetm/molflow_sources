@@ -955,6 +955,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
 }
 
 // Name: FrameMove()
@@ -1328,17 +1330,16 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
-		if (imWnd) imWnd->profPlot.Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
 		if (imWnd) imWnd->convPlot.Reload();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
-		if (imWnd) imWnd->textScale.Load();
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+		if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
 		if (backgroundGas) backgroundGas->Update();
@@ -1432,6 +1433,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string& fileName) {
 		//UpdatePlotters();
 
 		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
+		if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
@@ -1626,6 +1628,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 					RefreshPlotterCombos();
 					//UpdatePlotters();
 					if (vertexCoordinates) vertexCoordinates->Update();
+					if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 					// Send to sub process
 					worker.MarkToReload();
@@ -1700,7 +1703,9 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						interfGeom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
+						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
 						if (imWnd) imWnd->profPlot.Refresh();
 						if (pressureEvolution) pressureEvolution->Refresh();
@@ -1968,6 +1973,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
 	if (backgroundGas) backgroundGas->Update();
@@ -2052,7 +2058,9 @@ void MolFlow::EmptyGeometry() {
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
+	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Reload();
 
 	UpdateTitle();
 	changedSinceSave = false;
