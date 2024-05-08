@@ -50,7 +50,7 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng zlib pugixml sdl2`
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2`
 - On Fedora
     - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
     `sudo dnf install perl`
