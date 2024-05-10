@@ -28,7 +28,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo) # 
     MESSAGE("Added DEBUG preprocessor macro.")
 endif()
 if(ENABLE_IMGUI_TESTS)
-    ADD_DEFINITIONS(-DENABLE_IMGUI_TESTSS)
+    ADD_DEFINITIONS(-DENABLE_IMGUI_TESTS)
     MESSAGE("Building ImGui tests.")
 endif()
 message(STATUS "Build type used: " ${CMAKE_BUILD_TYPE})
