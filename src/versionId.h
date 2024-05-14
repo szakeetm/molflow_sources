@@ -10,7 +10,7 @@ static const std::string appVersionName = "2.9.23 beta";
 
 static const std::string appTitle = "Molflow+ " + appVersionName
 + " (" __DATE__ ")"
-#if defined(_DEBUG)
+#if defined(DEBUG)
 +" [DEBUG mode]"
 #endif
 ;
