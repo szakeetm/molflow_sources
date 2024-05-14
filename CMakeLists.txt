@@ -24,7 +24,6 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo) # case sensitive "Debug" and "RelWithDebInfo"
     ADD_DEFINITIONS(-DDEBUG)
-    ADD_DEFINITIONS(-D_DEBUG)
     MESSAGE("Added DEBUG preprocessor macro.")
 endif()
 if(ENABLE_IMGUI_TESTS)

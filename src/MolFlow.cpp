@@ -2186,7 +2186,7 @@ void MolFlow::LoadConfig() {
 
 		file.ReadKeyword("processNum"); file.ReadKeyword(":");
 		nbProc = file.ReadSizeT();
-#if defined(_DEBUG)
+#if defined(DEBUG)
 		nbProc = 1;
 #endif
 		if (nbProc <= 0) nbProc = 1;
@@ -2328,7 +2328,7 @@ void MolFlow::SaveConfig() {
 		file.Write("textures_max_density_moments_only:");
 		file.Write(interfGeom->texture_limits[2].autoscale.max.moments_only, "\n");
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 		file.Write("processNum:"); file.Write(numCPU, "\n");
 #else
 		file.Write("processNum:"); file.Write(worker.GetProcNumber(), "\n");
