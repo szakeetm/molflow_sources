@@ -63,6 +63,7 @@ set(SRC_FILES
         ${UI_DIR}/TimeSettings.cpp
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
+        ${UI_DIR}/ImguiTextureScaling.cpp
 
         ${CPP_DIR_SRC}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_SRC}/MolFlow.cpp
