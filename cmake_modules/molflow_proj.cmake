@@ -114,15 +114,15 @@ set(COPY_DIR copy_to_build)
 
 # Windows DLL files (on other OS libraries are linked statically)
 IF (WIN32)
-    set(DLL_DIR lib_external/win/dll)
+    set(DLL_DIR ${CMAKE_HOME_DIRECTORY}/lib_external/win/dll_redist)
     file(GLOB DLL_FILES
             ${DLL_DIR}/*.dll
             )
     file(COPY ${DLL_FILES}
             DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
-    message("COPIED: " ${DLL_FILES})
-    message("    TO: " ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+    message("COPIED DLLs: " ${DLL_FILES})
+    message("         TO: " ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 ENDIF()
 
 # Other files to include in the bin directory
