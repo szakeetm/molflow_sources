@@ -64,16 +64,20 @@ upload-job:
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   script:
     - mkdir binaries
-    - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; done'
+    - 'for filename in ./artifacts/${APP_NAME}_*; do zip -r artifacts_zip/${filename}.zip $filename; done'
   after_script: 
     - ls .
+  artifacts:
+    paths:
+      - ./artifacts_zip/*.zip
+    expire_in: 1 week
 
 copy-to-eos-job:
   # customized from https://gitlab.cern.ch/gitlabci-examples/deploy_eos/
   # EOS_PATH, EOS_ACCOUNT_USERNAME and EOS_ACCOUNT_PASSWORD must be defined in GitLab UI.
   # Think of masking secrets - job logs are public!
   variables:
-    CI_OUTPUT_DIR: "binaries" #from upload task
+    CI_OUTPUT_DIR: "artifacts_zip" #from upload task
   # Executed during the copy-to-eos stage
   stage: copy-to-eos
   # Custom docker image providing the needed tools to deploy in EOS
@@ -81,8 +85,6 @@ copy-to-eos-job:
   script:
   # Script that performs the deploy to EOS. Makes use of the variables defined in the project
   # It will copy the generated content to the folder in EOS
-  - mkdir binaries
-  - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; done'
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
   before_script: 
@@ -232,8 +234,8 @@ build-macos-arm:
     TAG_SUFFIX: ""
   stage: build-artifact
   before_script:
-    - mkdir -P ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
-    - Get-ChildItem ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
+    - mkdir -P ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
+    - Get-ChildItem ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
@@ -242,8 +244,8 @@ build-macos-arm:
     - Write-Host $CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_REF_NAME
-    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
-    - Set-Location ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
+    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
+    - Set-Location ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
@@ -251,7 +253,7 @@ build-macos-arm:
   artifacts:
     name: ${APP_NAME}_win${TAG_SUFFIX}
     paths:
-      - ./${APP_NAME}_win${TAG_SUFFIX}
+      - ./artifacts/${APP_NAME}_win${TAG_SUFFIX}
 
 
 .artifact-unix:
@@ -259,8 +261,8 @@ build-macos-arm:
     TAG_SUFFIX: ""
   stage: build-artifact
   before_script:
-    - rm -rf ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
-    - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+    - rm -rf ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+    - mkdir -p ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
@@ -271,8 +273,8 @@ build-macos-arm:
     - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX || true
-    - cd ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX/
+    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX || true
+    - cd ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX/
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
@@ -280,7 +282,7 @@ build-macos-arm:
   artifacts:
     name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
     paths:
-      - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
+      - ./artifacts/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
 
 .artifact-prop:
   artifacts:
@@ -328,8 +330,8 @@ build-artifact-fedora-mpi:
     OS_NAME: "fedora"
   stage: build-artifact
   before_script:
-    - rm -rf ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
-    - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
+    - rm -rf ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
+    - mkdir -p ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID'_'MPI
@@ -337,8 +339,8 @@ build-artifact-fedora-mpi:
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
     - echo $CI_COMMIT_REF_NAME
-    - cp -r ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI || true
-    - cd ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI/
+    - cp -r ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/* ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI || true
+    - cd ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI/
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
@@ -350,7 +352,7 @@ build-artifact-fedora-mpi:
   artifacts:
     name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
     paths:
-      - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
+      - ./artifacts/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
     expire_in: 8 weeks
   needs:
     - job: build-fedora-mpi
