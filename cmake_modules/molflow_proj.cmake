@@ -114,7 +114,7 @@ set(COPY_DIR copy_to_build)
 
 # Windows DLL files (on other OS libraries are linked statically)
 IF (WIN32)
-    set(DLL_DIR ${CMAKE_HOME_DIRECTORY}/lib_external/win/dll_redist)
+    set(DLL_DIR lib_external/win/dll_redist)
     file(GLOB DLL_FILES
             ${DLL_DIR}/*.dll
             )
