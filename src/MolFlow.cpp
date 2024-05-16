@@ -2432,9 +2432,11 @@ void MolFlow::UpdatePlotters() {
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
 
 	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
+	if (mApp->imWnd && mApp->imWnd->formulaEdit.IsVisible()) mApp->imWnd->formulaEdit.Update();
 	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
+
 }
 
 void MolFlow::RefreshPlotterCombos() {
