@@ -953,7 +953,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
-	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
@@ -1322,6 +1322,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckIsolatedVertex();
 		
 		ResetAutoSaveTimer();
+		if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
 		//UpdatePlotters();
 
 		if (timeSettings) timeSettings->RefreshMoments();
@@ -2433,6 +2434,7 @@ void MolFlow::UpdatePlotters() {
 	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
 	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
 }
 
 void MolFlow::RefreshPlotterCombos() {
