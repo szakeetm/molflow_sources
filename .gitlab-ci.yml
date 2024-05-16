@@ -81,11 +81,15 @@ copy-to-eos-job:
   script:
   # Script that performs the deploy to EOS. Makes use of the variables defined in the project
   # It will copy the generated content to the folder in EOS
+  - mkdir binaries
+  - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; done'
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
   before_script: 
     - ls .
-  after_script: []
+  after_script:
+    - ls .
+
 
 build-windows:
   stage: build
