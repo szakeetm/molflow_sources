@@ -63,10 +63,12 @@ upload-job:
   allow_failure: false
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   script:
-    - mkdir binaries
-    - 'for filename in ./artifacts/${APP_NAME}_*; do zip -r artifacts_zip/${filename}.zip $filename; done'
+    - mkdir artifacts_zip
+    - cd artifacts
+    - 'for filename in ${APP_NAME}_*; do zip -r ../artifacts_zip/${filename}.zip $filename; done'
   after_script: 
-    - ls .
+    - ls ./artifacts/
+    - ls ./artifacts_zip/
   artifacts:
     paths:
       - ./artifacts_zip/*.zip
@@ -88,8 +90,6 @@ copy-to-eos-job:
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
   before_script: 
-    - ls .
-  after_script:
     - ls .
 
 
