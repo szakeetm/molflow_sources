@@ -1,10 +1,6 @@
 # Changelog
 
-## v2.9.24
-
-
-
-## v2.9.23 (2024-05-15)
+## v2.9.24 (2024-05-16)
 
 ### License
 
@@ -16,6 +12,7 @@
 - Record on transparent facets only if they are before a volume event's location
   - Change in case of background collisions, radioactive decay and time-dep. simulations with cutoff
 - Facet mirroring by equation: normalize coefficients
+- Ship runtime DLLs on Windows (fix from 2.9.23)
 
 ## v2.9.22 beta (2024-04-03)
 
