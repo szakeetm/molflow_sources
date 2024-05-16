@@ -66,6 +66,9 @@ upload-job:
   script:
     - mkdir binaries
     - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; done'
+  after_script: [
+    - ls .
+  ]
 
 copy-to-eos-job:
   # customized from https://gitlab.cern.ch/gitlabci-examples/deploy_eos/
@@ -82,7 +85,9 @@ copy-to-eos-job:
   # It will copy the generated content to the folder in EOS
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
-  before_script: []
+  before_script: [
+    - ls .
+  ]
   after_script: []
 
 
