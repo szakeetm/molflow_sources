@@ -65,7 +65,7 @@ upload-job:
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   script:
     - mkdir binaries
-    - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./binaries/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
+    - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; done'
 
 copy-to-eos-job:
   # customized from https://gitlab.cern.ch/gitlabci-examples/deploy_eos/
