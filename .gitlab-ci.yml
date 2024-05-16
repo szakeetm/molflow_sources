@@ -57,7 +57,7 @@ prepare_job_notag:
       - parsed_changelog.txt
     expire_in: 1 week
 
-upload-job:
+compress-and-upload-job:
   stage: upload
   when: manual
   allow_failure: false
