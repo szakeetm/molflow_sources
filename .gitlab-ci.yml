@@ -17,9 +17,6 @@ stages:
   - prepare
   - build
   - build-artifact
-  - build-test
-  - test
-  - benchmark
   - upload
   - release
 
@@ -65,10 +62,28 @@ upload-job:
   when: manual
   allow_failure: false
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
-  rules:
-    - if: $CI_COMMIT_TAG
   script:
-    - 'for filename in ./${APP_NAME}_*; do zip -r ${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
+    - mkdir binaries
+    - 'for filename in ./${APP_NAME}_*; do zip -r binaries/${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./binaries/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
+
+copy-to-eos-job:
+  # customized from https://gitlab.cern.ch/gitlabci-examples/deploy_eos/
+  # EOS_PATH, EOS_ACCOUNT_USERNAME and EOS_ACCOUNT_PASSWORD must be defined in GitLab UI.
+  # Think of masking secrets - job logs are public!
+  variables:
+    CI_OUTPUT_DIR: "binaries" #from upload task
+  # Executed during the copy-to-eos stage
+  stage: copy-to-eos
+  # Custom docker image providing the needed tools to deploy in EOS
+  image: gitlab-registry.cern.ch/ci-tools/ci-web-deployer:latest
+  script:
+  # Script that performs the deploy to EOS. Makes use of the variables defined in the project
+  # It will copy the generated content to the folder in EOS
+  - deploy-eos
+  # do not run any globally defined before_script or after_script for this step
+  before_script: []
+  after_script: []
+
 
 release_job:
   stage: release
