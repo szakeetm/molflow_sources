@@ -194,7 +194,7 @@ cmake .. -DUSE_MPI=ON -DNO_INTERFACE=ON
 
 ## Branches
 
-* For MolFlow, `master` is the 2.9 beta, and `master_2.8` is the 2.8 public
+* For MolFlow, `master` is the 2.9, and `master_2.8` is the 2.8
 * For SynRad, `master_cli` is the 1.5 beta, and `master` is the 1.4 public
 
 ## Building for MPI
