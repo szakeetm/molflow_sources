@@ -1331,7 +1331,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
 		if (convergencePlotter) convergencePlotter->Refresh();
-		if (imWnd) imWnd->convPlot.Reload();
+		if (imWnd) imWnd->convPlot.Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0, true);
 		if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
@@ -2060,7 +2060,7 @@ void MolFlow::EmptyGeometry() {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
-	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Reload();
+	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
 
 	UpdateTitle();
 	changedSinceSave = false;
@@ -2429,6 +2429,8 @@ void MolFlow::UpdatePlotters() {
 	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
+
+	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
 	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
 }
