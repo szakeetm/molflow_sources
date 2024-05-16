@@ -19,6 +19,7 @@ stages:
   - build-artifact
   - upload
   - release
+  - copy-to-eos
 
 prepare_job:
   stage: prepare                                              # This stage must run before the release stage
