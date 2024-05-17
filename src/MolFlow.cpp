@@ -2059,15 +2059,14 @@ void MolFlow::EmptyGeometry() {
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
-	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
-	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
 
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
 	RefreshPlotterCombos();
 	//UpdatePlotters();
+	ImRefresh();
 }
 
 void MolFlow::LoadConfig() {
