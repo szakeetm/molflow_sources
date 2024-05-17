@@ -1470,6 +1470,7 @@ void MolFlow::StartStopSimulation() {
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
+		if (mApp->imWnd && mApp->imWnd->partLog.IsVisible()) mApp->imWnd->partLog.UpdateStatus();
 		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits();
 	}
 
