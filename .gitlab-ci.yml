@@ -733,6 +733,7 @@ build-artifact-windows-tags:
     - windows
 
 .im-test-unix:
+    when: manual
     stage: test
     before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
@@ -757,6 +758,7 @@ build-artifact-windows-tags:
     - ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/molflow --ImTest
     after_script:
     - echo "Finished"
+    timeout: 15 minutes
 
 im-test-Debian:
     stage: test
@@ -768,3 +770,41 @@ im-test-Debian:
         VCPKG_FOLDER: "/home/gitlab-runner/vcpkg"
     tags:
         - debian
+
+im-test-Fedora:
+    stage: test
+    allow_failure: true
+    extends: .im-test-unix
+    variables:
+        OS_NAME: "fedora"
+        OS_FULL_NAME: "linux_fedora"
+        VCPKG_FOLDER: "/home/gitlab-runner/vcpkg"
+    tags:
+        - fedora
+
+im-test-windows:
+  when: manual
+  stage: test
+  allow_failure: true
+  timeout: 15 minutes
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build_im_test")
+    - mkdir -P $buildpath
+    - cd $buildpath
+    - echo "Init project in:"+($pwd).path
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DENABLE_IMGUI_TESTS=1 $buildpath\..
+    - echo "Starting build in:" + ($buildpath).path
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
+    - echo $FNAME
+    - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_test -ItemType "directory" -Force
+    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\" -Recurse -Force
+  after_script:
+    - echo "Finished"
+  tags:
+    - windows
