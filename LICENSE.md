@@ -31,3 +31,4 @@ Full license text:
 - [pugixml](https://github.com/zeux/pugixml)
 - [cereal](https://github.com/USCiLab/cereal)
 - [fmt](https://github.com/fmtlib/fmt)
+- [Stb](https://github.com/nothings/stb)
