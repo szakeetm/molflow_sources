@@ -804,7 +804,8 @@ im-test-windows:
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_im_test -ItemType "directory" -Force
     - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_im_test\" -Recurse -Force
-    - C:\${APP_NAME_CAPS}_CI\${FNAME}_im_test\molflow.exe --ImTest
+    - cd C:\${APP_NAME_CAPS}_CI\${FNAME}_im_test
+    - .\molflow.exe --ImTest
   after_script:
     - echo "Finished"
   tags:
