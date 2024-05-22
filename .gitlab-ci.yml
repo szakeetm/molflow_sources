@@ -795,7 +795,7 @@ im-test-windows:
     - mkdir -P $buildpath
     - cd $buildpath
     - echo "Init project in:"+($pwd).path
-    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=DEBUG -DENABLE_IMGUI_TESTS=1 $buildpath\..
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=DEBUG -DENABLE_IMGUI_TESTS=1 $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config DEBUG -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
