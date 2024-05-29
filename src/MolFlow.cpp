@@ -1261,7 +1261,6 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	}
 
 	if (filePath.empty()) return; //User closed Open... dialog
-
 	if (!FileUtils::Exist(filePath)) {
 		auto answer = GLMessageBox::Display(
 			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?", filePath),
