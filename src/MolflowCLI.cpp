@@ -81,6 +81,10 @@ int main(int argc, char** argv) {
 
     Log::console_msg_master(1, "{} command line mode\n", appTitle);
 
+#if defined(USE_MPI)
+    MFMPI::mpi_initialize();
+#endif
+
     // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
@@ -90,7 +94,7 @@ int main(int argc, char** argv) {
 
     // Parse arguments
     try {
-        parsedArgs = Initializer::initFromArgv(argc, argv, simManager, model);
+        parsedArgs = Initializer::initFromArgv(argc, argv, simManager, model); //also sets locale to utf-8
     } catch (Error& err) {
         Log::console_error(err.what());
         ShutdownMPI();
