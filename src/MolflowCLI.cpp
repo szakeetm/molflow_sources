@@ -79,18 +79,6 @@ void RuntimeStatPrinter::Print(double elapsedTime, const std::shared_ptr<GlobalS
 
 int main(int argc, char** argv) {
 
-// Set local to parse input files the same on all systems
-//duplicate, in case we called this function from the test suite and not from main()
-#if defined(__APPLE__)
-    setlocale(LC_ALL, "en_US.UTF-8");
-#else
-    std::setlocale(LC_ALL, "en_US.UTF-8");
-#endif
-
-#if defined(USE_MPI)
-    MFMPI::mpi_initialize();
-#endif
-
     Log::console_msg_master(1, "{} command line mode\n", appTitle);
 
     // Init necessary components
