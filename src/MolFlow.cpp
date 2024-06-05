@@ -1629,6 +1629,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 					RefreshPlotterCombos();
 					//UpdatePlotters();
 					if (vertexCoordinates) vertexCoordinates->Update();
+					if (mApp->imWnd && mApp->imWnd->vertCoord.IsVisible()) mApp->imWnd->vertCoord.UpdateFromSelection();
 					if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 					// Send to sub process
@@ -1704,7 +1705,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						interfGeom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
-						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
+						if (mApp->imWnd && mApp->imWnd->vertCoord.IsVisible()) mApp->imWnd->vertCoord.UpdateFromSelection();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
