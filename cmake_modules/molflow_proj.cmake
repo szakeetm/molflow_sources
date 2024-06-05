@@ -1,6 +1,3 @@
-############## Artefacts Output #################
-# Defines outputs , depending Debug or Release. #
-#################################################
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/lib/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/lib/")
@@ -26,15 +23,41 @@ set(CPP_DIR_SRC_SHARED ${CMAKE_HOME_DIRECTORY}/src_shared)
 set(GLAPP_DIR ${CPP_DIR_SRC_SHARED}/GLApp)
 set(GLCHART_DIR ${GLAPP_DIR}/GLChart)
 set(HELPER_DIR ${CPP_DIR_SRC_SHARED}/Helper)
+set(INTERFACE_DIR ${CPP_DIR_SRC_SHARED}/Interface) #Also used by cli (camera views saving, etc)
 
 set(HEADER_DIR_SRC ${CPP_DIR_SRC}) #same for .cpp and .h
 set(HEADER_DIR_SRC_SHARED ${CPP_DIR_SRC_SHARED}) #same for .cpp and .h
 set(HEADER_DIR_INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+set(HEADER_DIR_EXTERNAL ${HEADER_DIR_SRC_SHARED}/external)
+
+set(IMGUI_DIR ${HEADER_DIR_EXTERNAL}/imgui)
+set(IMPLOT_DIR ${HEADER_DIR_EXTERNAL}/implot)
 
 # Definition of Macros
 add_definitions(
         -DMOLFLOW #to distinguish from SYNRAD in the source files
 )
+
+#required preprocessor definitions by the auto-updater
+IF (WIN32)
+    #WIN32 defined by default
+ELSEIF(APPLE)
+    #__MACOSX__ defined by default
+ELSE()
+    string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
+    message("-- os_version_suffix:      ${os_version_suffix}")
+    IF(os_version_suffix MATCHES "\\.el[1-9]")
+        add_definitions(
+            -D__LINUX_FEDORA
+        )
+        message("Assuming Fedora-based Linux, defining __LINUX_FEDORA")
+    ELSE()
+        add_definitions(
+            -D__LINUX_DEBIAN
+        )
+        message("Assuming Debian-based Linux, defining __LINUX_DEBIAN")
+    ENDIF()
+ENDIF()
 
 if(USE_PROFILING)
     MESSAGE("Setting profiling flags.")
@@ -91,15 +114,15 @@ set(COPY_DIR copy_to_build)
 
 # Windows DLL files (on other OS libraries are linked statically)
 IF (WIN32)
-    set(DLL_DIR lib_external/win/dll)
+    set(DLL_DIR lib_external/win/dll_redist)
     file(GLOB DLL_FILES
             ${DLL_DIR}/*.dll
             )
     file(COPY ${DLL_FILES}
             DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
-    message("COPIED: " ${DLL_FILES})
-    message("    TO: " ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+    message("COPIED DLLs: " ${DLL_FILES})
+    message("         TO: " ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 ENDIF()
 
 # Other files to include in the bin directory

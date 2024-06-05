@@ -227,7 +227,7 @@ namespace {
 			try {
 				model = Initializer::initFromFile(simManager, model, globalState, persistentInterfaceSettings, parsedArgs);
 			}
-			catch (std::exception& err) {
+			catch (const Error& err) {
 				Log::console_error("Initializer::initFromFile error:\n{}\n", err.what());
 				exit(42);
 			}

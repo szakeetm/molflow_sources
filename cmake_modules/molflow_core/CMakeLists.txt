@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 #shared GUI and CLI part, built as library that GUI or CLI links against
 set(PROJECT_NAME molflow_core)
 
-
-############## CMake Project ################
-#        The main options of project        #
-#############################################
-
 project(${PROJECT_NAME} CXX)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -16,11 +11,6 @@ add_definitions(
         -D_MBCS
         -D_CRT_SECURE_NO_WARNINGS
 )
-
-################# Flags ################
-# Defines Flags for Windows and Linux. #
-########################################
-
 if(MSVC)
 
 else() #not MSVC
@@ -29,23 +19,7 @@ else() #not MSVC
     endif()
 endif()
 
-
-################ Files ################
-#   --   Add files to project.   --   #
-#######################################
-
 set(SRC_FILES
-        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        ${CPP_DIR_SRC_SHARED}/ShMemory.cpp
-        ${CPP_DIR_SRC_SHARED}/Process.cpp
-        ${CPP_DIR_SRC_SHARED}/Vector.cpp
-        ${CPP_DIR_SRC_SHARED}/Distributions.cpp
-        ${CPP_DIR_SRC_SHARED}/Buffer_shared.cpp
-        ${CPP_DIR_SRC_SHARED}/SimulationController.cpp
-        ${CPP_DIR_SRC_SHARED}/SimulationManager.cpp
-        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
-        ${CPP_DIR_SRC_SHARED}/Polygon.cpp
-        ${CPP_DIR_SRC_SHARED}/Random.cpp
         
         ${GLAPP_DIR}/GLFormula.cpp
 
@@ -57,11 +31,6 @@ set(SRC_FILES
         ${CPP_DIR_SRC}/TimeMoments.cpp
         ${CPP_DIR_SRC}/MolflowTypes.cpp
         
-        ${SIMU_DIR}/MolflowSimulation.cpp
-        ${SIMU_DIR}/SimulationMC.cpp
-        ${SIMU_DIR}/Particle.cpp
-        ${SIMU_DIR}/Physics.cpp
-        ${SIMU_DIR}/AnglemapGeneration.cpp
         ${SIMU_DIR}/CDFGeneration.cpp
         ${SIMU_DIR}/IDGeneration.cpp
         ${SIMU_DIR}/MolflowSimFacet.cpp
@@ -75,23 +44,15 @@ set(SRC_FILES
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
-IF(APPLE)
-    include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
-ENDIF()
-
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
-
 target_link_libraries(${PROJECT_NAME} PUBLIC src_shared_core)
-target_link_libraries(${PROJECT_NAME} PRIVATE truncated_normal)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC truncated_normal)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_SRC}
         ${HEADER_DIR_SRC_SHARED}
         ${HEADER_DIR_INCLUDE}
+        ${INTERFACE_DIR} #geometrytypes.h for example
         )
 
 if(MSVC)
