@@ -1347,6 +1347,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		if (particleLogger) particleLogger->UpdateStatus();
 		ImReset();
 	}
 	catch (const std::exception& e) {
@@ -1983,6 +1984,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
@@ -2056,6 +2058,7 @@ void MolFlow::EmptyGeometry() {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
