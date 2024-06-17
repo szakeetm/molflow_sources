@@ -2070,7 +2070,7 @@ void MolFlow::EmptyGeometry() {
 	ResetAutoSaveTimer();
 	RefreshPlotterCombos();
 	//UpdatePlotters();
-	ImRefresh();
+	ImReset();
 }
 
 void MolFlow::LoadConfig() {
