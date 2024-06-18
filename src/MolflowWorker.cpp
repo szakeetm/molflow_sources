@@ -12,7 +12,6 @@
 #endif
 
 #include <future>
-#include <cmath>
 #include <fstream>
 #include <filesystem>
 #include <cereal/archives/binary.hpp>

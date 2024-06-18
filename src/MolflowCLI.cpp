@@ -1,7 +1,3 @@
-
-
-#include <cmath>
-
 #include "SimulationManager.h"
 #include "SMP.h"
 #include "Buffer_shared.h"

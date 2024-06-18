@@ -1,6 +1,4 @@
 #include "MolFlow.h"
-
-#include <cmath>
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"

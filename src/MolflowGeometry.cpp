@@ -1,7 +1,3 @@
-
-
-#include <cmath>
-
 #include "Simulation/MolflowSimFacet.h"
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
