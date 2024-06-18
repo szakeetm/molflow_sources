@@ -41,6 +41,9 @@ add_definitions(
 #required preprocessor definitions by the auto-updater
 IF (WIN32)
     #WIN32 defined by default
+    add_definitions(
+        -D_USE_MATH_DEFINES #math constants when including <cmath>
+    )
 ELSEIF(APPLE)
     #__MACOSX__ defined by default
 ELSE()
