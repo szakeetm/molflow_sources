@@ -3,7 +3,6 @@
 #include <sstream>
 #include <set>
 #include <Helper/MathTools.h>
-#include <cmath>
 #include <iomanip> // setprecision
 #include "LoaderXML.h"
 #include "TimeMoments.h"

@@ -1,5 +1,3 @@
-
-#include <cmath>
 #include <cstdio>
 #include <tuple> //std::tie
 #include <cstring>
