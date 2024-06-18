@@ -2,6 +2,7 @@
 #include "MolflowSimGeom.h"
 #include <fmt/core.h>
 #include "GLApp/GLTypes.h"
+#include <cmath> //sqrt of temperature
 
 /*
 MolflowSimFacet::MolflowSimFacet(const MolflowSimFacet& cpy)  : SimulationFacet(cpy) {
