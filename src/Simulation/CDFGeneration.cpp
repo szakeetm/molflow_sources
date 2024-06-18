@@ -1,5 +1,4 @@
-
-
+#include <cmath>
 #include "CDFGeneration.h"
 #include <cmath>
 
