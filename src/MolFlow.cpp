@@ -1983,7 +1983,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
 	if (particleLogger) particleLogger->UpdateStatus();
-	if (mApp->imWnd) imWnd->partLog.Reset();
 	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
