@@ -25,6 +25,7 @@ set(SRC_FILES
 
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
+        ${IO_DIR}/CSVExporter.cpp #For physics, GetMoleculePerTP()
 
         ${CPP_DIR_SRC}/ParameterParser.cpp
         ${CPP_DIR_SRC}/Initializer.cpp
