@@ -730,6 +730,11 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
     }
     e.append_attribute("accFactor") = facet->sh.accomodationFactor;
 
+    {  //Area for easier XML parsing, not read by loader
+        xml_node areaNode = facetNode.append_child("Area");
+        areaNode.append_attribute("m2") = facet->sh.area * 0.0001; //cm2 to m2
+    }
+
     e = facetNode.append_child("Reflection");
 
     e.append_attribute("diffusePart") = facet->sh.reflection.diffusePart;
