@@ -13,6 +13,7 @@
 #include "Simulation/MolflowSimGeom.h"
 #include "MolflowTypes.h"
 #include "GeometryTypes.h"
+#include "CSVExporter.h"
 
 using namespace FlowIO;
 using namespace pugi;
@@ -134,6 +135,10 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     xml_node cutoffNode = scatteringNode.append_child("LowSpeedCutoff");
     cutoffNode.append_attribute("enabled") = model->sp.scattering.enableCutoff;
     cutoffNode.append_attribute("speed") = model->sp.scattering.cutoffSpeed;
+
+    xml_node outgassingNode = simuParamNode.child("Gas").append_child("Outgassing_info"); //For external XML parsing, not read
+    outgassingNode.append_attribute("final_rate_molecules_per_s") = model->sp.finalOutgassingRate;
+    outgassingNode.append_attribute("total_desorbed_molecules") = model->sp.totalDesorbedMolecules;
     
     auto lowFluxNode = simuParamNode.append_child("LowFluxMode");
     lowFluxNode.append_attribute("enabled") = model->otfParams.lowFluxMode;
@@ -155,6 +160,9 @@ void XmlWriter::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
             "useMaxwellDistr") = (int) model->sp.useMaxwellDistribution; //backward compatibility: 0 or 1
     timeSettingsNode.append_attribute(
             "calcConstFlow") = (int) model->sp.calcConstantFlow; //backward compatibility: 0 or 1
+
+    xml_node timeInfoNode = timeSettingsNode.append_child("Info"); //For external XML parsing
+    timeInfoNode.append_attribute("latest_moment_s") = model->sp.latestMoment;
 
     xml_node motionNode = simuParamNode.append_child("Motion");
     motionNode.append_attribute("type") = model->sp.motionType;
@@ -366,6 +374,7 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
 
     xml_node resultNode = rootNode.append_child("MolflowResults");
     xml_node momentsNode = resultNode.append_child("Moments");
+
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
     //size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
@@ -381,6 +390,9 @@ bool XmlWriter::SaveSimulationState(xml_document &saveDoc, const std::shared_ptr
             newMoment.append_attribute("time") = model->tdParams.moments[m - 1].time;
             newMoment.append_attribute("timeWindow") = model->tdParams.moments[m - 1].window;
         }
+
+        //For external XML parsing, not read
+        newMoment.append_attribute("molecules_per_TP") = FlowIO::GetMoleculesPerTP(m,model,globalState);
 
         if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
             xml_node globalNode = newMoment.append_child("Global");
@@ -729,6 +741,11 @@ void XmlWriter::SaveFacet(pugi::xml_node facetNode, std::shared_ptr<MolflowSimFa
         e.append_attribute("value") = facet->sh.temperature;
     }
     e.append_attribute("accFactor") = facet->sh.accomodationFactor;
+
+    {  //For external XML parsing, not read by loader
+        xml_node areaNode = facetNode.append_child("Area");
+        areaNode.append_attribute("m2") = facet->sh.area * 0.0001; //cm2 to m2
+    }
 
     e = facetNode.append_child("Reflection");
 

@@ -36,13 +36,8 @@ set(SRC_FILES
         ${CPP_DIR_SRC}/MolflowCLI.cpp
         ${CPP_DIR_SRC}/Initializer.cpp
 
-        ${IO_DIR}/CSVExporter.cpp
-        ${IO_DIR}/CSVExporter.h
-
         ${HELPER_DIR}/GLProgress_CLI.cpp
-        ${HELPER_DIR}/GLProgress_CLI.hpp
         ${HELPER_DIR}/GLProgress_abstract.cpp
-        ${HELPER_DIR}/GLProgress_abstract.hpp
 
 )
 
