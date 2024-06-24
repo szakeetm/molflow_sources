@@ -22,7 +22,7 @@ protected:
 
 	std::vector<ImU32> colorMap;
 
-	MolflowGeometry* molflowGeom;
+	MolflowGeometry* molflowGeom = nullptr;
 	bool photoMode = false;
 	std::string minInput[3] = { "0", "0", "0" }, maxInput[3] = { "1","1","1" };
 	double minScale[3] = { 0,0,0 }, maxScale[3] = { 1,1,1 };
