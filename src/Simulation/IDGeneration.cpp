@@ -2,7 +2,6 @@
 
 #include <Helper/MathTools.h>
 #include "IDGeneration.h"
-#include <cmath>
 
 namespace IDGeneration {
 

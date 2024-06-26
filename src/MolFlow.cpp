@@ -1,6 +1,4 @@
 #include "MolFlow.h"
-
-#include <cmath>
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"
@@ -1263,7 +1261,6 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	}
 
 	if (filePath.empty()) return; //User closed Open... dialog
-
 	if (!FileUtils::Exist(filePath)) {
 		auto answer = GLMessageBox::Display(
 			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?", filePath),
@@ -1348,6 +1345,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		if (particleLogger) particleLogger->UpdateStatus();
 		ImReset();
 	}
 	catch (const std::exception& e) {
@@ -1983,6 +1981,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
@@ -2056,6 +2055,7 @@ void MolFlow::EmptyGeometry() {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();

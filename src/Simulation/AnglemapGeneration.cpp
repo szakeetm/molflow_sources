@@ -1,7 +1,6 @@
 
 
 #include <Helper/MathTools.h> //IDX
-#include <cmath>
 #include "AnglemapGeneration.h"
 
 namespace AnglemapGeneration {
