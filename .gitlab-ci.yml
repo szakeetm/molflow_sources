@@ -757,7 +757,8 @@ build-artifact-windows-tags:
 #-------------
     - export DISPLAY=:99
     - sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
-    - export LIBGL_ALWAYS_SOFTWARE=1
+    - export MESA_LOADER_DRIVER_OVERRIDE=softpipe
+    - glxinfo | grep "OpenGL renderer"
     - ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/molflow --ImTest
     after_script:
     - echo "Finished"
