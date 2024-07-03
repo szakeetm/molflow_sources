@@ -798,8 +798,9 @@ im-test-Fedora:
 im-test-windows:
   when: manual
   stage: test
+  needs: []
   allow_failure: true
-  timeout: 30 minutes
+  timeout: 15 minutes
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
