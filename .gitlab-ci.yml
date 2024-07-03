@@ -735,6 +735,7 @@ build-artifact-windows-tags:
 .im-test-unix:
     when: manual
     stage: test
+    needs: []
     before_script:
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
     - git submodule sync --recursive
