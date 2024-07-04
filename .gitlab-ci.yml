@@ -764,9 +764,9 @@ build-artifact-windows-tags:
 #    - echo "----------------"
 #    - echo "Checking Xvfb is running"
 #    - pgrep Xvfb || { echo "Xvfb not running"; exit 1; }
-    - export MESA_LOADER_DRIVER_OVERRIDE=softpipe
-    - echo "Running glxinfo to check OpenGL renderer"
-    - glxinfo | grep "OpenGL renderer" || { echo "Failed to run glxinfo"; exit 1; }
+ #   - export MESA_LOADER_DRIVER_OVERRIDE=softpipe
+ #   - echo "Running glxinfo to check OpenGL renderer"
+ #   - glxinfo | grep "OpenGL renderer" || { echo "Failed to run glxinfo"; exit 1; }
     - echo "Running application tests"
     - ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/molflow --ImTest
     after_script:
