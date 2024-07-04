@@ -3,12 +3,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # GUI-specific folders files, builds molflow executable
 set(PROJECT_NAME molflow)
 
-set(UI_DIR ${CMAKE_HOME_DIRECTORY}/src/Interface)
-set(IMGUI_DIR ${CPP_DIR_SRC_SHARED}/external/imgui) #need to define here and in shared code as well, since MolFlow.cpp includes ImguiWindow.h
-
-############## CMake Project ################
-#        The main options of project        #
-#############################################
+set(UI_DIR ${CPP_DIR_SRC}/Interface)
 
 project(${PROJECT_NAME} CXX)
 set(CMAKE_CXX_STANDARD 17)
@@ -22,14 +17,9 @@ add_definitions(
 )
 IF (WIN32)
     add_definitions(
-            #-D_WINDOWS
             -D_WITHGL
     )
 ENDIF()
-
-################# Flags ################
-# Defines Flags for Windows and Linux. #
-########################################
 
 if(MSVC)
 
@@ -38,10 +28,6 @@ else() #not MSVC
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
 endif()
-
-################ Files ################
-#   --   Add files to project.   --   #
-#######################################
 
 set(SRC_FILES
         ${UI_DIR}/FacetAdvParams.cpp
@@ -63,20 +49,14 @@ set(SRC_FILES
         ${UI_DIR}/TimeSettings.cpp
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
+        ${UI_DIR}/ImguiTextureScaling.cpp
 
         ${CPP_DIR_SRC}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_SRC}/MolFlow.cpp
         ${CPP_DIR_SRC}/MolflowFacet.cpp
         ${CPP_DIR_SRC}/MolflowGeometry.cpp
-        ${CPP_DIR_SRC}/MolflowTypes.cpp
         ${CPP_DIR_SRC}/MolflowWorker.cpp
-        ${CPP_DIR_SRC}/TimeMoments.cpp
-
-        #${HEADER_DIR_SRC_SHARED}/FlowMPI.h
-        ${CPP_DIR_SRC_SHARED}/FlowMPI.cpp
-        ${CPP_DIR_SRC_SHARED}/IntersectAABB_shared.cpp
-
-        )
+)
 
 # Add executable to build.
 if(WIN32)
@@ -93,7 +73,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${UI_DIR}
         ${HEADER_DIR_SRC_SHARED}
         ${IMGUI_DIR}
-        )
+)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
@@ -135,34 +115,3 @@ else() #not MSVC
     endif()
 
 endif()
-
-IF(APPLE)
-    include(${CPP_DIR_SRC_SHARED}/cmake_modules/SetOpenMP.cmake)  #Help macOS find OpenMP
-ENDIF()
-
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
-
-#required preprocessor definitions by the auto-updater
-IF (WIN32)
-    
-ELSEIF(APPLE)
-    
-ELSE()
-    string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
-    message("-- os_version_suffix:      ${os_version_suffix}")
-    IF(os_version_suffix MATCHES "\\.el[1-9]")
-        add_definitions(
-            -D__LINUX_FEDORA
-        )
-        message("Assuming Fedora-based Linux")
-    ELSE()
-        add_definitions(
-            -D__LINUX_DEBIAN
-        )
-        message("Assuming Debian-based Linux")
-    ENDIF()
-ENDIF()

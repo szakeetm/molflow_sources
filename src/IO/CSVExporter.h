@@ -72,4 +72,6 @@ namespace FlowIO {
 
         static void export_facet_quantities(const std::shared_ptr<GlobalSimuState> globalState, const std::shared_ptr<MolflowSimulationModel> mode, std::string& workPath);
     };
+
+    double GetMoleculesPerTP(size_t moment, const std::shared_ptr<MolflowSimulationModel> model, const std::shared_ptr<GlobalSimuState> globalState);
 }

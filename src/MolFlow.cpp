@@ -1,6 +1,4 @@
 #include "MolFlow.h"
-
-#include <cmath>
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"
@@ -953,7 +951,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
-	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdateOnFacetChange();
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
@@ -1263,7 +1261,6 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	}
 
 	if (filePath.empty()) return; //User closed Open... dialog
-
 	if (!FileUtils::Exist(filePath)) {
 		auto answer = GLMessageBox::Display(
 			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?", filePath),
@@ -1322,6 +1319,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		interfGeom->CheckIsolatedVertex();
 		
 		ResetAutoSaveTimer();
+		if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
 		//UpdatePlotters();
 
 		if (timeSettings) timeSettings->RefreshMoments();
@@ -1347,6 +1345,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		if (particleLogger) particleLogger->UpdateStatus();
 		ImReset();
 	}
 	catch (const std::exception& e) {
@@ -1469,6 +1468,7 @@ void MolFlow::StartStopSimulation() {
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
+		if (mApp->imWnd && mApp->imWnd->partLog.IsVisible()) mApp->imWnd->partLog.UpdateStatus();
 		if (textureScaling && textureScaling->IsVisible()) textureScaling->UpdateAutoScaleLimits();
 	}
 
@@ -1628,6 +1628,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 					RefreshPlotterCombos();
 					//UpdatePlotters();
 					if (vertexCoordinates) vertexCoordinates->Update();
+					if (mApp->imWnd && mApp->imWnd->vertCoord.IsVisible()) mApp->imWnd->vertCoord.UpdateFromSelection();
 					if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 					// Send to sub process
@@ -1703,7 +1704,7 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 						interfGeom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
-						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
+						if (mApp->imWnd && mApp->imWnd->vertCoord.IsVisible()) mApp->imWnd->vertCoord.UpdateFromSelection();
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 						if (profilePlotter) profilePlotter->Refresh();
@@ -1981,6 +1982,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
@@ -2054,11 +2056,11 @@ void MolFlow::EmptyGeometry() {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
-	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
 
@@ -2067,6 +2069,7 @@ void MolFlow::EmptyGeometry() {
 	ResetAutoSaveTimer();
 	RefreshPlotterCombos();
 	//UpdatePlotters();
+	ImReset();
 }
 
 void MolFlow::LoadConfig() {
@@ -2186,7 +2189,7 @@ void MolFlow::LoadConfig() {
 
 		file.ReadKeyword("processNum"); file.ReadKeyword(":");
 		nbProc = file.ReadSizeT();
-#if defined(_DEBUG)
+#if defined(DEBUG)
 		nbProc = 1;
 #endif
 		if (nbProc <= 0) nbProc = 1;
@@ -2328,7 +2331,7 @@ void MolFlow::SaveConfig() {
 		file.Write("textures_max_density_moments_only:");
 		file.Write(interfGeom->texture_limits[2].autoscale.max.moments_only, "\n");
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 		file.Write("processNum:"); file.Write(numCPU, "\n");
 #else
 		file.Write("processNum:"); file.Write(worker.GetProcNumber(), "\n");
@@ -2431,8 +2434,11 @@ void MolFlow::UpdatePlotters() {
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
 
 	if (mApp->imWnd && mApp->imWnd->convPlot.IsVisible()) mApp->imWnd->convPlot.Refresh();
+	if (mApp->imWnd && mApp->imWnd->formulaEdit.IsVisible()) mApp->imWnd->formulaEdit.Update();
 	if (mApp->imWnd && mApp->imWnd->profPlot.IsVisible()) mApp->imWnd->profPlot.UpdatePlotter();
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdatePlotter();
+	if (mApp->imWnd && mApp->imWnd->histPlot.IsVisible()) mApp->imWnd->histPlot.UpdatePlotter();
+
 }
 
 void MolFlow::RefreshPlotterCombos() {

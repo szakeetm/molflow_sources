@@ -50,7 +50,7 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2`
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2 stb`
 - On Fedora
     - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
     `sudo dnf install perl`
@@ -194,7 +194,7 @@ cmake .. -DUSE_MPI=ON -DNO_INTERFACE=ON
 
 ## Branches
 
-* For MolFlow, `master` is the 2.9 beta, and `master_2.8` is the 2.8 public
+* For MolFlow, `master` is the 2.9, and `master_2.8` is the 2.8
 * For SynRad, `master_cli` is the 1.5 beta, and `master` is the 1.4 public
 
 ## Building for MPI

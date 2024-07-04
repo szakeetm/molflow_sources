@@ -1,11 +1,3 @@
-
-
-// M_PI define
-#ifdef _WIN32
-#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
-#endif
-#include <cmath>
-
 #include "Simulation/MolflowSimFacet.h"
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
@@ -21,15 +13,6 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <Helper/StringHelper.h>
-
-/*
-//Leak detection
-#if defined(_DEBUG)
-#define _CRTDBG_MAP_ALLOC
-#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-*/
 
 using namespace pugi;
 
