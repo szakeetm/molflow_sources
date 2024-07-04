@@ -756,14 +756,14 @@ build-artifact-windows-tags:
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/ || true
     - echo "Built"
 #-------------
-    - export DISPLAY=:99
-    - sudo Xvfb :99 -screen 0 1280x1024x24 > xvfb.log 2>&1 &
-    - sleep 3
-    - echo "--- xvfb.log ---"
-    - cat xvfb.log
-    - echo "----------------"
-    - echo "Checking Xvfb is running"
-    - pgrep Xvfb || { echo "Xvfb not running"; exit 1; }
+#    - export DISPLAY=:99
+#    - sudo Xvfb :99 -screen 0 1280x1024x24 > xvfb.log 2>&1 &
+#    - sleep 3
+#    - echo "--- xvfb.log ---"
+#    - cat xvfb.log
+#    - echo "----------------"
+#    - echo "Checking Xvfb is running"
+#    - pgrep Xvfb || { echo "Xvfb not running"; exit 1; }
     - export MESA_LOADER_DRIVER_OVERRIDE=softpipe
     - echo "Running glxinfo to check OpenGL renderer"
     - glxinfo | grep "OpenGL renderer" || { echo "Failed to run glxinfo"; exit 1; }
