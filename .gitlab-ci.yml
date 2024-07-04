@@ -732,8 +732,10 @@ build-artifact-windows-tags:
   tags:
     - windows
 
+
+# ImTest jobs compile in Debug configuration with ImGui tests enabled
+# they then run the tests
 .im-test-unix:
-    when: manual
     stage: test
     needs: []
     before_script:
@@ -755,18 +757,6 @@ build-artifact-windows-tags:
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/ || true
     - echo "Built"
-#-------------
-#    - export DISPLAY=:99
-#    - sudo Xvfb :99 -screen 0 1280x1024x24 > xvfb.log 2>&1 &
-#    - sleep 3
-#    - echo "--- xvfb.log ---"
-#    - cat xvfb.log
-#    - echo "----------------"
-#    - echo "Checking Xvfb is running"
-#    - pgrep Xvfb || { echo "Xvfb not running"; exit 1; }
- #   - export MESA_LOADER_DRIVER_OVERRIDE=softpipe
- #   - echo "Running glxinfo to check OpenGL renderer"
- #   - glxinfo | grep "OpenGL renderer" || { echo "Failed to run glxinfo"; exit 1; }
     - echo "Running application tests"
     - ~/$APP_NAME_CAPS'_CI/'${FNAME}_im_test/molflow --ImTest
     after_script:
@@ -796,7 +786,6 @@ im-test-Fedora:
         - fedora
 
 im-test-windows:
-  when: manual
   stage: test
   needs: []
   allow_failure: true
