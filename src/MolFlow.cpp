@@ -955,6 +955,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
+	if (mApp->imWnd && mApp->imWnd->sideBar.IsVisible()) mApp->imWnd->sideBar.Update();
 }
 
 // Name: FrameMove()
