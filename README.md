@@ -50,7 +50,7 @@ Set up vcpkg:
 
 Get and build dependencies for MolFlow:
 
-- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2 stb`
+- On all platforms: `./vcpkg install cereal cimg curl fmt libpng pugixml sdl2 stb glew`
 - On Fedora
     - If vcpkg fails to install `curl`, it is because its dependency `openssl` requires perl. Install it using the system package manager:  
     `sudo dnf install perl`
@@ -58,6 +58,8 @@ Get and build dependencies for MolFlow:
     `./vcpkg install sdl2[alsa]`  
     then reconfigure and rebuild
 
+- Please note that some linux images do not ship with the GLU library, you may need to install it separately
+    - For example on ALMA: `sudo dnf install mesa-libGLU-devel`
 
 ## Build MolFlow
 

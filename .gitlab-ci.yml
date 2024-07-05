@@ -789,7 +789,7 @@ im-test-windows:
   stage: test
   needs: []
   allow_failure: true
-  timeout: 15 minutes
+  timeout: 20 minutes
   before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
