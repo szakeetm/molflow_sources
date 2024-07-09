@@ -95,18 +95,21 @@ MolflowGeometry* Worker::GetMolflowGeometry() {
 */
 void Worker::SaveGeometry(std::string fileName, GLProgress_Abstract& prg, bool askConfirm, bool saveSelected, bool autoSave,
 	bool crashSave) {
-
+	
 	try {
-		if (!crashSave && !saveSelected) ReloadIfNeeded();
-		// Update persistent anglemap
-		SendAngleMaps();
+		if (!crashSave && !saveSelected) {
+			if (!ReloadIfNeeded()) {
+				throw Error("Couldn't reload worker, error details already displayed.");
+			}
+			// Update persistent anglemap
+			SendAngleMaps();
+		}
 	}
-	catch (const std::exception& e) {
-		char errMsg[512];
-		sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.what());
-		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+	catch (const Error& err) {
 		crashSave = true;
+		GLMessageBox::Display(fmt::format("The following error occured while saving:\n{}\nTrying safe save (geometry only, without results).",err.what()).c_str(), "Warning", GLDLG_OK, GLDLG_ICONWARNING);	
 	}
+
 	std::string compressCommandLine;
 	std::string fileNameWithGeo; //file name with .geo extension (instead of .geo7z)
 	std::string fileNameWithGeo7z;
@@ -915,7 +918,7 @@ void Worker::LoadTexturesGEO(FileReader& f, int version) {
 /**
 * \brief Saves current AngleMap from cache to results
 */
-int Worker::SendAngleMaps() {
+void Worker::SendAngleMaps() {
 	size_t nbFacet = interfGeom->GetNbFacet();
 	std::vector<std::vector<size_t>> angleMapCaches;
 	for (size_t i = 0; i < nbFacet; i++) {
@@ -923,10 +926,13 @@ int Worker::SendAngleMaps() {
 		angleMapCaches.push_back(f->angleMapCache);
 	}
 
-	if (globalState->facetStates.size() != angleMapCaches.size())
-		return 1;
+	if (globalState->facetStates.size() != angleMapCaches.size()) {
+		throw Error("Worker::SendAngleMaps():\nGlobal facet states size ({}) differs from interface facets size ({}).\nProbably the simulation model isn't properly initialized.", globalState->facetStates.size(), angleMapCaches.size());
+	}
 	auto lock = GetHitLock(globalState.get(), 10000);
-	if (!lock) return 1;
+	if (!lock) {
+		throw Error("Worker::SendAngleMaps():\nCouldn't acquire hit lock in 10 seconds.");
+	}
 
 	for (size_t i = 0; i < angleMapCaches.size(); i++) {
 		auto mfFac = std::static_pointer_cast<MolflowSimFacet>(model->facets[i]);
@@ -935,7 +941,6 @@ int Worker::SendAngleMaps() {
 		//else if(sFac->sh.desorbType == DES_ANGLEMAP)
 		mfFac->angleMap.pdf = angleMapCaches[i];
 	}
-	return 0;
 }
 
 void Worker::InterfaceGeomToSimModel() {
