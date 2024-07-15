@@ -690,6 +690,8 @@ build-artifact-windows:
   extends:
     - .artifact-windows
     - .artifact-prop
+  variables:
+    - OS_NAME: "win"
   needs:
     - job: build-windows
   tags:
@@ -755,6 +757,8 @@ build-artifact-windows-tags:
   extends:
     - .artifact-windows
     - .artifact-prop-tags
+  variables:
+    - OS_NAME: "win"
   needs:
     - job: build-windows
     - job: prepare_job
