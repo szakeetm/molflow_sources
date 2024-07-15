@@ -46,7 +46,7 @@ parse-changelog:
     reports:
       dotenv: variables.env
 
-prepare_job_notag:
+prepare-job_notag:
   stage: prepare                                              # This stage must run before the release stage
   image: alpine:latest
   rules:
@@ -641,7 +641,7 @@ build-artifact-debian-tags:
     - .artifact-prop-tags
   needs:
     - job: build-debian
-    - job: prepare_job
+    - job: prepare-job
       artifacts: true
   variables:
     OS_NAME: "debian"
@@ -654,7 +654,7 @@ build-artifact-fedora-tags:
     - .artifact-prop-tags
   needs:
     - job: build-fedora
-    - job: prepare_job
+    - job: prepare-job
       artifacts: true
   variables:
     OS_NAME: "fedora"
@@ -669,7 +669,7 @@ build-artifact-macos-tags:
     - .artifact-prop-tags
   needs:
     - job: build-macos
-    - job: prepare_job
+    - job: prepare-job
       artifacts: true
   stage: build-artifact
   tags:
@@ -684,7 +684,7 @@ build-artifact-macos-arm-tags:
     - .artifact-prop-tags
   needs:
     - job: build-macos-arm
-    - job: prepare_job
+    - job: prepare-job
       artifacts: true
   stage: build-artifact
   tags:
@@ -699,7 +699,7 @@ build-artifact-windows-tags:
     OS_NAME: "win"
   needs:
     - job: build-windows
-    - job: prepare_job
+    - job: prepare-job
       artifacts: true
   tags:
     - windows
