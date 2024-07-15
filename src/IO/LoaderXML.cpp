@@ -658,48 +658,52 @@ int XmlLoader::LoadSimulationState(const std::string &inputFileName, const std::
                     size_t texWidth_file = textureNode.attribute("width").as_llong();
                     size_t texHeight_file = textureNode.attribute("height").as_llong();
 
-                    std::vector<TextureCell> &texture = globalState->facetStates[facetId].momentResults[m].texture;
+                    std::vector<TextureCell>& texture = globalState->facetStates[facetId].momentResults[m].texture;
 
                     std::stringstream countText, sum1perText, sumvortText;
                     if (textureNode.child("countEquiv")) {
                         countText << textureNode.child_value("countEquiv");
-                    } else {
+                    }
+                    else {
                         countText << textureNode.child_value("count");
                     }
                     sum1perText << textureNode.child_value("sum_1_per_v");
                     sumvortText << textureNode.child_value("sum_v_ort");
 
                     for (size_t iy = 0; iy < (std::min(sFac->sh.texHeight,
-                                                  texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+                        texHeight_file)); iy++) { //MIN: If smaller or larger texture stored, ignore extra cells
                         for (size_t ix = 0; ix < (std::min(sFac->sh.texWidth,
-                                                      texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+                            texWidth_file)); ix++) { //MIN: If smaller or larger texture stored, ignore extra cells
                             countText >> texture[iy * sFac->sh.texWidth + ix].countEquiv;
                             sum1perText >> texture[iy * sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
                             sumvortText >> texture[iy * sFac->sh.texWidth + ix].sum_v_ort_per_area;
 
                         }
-                        for (int ie = 0; ie < texWidth_file -
-                                              sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
-                            //Read extra cells from file without doing anything
-                            size_t dummy_ll;
-                            double dummy_d;
-                            countText >> dummy_ll;
-                            sum1perText >> dummy_d;
-                            sumvortText >> dummy_d;
 
+                        //Treat extra width cells stored in file
+                        if (texWidth_file > sFac->sh.texWidth) { //Executed if file texture is bigger than expected texture
+                            size_t widthRemainder = texWidth_file - sFac->sh.texWidth;
+                            for (int ie = 0; ie < widthRemainder; ie++) { //Read extra cells from file without doing anything
+                                size_t dummy_ll;
+                                double dummy_d;
+                                countText >> dummy_ll;
+                                sum1perText >> dummy_d;
+                                sumvortText >> dummy_d;
+                            }
                         }
                     }
-                    for (int ie = 0; ie < texHeight_file -
-                                          sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
-                        //Read extra cells from file without doing anything
-                        for (int iw = 0; iw < texWidth_file; iw++) {
-                            size_t dummy_ll;
-                            double dummy_d;
-                            countText >> dummy_ll;
-                            sum1perText >> dummy_d;
-                            sumvortText >> dummy_d;
+                    if (texHeight_file > sFac->sh.texHeight) { //Executed if file texture is bigger than expected texture
+                        size_t heightRemainder = texHeight_file - sFac->sh.texHeight;
+                        for (int ie = 0; ie < heightRemainder; ie++) {
+                            //Read extra cells from file without doing anything
+                            for (int iw = 0; iw < texWidth_file; iw++) {
+                                size_t dummy_ll;
+                                double dummy_d;
+                                countText >> dummy_ll;
+                                sum1perText >> dummy_d;
+                                sumvortText >> dummy_d;
+                            }
                         }
-
                     }
                 } //end texture
 
