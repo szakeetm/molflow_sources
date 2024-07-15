@@ -67,7 +67,7 @@ compress-and-upload-job:
   allow_failure: false
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   script:
-    - export APP_DIR_NAME=${APP_NAME}_${CI_COMMIT_SHORT_SHA} #CI_COMMIT_TAG
+    - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
     - mkdir artifacts_zip artifacts_zip/${APP_DIR_NAME}
     - cp CHANGELOG.md artifacts_zip/${APP_DIR_NAME}/changelog_full.md
     - cp parsed_changelog.txt artifacts_zip/${APP_DIR_NAME}/changelog_parsed.txt
@@ -531,8 +531,9 @@ build-macos-arm:
     TAG_SUFFIX: ""
   stage: build-artifact
   before_script:
-    - mkdir -P ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
-    - Get-ChildItem ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
+    - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
+    - mkdir -P ("./artifacts/" + ($APP_DIR_NAME))
+    - Get-ChildItem ("./artifacts/" + ($APP_DIR_NAME)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
@@ -541,16 +542,16 @@ build-macos-arm:
     - Write-Host $CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_REF_NAME
-    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
-    - Set-Location ("./artifacts/" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
+    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./artifacts/" + ($APP_DIR_NAME)) -Recurse -Force
+    - Set-Location ("./artifacts/" + ($APP_DIR_NAME))
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
-    name: ${APP_NAME}_win${TAG_SUFFIX}
+    name: ${APP_DIR_NAME}
     paths:
-      - ./artifacts/${APP_NAME}_win${TAG_SUFFIX}
+      - ./artifacts/${APP_DIR_NAME}
 
 
 .artifact-unix:
@@ -558,8 +559,9 @@ build-macos-arm:
     TAG_SUFFIX: ""
   stage: build-artifact
   before_script:
-    - rm -rf ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX
-    - mkdir -p ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+    - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
+    - rm -rf ./artifacts/$APP_DIR_NAME
+    - mkdir -p ./artifacts/$APP_DIR_NAME
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
@@ -570,16 +572,16 @@ build-macos-arm:
     - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX || true
-    - cd ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX/
+    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./artifacts/$APP_DIR_NAME || true
+    - cd ./artifacts/$APP_DIR_NAME/
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
-    name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
+    name: ${APP_DIR_NAME}
     paths:
-      - ./artifacts/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
+      - ./artifacts/${APP_DIR_NAME}
 
 .artifact-prop:
   artifacts:
@@ -627,8 +629,9 @@ build-artifact-fedora-mpi:
     OS_NAME: "fedora"
   stage: build-artifact
   before_script:
-    - rm -rf ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
-    - mkdir -p ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI
+    - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI #CI_COMMIT_TAG
+    - rm -rf ./artifacts/$APP_DIR_NAME
+    - mkdir -p ./artifacts/$APP_DIR_NAME
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID'_'MPI
@@ -636,8 +639,8 @@ build-artifact-fedora-mpi:
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
     - echo $CI_COMMIT_REF_NAME
-    - cp -r ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/* ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI || true
-    - cd ./artifacts/$APP_NAME'_'$OS_NAME$TAG_SUFFIX'_'MPI/
+    - cp -r ~/${APP_NAME_CAPS}_CI/${FNAME}_mpi/* ./artifacts/$APP_DIR_NAME || true
+    - cd ./artifacts/$APP_DIR_NAME
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
@@ -647,9 +650,9 @@ build-artifact-fedora-mpi:
     - if: '($CI_COMMIT_BRANCH && ($OS_NAME == "mac" || $OS_NAME == "mac_arm"))'
       allow_failure: true
   artifacts:
-    name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
+    name: ${APP_DIR_NAME}
     paths:
-      - ./artifacts/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}_MPI
+      - ./artifacts/${APP_DIR_NAME}
     expire_in: 8 weeks
   needs:
     - job: build-fedora-mpi
