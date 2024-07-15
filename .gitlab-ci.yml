@@ -105,7 +105,6 @@ release_job:
   script:
     - echo 'running release_job'
     - EXTRA_DESCRIPTION=`echo "## Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt`
-    - 
   release:
     name: 'MolFlow $CI_COMMIT_TAG'
     description: $(echo "## Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt) #$EXTRA_DESCRIPTION must be defined
