@@ -484,7 +484,7 @@ build-macos-arm:
     - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./artifacts/" + ($APP_DIR_NAME)) -Recurse -Force
     - Set-Location ("./artifacts/" + ($APP_DIR_NAME))
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: '($CI_COMMIT_TAG)'
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
@@ -514,7 +514,7 @@ build-macos-arm:
     - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./artifacts/$APP_DIR_NAME || true
     - cd ./artifacts/$APP_DIR_NAME/
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: '($CI_COMMIT_TAG)'
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
