@@ -531,7 +531,7 @@ build-macos-arm:
     TAG_SUFFIX: ""
   stage: build-artifact
   before_script:
-    - Set-Variable -Name "APP_DIR_NAME" -Value ${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
+    - Set-Variable -Name "APP_DIR_NAME" -Value (${APP_NAME} + "_" + ${OS_NAME} + ${TAG_SUFFIX}) #CI_COMMIT_TAG
     - mkdir -P ("./artifacts/" + ($APP_DIR_NAME))
     - Get-ChildItem ("./artifacts/" + ($APP_DIR_NAME)) | Remove-Item -Recurse -Force
   script:
