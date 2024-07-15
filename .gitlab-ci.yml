@@ -706,8 +706,10 @@ build-artifact-windows-tags:
 
 compress-and-upload-job:
   stage: upload
-  when: manual
-  allow_failure: false
+  rules:
+    - if: '($CI_COMMIT_TAG)'
+      when: always
+  allow_failure: true
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   script:
     - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
