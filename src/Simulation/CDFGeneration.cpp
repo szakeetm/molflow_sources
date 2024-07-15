@@ -1,7 +1,5 @@
-
-
-#include "CDFGeneration.h"
 #include <cmath>
+#include "CDFGeneration.h"
 
 constexpr size_t velocity_cdf_size = 100; // points in a cumulative distribution function
 

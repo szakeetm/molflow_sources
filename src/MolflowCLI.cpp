@@ -1,11 +1,3 @@
-
-
-// M_PI define
-#ifdef _WIN32
-#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
-#endif
-#include <cmath>
-
 #include "SimulationManager.h"
 #include "SMP.h"
 #include "Buffer_shared.h"
@@ -79,19 +71,11 @@ void RuntimeStatPrinter::Print(double elapsedTime, const std::shared_ptr<GlobalS
 
 int main(int argc, char** argv) {
 
-// Set local to parse input files the same on all systems
-//duplicate, in case we called this function from the test suite and not from main()
-#if defined(__APPLE__)
-    setlocale(LC_ALL, "en_US.UTF-8");
-#else
-    std::setlocale(LC_ALL, "en_US.UTF-8");
-#endif
+    Log::console_msg_master(1, "{} command line mode\n", appTitle);
 
 #if defined(USE_MPI)
     MFMPI::mpi_initialize();
 #endif
-
-    Log::console_msg_master(1, "{} command line mode\n", appTitle);
 
     // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
@@ -102,7 +86,7 @@ int main(int argc, char** argv) {
 
     // Parse arguments
     try {
-        parsedArgs = Initializer::initFromArgv(argc, argv, simManager, model);
+        parsedArgs = Initializer::initFromArgv(argc, argv, simManager, model); //also sets locale to utf-8
     } catch (Error& err) {
         Log::console_error(err.what());
         ShutdownMPI();

@@ -1,6 +1,4 @@
 #include "MolFlow.h"
-
-#include <cmath>
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"
@@ -881,12 +879,20 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 				facetOutgToggleLabel->SetEnabled(true);
 				facetOutgassingText->SetEditable(true);
 				if (outgassingE) {
-					if (f0->sh.outgassingParam.empty())
+					if (f0->sh.outgassingParam.empty()) {
 						facetOutgassingText->SetText(f0->sh.outgassing * PAM3S_TO_MBARLS);
-					else facetOutgassingText->SetText(f0->sh.outgassingParam);
+					}
+					else {
+						facetOutgassingText->SetText(f0->sh.outgassingParam);
+					}
 				}
 				else facetOutgassingText->SetText("...");
-				if (outgassingPerAreaE) facetOutgPerAreaText->SetText(f0->sh.outgassing / f0Area * 10.00); else facetOutgPerAreaText->SetText("...");
+				if (outgassingPerAreaE) {
+					facetOutgPerAreaText->SetText(f0->sh.outgassing / f0Area * 10.00);
+				}
+				else {
+					facetOutgPerAreaText->SetText("...");
+				}
 				if (f0->sh.desorbType == 3) {
 					facetDesTypeN->SetEditable(true);
 					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
@@ -1261,7 +1267,6 @@ void MolFlow::LoadFile(const std::string& fileName) {
 	}
 
 	if (filePath.empty()) return; //User closed Open... dialog
-
 	if (!FileUtils::Exist(filePath)) {
 		auto answer = GLMessageBox::Display(
 			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?", filePath),
@@ -1346,6 +1351,7 @@ void MolFlow::LoadFile(const std::string& fileName) {
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
+		if (particleLogger) particleLogger->UpdateStatus();
 		ImReset();
 	}
 	catch (const std::exception& e) {
@@ -1729,27 +1735,22 @@ void MolFlow::ProcessMessage(GLComponent* src, int message)
 		else if (src == facetOutgassingText) {
 			double outgassing;
 			double area;
-			facetOutgassingText->GetNumber(&outgassing);
+			bool validOutgNumber = facetOutgassingText->GetNumber(&outgassing);
 			facetAreaText->GetNumber(&area);
-			if (area == 0) facetOutgPerAreaText->SetText("#DIV0");
-			else facetOutgPerAreaText->SetText(outgassing / area);
+			if (validOutgNumber) facetOutgPerAreaText->SetText(outgassing / area);
 			facetApplyBtn->SetEnabled(true);
 			facetOutgToggleLabel->SetState(true);
 			facetOutgPerAreaToggleLabel->SetState(false);
-			// //else if ( src == facetMass ) {
-			//  facetApplyBtn->SetEnabled(true);
 		}
 		else if (src == facetOutgPerAreaText) {
 			double flowPerArea;
 			double area;
-			facetOutgPerAreaText->GetNumber(&flowPerArea);
+			bool validOutgPerAreaNumber = facetOutgPerAreaText->GetNumber(&flowPerArea);
 			facetAreaText->GetNumber(&area);
-			facetOutgassingText->SetText(flowPerArea * area);
+			if (validOutgPerAreaNumber) facetOutgassingText->SetText(flowPerArea * area);
 			facetApplyBtn->SetEnabled(true);
 			facetOutgPerAreaToggleLabel->SetState(true);
 			facetOutgToggleLabel->SetState(false);
-			// //else if ( src == facetMass ) {
-			//  facetApplyBtn->SetEnabled(true);
 		}
 		else if (src == facetPumpingSpeedText) {
 			CalcSticking();
@@ -1975,6 +1976,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	if (parameterEditor) parameterEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 	ImRefresh();
 	UpdateTitle();
 	changedSinceSave = false;
@@ -2048,6 +2050,7 @@ void MolFlow::EmptyGeometry() {
 	if (measureForces) measureForces->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	if (particleLogger) particleLogger->UpdateStatus();
 
 	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
