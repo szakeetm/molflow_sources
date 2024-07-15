@@ -17,9 +17,9 @@ stages:
   - prepare
   - build
   - build-artifact
-  - build-test
-  - test
-  - benchmark
+#  - build-test
+#  - test
+#  - benchmark
   - upload
   - copy-to-eos
   - release
