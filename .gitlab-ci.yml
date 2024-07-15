@@ -712,22 +712,18 @@ compress-and-upload-job:
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - export APP_DIR_NAME=${APP_NAME}_${TAG_SUFFIX} #CI_COMMIT_TAG
-    - mkdir artifacts_zip artifacts_zip/${APP_DIR_NAME}
-    - cp CHANGELOG.md artifacts_zip/${APP_DIR_NAME}/changelog_full.md
-    - cp parsed_changelog.txt artifacts_zip/${APP_DIR_NAME}/changelog_parsed.txt
-    - ls ./artifacts_zip/
-    - ls ./artifacts_zip/${APP_DIR_NAME}
-    - 'for filename in ./artifacts/${APP_NAME}_*; do zip -r ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip $filename; done' #prepare for copy_to_eos-job
-    - ls ./artifacts_zip/
-    - ls ./artifacts_zip/${APP_DIR_NAME}
-    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
-  after_script: 
-    - ls ./artifacts/
-    - ls ./artifacts_zip/
+    - mkdir artifacts_eos
+    - cp CHANGELOG.md artifacts_eos/changelog_full.md
+    - cp parsed_changelog.txt artifacts_eos/changelog_parsed.txt
+    - cd artifacts #zip filename will contain path
+    - ls .
+    - 'for filename in ./${APP_NAME}_*; do zip -r ../artifacts_eos/${filename}.zip $filename; done'
+    - cd ..
+    - ls ./artifacts_eos/
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./artifacts_eos/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
   artifacts:
     paths:
-      - ./artifacts_zip/ #retain for copy_to_eos-job
+      - ./artifacts_eos/ #retain for copy_to_eos-job
     expire_in: 1 week
 
 copy-to-eos-job:
@@ -735,7 +731,7 @@ copy-to-eos-job:
   # EOS_PATH, EOS_ACCOUNT_USERNAME and EOS_ACCOUNT_PASSWORD must be defined in GitLab UI.
   # Think of masking secrets - job logs are public!
   variables:
-    CI_OUTPUT_DIR: "artifacts_zip" #retained from compress-and-upload-job
+    CI_OUTPUT_DIR: "artifacts_eos" #retained from compress-and-upload-job
   # Executed during the copy-to-eos stage
   stage: copy-to-eos
   # Custom docker image providing the needed tools to deploy in EOS
