@@ -17,8 +17,12 @@ stages:
   - prepare
   - build
   - build-artifact
+  - build-test
+  - test
+  - benchmark
   - upload
   - copy-to-eos
+  - release
 
 prepare_job:
   stage: prepare                                              # This stage must run before the release stage
@@ -67,14 +71,14 @@ compress-and-upload-job:
     - mkdir artifacts_zip artifacts_zip/${APP_DIR_NAME}
     - cp CHANGELOG.md artifacts_zip/${APP_DIR_NAME}/changelog_full.md
     - cp parsed_changelog.txt artifacts_zip/${APP_DIR_NAME}/changelog_parsed.txt
-    - cd artifacts
-    - 'for filename in ${APP_NAME}_*; do zip -r ../artifacts_zip/${APP_DIR_NAME}/${filename}.zip $filename; done'
+    - 'for filename in ${APP_NAME}_*; do zip -r ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip $filename; done' #prepare for copy_to_eos-job
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
   after_script: 
     - ls ./artifacts/
     - ls ./artifacts_zip/
   artifacts:
     paths:
-      - ./artifacts_zip/
+      - ./artifacts_zip/ #retain for copy_to_eos-job
     expire_in: 1 week
 
 copy-to-eos-job:
@@ -82,7 +86,7 @@ copy-to-eos-job:
   # EOS_PATH, EOS_ACCOUNT_USERNAME and EOS_ACCOUNT_PASSWORD must be defined in GitLab UI.
   # Think of masking secrets - job logs are public!
   variables:
-    CI_OUTPUT_DIR: "artifacts_zip" #from upload task
+    CI_OUTPUT_DIR: "artifacts_zip" #retained from compress-and-upload-job
   # Executed during the copy-to-eos stage
   stage: copy-to-eos
   # Custom docker image providing the needed tools to deploy in EOS
@@ -92,9 +96,33 @@ copy-to-eos-job:
   # It will copy the generated content to the folder in EOS
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
-  before_script: 
-    - ls ./artifacts_zip/
 
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo 'running release_job'
+    - EXTRA_DESCRIPTION=`echo "## Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt`
+    - 
+  release:
+    name: 'MolFlow $CI_COMMIT_TAG'
+    description: $(echo "## Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt) #$EXTRA_DESCRIPTION must be defined
+    tag_name: '$CI_COMMIT_TAG'                                       # elsewhere in the pipeline.
+    ref: '$CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'Windows binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_win${TAG_SUFFIX}.zip'
+        - name: 'macOS (Intel) binary' #might not exist
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_mac${TAG_SUFFIX}.zip'
+        - name: 'macOS (ARM) binary' #might not exist
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_mac_arm${TAG_SUFFIX}.zip'
+        - name: 'Ubuntu (Debian) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_debian${TAG_SUFFIX}.zip'
+        - name: 'CentOS (Fedora) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_fedora${TAG_SUFFIX}.zip'
 
 build-windows:
   stage: build
@@ -122,6 +150,30 @@ build-windows:
   tags:
     - windows
 
+build-test-windows:
+  stage: build-test
+  interruptible: true
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build_test")
+    - mkdir -P $buildpath
+    - cd $buildpath
+    - echo "Init project in:"+($pwd).path
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON -G Ninja $buildpath\..
+    - echo "Starting build in:" + ($buildpath).path
+    - C:\BuildTools_VS2022\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
+    - echo $FNAME
+    - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name ${FNAME}_test -ItemType "directory" -Force
+    - Copy-Item (($outputpath) + "\*") -Destination "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\" -Recurse -Force
+  after_script:
+    - echo "Finished"
+  tags:
+    - windows
 
 .build-unix:
   stage: build
@@ -146,6 +198,28 @@ build-windows:
   after_script:
     - echo "Finished"
 
+.build-test-unix:
+  stage: build-test
+  interruptible: true
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - buildpath=$(pwd)"/build_test"
+    - mkdir -p $buildpath
+    - cd $buildpath
+    - echo "Init project in:" $(pwd)
+    - cmake -DCMAKE_TOOLCHAIN_FILE=${VCPKG_FOLDER}/scripts/buildsystems/vcpkg.cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DNO_INTERFACE=1 -DUSE_TESTS=ON $buildpath/..
+    - echo "Starting build in:" $buildpath
+    - cmake --build $buildpath --config Release -- -j 4
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export outputpath=$buildpath'/bin/'
+    - echo $FNAME
+    - mkdir -p ~/$APP_NAME_CAPS'_CI/'${FNAME}_test
+    - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/ || true
+  after_script:
+    - echo "Finished"
 
 build-debian:
   extends: .build-unix
@@ -229,8 +303,220 @@ build-macos-arm:
       when: manual
       allow_failure: true
 
+build-test-fedora:
+  extends: .build-test-unix
+  variables:
+    OS_NAME: "fedora"
+    OS_FULL_NAME: "linux_debian"
+    VCPKG_FOLDER: "/home/gitlab-runner/vcpkg"
+  tags:
+    - fedora
+
+build-test-macos:
+  extends: .build-test-unix
+  variables:
+    OS_NAME: "mac"
+    OS_FULL_NAME: "mac"
+    VCPKG_FOLDER: "~/Repos/vcpkg"
+  tags:
+    - macos
+  when: manual
+
+build-test-macos-arm:
+  extends: .build-test-unix
+  variables:
+    OS_NAME: "mac_arm"
+    OS_FULL_NAME: "mac_arm"
+    VCPKG_FOLDER: "~/Repos/vcpkg"
+  tags:
+    - macos-arm
+  when: manual
+
+.test-unix:
+  stage: test
+  interruptible: true
+  allow_failure: true
+  before_script:
+    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+  script:
+    - export PROJPATH=$(pwd)
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/tests
+    - ./testsuite --gtest_filter="-*ResultsWrong*:*PerformanceOkay*" --gtest_output="xml:report.xml" --gtest_fail_fast
+    - mv report.xml "$PROJPATH/report.xml"
+  after_script:
+    - echo "Finished"
+  artifacts:
+    when: always
+    reports:
+      junit: ./report.xml
+    expire_in: 4 weeks
+
+test-debian:
+  extends: .test-unix
+  variables:
+    OS_NAME: "debian"
+  needs:
+    - job: build-test-debian
+  tags:
+    - debian
+
+test-fedora:
+  extends: .test-unix
+  variables:
+    OS_NAME: "fedora"
+  needs:
+    - job: build-test-fedora
+  tags:
+    - fedora
+
+test-macos:
+  extends: .test-unix
+  variables:
+    OS_NAME: "mac"
+  needs:
+    - job: build-test-macos
+  tags:
+    - macos
 
 
+test-macos-arm:
+  extends: .test-unix
+  variables:
+    OS_NAME: "mac_arm"
+  needs:
+    - job: build-test-macos-arm
+  tags:
+    - macos-arm
+
+
+test-windows:
+  stage: test
+  interruptible: true
+  allow_failure: true
+  before_script:
+    - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
+  script:
+    - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\tests"
+    - $AllArgs = @("--gtest_filter=`-*ResultsWrong*:*PerformanceOkay*`  --gtest_output='xml:report.xml' --gtest_fail_fast")
+    - powershell.exe -c "./testsuite.exe $AllArgs"
+    - Move-Item -Path "report.xml" -Destination (($PROJPATH) + "\report.xml")
+  after_script:
+    - Write-Host "Finished"
+  artifacts:
+    when: always
+    reports:
+      junit: .\report.xml
+    expire_in: 4 weeks
+  needs:
+    - job: build-test-windows
+  tags:
+    - windows
+
+.benchmark-unix:
+  stage: benchmark
+  interruptible: true
+  allow_failure: true
+  before_script:
+    - echo "Benchmarking $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - mkdir -p ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
+  script:
+    - export PROJPATH=$(pwd)
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test/tests
+    - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || cp ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
+    - ./testsuite --gtest_filter="*PerformanceOkay*" --gtest_output="xml:benchmark.xml" --gtest_fail_fast
+    - ls .
+    - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/' || true
+    - mv benchmark.xml $PROJPATH"/benchmark.xml"
+  after_script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - cd ~/$APP_NAME_CAPS'_CI/'${FNAME}_test
+    - rm -rf ./tests
+  artifacts:
+    when: always
+    reports:
+      junit: ./benchmark.xml
+    expire_in: 4 weeks
+
+benchmark-debian:
+  extends: .benchmark-unix
+  needs:
+    - job: build-test-debian
+  variables:
+    OS_NAME: "debian"
+  tags:
+    - debian
+
+benchmark-fedora:
+  extends: .benchmark-unix
+  needs:
+    - job: build-test-fedora
+  variables:
+    OS_NAME: "fedora"
+  tags:
+    - fedora
+
+benchmark-macos:
+  extends: .benchmark-unix
+  needs:
+    - job: build-test-macos
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos
+  when: manual
+  allow_failure: true
+
+benchmark-macos-arm:
+  extends: .benchmark-unix
+  needs:
+    - job: build-test-macos-arm
+  variables:
+    OS_NAME: "mac_arm"
+  tags:
+    - macos-arm
+  when: manual
+  allow_failure: true
+
+benchmark-windows:
+  stage: benchmark
+  needs:
+    - job: build-test-windows
+  interruptible: true
+  allow_failure: true
+  before_script:
+    - Write-Host "Benchmarking Windows $CI_COMMIT_BRANCH"
+    - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
+  script:
+    - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\tests"
+    - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
+    - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
+    - $AllArgs = @("--gtest_filter=`*PerformanceOkay*` --gtest_output=xml:benchmark.xml --gtest_fail_fast")
+    - cmd.exe /c "start /b /wait /high testsuite.exe $AllArgs"
+    - Move-Item -Path benchmark.xml -Destination (($PROJPATH) + "\benchmark.xml")
+    - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
+  after_script:
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Location "C:\${APP_NAME_CAPS}_CI\${FNAME}_test\"
+    - Remove-Item -Recurse -Force ("./tests")
+  artifacts:
+    when: always
+    reports:
+      junit: .\benchmark.xml
+    expire_in: 4 weeks
+  tags:
+    - windows
 
 .artifact-windows:
   variables:
