@@ -716,7 +716,11 @@ compress-and-upload-job:
     - mkdir artifacts_zip artifacts_zip/${APP_DIR_NAME}
     - cp CHANGELOG.md artifacts_zip/${APP_DIR_NAME}/changelog_full.md
     - cp parsed_changelog.txt artifacts_zip/${APP_DIR_NAME}/changelog_parsed.txt
+    - ls ./artifacts_zip/
+    - ls ./artifacts_zip/${APP_DIR_NAME}
     - 'for filename in ./artifacts/${APP_NAME}_*; do zip -r ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip $filename; done' #prepare for copy_to_eos-job
+    - ls ./artifacts_zip/
+    - ls ./artifacts_zip/${APP_DIR_NAME}
     - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./artifacts_zip/${APP_DIR_NAME}/${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
   after_script: 
     - ls ./artifacts/
