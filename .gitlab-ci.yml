@@ -24,7 +24,7 @@ stages:
   - copy-to-eos
   - release
 
-prepare_job:
+parse-changelog:
   stage: prepare                                              # This stage must run before the release stage
   interruptible: false #tag pipelines should not be interrupted on new tag
   image: alpine:latest
@@ -742,13 +742,13 @@ copy-to-eos-job:
   - deploy-eos
   # do not run any globally defined before_script or after_script for this step
 
-release_job:
+release-job:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - echo 'running release_job'
+    - echo 'running release-job'
     - EXTRA_DESCRIPTION=`echo "## Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt`
   release:
     name: 'MolFlow $CI_COMMIT_TAG'
