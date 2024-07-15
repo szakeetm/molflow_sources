@@ -720,7 +720,7 @@ compress-and-upload-job:
     - 'for filename in ./${APP_NAME}_*; do zip -r ../artifacts_eos/${filename}.zip $filename; done'
     - cd ..
     - ls ./artifacts_eos/
-    - 'for filename in ./artifacts-eos/${APP_NAME}*.zip; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${filename} "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}"; done'
+    - 'for filename in ./artifacts-eos/${APP_NAME}*.zip; do curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${filename} "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}"; done'
   artifacts:
     paths:
       - ./artifacts_eos/ #retain for copy_to_eos-job
