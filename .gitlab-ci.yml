@@ -302,6 +302,15 @@ build-macos-arm:
       when: manual
       allow_failure: true
 
+build-test-debian:
+  extends: .build-test-unix
+  variables:
+    OS_NAME: "debian"
+    OS_FULL_NAME: "linux_debian"
+    VCPKG_FOLDER: "/home/gitlab-runner/vcpkg"
+  tags:
+    - debian
+
 build-test-fedora:
   extends: .build-test-unix
   variables:
