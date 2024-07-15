@@ -919,7 +919,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		}
 
 		if (facetAdvParams) facetAdvParams->Refresh(selectedFacets); //Refresh advanced facet parameters panel
-		if (imWnd && imWnd->advFacPar.IsVisible()) imWnd->advFacPar.Update();
+		if (imWnd) imWnd->advFacPar.Update();
 		if (updateSelection) {
 
 			if (nbSel > 1000 || interfGeom->GetNbFacet() > 50000) { //If it would take too much time to look up every selected facet in the list
@@ -956,8 +956,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (mApp->imWnd && mApp->imWnd->textPlot.IsVisible()) mApp->imWnd->textPlot.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->outgassingMap.IsVisible()) mApp->imWnd->outgassingMap.UpdateOnFacetChange(selectedFacets);
 	if (mApp->imWnd && mApp->imWnd->facCoord.IsVisible()) mApp->imWnd->facCoord.UpdateFromSelection(selectedFacets);
-	if (mApp->imWnd && mApp->imWnd->sideBar.IsVisible()) mApp->imWnd->sideBar.Update();
-	if (mApp->imWnd && mApp->imWnd->sideBar.IsVisible()) mApp->imWnd->advFacPar.Update();
+	if (mApp->imWnd) mApp->imWnd->sideBar.Update();
+	if (mApp->imWnd) mApp->imWnd->advFacPar.Update();
 }
 
 // Name: FrameMove()
