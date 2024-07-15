@@ -712,7 +712,7 @@ compress-and-upload-job:
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - export APP_DIR_NAME=${APP_NAME}_${OS_NAME}${TAG_SUFFIX} #CI_COMMIT_TAG
+    - export APP_DIR_NAME=${APP_NAME}_${TAG_SUFFIX} #CI_COMMIT_TAG
     - mkdir artifacts_zip artifacts_zip/${APP_DIR_NAME}
     - cp CHANGELOG.md artifacts_zip/${APP_DIR_NAME}/changelog_full.md
     - cp parsed_changelog.txt artifacts_zip/${APP_DIR_NAME}/changelog_parsed.txt
